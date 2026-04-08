@@ -1,6 +1,8 @@
 import type { ApiEnv } from "../../env.js";
 import type { DatabaseRuntime } from "../../infrastructure/database.js";
 import { BasicUserRoleService } from "../access-control/basic-user-role.service.js";
+import { PermissionResolutionService } from "../access-control/permission-resolution.service.js";
+import { PostgresPermissionRepository } from "../access-control/postgres-permission.repository.js";
 import { AccessTokenAuthenticationService } from "./access-token-authentication.service.js";
 import { PasswordAuthenticationService } from "./authentication.service.js";
 import { PostgresSessionRepository } from "./postgres-session.repository.js";
@@ -12,6 +14,7 @@ import { UserAccessLifecycleService } from "./user-access-lifecycle.service.js";
 type AuthRuntime = {
   accessControl: {
     accessTokenAuthenticationService: AccessTokenAuthenticationService;
+    permissionService: PermissionResolutionService;
   };
   auth: {
     authenticationService: PasswordAuthenticationService;
@@ -48,6 +51,9 @@ export function createAuthRuntime(
       accessTokenAuthenticationService: new AccessTokenAuthenticationService(
         userRepository,
         env.authAccessTokenSecret,
+      ),
+      permissionService: new PermissionResolutionService(
+        new PostgresPermissionRepository(databaseRuntime.pool),
       ),
     },
     auth: {

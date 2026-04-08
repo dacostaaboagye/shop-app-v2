@@ -87,10 +87,85 @@ describe("route authorization", () => {
     assert.equal(response.statusCode, 401);
     assert.equal(response.json().title, "Invalid access token");
   });
+
+  it("rejects permission routes when the actor lacks the required permission", async () => {
+    const server = createProtectedServer({
+      now: new Date("2026-04-08T12:00:00.000Z"),
+      permissionResult: "forbidden",
+      user: {
+        id: "usr_123",
+        slug: "store-manager",
+        status: "active",
+      },
+    });
+
+    const response = await server.inject({
+      headers: {
+        authorization: `Bearer ${
+          issueAccessToken({
+            expiresInSeconds: 900,
+            now: new Date("2026-04-08T12:00:00.000Z"),
+            secret: "development-access-secret",
+            userId: "usr_123",
+            userSlug: "store-manager",
+          }).token
+        }`,
+      },
+      method: "GET",
+      url: "/permission-protected",
+    });
+
+    assert.equal(response.statusCode, 403);
+    assert.equal(response.json().title, "Forbidden");
+  });
+
+  it("passes the resolved location scope to permission checks", async () => {
+    const state = {
+      locationId: "",
+    };
+    const now = new Date("2026-04-08T12:00:00.000Z");
+    const server = createProtectedServer({
+      now,
+      onPermissionCheck(input) {
+        state.locationId = input.locationId ?? "";
+      },
+      permissionResult: "allowed",
+      user: {
+        id: "usr_123",
+        slug: "store-manager",
+        status: "active",
+      },
+    });
+
+    const response = await server.inject({
+      headers: {
+        authorization: `Bearer ${
+          issueAccessToken({
+            expiresInSeconds: 900,
+            now,
+            secret: "development-access-secret",
+            userId: "usr_123",
+            userSlug: "store-manager",
+          }).token
+        }`,
+        "x-location-id": "loc_store_1",
+      },
+      method: "GET",
+      url: "/permission-protected",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(state.locationId, "loc_store_1");
+  });
 });
 
 function createProtectedServer(input: {
+  onPermissionCheck?: (input: {
+    locationId?: string;
+    permission: string;
+  }) => void;
   now: Date;
+  permissionResult?: "allowed" | "forbidden";
   user: {
     id: string;
     slug: string;
@@ -116,6 +191,29 @@ function createProtectedServer(input: {
           ).authenticate(token);
         },
       },
+      permissionService: {
+        async assertHasPermission(inputArgs) {
+          input.onPermissionCheck?.({
+            ...(inputArgs.locationId
+              ? { locationId: inputArgs.locationId }
+              : {}),
+            permission: inputArgs.permission,
+          });
+
+          if (input.permissionResult === "forbidden") {
+            const { AppError } = await import(
+              "../src/modules/_core/errors/app-error.js"
+            );
+
+            throw new AppError({
+              code: "forbidden",
+              detail: "You do not have permission to access this route.",
+              statusCode: 403,
+              title: "Forbidden",
+            });
+          }
+        },
+      },
     },
   });
 
@@ -128,6 +226,17 @@ function createProtectedServer(input: {
         userId: request.auth?.userId,
         userSlug: request.auth?.userSlug,
       };
+    },
+  });
+
+  server.route({
+    config: {
+      access: { kind: "permission", permission: "inventory.read" },
+    },
+    method: "GET",
+    url: "/permission-protected",
+    async handler() {
+      return { ok: true };
     },
   });
 
