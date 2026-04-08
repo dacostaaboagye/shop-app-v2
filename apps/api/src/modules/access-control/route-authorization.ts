@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import { AppError } from "../_core/errors/app-error.js";
 import type { RouteAccess } from "../_core/route-contract.js";
 import type { AuthenticatedActor } from "../auth/access-token-authentication.service.js";
+import { resolveRequestLocationId } from "./request-location-scope.js";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -15,8 +16,8 @@ type RouteAuthorizationDependencies = {
   };
   permissionService?: {
     assertHasPermission(input: {
+      locationId?: string;
       permission: string;
-      request: FastifyRequest;
       user: AuthenticatedActor;
     }): Promise<void>;
   };
@@ -56,9 +57,11 @@ export function registerRouteAuthorization(
       throw unavailableAuthorizationError();
     }
 
+    const locationId = resolveRequestLocationId(request);
+
     await permissionService.assertHasPermission({
+      ...(locationId ? { locationId } : {}),
       permission: access.permission,
-      request,
       user: auth,
     });
   });

@@ -100,6 +100,15 @@ Notes:
 
 - audit rows must be sufficient to explain who changed what, for whom, where, and why
 
+## Resolution rules
+
+- global role grants always participate in permission resolution
+- location-scoped role grants participate only when the request is evaluating that same location
+- active overrides are applied after role grants
+- `deny` overrides remove an already-granted permission
+- `allow` overrides can add a permission even without a role grant
+- revoked role assignments and removed overrides never participate in effective permission resolution
+
 ## Supporting artifacts
 
 - Schema source: [access-control.ts](/D:/work/personal/shop-app/shop-app-v2/packages/database/src/schema/access-control.ts)
