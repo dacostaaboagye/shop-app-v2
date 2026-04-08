@@ -1,0 +1,194 @@
+import type { AuthSession, AuthUser } from "@shop/contracts";
+import {
+  type AuthLockoutPolicy,
+  countRecentFailures,
+  defaultAuthLockoutPolicy,
+  getFailedAttemptOutcome,
+  getFailureWindowStart,
+  getRemainingLockoutSeconds,
+  isLockoutActive,
+} from "@shop/domain";
+import {
+  type AuthEventRecord,
+  invalidCredentialsError,
+  type LoginAttemptRecord,
+  lockedAccountError,
+  type SessionContext,
+  toAuthEventRecord,
+  toLoginAttemptRecord,
+  toSessionContext,
+  unavailableAccountError,
+} from "./authentication-records.js";
+import { verifyPassword } from "./password-hash.js";
+
+export type { SessionContext } from "./authentication-records.js";
+
+export type IssuedSession = AuthSession & {
+  refreshToken: string;
+  refreshTokenExpiresAt: string;
+};
+
+export type AuthUserRecord = Omit<AuthUser, "lastLoginAt"> & {
+  id: string;
+  lastLoginAt: Date | null;
+  lockedUntil: Date | null;
+  passwordHash: string;
+};
+
+export type LoginCommand = {
+  email: string;
+  password: string;
+  ipAddress?: string;
+  userAgent?: string;
+};
+
+export interface AuthRepository {
+  clearLockout(userId: string): Promise<void>;
+  findUserByEmail(email: string): Promise<AuthUserRecord | null>;
+  getRecentFailedAttemptTimes(email: string, since: Date): Promise<Date[]>;
+  markSuccessfulLogin(userId: string, occurredAt: Date): Promise<void>;
+  recordAuthEvent(event: AuthEventRecord): Promise<void>;
+  recordLoginAttempt(attempt: LoginAttemptRecord): Promise<void>;
+  setLockout(userId: string, lockedUntil: Date): Promise<void>;
+}
+
+export interface SessionIssuer {
+  issueSession(
+    user: AuthUserRecord,
+    now: Date,
+    context?: SessionContext,
+  ): Promise<IssuedSession>;
+}
+
+export class PasswordAuthenticationService {
+  constructor(
+    private readonly repository: AuthRepository,
+    private readonly sessionIssuer: SessionIssuer,
+    private readonly now: () => Date = () => new Date(),
+    private readonly policy: AuthLockoutPolicy = defaultAuthLockoutPolicy,
+  ) {}
+
+  async login(command: LoginCommand): Promise<IssuedSession> {
+    const now = this.now();
+    const email = command.email.trim().toLowerCase();
+    const user = await this.repository.findUserByEmail(email);
+
+    if (!user) {
+      await this.recordFailedAttempt({ command, occurredAt: now });
+      throw invalidCredentialsError();
+    }
+
+    if (user.status === "suspended") {
+      throw unavailableAccountError("This account is suspended.");
+    }
+
+    if (user.status === "deactivated") {
+      throw unavailableAccountError("This account is deactivated.");
+    }
+
+    if (isLockoutActive({ lockedUntil: user.lockedUntil, now })) {
+      throw lockedAccountError(
+        getRemainingLockoutSeconds({ lockedUntil: user.lockedUntil, now }),
+      );
+    }
+
+    const recentFailures = await this.repository.getRecentFailedAttemptTimes(
+      email,
+      getFailureWindowStart(now, this.policy),
+    );
+
+    if (!verifyPassword(command.password, user.passwordHash)) {
+      await this.recordFailedAttempt({
+        command,
+        occurredAt: now,
+        recentFailures,
+        user,
+      });
+      throw invalidCredentialsError();
+    }
+
+    await this.repository.recordLoginAttempt(
+      toLoginAttemptRecord({
+        email,
+        ipAddress: command.ipAddress,
+        occurredAt: now,
+        succeeded: true,
+      }),
+    );
+    await this.repository.clearLockout(user.id);
+    await this.repository.markSuccessfulLogin(user.id, now);
+    await this.repository.recordAuthEvent(
+      toAuthEventRecord({
+        eventType: "login",
+        ipAddress: command.ipAddress,
+        occurredAt: now,
+        userAgent: command.userAgent,
+        userId: user.id,
+      }),
+    );
+
+    return this.sessionIssuer.issueSession(
+      user,
+      now,
+      toSessionContext(command.ipAddress, command.userAgent),
+    );
+  }
+
+  private async recordFailedAttempt(input: {
+    command: LoginCommand;
+    occurredAt: Date;
+    recentFailures?: Date[];
+    user?: AuthUserRecord;
+  }): Promise<void> {
+    const email = input.command.email.trim().toLowerCase();
+    const recentFailures = input.recentFailures ?? [];
+
+    await this.repository.recordLoginAttempt(
+      toLoginAttemptRecord({
+        email,
+        ipAddress: input.command.ipAddress,
+        occurredAt: input.occurredAt,
+        succeeded: false,
+      }),
+    );
+    await this.repository.recordAuthEvent(
+      toAuthEventRecord({
+        eventType: "failed_attempt",
+        ipAddress: input.command.ipAddress,
+        occurredAt: input.occurredAt,
+        userAgent: input.command.userAgent,
+        userId: input.user?.id,
+      }),
+    );
+
+    if (!input.user) {
+      return;
+    }
+
+    const failureCount = countRecentFailures(
+      recentFailures,
+      input.occurredAt,
+      this.policy,
+    );
+    const outcome = getFailedAttemptOutcome(
+      failureCount,
+      input.occurredAt,
+      this.policy,
+    );
+
+    if (!outcome.lockedUntil) {
+      return;
+    }
+
+    await this.repository.setLockout(input.user.id, outcome.lockedUntil);
+    await this.repository.recordAuthEvent(
+      toAuthEventRecord({
+        eventType: "lockout",
+        ipAddress: input.command.ipAddress,
+        occurredAt: input.occurredAt,
+        userAgent: input.command.userAgent,
+        userId: input.user.id,
+      }),
+    );
+  }
+}

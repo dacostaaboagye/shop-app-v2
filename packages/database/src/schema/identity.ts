@@ -6,6 +6,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -36,6 +37,7 @@ export const users = pgTable(
     status: userStatusEnum("status").default("active").notNull(),
     preferredPortal: varchar("preferred_portal", { length: 64 }),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+    lockedUntil: timestamp("locked_until", { withTimezone: true }),
     requiresPasswordChange: boolean("requires_password_change")
       .default(false)
       .notNull(),
@@ -61,7 +63,10 @@ export const refreshTokens = pgTable(
     ipAddress: varchar("ip_address", { length: 80 }),
     userAgent: text("user_agent"),
   },
-  (table) => [index("refresh_tokens_user_idx").on(table.userId)],
+  (table) => [
+    index("refresh_tokens_user_idx").on(table.userId),
+    uniqueIndex("refresh_tokens_token_hash_idx").on(table.tokenHash),
+  ],
 );
 
 export const passwordResetTokens = pgTable(

@@ -10,3 +10,6 @@ That choice is deliberate:
 
 Read the ADRs in this folder before altering repository structure, identity rules, or persistence patterns.
 
+Additional supporting documents:
+
+- `authentication-schema.md`: auth table structure and runtime mapping for `E-01-01`

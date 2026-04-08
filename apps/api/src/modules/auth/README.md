@@ -7,6 +7,13 @@ Owns:
 - password reset and email verification flows
 - account lockout policy
 - current-user profile operations
+- password verification and session issuance service boundaries
+- login and refresh route composition
+
+Session model:
+
+- access tokens are returned in the response body and intended for short-lived bearer use
+- refresh tokens are stored only as hashed server records and issued to the browser via an HTTP-only cookie
+- refresh and logout flows rotate or revoke the cookie-backed refresh token server-side
 
 Does not own permissions. Authorization decisions are delegated to the access-control module.
-

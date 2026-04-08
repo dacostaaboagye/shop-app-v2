@@ -1,13 +1,24 @@
+import { getApiEnv } from "./env.js";
+import { createDatabaseRuntime } from "./infrastructure/database.js";
+import { createAuthRuntime } from "./modules/auth/create-auth-runtime.js";
 import { createServer } from "./server/create-server.js";
 
-const server = createServer();
+const env = getApiEnv();
 
-const host = process.env.API_HOST ?? "0.0.0.0";
-const port = Number(process.env.API_PORT ?? "4000");
+if (!env.databaseUrl) {
+  throw new Error("DATABASE_URL must be configured.");
+}
+
+const databaseRuntime = createDatabaseRuntime(env.databaseUrl);
+const authRuntime = createAuthRuntime(databaseRuntime, env);
+const server = createServer({
+  accessControl: authRuntime.accessControl,
+  auth: authRuntime.auth,
+});
 
 try {
-  await server.listen({ host, port });
-  server.log.info(`API listening on http://${host}:${port}`);
+  await server.listen({ host: env.apiHost, port: env.apiPort });
+  server.log.info(`API listening on http://${env.apiHost}:${env.apiPort}`);
 } catch (error) {
   server.log.error(error);
   process.exit(1);
