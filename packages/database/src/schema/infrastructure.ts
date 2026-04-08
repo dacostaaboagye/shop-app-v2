@@ -1,9 +1,12 @@
+import { sql } from "drizzle-orm";
 import {
+  check,
   index,
   integer,
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -22,8 +25,19 @@ export const slugRedirects = pgTable(
       .notNull(),
   },
   (table) => [
-    index("slug_redirects_old_slug_idx").on(table.entityType, table.oldSlug),
+    uniqueIndex("slug_redirects_old_slug_unique").on(
+      table.entityType,
+      table.oldSlug,
+    ),
     index("slug_redirects_new_slug_idx").on(table.entityType, table.newSlug),
+    index("slug_redirects_entity_uuid_idx").on(
+      table.entityType,
+      table.entityUuid,
+    ),
+    check(
+      "slug_redirects_old_new_check",
+      sql`${table.oldSlug} <> ${table.newSlug}`,
+    ),
   ],
 );
 
