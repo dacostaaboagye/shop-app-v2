@@ -9,6 +9,7 @@ import {
   PasswordRegistrationService,
   type RegistrationRepository,
 } from "../src/modules/auth/registration.service.js";
+import type { SlugAllocator } from "../src/modules/public-identifiers/slug.service.js";
 
 describe("PasswordRegistrationService", () => {
   it("creates a user and issues a session", async () => {
@@ -57,12 +58,52 @@ describe("PasswordRegistrationService", () => {
       },
     );
   });
+
+  it("retries with a new slug after a slug conflict", async () => {
+    const harness = createHarness({
+      allocateSlug: async () =>
+        harness.state.allocatedSlugs.length === 0
+          ? "store-manager"
+          : "store-manager-2",
+      createUser: async (input) => {
+        if (input.slug === "store-manager") {
+          return { status: "slug_conflict" };
+        }
+
+        return {
+          status: "created",
+          user: createUserRecord({
+            email: input.email,
+            firstName: input.firstName,
+            lastName: input.lastName,
+            passwordHash: input.passwordHash,
+            slug: input.slug,
+          }),
+        };
+      },
+    });
+
+    const session = await harness.service.register({
+      email: "manager@example.com",
+      firstName: "Store",
+      lastName: "Manager",
+      password: "Password123!",
+    });
+
+    assert.deepEqual(harness.state.allocatedSlugs, [
+      "store-manager",
+      "store-manager-2",
+    ]);
+    assert.equal(session.user.slug, "store-manager-2");
+  });
 });
 
 function createHarness(input: {
+  allocateSlug?: SlugAllocator["allocateSlug"];
   createUser: RegistrationRepository["createUser"];
 }) {
   const state = {
+    allocatedSlugs: [] as string[],
     issuedSessions: [] as IssuedSession[],
   };
 
@@ -76,6 +117,15 @@ function createHarness(input: {
           const session = createSession(user);
           state.issuedSessions.push(session);
           return session;
+        },
+      },
+      {
+        async allocateSlug(command) {
+          const slug = input.allocateSlug
+            ? await input.allocateSlug(command)
+            : "store-manager";
+          state.allocatedSlugs.push(slug);
+          return slug;
         },
       },
       () => new Date("2026-04-08T12:00:00.000Z"),

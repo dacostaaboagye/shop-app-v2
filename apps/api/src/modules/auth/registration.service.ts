@@ -1,5 +1,5 @@
-import { randomBytes } from "node:crypto";
 import { AppError } from "../_core/errors/app-error.js";
+import type { SlugAllocator } from "../public-identifiers/slug.service.js";
 import type {
   AuthUserRecord,
   IssuedSession,
@@ -35,6 +35,7 @@ export class PasswordRegistrationService {
   constructor(
     private readonly repository: RegistrationRepository,
     private readonly sessionIssuer: SessionIssuer,
+    private readonly slugAllocator: SlugAllocator,
     private readonly now: () => Date = () => new Date(),
   ) {}
 
@@ -42,15 +43,20 @@ export class PasswordRegistrationService {
     const now = this.now();
     const normalizedEmail = command.email.trim().toLowerCase();
     const passwordHash = hashPassword(command.password);
+    const slugSource = `${command.firstName} ${command.lastName}`;
 
     for (let attempt = 0; attempt < 5; attempt += 1) {
+      const slug = await this.slugAllocator.allocateSlug({
+        entityType: "user",
+        value: slugSource,
+      });
       const creationResult = await this.repository.createUser({
         email: normalizedEmail,
         firstName: command.firstName.trim(),
         lastName: command.lastName.trim(),
         now,
         passwordHash,
-        slug: buildUserSlug(command.firstName, command.lastName),
+        slug,
       });
 
       switch (creationResult.status) {
@@ -69,22 +75,6 @@ export class PasswordRegistrationService {
 
     throw slugGenerationError();
   }
-}
-
-function buildUserSlug(firstName: string, lastName: string): string {
-  const namePart = [firstName, lastName]
-    .map((value) =>
-      value
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, ""),
-    )
-    .filter(Boolean)
-    .join("-");
-
-  const prefix = namePart || "user";
-  return `${prefix}-${randomBytes(2).toString("hex")}`;
 }
 
 function duplicateEmailError(): AppError {

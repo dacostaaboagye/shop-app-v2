@@ -9,7 +9,11 @@ import {
   permissions,
   rolePermissions,
   roles,
+  slugRedirects,
+  stockBalances,
   stockOwnershipEvents,
+  stockReservationStatusEnum,
+  stockReservations,
   userPermissionOverrides,
   userRoles,
   users,
@@ -25,7 +29,13 @@ assert.equal(
   "user_permission_overrides",
 );
 assert.equal(getTableName(permissionAuditLog), "permission_audit_log");
+assert.equal(getTableName(slugRedirects), "slug_redirects");
+assert.equal(getTableName(stockBalances), "stock_balances");
 assert.equal(getTableName(stockOwnershipEvents), "stock_ownership_events");
+assert.equal(getTableName(stockReservations), "stock_reservations");
+assert.ok(!("effectiveTo" in stockOwnershipEvents));
+assert.ok(!("productId" in stockOwnershipEvents));
+assert.ok("skuId" in stockOwnershipEvents);
 
 assert.deepEqual(permissionOverrideEffectEnum.enumValues, ["allow", "deny"]);
 assert.deepEqual(permissionAuditActionEnum.enumValues, [
@@ -34,11 +44,20 @@ assert.deepEqual(permissionAuditActionEnum.enumValues, [
   "override_set",
   "override_removed",
 ]);
+assert.deepEqual(stockReservationStatusEnum.enumValues, [
+  "active",
+  "confirmed",
+  "released",
+  "expired",
+  "cancelled",
+]);
 
 assert.equal(userPermissionOverrides.removedBy.name, "removed_by");
 assert.equal(userPermissionOverrides.removedReason.name, "removed_reason");
 assert.equal(permissionAuditLog.locationId.name, "location_id");
 assert.equal(permissionAuditLog.overrideEffect.name, "override_effect");
+assert.equal(stockBalances.skuId.name, "sku_id");
+assert.equal(stockReservations.sourceKey.name, "source_key");
 
 const migrationSql = readAllMigrationSql();
 
@@ -47,6 +66,26 @@ assert.match(migrationSql, /permission_audit_action/);
 assert.match(migrationSql, /role_permissions_role_permission_idx/);
 assert.match(migrationSql, /removed_by/);
 assert.match(migrationSql, /override_effect/);
+assert.match(migrationSql, /slug_redirects_old_slug_unique/);
+assert.match(migrationSql, /slug_redirects_old_new_check/);
+assert.match(migrationSql, /idx_ownership_resolution/);
+assert.match(migrationSql, /idx_ownership_chain/);
+assert.match(migrationSql, /idx_ownership_worker/);
+assert.match(migrationSql, /stock_reservation_status/);
+assert.match(migrationSql, /stock_balances_sku_location_unique/);
+assert.match(migrationSql, /stock_balances_reserved_lte_on_hand/);
+assert.match(migrationSql, /stock_reservations_active_source_unique/);
+assert.match(migrationSql, /stock_reservations_quantity_positive/);
+assert.match(migrationSql, /stock_reservations_expiry_after_create/);
+assert.match(
+  migrationSql,
+  /ALTER TABLE "stock_ownership_events" RENAME COLUMN "product_id" TO "sku_id"/,
+);
+assert.match(
+  migrationSql,
+  /ALTER TABLE "stock_ownership_events" DROP COLUMN "effective_to"/,
+);
+assert.match(migrationSql, /stock_ownership_events_quantity_positive/);
 
 console.log("database schema foundation assertions passed");
 

@@ -26,6 +26,7 @@ The first implementation accumulated architectural drift. This repo restarts fro
 - Public APIs expose slugs and reference numbers, not raw database IDs
 - Route-level authorization is mandatory for every protected API endpoint
 - Ownership, stock, and audit trails are append-only where the backlog requires immutability
+- Ownership ledger rows are true append-only records: no `effective_to` column, no row updates, corrections via compensating events only
 - Business rules live in services and domain modules, never inline in route handlers
 - Every backlog item must map back to acceptance criteria and definition-of-done evidence
 

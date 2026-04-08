@@ -3,6 +3,8 @@ import type { DatabaseRuntime } from "../../infrastructure/database.js";
 import { BasicUserRoleService } from "../access-control/basic-user-role.service.js";
 import { PermissionResolutionService } from "../access-control/permission-resolution.service.js";
 import { PostgresPermissionRepository } from "../access-control/postgres-permission.repository.js";
+import { PostgresSlugRepository } from "../public-identifiers/postgres-slug.repository.js";
+import { SlugService } from "../public-identifiers/slug.service.js";
 import { AccessTokenAuthenticationService } from "./access-token-authentication.service.js";
 import { PasswordAuthenticationService } from "./authentication.service.js";
 import { PostgresSessionRepository } from "./postgres-session.repository.js";
@@ -37,6 +39,9 @@ export function createAuthRuntime(
     databaseRuntime.pool,
     new BasicUserRoleService(),
   );
+  const slugService = new SlugService(
+    new PostgresSlugRepository(databaseRuntime.pool),
+  );
   const sessionService = new TokenSessionService(
     new PostgresSessionRepository(databaseRuntime.pool, userRepository),
     {
@@ -66,6 +71,7 @@ export function createAuthRuntime(
       registrationService: new PasswordRegistrationService(
         userRepository,
         sessionService,
+        slugService,
       ),
     },
     userAccessLifecycleService: new UserAccessLifecycleService(userRepository),
