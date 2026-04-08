@@ -1,0 +1,63 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import { AppError } from "../src/modules/_core/errors/app-error.js";
+import { createServer } from "../src/server/create-server.js";
+
+describe("error handling", () => {
+  it("returns structured problem details for unknown routes", async () => {
+    const server = createServer();
+    const response = await server.inject({ method: "GET", url: "/missing" });
+
+    const payload = response.json();
+
+    assert.equal(response.statusCode, 404);
+    assert.equal(payload.code, "not_found");
+    assert.equal(payload.status, 404);
+    assert.equal(payload.title, "Resource Not Found");
+    assert.equal(payload.detail, "No route matched GET /missing.");
+    assert.ok(payload.requestId);
+  });
+
+  it("returns generic 500 details for unexpected errors", async () => {
+    const server = createServer();
+
+    server.get("/boom", async () => {
+      throw new Error("database exploded");
+    });
+
+    const response = await server.inject({ method: "GET", url: "/boom" });
+
+    const payload = response.json();
+
+    assert.equal(response.statusCode, 500);
+    assert.equal(payload.code, "internal_error");
+    assert.equal(payload.status, 500);
+    assert.equal(payload.title, "Internal Server Error");
+    assert.equal(payload.detail, "An unexpected error occurred.");
+    assert.ok(payload.requestId);
+  });
+
+  it("preserves explicit domain errors", async () => {
+    const server = createServer();
+
+    server.get("/conflict", async () => {
+      throw new AppError({
+        code: "conflict",
+        statusCode: 409,
+        title: "Conflict",
+        detail: "The resource already exists.",
+      });
+    });
+
+    const response = await server.inject({ method: "GET", url: "/conflict" });
+
+    const payload = response.json();
+
+    assert.equal(response.statusCode, 409);
+    assert.equal(payload.code, "conflict");
+    assert.equal(payload.status, 409);
+    assert.equal(payload.title, "Conflict");
+    assert.equal(payload.detail, "The resource already exists.");
+    assert.ok(payload.requestId);
+  });
+});

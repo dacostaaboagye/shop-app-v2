@@ -1,0 +1,12 @@
+# Architecture
+
+The system is intentionally starting as a modular monolith.
+
+That choice is deliberate:
+
+- the backlog has heavy transactional coupling between permissions, ownership, reservations, sales, and deliveries
+- consistency matters more than independent deployment at this stage
+- modular boundaries inside one deployable unit are cheaper to enforce than a microservice mesh
+
+Read the ADRs in this folder before altering repository structure, identity rules, or persistence patterns.
+
