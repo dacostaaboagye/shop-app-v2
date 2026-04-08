@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import type { AuthSession } from "@shop/contracts";
 import { AppError } from "../src/modules/_core/errors/app-error.js";
 import {
   type AuthRepository,
   type AuthUserRecord,
+  type IssuedSession,
   PasswordAuthenticationService,
   type SessionIssuer,
 } from "../src/modules/auth/authentication.service.js";
@@ -112,7 +112,7 @@ function createHarness(input: {
 }) {
   const state = {
     events: [] as Array<{ eventType: string; userId?: string }>,
-    issuedSessions: [] as AuthSession[],
+    issuedSessions: [] as IssuedSession[],
     lockoutsCleared: [] as string[],
     lockoutsSet: [] as Array<{ lockedUntil: Date; userId: string }>,
     loginAttempts: [] as Array<{ email: string; succeeded: boolean }>,
@@ -161,7 +161,7 @@ function createHarness(input: {
   };
 }
 
-function createSession(user: AuthUserRecord): AuthSession {
+function createSession(user: AuthUserRecord): IssuedSession {
   return {
     accessToken: "a".repeat(64),
     accessTokenExpiresAt: new Date("2026-04-08T13:00:00.000Z").toISOString(),

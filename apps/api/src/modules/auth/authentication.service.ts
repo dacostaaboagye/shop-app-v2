@@ -8,8 +8,25 @@ import {
   getRemainingLockoutSeconds,
   isLockoutActive,
 } from "@shop/domain";
-import { AppError } from "../_core/errors/app-error.js";
+import {
+  type AuthEventRecord,
+  invalidCredentialsError,
+  type LoginAttemptRecord,
+  lockedAccountError,
+  type SessionContext,
+  toAuthEventRecord,
+  toLoginAttemptRecord,
+  toSessionContext,
+  unavailableAccountError,
+} from "./authentication-records.js";
 import { verifyPassword } from "./password-hash.js";
+
+export type { SessionContext } from "./authentication-records.js";
+
+export type IssuedSession = AuthSession & {
+  refreshToken: string;
+  refreshTokenExpiresAt: string;
+};
 
 export type AuthUserRecord = Omit<AuthUser, "lastLoginAt"> & {
   id: string;
@@ -25,21 +42,6 @@ export type LoginCommand = {
   userAgent?: string;
 };
 
-type LoginAttemptRecord = {
-  email: string;
-  ipAddress?: string;
-  occurredAt: Date;
-  succeeded: boolean;
-};
-
-type AuthEventRecord = {
-  eventType: "failed_attempt" | "lockout" | "login";
-  ipAddress?: string;
-  occurredAt: Date;
-  userAgent?: string;
-  userId?: string;
-};
-
 export interface AuthRepository {
   clearLockout(userId: string): Promise<void>;
   findUserByEmail(email: string): Promise<AuthUserRecord | null>;
@@ -51,7 +53,11 @@ export interface AuthRepository {
 }
 
 export interface SessionIssuer {
-  issueSession(user: AuthUserRecord, now: Date): Promise<AuthSession>;
+  issueSession(
+    user: AuthUserRecord,
+    now: Date,
+    context?: SessionContext,
+  ): Promise<IssuedSession>;
 }
 
 export class PasswordAuthenticationService {
@@ -62,7 +68,7 @@ export class PasswordAuthenticationService {
     private readonly policy: AuthLockoutPolicy = defaultAuthLockoutPolicy,
   ) {}
 
-  async login(command: LoginCommand): Promise<AuthSession> {
+  async login(command: LoginCommand): Promise<IssuedSession> {
     const now = this.now();
     const email = command.email.trim().toLowerCase();
     const user = await this.repository.findUserByEmail(email);
@@ -81,7 +87,9 @@ export class PasswordAuthenticationService {
     }
 
     if (isLockoutActive({ lockedUntil: user.lockedUntil, now })) {
-      throw lockedAccountError(user.lockedUntil, now);
+      throw lockedAccountError(
+        getRemainingLockoutSeconds({ lockedUntil: user.lockedUntil, now }),
+      );
     }
 
     const recentFailures = await this.repository.getRecentFailedAttemptTimes(
@@ -119,7 +127,11 @@ export class PasswordAuthenticationService {
       }),
     );
 
-    return this.sessionIssuer.issueSession(user, now);
+    return this.sessionIssuer.issueSession(
+      user,
+      now,
+      toSessionContext(command.ipAddress, command.userAgent),
+    );
   }
 
   private async recordFailedAttempt(input: {
@@ -179,64 +191,4 @@ export class PasswordAuthenticationService {
       }),
     );
   }
-}
-
-function invalidCredentialsError(): AppError {
-  return new AppError({
-    code: "unauthorized",
-    detail: "The email or password is incorrect.",
-    statusCode: 401,
-    title: "Invalid credentials",
-  });
-}
-
-function unavailableAccountError(detail: string): AppError {
-  return new AppError({
-    code: "forbidden",
-    detail,
-    statusCode: 403,
-    title: "Account unavailable",
-  });
-}
-
-function lockedAccountError(lockedUntil: Date | null, now: Date): AppError {
-  return new AppError({
-    code: "unauthorized",
-    detail: "Too many failed login attempts. Try again later.",
-    details: {
-      remainingLockoutSeconds: getRemainingLockoutSeconds({ lockedUntil, now }),
-    },
-    statusCode: 401,
-    title: "Account locked",
-  });
-}
-
-function toLoginAttemptRecord(input: {
-  email: string;
-  ipAddress: string | undefined;
-  occurredAt: Date;
-  succeeded: boolean;
-}): LoginAttemptRecord {
-  return {
-    email: input.email,
-    ...(input.ipAddress ? { ipAddress: input.ipAddress } : {}),
-    occurredAt: input.occurredAt,
-    succeeded: input.succeeded,
-  };
-}
-
-function toAuthEventRecord(input: {
-  eventType: "failed_attempt" | "lockout" | "login";
-  ipAddress: string | undefined;
-  occurredAt: Date;
-  userAgent: string | undefined;
-  userId: string | undefined;
-}): AuthEventRecord {
-  return {
-    eventType: input.eventType,
-    ...(input.ipAddress ? { ipAddress: input.ipAddress } : {}),
-    occurredAt: input.occurredAt,
-    ...(input.userAgent ? { userAgent: input.userAgent } : {}),
-    ...(input.userId ? { userId: input.userId } : {}),
-  };
 }

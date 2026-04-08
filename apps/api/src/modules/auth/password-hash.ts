@@ -1,30 +1,22 @@
-import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { compareSync, hashSync } from "bcryptjs";
 
-const SCRYPT_KEY_LENGTH = 64;
+export const PASSWORD_HASH_COST_FACTOR = 12;
 
 export function hashPassword(password: string): string {
-  const salt = randomBytes(16).toString("hex");
-  const digest = scryptSync(password, salt, SCRYPT_KEY_LENGTH).toString("hex");
-
-  return `scrypt$${salt}$${digest}`;
+  return hashSync(password, PASSWORD_HASH_COST_FACTOR);
 }
 
 export function verifyPassword(
   password: string,
   passwordHash: string,
 ): boolean {
-  const [algorithm, salt, storedDigest] = passwordHash.split("$");
-
-  if (algorithm !== "scrypt" || !salt || !storedDigest) {
+  if (!passwordHash.startsWith("$2")) {
     return false;
   }
 
-  const derivedDigest = scryptSync(password, salt, SCRYPT_KEY_LENGTH);
-  const storedBuffer = Buffer.from(storedDigest, "hex");
-
-  if (storedBuffer.length !== derivedDigest.length) {
+  try {
+    return compareSync(password, passwordHash);
+  } catch {
     return false;
   }
-
-  return timingSafeEqual(storedBuffer, derivedDigest);
 }

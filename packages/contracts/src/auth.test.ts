@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { authSessionSchema, loginRequestSchema } from "./auth.js";
+import {
+  authSessionSchema,
+  loginRequestSchema,
+  registerRequestSchema,
+} from "./auth.js";
 
 describe("auth contracts", () => {
   it("accepts a valid login request", () => {
@@ -16,8 +20,6 @@ describe("auth contracts", () => {
     const parsed = authSessionSchema.parse({
       accessToken: "a".repeat(64),
       accessTokenExpiresAt: new Date().toISOString(),
-      refreshToken: "b".repeat(64),
-      refreshTokenExpiresAt: new Date().toISOString(),
       user: {
         email: "manager@example.com",
         firstName: "Store",
@@ -31,5 +33,16 @@ describe("auth contracts", () => {
     });
 
     assert.equal(parsed.user.slug, "store-manager");
+  });
+
+  it("accepts a valid registration request", () => {
+    const parsed = registerRequestSchema.parse({
+      email: "manager@example.com",
+      firstName: "Store",
+      lastName: "Manager",
+      password: "Password123!",
+    });
+
+    assert.equal(parsed.firstName, "Store");
   });
 });
