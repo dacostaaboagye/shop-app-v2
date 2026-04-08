@@ -13,3 +13,4 @@ Read the ADRs in this folder before altering repository structure, identity rule
 Additional supporting documents:
 
 - `authentication-schema.md`: auth table structure and runtime mapping for `E-01-01`
+- `access-control-schema.md`: permission, role, override, and audit structure for `E-00D-01`

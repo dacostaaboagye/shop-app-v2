@@ -1,15 +1,29 @@
 import {
   boolean,
   index,
+  pgEnum,
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
 import { publicUuidColumn, slugColumn } from "./common.js";
 import { users } from "./identity.js";
 import { locations } from "./locations.js";
+
+export const permissionOverrideEffectEnum = pgEnum(
+  "permission_override_effect",
+  ["allow", "deny"],
+);
+
+export const permissionAuditActionEnum = pgEnum("permission_audit_action", [
+  "role_assigned",
+  "role_revoked",
+  "override_set",
+  "override_removed",
+]);
 
 export const permissions = pgTable(
   "permissions",
@@ -52,6 +66,10 @@ export const rolePermissions = pgTable(
   (table) => [
     index("role_permissions_role_idx").on(table.roleId),
     index("role_permissions_permission_idx").on(table.permissionId),
+    uniqueIndex("role_permissions_role_permission_idx").on(
+      table.roleId,
+      table.permissionId,
+    ),
   ],
 );
 
@@ -92,7 +110,7 @@ export const userPermissionOverrides = pgTable(
       .notNull()
       .references(() => permissions.id),
     locationId: uuid("location_id").references(() => locations.id),
-    effect: varchar("effect", { length: 16 }).notNull(),
+    effect: permissionOverrideEffectEnum("effect").notNull(),
     reason: text("reason").notNull(),
     setBy: uuid("set_by")
       .notNull()
@@ -100,11 +118,14 @@ export const userPermissionOverrides = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
+    removedBy: uuid("removed_by").references(() => users.id),
+    removedReason: text("removed_reason"),
     removedAt: timestamp("removed_at", { withTimezone: true }),
   },
   (table) => [
     index("user_permission_overrides_user_idx").on(table.userId),
     index("user_permission_overrides_permission_idx").on(table.permissionId),
+    index("user_permission_overrides_location_idx").on(table.locationId),
   ],
 );
 
@@ -118,13 +139,19 @@ export const permissionAuditLog = pgTable(
     targetUserId: uuid("target_user_id")
       .notNull()
       .references(() => users.id),
-    action: varchar("action", { length: 64 }).notNull(),
+    action: permissionAuditActionEnum("action").notNull(),
+    locationId: uuid("location_id").references(() => locations.id),
     permissionKey: varchar("permission_key", { length: 120 }),
     roleSlug: varchar("role_slug", { length: 120 }),
+    overrideEffect: permissionOverrideEffectEnum("override_effect"),
     reason: text("reason").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
-  (table) => [index("permission_audit_log_target_idx").on(table.targetUserId)],
+  (table) => [
+    index("permission_audit_log_actor_idx").on(table.actorId),
+    index("permission_audit_log_target_idx").on(table.targetUserId),
+    index("permission_audit_log_location_idx").on(table.locationId),
+  ],
 );
