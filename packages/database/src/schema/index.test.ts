@@ -3,6 +3,9 @@ import { readdirSync, readFileSync } from "node:fs";
 import { extname, resolve } from "node:path";
 import { getTableName } from "drizzle-orm";
 import {
+  deliveries,
+  deliveryItems,
+  deliveryStatusEnum,
   permissionAuditActionEnum,
   permissionAuditLog,
   permissionOverrideEffectEnum,
@@ -11,6 +14,8 @@ import {
   roles,
   slugRedirects,
   stockBalances,
+  stockMovements,
+  stockMovementTypeEnum,
   stockOwnershipEvents,
   stockReservationStatusEnum,
   stockReservations,
@@ -30,7 +35,10 @@ assert.equal(
 );
 assert.equal(getTableName(permissionAuditLog), "permission_audit_log");
 assert.equal(getTableName(slugRedirects), "slug_redirects");
+assert.equal(getTableName(deliveries), "deliveries");
+assert.equal(getTableName(deliveryItems), "delivery_items");
 assert.equal(getTableName(stockBalances), "stock_balances");
+assert.equal(getTableName(stockMovements), "stock_movements");
 assert.equal(getTableName(stockOwnershipEvents), "stock_ownership_events");
 assert.equal(getTableName(stockReservations), "stock_reservations");
 assert.ok(!("effectiveTo" in stockOwnershipEvents));
@@ -44,6 +52,13 @@ assert.deepEqual(permissionAuditActionEnum.enumValues, [
   "override_set",
   "override_removed",
 ]);
+assert.deepEqual(deliveryStatusEnum.enumValues, [
+  "draft",
+  "assigned",
+  "in_transit",
+  "completed",
+  "cancelled",
+]);
 assert.deepEqual(stockReservationStatusEnum.enumValues, [
   "active",
   "confirmed",
@@ -51,12 +66,23 @@ assert.deepEqual(stockReservationStatusEnum.enumValues, [
   "expired",
   "cancelled",
 ]);
+assert.deepEqual(stockMovementTypeEnum.enumValues, [
+  "sale",
+  "delivery_receipt",
+  "delivery_dispatch",
+  "transfer_in",
+  "transfer_out",
+  "manual_adjustment",
+]);
 
 assert.equal(userPermissionOverrides.removedBy.name, "removed_by");
 assert.equal(userPermissionOverrides.removedReason.name, "removed_reason");
 assert.equal(permissionAuditLog.locationId.name, "location_id");
 assert.equal(permissionAuditLog.overrideEffect.name, "override_effect");
+assert.equal(deliveries.originLocationId.name, "origin_location_id");
+assert.equal(deliveryItems.itemReference.name, "item_reference");
 assert.equal(stockBalances.skuId.name, "sku_id");
+assert.equal(stockMovements.quantityDelta.name, "quantity_delta");
 assert.equal(stockReservations.sourceKey.name, "source_key");
 
 const migrationSql = readAllMigrationSql();
@@ -68,12 +94,18 @@ assert.match(migrationSql, /removed_by/);
 assert.match(migrationSql, /override_effect/);
 assert.match(migrationSql, /slug_redirects_old_slug_unique/);
 assert.match(migrationSql, /slug_redirects_old_new_check/);
+assert.match(migrationSql, /delivery_status/);
+assert.match(migrationSql, /delivery_items_reference_unique/);
+assert.match(migrationSql, /delivery_items_quantity_positive/);
 assert.match(migrationSql, /idx_ownership_resolution/);
 assert.match(migrationSql, /idx_ownership_chain/);
 assert.match(migrationSql, /idx_ownership_worker/);
 assert.match(migrationSql, /stock_reservation_status/);
+assert.match(migrationSql, /stock_movement_type/);
 assert.match(migrationSql, /stock_balances_sku_location_unique/);
 assert.match(migrationSql, /stock_balances_reserved_lte_on_hand/);
+assert.match(migrationSql, /stock_movements_source_unique/);
+assert.match(migrationSql, /stock_movements_quantity_delta_nonzero/);
 assert.match(migrationSql, /stock_reservations_active_source_unique/);
 assert.match(migrationSql, /stock_reservations_quantity_positive/);
 assert.match(migrationSql, /stock_reservations_expiry_after_create/);

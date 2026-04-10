@@ -20,6 +20,9 @@ availability can compose on the same inventory identity.
   event is ever updated
 - `E-00A-04`: handover initiation, chaining, ending, and auto-revert are modeled
   as append-only event inserts
+- `E-00A-05`: sales attribution resolves the accountable worker from ownership
+  history at the sale timestamp and fails closed when no authoritative owner
+  exists
 
 ## Query rules
 
@@ -49,5 +52,6 @@ availability can compose on the same inventory identity.
 - service: `ownership-query.service.ts`
 - service: `ownership-event-write.service.ts`
 - service: `ownership-handover.service.ts`
+- service: `sales-attribution.service.ts`
 - postgres adapter: `postgres-ownership-query.repository.ts`
 - postgres adapters: `postgres-ownership-event.repository.ts`, `postgres-ownership-handover.repository.ts`

@@ -8,6 +8,7 @@ import type {
 
 const slugTableByEntityType: Record<SlugEntityType, string> = {
   location: "locations",
+  location_zone: "location_zones",
   role: "roles",
   user: "users",
 };

@@ -2,6 +2,7 @@ import {
   boolean,
   index,
   jsonb,
+  numeric,
   pgEnum,
   pgTable,
   text,
@@ -26,6 +27,9 @@ export const locations = pgTable(
     name: varchar("name", { length: 160 }).notNull(),
     type: locationTypeEnum("type").notNull(),
     address: jsonb("address"),
+    latitude: numeric("latitude", { precision: 10, scale: 8 }),
+    longitude: numeric("longitude", { precision: 11, scale: 8 }),
+    geoAddress: text("geo_address"),
     status: locationStatusEnum("status").default("active").notNull(),
     isFulfilmentEnabled: boolean("is_fulfilment_enabled")
       .default(false)

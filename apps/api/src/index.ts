@@ -1,5 +1,6 @@
 import { getApiEnv } from "./env.js";
 import { createDatabaseRuntime } from "./infrastructure/database.js";
+import { createAdminDirectoryRuntime } from "./modules/admin/create-admin-directory-runtime.js";
 import { createAuthRuntime } from "./modules/auth/create-auth-runtime.js";
 import { createServer } from "./server/create-server.js";
 
@@ -10,9 +11,15 @@ if (!env.databaseUrl) {
 }
 
 const databaseRuntime = createDatabaseRuntime(env.databaseUrl);
+const adminDirectoryRuntime = createAdminDirectoryRuntime(databaseRuntime);
 const authRuntime = createAuthRuntime(databaseRuntime, env);
 const server = createServer({
   accessControl: authRuntime.accessControl,
+  adminAccess: adminDirectoryRuntime.adminDirectory,
+  adminDirectory: adminDirectoryRuntime.adminDirectory,
+  adminLocationQuery: adminDirectoryRuntime.adminDirectory,
+  adminLocationWrite: adminDirectoryRuntime.adminDirectory,
+  adminUserAccess: adminDirectoryRuntime.adminDirectory,
   auth: authRuntime.auth,
 });
 

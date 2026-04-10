@@ -6,13 +6,26 @@ export const authUserStatusSchema = z.enum([
   "deactivated",
 ]);
 
+export const portalKeySchema = z.enum([
+  "admin",
+  "manager",
+  "worker",
+  "supplier",
+  "agent",
+]);
+
+export const updateProfileRequestSchema = z.object({
+  preferredPortal: portalKeySchema.nullable(),
+});
+
 export const authUserSchema = z.object({
   slug: z.string().min(1),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   email: z.email(),
   status: authUserStatusSchema,
-  preferredPortal: z.string().min(1).max(64).nullable(),
+  availablePortals: portalKeySchema.array().default([]),
+  preferredPortal: portalKeySchema.nullable(),
   lastLoginAt: z.iso.datetime().nullable(),
   requiresPasswordChange: z.boolean(),
 });
@@ -35,8 +48,15 @@ export const authSessionSchema = z.object({
   user: authUserSchema,
 });
 
+export const authPermissionSetSchema = z.object({
+  permissions: z.array(z.string().min(1)).default([]),
+});
+
 export type AuthSession = z.infer<typeof authSessionSchema>;
+export type AuthPermissionSet = z.infer<typeof authPermissionSetSchema>;
 export type AuthUser = z.infer<typeof authUserSchema>;
 export type AuthUserStatus = z.infer<typeof authUserStatusSchema>;
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
+export type PortalKey = z.infer<typeof portalKeySchema>;
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
+export type UpdateProfileRequest = z.infer<typeof updateProfileRequestSchema>;

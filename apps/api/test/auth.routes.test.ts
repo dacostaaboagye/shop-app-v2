@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { issueAccessToken } from "../src/modules/auth/access-token.js";
 import type { IssuedSession } from "../src/modules/auth/authentication.service.js";
 import { refreshTokenCookieName } from "../src/modules/auth/refresh-token-cookie.js";
 import { createServer } from "../src/server/create-server.js";
@@ -15,6 +16,21 @@ describe("auth routes", () => {
         },
         logoutSessionService: {
           async logout() {},
+        },
+        profileUpdateService: {
+          async updatePreferredPortal() {},
+        },
+        currentUserService: {
+          async getCurrentUser() {
+            return createSession("manager@example.com").user;
+          },
+        },
+        currentUserPermissionService: {
+          async getCurrentPermissions() {
+            return {
+              permissions: ["inventory.read", "users.view"],
+            };
+          },
         },
         refreshSessionService: {
           async refresh() {
@@ -61,8 +77,23 @@ describe("auth routes", () => {
             return createSession(command.email);
           },
         },
+        profileUpdateService: {
+          async updatePreferredPortal() {},
+        },
         logoutSessionService: {
           async logout() {},
+        },
+        currentUserService: {
+          async getCurrentUser() {
+            return createSession("manager@example.com").user;
+          },
+        },
+        currentUserPermissionService: {
+          async getCurrentPermissions() {
+            return {
+              permissions: ["inventory.read", "users.view"],
+            };
+          },
         },
         refreshSessionService: {
           async refresh() {
@@ -103,8 +134,23 @@ describe("auth routes", () => {
             return createSession(command.email);
           },
         },
+        profileUpdateService: {
+          async updatePreferredPortal() {},
+        },
         logoutSessionService: {
           async logout() {},
+        },
+        currentUserService: {
+          async getCurrentUser() {
+            return createSession("manager@example.com").user;
+          },
+        },
+        currentUserPermissionService: {
+          async getCurrentPermissions() {
+            return {
+              permissions: ["inventory.read", "users.view"],
+            };
+          },
         },
         refreshSessionService: {
           async refresh(command) {
@@ -146,9 +192,24 @@ describe("auth routes", () => {
             return createSession(command.email);
           },
         },
+        profileUpdateService: {
+          async updatePreferredPortal() {},
+        },
         logoutSessionService: {
           async logout(command) {
             receivedRefreshToken = command.refreshToken;
+          },
+        },
+        currentUserService: {
+          async getCurrentUser() {
+            return createSession("manager@example.com").user;
+          },
+        },
+        currentUserPermissionService: {
+          async getCurrentPermissions() {
+            return {
+              permissions: ["inventory.read", "users.view"],
+            };
           },
         },
         refreshSessionService: {
@@ -175,6 +236,177 @@ describe("auth routes", () => {
     );
   });
 
+  it("returns the current authenticated user for a valid bearer token", async () => {
+    const now = new Date("2026-04-08T12:00:00.000Z");
+    const server = createServer({
+      accessControl: {
+        accessTokenAuthenticationService: {
+          async authenticate(token) {
+            const { AccessTokenAuthenticationService } = await import(
+              "../src/modules/auth/access-token-authentication.service.js"
+            );
+
+            return new AccessTokenAuthenticationService(
+              {
+                async findUserById() {
+                  return {
+                    id: "usr_123",
+                    slug: "store-manager",
+                    status: "active",
+                  };
+                },
+              },
+              "development-access-secret",
+              () => now,
+            ).authenticate(token);
+          },
+        },
+      },
+      auth: {
+        authenticationService: {
+          async login(command) {
+            return createSession(command.email);
+          },
+        },
+        currentUserService: {
+          async getCurrentUser(userId) {
+            assert.equal(userId, "usr_123");
+            return createSession("manager@example.com").user;
+          },
+        },
+        currentUserPermissionService: {
+          async getCurrentPermissions(userId) {
+            assert.equal(userId, "usr_123");
+            return {
+              permissions: ["inventory.read", "users.view"],
+            };
+          },
+        },
+        profileUpdateService: {
+          async updatePreferredPortal() {},
+        },
+        logoutSessionService: {
+          async logout() {},
+        },
+        refreshSessionService: {
+          async refresh() {
+            return createSession("manager@example.com");
+          },
+        },
+        registrationService: {
+          async register(command) {
+            return createSession(command.email);
+          },
+        },
+      },
+    });
+
+    const response = await server.inject({
+      headers: {
+        authorization: `Bearer ${
+          issueAccessToken({
+            expiresInSeconds: 900,
+            now,
+            secret: "development-access-secret",
+            userId: "usr_123",
+            userSlug: "store-manager",
+          }).token
+        }`,
+      },
+      method: "GET",
+      url: "/api/auth/me",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().slug, "store-manager");
+  });
+
+  it("returns the current user's effective permissions for navigation", async () => {
+    const now = new Date("2026-04-08T12:00:00.000Z");
+    const server = createServer({
+      accessControl: {
+        accessTokenAuthenticationService: {
+          async authenticate(token) {
+            const { AccessTokenAuthenticationService } = await import(
+              "../src/modules/auth/access-token-authentication.service.js"
+            );
+
+            return new AccessTokenAuthenticationService(
+              {
+                async findUserById() {
+                  return {
+                    id: "usr_123",
+                    slug: "store-manager",
+                    status: "active",
+                  };
+                },
+              },
+              "development-access-secret",
+              () => now,
+            ).authenticate(token);
+          },
+        },
+      },
+      auth: {
+        authenticationService: {
+          async login(command) {
+            return createSession(command.email);
+          },
+        },
+        currentUserPermissionService: {
+          async getCurrentPermissions(userId) {
+            assert.equal(userId, "usr_123");
+            return {
+              permissions: ["inventory.read", "users.view"],
+            };
+          },
+        },
+        currentUserService: {
+          async getCurrentUser() {
+            return createSession("manager@example.com").user;
+          },
+        },
+        profileUpdateService: {
+          async updatePreferredPortal() {},
+        },
+        logoutSessionService: {
+          async logout() {},
+        },
+        refreshSessionService: {
+          async refresh() {
+            return createSession("manager@example.com");
+          },
+        },
+        registrationService: {
+          async register(command) {
+            return createSession(command.email);
+          },
+        },
+      },
+    });
+
+    const response = await server.inject({
+      headers: {
+        authorization: `Bearer ${
+          issueAccessToken({
+            expiresInSeconds: 900,
+            now,
+            secret: "development-access-secret",
+            userId: "usr_123",
+            userSlug: "store-manager",
+          }).token
+        }`,
+      },
+      method: "GET",
+      url: "/api/auth/me/permissions",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(response.json(), {
+      permissions: ["inventory.read", "users.view"],
+    });
+  });
+
   it("returns 503 when auth services are not configured", async () => {
     const server = createServer();
 
@@ -198,6 +430,7 @@ function createSession(email: string): IssuedSession {
     refreshToken: "b".repeat(64),
     refreshTokenExpiresAt: new Date("2026-04-15T12:00:00.000Z").toISOString(),
     user: {
+      availablePortals: ["admin"],
       email,
       firstName: "Store",
       lastLoginAt: null,

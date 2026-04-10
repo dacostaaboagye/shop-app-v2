@@ -95,6 +95,7 @@ describe("fetchJson", () => {
             accessToken: "b".repeat(64),
             accessTokenExpiresAt: "2026-04-08T13:00:00.000Z",
             user: {
+              availablePortals: ["admin"],
               email: "manager@example.com",
               firstName: "Store",
               lastLoginAt: null,
@@ -129,6 +130,7 @@ describe("fetchJson", () => {
       accessToken: "expired-token",
       accessTokenExpiresAt: "2026-04-08T12:00:00.000Z",
       user: {
+        availablePortals: ["admin"],
         email: "manager@example.com",
         firstName: "Store",
         lastLoginAt: null,

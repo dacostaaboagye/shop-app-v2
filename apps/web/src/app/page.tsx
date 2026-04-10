@@ -1,122 +1,121 @@
-import {
-  ArrowRight,
-  LayoutTemplate,
-  ShieldCheck,
-  Sparkles,
-} from "lucide-react";
+"use client";
+
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { LogOut, Package, ShieldCheck, Warehouse } from "lucide-react";
 import Link from "next/link";
-import { FoundationSnapshot } from "@/components/system/foundation-snapshot";
-import {
-  HeroPanel,
-  InsightCard,
-  PageShell,
-} from "@/components/system/page-shell";
 import { buttonVariants } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-
-const foundationPillars = [
-  "Immutable ownership ledger before attribution or reporting",
-  "Permission resolution service before protected feature APIs",
-  "Slug and reference infrastructure before external-facing routes",
-  "Row-level locking for reservation and stock mutations",
-  "CI guardrails that stop route and DTO drift",
-];
-
-const moduleBoundaries = [
-  "Identity and access control",
-  "Inventory ownership and accountability",
-  "Stock balances and reservations",
-  "Locations and physical topology",
-  "Catalog and supplier-scoped views",
-  "Deliveries and fulfillment",
-];
+import { logout } from "@/lib/auth/auth-client";
+import { getPortalHref, getPortalSelectionState } from "@/lib/portals";
+import { currentUserQueryKey } from "@/lib/react-query/auth";
+import { toRoute } from "@/lib/routes";
+import { cn } from "@/lib/utils";
+import { useAuthSessionStore } from "@/store/use-auth-session-store";
 
 export default function HomePage() {
+  const status = useAuthSessionStore((state) => state.status);
+  const user = useAuthSessionStore((state) => state.user);
+  const queryClient = useQueryClient();
+  const logoutMutation = useMutation({
+    mutationFn: logout,
+    onSuccess() {
+      queryClient.removeQueries({ queryKey: currentUserQueryKey });
+    },
+  });
+
+  const portalState = user ? getPortalSelectionState(user) : null;
+  const primaryPortal =
+    portalState?.preferredPortal ?? portalState?.availablePortals[0] ?? null;
+
   return (
-    <PageShell>
-      <HeroPanel
-        eyebrow="Frontend and Architecture Baseline"
-        title="Build the hard parts first."
-        description="The workbook is clear about the risk surface: ownership, permissions, stock reservations, and public identifiers are foundational. This v2 repo is structured to protect those decisions while giving future agents a reusable, opinionated frontend system."
-        badges={[
-          "Next 16 + shadcn base-nova",
-          "React Query + Zustand",
-          "TanStack Table + Form",
-          "Responsive by default",
-          "Structured error states",
-          "Design-token driven",
-        ]}
-        actions={
+    <main className="flex min-h-svh flex-col items-center justify-center px-4 py-16">
+      <div className="mb-10 flex flex-col items-center gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary">
+          <Warehouse className="h-5 w-5 text-primary-foreground" />
+        </div>
+        <span className="text-sm font-semibold text-foreground">Shop</span>
+      </div>
+
+      <h1 className="max-w-sm text-center text-3xl font-semibold tracking-tight">
+        Stock accountability, end to end.
+      </h1>
+      <p className="mt-3 max-w-xs text-center text-sm text-muted-foreground">
+        Track inventory ownership, manage reservations, and enforce access
+        across every warehouse and store.
+      </p>
+
+      <div className="mt-8 flex flex-wrap justify-center gap-3">
+        {status === "authenticated" && user ? (
           <>
-            <Link className={buttonVariants({ size: "lg" })} href="/login">
-              Explore the auth surface
-              <ArrowRight data-icon="inline-end" />
+            {primaryPortal ? (
+              <Link
+                className={buttonVariants({ size: "lg" })}
+                href={getPortalHref(primaryPortal)}
+              >
+                Open {primaryPortal}
+              </Link>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => void logoutMutation.mutateAsync()}
+              disabled={logoutMutation.isPending}
+              className={cn(
+                buttonVariants({ size: "lg", variant: "outline" }),
+                "cursor-pointer",
+              )}
+            >
+              Log out
+              <LogOut className="size-4" />
+            </button>
+          </>
+        ) : (
+          <>
+            <Link
+              className={buttonVariants({ size: "lg" })}
+              href={toRoute("/login")}
+            >
+              Sign in
             </Link>
             <Link
               className={buttonVariants({ size: "lg", variant: "outline" })}
-              href="/no-access"
+              href={toRoute("/register")}
             >
-              View no-access handling
+              Create account
             </Link>
           </>
-        }
-        aside={
-          <InsightCard
-            eyebrow="Design Direction"
-            title="Editorial warmth over generic SaaS polish"
-            description="The frontend baseline is intentionally calm, tactile, and operational."
-          >
-            <div className="flex flex-col gap-4">
-              <div className="flex items-start gap-3">
-                <Sparkles className="text-primary" />
-                <p className="support-copy text-sm">
-                  Shadcn gives us source-controlled primitives; house wrappers
-                  and tokens define the actual product language.
-                </p>
-              </div>
-              <Separator />
-              <div className="flex items-start gap-3">
-                <ShieldCheck className="text-primary" />
-                <p className="support-copy text-sm">
-                  Error, empty, and loading states are first-class parts of the
-                  UI contract.
-                </p>
-              </div>
+        )}
+      </div>
+
+      <div className="mt-16 w-full max-w-xl border border-border">
+        <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          <div className="flex items-start gap-3 bg-card px-5 py-4">
+            <Package className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div>
+              <p className="text-sm font-medium">Ownership tracking</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Every variant, every location.
+              </p>
             </div>
-          </InsightCard>
-        }
-      />
-
-      <section className="panel-grid">
-        <InsightCard
-          eyebrow="Execution Order"
-          title="Foundation tickets come first"
-          description="We build irreversible correctness before velocity."
-        >
-          <ol className="flex list-decimal flex-col gap-3 pl-5 text-sm text-muted-foreground">
-            {foundationPillars.map((pillar) => (
-              <li key={pillar}>{pillar}</li>
-            ))}
-          </ol>
-        </InsightCard>
-
-        <InsightCard
-          eyebrow="Module Map"
-          title="Boundaries are explicit"
-          description="Each frontend and backend area has a clear owner and extension point."
-        >
-          <ul className="flex flex-col gap-3 text-sm text-muted-foreground">
-            {moduleBoundaries.map((moduleName) => (
-              <li key={moduleName} className="flex items-start gap-3">
-                <LayoutTemplate className="text-primary" />
-                <span>{moduleName}</span>
-              </li>
-            ))}
-          </ul>
-        </InsightCard>
-      </section>
-
-      <FoundationSnapshot />
-    </PageShell>
+          </div>
+          <div className="flex items-start gap-3 bg-card px-5 py-4">
+            <Warehouse className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div>
+              <p className="text-sm font-medium">Live reservations</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Reserved on order, released on fulfilment.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 bg-card px-5 py-4">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div>
+              <p className="text-sm font-medium">Access control</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Server-checked, no client-side trust.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }

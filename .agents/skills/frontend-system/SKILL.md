@@ -29,6 +29,7 @@ Read `docs/frontend/design-system.md`, `docs/frontend/agent-rules.md`, and [refe
 - Compose from `apps/web/src/components/ui/*` first.
 - Use `apps/web/src/components/system/*` for page-level branded patterns.
 - Change `apps/web/src/app/globals.css` for token or shared visual-rule updates.
+- Keep shared surfaces visually taut. Default to restrained radii and reduce oversized rounded treatments unless there is a strong product reason.
 - Keep screens responsive at 320px, 375px, 768px, and desktop widths.
 
 ## Use the correct state owner
@@ -37,6 +38,27 @@ Read `docs/frontend/design-system.md`, `docs/frontend/agent-rules.md`, and [refe
 - Use `fetchJson` and the shared query client defaults unless a feature-specific wrapper is necessary.
 - Use Zustand only for client-only state such as density, drawers, local workflow steps, and unsaved UI preferences.
 - Do not duplicate server data into Zustand.
+
+## URL state — architectural requirement
+
+Every list page (filtered tables, search surfaces) MUST sync its state to the URL.
+
+- **Filters and search**: always write to URL via `router.replace`. Use `useSearchParams()` to read.
+- **Pagination**: always write the current page to `?page=N` (1-indexed). Omit `page` from the URL when it equals 1.
+- **Sorting**: write as `?sort=field&dir=asc` when active.
+- Use `router.replace` (not `push`) to avoid polluting browser history on every filter keystroke.
+- Pass `{ scroll: false }` on filter/sort changes to prevent scroll-to-top.
+- Debounce text search URL writes (300–400ms). Use a local `useState` for the input value; debounce the URL write via a `useRef` timer.
+- Discrete filters (selects, checkboxes) update the URL immediately on change.
+- Changing any filter MUST reset `page` to 1 (remove it from the URL).
+
+## Pagination — always server-side
+
+- Page components read `page`, `search`, and filter params from the URL.
+- They fetch (or simulate) the current page from the data source.
+- They pass `{ page, pageSize, totalCount, onPageChange }` to `AppDataTable`'s `pagination` prop.
+- `AppDataTable` renders consistent pagination controls from these props — no client-side slicing inside the table.
+- Client-side filtering (mock data, small static lists) MUST still follow this pattern so the swap to a real API requires only changing the data source, not the pagination or URL logic.
 
 ## Build forms and tables
 

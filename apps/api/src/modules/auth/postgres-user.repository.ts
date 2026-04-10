@@ -5,11 +5,9 @@ import type {
   AuthRepository,
   AuthUserRecord,
 } from "./authentication.service.js";
-import {
-  isUniqueViolation,
-  type UserRow,
-  userSelectSql,
-} from "./postgres-auth-user-row.js";
+import type { CurrentUserRepository } from "./current-user.service.js";
+import { isUniqueViolation, type UserRow } from "./postgres-auth-user-row.js";
+import { findUserRecord } from "./postgres-user-repository.support.js";
 import type { RegistrationRepository } from "./registration.service.js";
 import type { UserAccessLifecycleRepository } from "./user-access-lifecycle.service.js";
 
@@ -17,6 +15,7 @@ export class PostgresUserRepository
   implements
     AccessTokenUserRepository,
     AuthRepository,
+    CurrentUserRepository,
     RegistrationRepository,
     UserAccessLifecycleRepository
 {
@@ -64,6 +63,7 @@ export class PostgresUserRepository
             email,
             password_hash AS "passwordHash",
             status,
+            ARRAY[]::text[] AS "availablePortals",
             preferred_portal AS "preferredPortal",
             last_login_at AS "lastLoginAt",
             locked_until AS "lockedUntil",
@@ -124,11 +124,11 @@ export class PostgresUserRepository
   }
 
   async findUserByEmail(email: string): Promise<AuthUserRecord | null> {
-    return this.findUser("email = $1", [email]);
+    return findUserRecord(this.pool, "email = $1", [email]);
   }
 
   async findUserById(userId: string): Promise<AuthUserRecord | null> {
-    return this.findUser("id = $1", [userId]);
+    return findUserRecord(this.pool, "id = $1", [userId]);
   }
 
   async getRecentFailedAttemptTimes(
@@ -221,6 +221,16 @@ export class PostgresUserRepository
     );
   }
 
+  async updatePreferredPortal(
+    userId: string,
+    preferredPortal: string | null,
+  ): Promise<void> {
+    await this.pool.query(
+      `UPDATE users SET preferred_portal = $2, updated_at = NOW() WHERE id = $1`,
+      [userId, preferredPortal],
+    );
+  }
+
   async setLockout(userId: string, lockedUntil: Date): Promise<void> {
     await this.pool.query(
       `
@@ -230,17 +240,5 @@ export class PostgresUserRepository
       `,
       [userId, lockedUntil],
     );
-  }
-
-  private async findUser(
-    predicateSql: string,
-    values: unknown[],
-  ): Promise<AuthUserRecord | null> {
-    const result = await this.pool.query<UserRow>(
-      `${userSelectSql} WHERE ${predicateSql} LIMIT 1`,
-      values,
-    );
-
-    return result.rows[0] ?? null;
   }
 }

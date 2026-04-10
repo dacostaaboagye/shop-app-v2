@@ -1,6 +1,11 @@
 import { AppError } from "../_core/errors/app-error.js";
 
-export const slugEntityTypes = ["location", "role", "user"] as const;
+export const slugEntityTypes = [
+  "location",
+  "location_zone",
+  "role",
+  "user",
+] as const;
 
 export type SlugEntityType = (typeof slugEntityTypes)[number];
 

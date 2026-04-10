@@ -11,6 +11,7 @@ type AuthSessionState = {
   clearSession: () => void;
   setRefreshing: () => void;
   setSession: (session: AuthSession) => void;
+  setUser: (user: AuthUser) => void;
   status: AuthSessionStatus;
   user: AuthUser | null;
 };
@@ -36,6 +37,7 @@ export const useAuthSessionStore = createUiStore<AuthSessionState>((set) => ({
       status: "authenticated",
       user: session.user,
     }),
+  setUser: (user) => set({ user }),
   status: "anonymous",
   user: null,
 }));

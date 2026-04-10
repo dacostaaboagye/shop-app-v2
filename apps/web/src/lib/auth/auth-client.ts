@@ -2,6 +2,7 @@ import {
   type AuthSession,
   authSessionSchema,
   type LoginRequest,
+  type RegisterRequest,
 } from "@shop/contracts";
 import { parseProblemDetails } from "@/lib/errors/problem-details";
 import { ApiError } from "@/lib/react-query/query-client";
@@ -16,6 +17,17 @@ let refreshInFlight: Promise<AuthSession | null> | null = null;
 
 export async function login(input: LoginRequest): Promise<AuthSession> {
   const session = await requestAuthSession("/api/auth/login", {
+    body: input,
+    method: "POST",
+  });
+
+  useAuthSessionStore.getState().setSession(session);
+
+  return session;
+}
+
+export async function register(input: RegisterRequest): Promise<AuthSession> {
+  const session = await requestAuthSession("/api/auth/register", {
     body: input,
     method: "POST",
   });

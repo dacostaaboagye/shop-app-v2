@@ -5,7 +5,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "pnpm lint && pnpm typecheck && pnpm test",
-    "dev": "tsx watch src/index.ts",
+    "db:seed-access-control": "tsx --env-file ../../.env.local scripts/seed-access-control.ts",
+    "db:seed-admin": "tsx --env-file ../../.env.local scripts/seed-admin.ts",
+    "dev": "tsx watch --env-file ../../.env.local src/index.ts",
     "lint": "biome check src test",
     "predev": "pnpm --filter @shop/contracts build",
     "pretest": "pnpm --filter @shop/contracts build",

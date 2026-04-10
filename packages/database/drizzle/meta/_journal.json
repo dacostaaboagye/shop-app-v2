@@ -36,6 +36,20 @@
       "when": 1775643811810,
       "tag": "0004_thick_network",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1775655188367,
+      "tag": "0005_nifty_impossible_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1775656913068,
+      "tag": "0006_outstanding_blizzard",
+      "breakpoints": true
     }
   ]
 }

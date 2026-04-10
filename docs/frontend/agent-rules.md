@@ -26,6 +26,8 @@ Agents working on the frontend must follow these rules exactly.
 - No raw palette utility classes
 - No hardcoded hex values in `.tsx`
 - No `space-x-*` or `space-y-*`
+- Keep corners disciplined. Default to smaller radii and only use large rounded treatments when they add clear intent to the composition.
+- Prefer direct product language over editorial or manifesto-style copy.
 - Avoid perfectly symmetrical, template-looking dashboards unless the feature truly demands it
 - Use meaningful hierarchy: kicker, heading, support copy, action rail, content blocks
 

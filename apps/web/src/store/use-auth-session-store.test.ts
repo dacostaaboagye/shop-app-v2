@@ -10,6 +10,7 @@ describe("useAuthSessionStore", () => {
       accessToken: "a".repeat(64),
       accessTokenExpiresAt: "2026-04-08T13:00:00.000Z",
       user: {
+        availablePortals: ["admin"],
         email: "manager@example.com",
         firstName: "Store",
         lastLoginAt: null,

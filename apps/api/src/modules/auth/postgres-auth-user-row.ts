@@ -1,4 +1,7 @@
+import type { PortalKey } from "@shop/contracts";
+
 export type UserRow = {
+  availablePortals: PortalKey[];
   email: string;
   firstName: string;
   id: string;
@@ -6,7 +9,7 @@ export type UserRow = {
   lastName: string;
   lockedUntil: Date | null;
   passwordHash: string;
-  preferredPortal: string | null;
+  preferredPortal: PortalKey | null;
   requiresPasswordChange: boolean;
   slug: string;
   status: "active" | "deactivated" | "suspended";
@@ -21,6 +24,17 @@ export const userSelectSql = `
     email,
     password_hash AS "passwordHash",
     status,
+    COALESCE(
+      (
+        SELECT array_agg(DISTINCT roles.slug ORDER BY roles.slug)
+        FROM user_roles
+        INNER JOIN roles ON roles.id = user_roles.role_id
+        WHERE user_roles.user_id = users.id
+          AND user_roles.revoked_at IS NULL
+          AND roles.slug IN ('admin', 'manager', 'worker', 'supplier', 'agent')
+      ),
+      ARRAY[]::text[]
+    ) AS "availablePortals",
     preferred_portal AS "preferredPortal",
     last_login_at AS "lastLoginAt",
     locked_until AS "lockedUntil",

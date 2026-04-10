@@ -1,0 +1,47 @@
+import type { LucideIcon } from "lucide-react";
+import type { Route } from "next";
+
+type PathMatchMode = "exact" | "descendants";
+
+export type PortalPathMatcher = {
+  mode?: PathMatchMode;
+  path: string;
+};
+
+export type PortalNavItem = {
+  activeMatchers?: readonly PortalPathMatcher[];
+  description: string;
+  href: Route;
+  icon: LucideIcon;
+  label: string;
+  requiredPermission?: string;
+};
+
+export type PortalNavSection = {
+  items: PortalNavItem[];
+  title: string;
+};
+
+export type PortalNotification = {
+  body: string;
+  id: string;
+  timeLabel: string;
+  title: string;
+};
+
+export type ShellMeta = {
+  emptyNotificationCopy: string;
+  heading: string;
+  notifications: PortalNotification[];
+};
+
+export type NavRegistryEntry = {
+  activeMatchers?: readonly PortalPathMatcher[];
+  description: string;
+  href: Route;
+  icon: LucideIcon;
+  label: string;
+  requiredPermission: string;
+  section: string;
+  sidebar?: false;
+};

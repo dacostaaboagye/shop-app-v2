@@ -1,23 +1,17 @@
 "use client";
 
 import {
-  type ColumnDef,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
-  type Row,
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-import { type ReactNode, useState } from "react";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { useState } from "react";
+import { AppPagination } from "@/components/data-table/app-pagination";
+import { AppEmptyState } from "@/components/system/app-empty-state";
 import { Button } from "@/components/ui/button";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from "@/components/ui/empty";
 import {
   Table,
   TableBody,
@@ -28,33 +22,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import {
+  type AppDataTableProps,
+  getAlignmentClass,
+  getColumnMeta,
+  getNextSortingState,
+} from "./app-data-table.support";
 
-type AppDataTableColumnMeta = {
-  align?: "center" | "left" | "right";
-  className?: string;
-};
-
-type AppDataTableProps<TData> = {
-  caption?: string;
-  columns: Array<ColumnDef<TData, unknown>>;
-  data: TData[];
-  density?: "comfortable" | "compact";
-  emptyDescription: string;
-  emptyTitle: string;
-  getRowId?: (originalRow: TData, index: number, parent?: Row<TData>) => string;
-  toolbar?: ReactNode;
-};
-
-function getAlignmentClass(align?: AppDataTableColumnMeta["align"]) {
-  switch (align) {
-    case "center":
-      return "text-center";
-    case "right":
-      return "text-right";
-    default:
-      return "text-left";
-  }
-}
+export type { AppDataTableSort } from "./app-data-table.support";
 
 export function AppDataTable<TData>({
   caption,
@@ -62,20 +37,35 @@ export function AppDataTable<TData>({
   data,
   density = "comfortable",
   emptyDescription,
+  emptyState,
   emptyTitle,
   getRowId,
+  onRowClick,
+  onSortingChange,
+  pagination,
+  sorting,
   toolbar,
 }: AppDataTableProps<TData>) {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [internalSorting, setInternalSorting] = useState<SortingState>([]);
+  const controlledSortingState = sorting
+    ? [{ desc: sorting.direction === "desc", id: sorting.columnId }]
+    : [];
+  const sortingState = onSortingChange
+    ? controlledSortingState
+    : internalSorting;
 
   const tableOptions = {
     columns,
     data,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    onSortingChange: setSorting,
+    ...(onSortingChange
+      ? { manualSorting: true }
+      : {
+          getSortedRowModel: getSortedRowModel(),
+          onSortingChange: setInternalSorting,
+        }),
     state: {
-      sorting,
+      sorting: sortingState,
     },
   };
 
@@ -93,23 +83,18 @@ export function AppDataTable<TData>({
     <div className="flex flex-col gap-4">
       {toolbar ? (
         <div className="split-callout">
-          <div className="support-copy text-sm">
-            Shared wrapper for TanStack Table with the house empty-state and
-            sorting conventions.
-          </div>
+          <div />
           <div className="token-row">{toolbar}</div>
         </div>
       ) : null}
 
-      <Table className="rounded-xl border bg-card">
+      <Table className="rounded-lg border bg-card">
         {caption ? <TableCaption>{caption}</TableCaption> : null}
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
-                const meta = header.column.columnDef.meta as
-                  | AppDataTableColumnMeta
-                  | undefined;
+                const meta = getColumnMeta(header.column.columnDef.meta);
                 const label = header.isPlaceholder
                   ? null
                   : flexRender(
@@ -136,20 +121,33 @@ export function AppDataTable<TData>({
                     {header.column.getCanSort() ? (
                       <Button
                         className="h-auto px-0 text-inherit"
-                        onClick={header.column.getToggleSortingHandler()}
+                        onClick={
+                          onSortingChange
+                            ? () =>
+                                onSortingChange(
+                                  getNextSortingState(
+                                    header.column.id,
+                                    sortingState,
+                                  ),
+                                )
+                            : header.column.getToggleSortingHandler()
+                        }
                         size="sm"
                         type="button"
                         variant="ghost"
                       >
                         {label}
                         <span className="sr-only">{sortLabel}</span>
-                        <span aria-hidden="true">
-                          {sortDirection === "asc"
-                            ? "↑"
-                            : sortDirection === "desc"
-                              ? "↓"
-                              : "↕"}
-                        </span>
+                        {sortDirection === "asc" ? (
+                          <ArrowUp aria-hidden="true" className="size-3.5" />
+                        ) : sortDirection === "desc" ? (
+                          <ArrowDown aria-hidden="true" className="size-3.5" />
+                        ) : (
+                          <ArrowUpDown
+                            aria-hidden="true"
+                            className="size-3.5"
+                          />
+                        )}
                       </Button>
                     ) : (
                       label
@@ -163,11 +161,15 @@ export function AppDataTable<TData>({
         <TableBody>
           {table.getRowModel().rows.length ? (
             table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow
+                key={row.id}
+                className={onRowClick ? "cursor-pointer" : undefined}
+                onClick={
+                  onRowClick ? () => onRowClick(row.original) : undefined
+                }
+              >
                 {row.getVisibleCells().map((cell) => {
-                  const meta = cell.column.columnDef.meta as
-                    | AppDataTableColumnMeta
-                    | undefined;
+                  const meta = getColumnMeta(cell.column.columnDef.meta);
 
                   return (
                     <TableCell
@@ -190,21 +192,19 @@ export function AppDataTable<TData>({
           ) : (
             <TableRow>
               <TableCell className="py-8" colSpan={visibleColumnCount}>
-                <Empty className="border-border bg-muted/30">
-                  <EmptyHeader>
-                    <EmptyTitle>{emptyTitle}</EmptyTitle>
-                    <EmptyDescription>{emptyDescription}</EmptyDescription>
-                  </EmptyHeader>
-                  <EmptyContent>
-                    Populate this view through React Query and keep row state in
-                    TanStack Table rather than ad hoc arrays and booleans.
-                  </EmptyContent>
-                </Empty>
+                <AppEmptyState
+                  action={emptyState?.action}
+                  description={emptyState?.description ?? emptyDescription}
+                  title={emptyState?.title ?? emptyTitle}
+                  {...(emptyState?.kind ? { kind: emptyState.kind } : {})}
+                />
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
+
+      {pagination ? <AppPagination {...pagination} /> : null}
     </div>
   );
 }

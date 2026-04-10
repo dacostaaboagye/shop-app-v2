@@ -7,6 +7,8 @@ import { PostgresSlugRepository } from "../public-identifiers/postgres-slug.repo
 import { SlugService } from "../public-identifiers/slug.service.js";
 import { AccessTokenAuthenticationService } from "./access-token-authentication.service.js";
 import { PasswordAuthenticationService } from "./authentication.service.js";
+import { CurrentUserService } from "./current-user.service.js";
+import { CurrentUserPermissionService } from "./current-user-permission.service.js";
 import { PostgresSessionRepository } from "./postgres-session.repository.js";
 import { PostgresUserRepository } from "./postgres-user.repository.js";
 import { PasswordRegistrationService } from "./registration.service.js";
@@ -20,7 +22,10 @@ type AuthRuntime = {
   };
   auth: {
     authenticationService: PasswordAuthenticationService;
+    currentUserPermissionService: CurrentUserPermissionService;
+    currentUserService: CurrentUserService;
     logoutSessionService: TokenSessionService;
+    profileUpdateService: CurrentUserService;
     refreshSessionService: TokenSessionService;
     registrationService: PasswordRegistrationService;
   };
@@ -50,6 +55,9 @@ export function createAuthRuntime(
       refreshTokenTtlSeconds: env.authRefreshTokenTtlSeconds,
     },
   );
+  const permissionService = new PermissionResolutionService(
+    new PostgresPermissionRepository(databaseRuntime.pool),
+  );
 
   return {
     accessControl: {
@@ -57,16 +65,19 @@ export function createAuthRuntime(
         userRepository,
         env.authAccessTokenSecret,
       ),
-      permissionService: new PermissionResolutionService(
-        new PostgresPermissionRepository(databaseRuntime.pool),
-      ),
+      permissionService,
     },
     auth: {
       authenticationService: new PasswordAuthenticationService(
         userRepository,
         sessionService,
       ),
+      currentUserPermissionService: new CurrentUserPermissionService(
+        permissionService,
+      ),
+      currentUserService: new CurrentUserService(userRepository),
       logoutSessionService: sessionService,
+      profileUpdateService: new CurrentUserService(userRepository),
       refreshSessionService: sessionService,
       registrationService: new PasswordRegistrationService(
         userRepository,

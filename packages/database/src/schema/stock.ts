@@ -22,6 +22,15 @@ export const stockReservationStatusEnum = pgEnum("stock_reservation_status", [
   "cancelled",
 ]);
 
+export const stockMovementTypeEnum = pgEnum("stock_movement_type", [
+  "sale",
+  "delivery_receipt",
+  "delivery_dispatch",
+  "transfer_in",
+  "transfer_out",
+  "manual_adjustment",
+]);
+
 export const stockBalances = pgTable(
   "stock_balances",
   {
@@ -103,6 +112,43 @@ export const stockReservations = pgTable(
     check(
       "stock_reservations_expiry_after_create",
       sql`${table.expiresAt} IS NULL OR ${table.expiresAt} >= ${table.createdAt}`,
+    ),
+  ],
+);
+
+export const stockMovements = pgTable(
+  "stock_movements",
+  {
+    id: publicUuidColumn(),
+    skuId: uuid("sku_id").notNull(),
+    locationId: uuid("location_id")
+      .notNull()
+      .references(() => locations.id),
+    movementType: stockMovementTypeEnum("movement_type").notNull(),
+    sourceType: varchar("source_type", { length: 64 }).notNull(),
+    sourceKey: varchar("source_key", { length: 160 }).notNull(),
+    quantityDelta: integer("quantity_delta").notNull(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+    createdBy: uuid("created_by").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("stock_movements_sku_location_occurred_idx").on(
+      table.skuId,
+      table.locationId,
+      table.occurredAt,
+    ),
+    uniqueIndex("stock_movements_source_unique").on(
+      table.skuId,
+      table.locationId,
+      table.sourceType,
+      table.sourceKey,
+    ),
+    check(
+      "stock_movements_quantity_delta_nonzero",
+      sql`${table.quantityDelta} <> 0`,
     ),
   ],
 );

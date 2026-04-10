@@ -14,5 +14,6 @@ Additional supporting documents:
 
 - `authentication-schema.md`: auth table structure and runtime mapping for `E-01-01`
 - `access-control-schema.md`: permission, role, override, and audit structure for `E-00D-01`
+- `delivery-schema.md`: delivery and delivery-item tables for `E-00C-01`
 - `public-identifier-schema.md`: slug allocation and redirect retention for `E-00D-03`
 - `stock-schema.md`: stock balance and reservation tables for `E-00B-01`

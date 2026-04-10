@@ -21,6 +21,7 @@ describe("auth contracts", () => {
       accessToken: "a".repeat(64),
       accessTokenExpiresAt: new Date().toISOString(),
       user: {
+        availablePortals: ["admin"],
         email: "manager@example.com",
         firstName: "Store",
         lastLoginAt: null,
