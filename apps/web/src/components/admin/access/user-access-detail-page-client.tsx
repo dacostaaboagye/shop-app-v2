@@ -34,6 +34,10 @@ export function UserAccessDetailPageClient({ slug }: { slug: string }) {
     currentPermissionsQuery.data?.permissions.includes(
       "access.assignments.manage",
     ) ?? false;
+  const canManageMedia =
+    currentPermissionsQuery.data?.permissions.includes(
+      "catalog.media.manage",
+    ) ?? false;
 
   return (
     <PageShell>
@@ -59,6 +63,7 @@ export function UserAccessDetailPageClient({ slug }: { slug: string }) {
       ) : detailQuery.data ? (
         <UserAccessDetailBody
           canManage={canManage}
+          canManageMedia={canManageMedia}
           slug={slug}
           user={detailQuery.data}
         />

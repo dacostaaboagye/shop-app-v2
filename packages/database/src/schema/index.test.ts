@@ -3,13 +3,21 @@ import { readdirSync, readFileSync } from "node:fs";
 import { extname, resolve } from "node:path";
 import { getTableName } from "drizzle-orm";
 import {
+  catalogCategories,
+  catalogEntityStatusEnum,
+  catalogMediaAssignments,
+  catalogProductOptions,
+  catalogProductOptionValues,
+  catalogProducts,
   deliveries,
   deliveryItems,
   deliveryStatusEnum,
+  mediaAssets,
   permissionAuditActionEnum,
   permissionAuditLog,
   permissionOverrideEffectEnum,
   permissions,
+  productVariants,
   rolePermissions,
   roles,
   slugRedirects,
@@ -35,8 +43,11 @@ assert.equal(
 );
 assert.equal(getTableName(permissionAuditLog), "permission_audit_log");
 assert.equal(getTableName(slugRedirects), "slug_redirects");
+assert.equal(getTableName(catalogCategories), "catalog_categories");
+assert.equal(getTableName(catalogProducts), "catalog_products");
 assert.equal(getTableName(deliveries), "deliveries");
 assert.equal(getTableName(deliveryItems), "delivery_items");
+assert.equal(getTableName(productVariants), "product_variants");
 assert.equal(getTableName(stockBalances), "stock_balances");
 assert.equal(getTableName(stockMovements), "stock_movements");
 assert.equal(getTableName(stockOwnershipEvents), "stock_ownership_events");
@@ -46,6 +57,7 @@ assert.ok(!("productId" in stockOwnershipEvents));
 assert.ok("skuId" in stockOwnershipEvents);
 
 assert.deepEqual(permissionOverrideEffectEnum.enumValues, ["allow", "deny"]);
+assert.deepEqual(catalogEntityStatusEnum.enumValues, ["active", "archived"]);
 assert.deepEqual(permissionAuditActionEnum.enumValues, [
   "role_assigned",
   "role_revoked",
@@ -81,6 +93,23 @@ assert.equal(permissionAuditLog.locationId.name, "location_id");
 assert.equal(permissionAuditLog.overrideEffect.name, "override_effect");
 assert.equal(deliveries.originLocationId.name, "origin_location_id");
 assert.equal(deliveryItems.itemReference.name, "item_reference");
+assert.equal(catalogProducts.categoryId.name, "category_id");
+assert.equal(catalogProducts.features.name, "features");
+assert.equal(getTableName(catalogProductOptions), "catalog_product_options");
+assert.equal(
+  getTableName(catalogProductOptionValues),
+  "catalog_product_option_values",
+);
+assert.equal(catalogProductOptions.productId.name, "product_id");
+assert.equal(catalogProductOptionValues.optionId.name, "option_id");
+assert.equal(productVariants.unitOfMeasure.name, "unit_of_measure");
+assert.equal(getTableName(mediaAssets), "media_assets");
+assert.equal(
+  getTableName(catalogMediaAssignments),
+  "catalog_media_assignments",
+);
+assert.equal(catalogMediaAssignments.assetId.name, "asset_id");
+assert.equal(catalogMediaAssignments.entitySlug.name, "entity_slug");
 assert.equal(stockBalances.skuId.name, "sku_id");
 assert.equal(stockMovements.quantityDelta.name, "quantity_delta");
 assert.equal(stockReservations.sourceKey.name, "source_key");
@@ -94,6 +123,14 @@ assert.match(migrationSql, /removed_by/);
 assert.match(migrationSql, /override_effect/);
 assert.match(migrationSql, /slug_redirects_old_slug_unique/);
 assert.match(migrationSql, /slug_redirects_old_new_check/);
+assert.match(migrationSql, /catalog_entity_status/);
+assert.match(migrationSql, /catalog_categories_name_per_parent_unique/);
+assert.match(migrationSql, /product_variants_barcode_unique/);
+assert.match(migrationSql, /product_variants_default_per_product_unique/);
+assert.match(migrationSql, /product_variants_cost_price_nonnegative/);
+assert.match(migrationSql, /media_assets/);
+assert.match(migrationSql, /catalog_media_assignments/);
+assert.match(migrationSql, /catalog_media_assignments_primary_unique/);
 assert.match(migrationSql, /delivery_status/);
 assert.match(migrationSql, /delivery_items_reference_unique/);
 assert.match(migrationSql, /delivery_items_quantity_positive/);

@@ -32,7 +32,7 @@ export default function HomePage() {
         <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary">
           <Warehouse className="h-5 w-5 text-primary-foreground" />
         </div>
-        <span className="text-sm font-semibold text-foreground">Shop</span>
+        <span className="brand-wordmark text-foreground">Shop</span>
       </div>
 
       <h1 className="max-w-sm text-center text-3xl font-semibold tracking-tight">

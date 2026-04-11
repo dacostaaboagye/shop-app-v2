@@ -11,6 +11,11 @@ import {
   fetchAdminLocation,
   updateAdminLocation,
 } from "@/lib/react-query/admin-location-write";
+import {
+  currentUserPermissionsQueryKey,
+  fetchCurrentUserPermissions,
+} from "@/lib/react-query/auth";
+import { toast } from "@/lib/toast";
 import { LocationDetailView } from "./location-detail-view";
 
 const LOCATION_DETAIL_SKELETON_KEYS = [
@@ -27,6 +32,13 @@ export function LocationDetailPageClient({ slug }: { slug: string }) {
     queryFn: () => fetchAdminLocation(slug),
     queryKey: adminLocationQueryKey(slug),
   });
+  const permissionsQuery = useQuery({
+    queryFn: fetchCurrentUserPermissions,
+    queryKey: currentUserPermissionsQueryKey,
+  });
+  const canManageMedia =
+    permissionsQuery.data?.permissions.includes("catalog.media.manage") ??
+    false;
   const updateMutation = useMutation({
     mutationFn: (input: AdminUpdateLocationRequest) =>
       updateAdminLocation(slug, input),
@@ -37,6 +49,7 @@ export function LocationDetailPageClient({ slug }: { slug: string }) {
         queryKey: ["admin", "locations"],
       });
       setIsEditing(false);
+      toast.success("Location saved");
     },
   });
 
@@ -75,6 +88,7 @@ export function LocationDetailPageClient({ slug }: { slug: string }) {
 
   return (
     <LocationDetailView
+      canManageMedia={canManageMedia}
       error={updateMutation.isError ? updateMutation.error : null}
       isEditing={isEditing}
       isPending={updateMutation.isPending}

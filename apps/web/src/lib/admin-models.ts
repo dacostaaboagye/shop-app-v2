@@ -145,6 +145,22 @@ export const LOCATION_TYPE_META: Record<
   },
 };
 
+export type CatalogEntityStatus = "active" | "archived";
+
+export const CATALOG_STATUS_META: Record<
+  CatalogEntityStatus,
+  { className: string; label: string }
+> = {
+  active: {
+    className: BADGE_CLASS_NAMES.emphasis,
+    label: "Active",
+  },
+  archived: {
+    className: BADGE_CLASS_NAMES.muted,
+    label: "Archived",
+  },
+};
+
 export function deriveAvailablePortals(roles: readonly string[]): PortalKey[] {
   return STAFF_ROLE_KEYS.filter((role) => roles.includes(role));
 }

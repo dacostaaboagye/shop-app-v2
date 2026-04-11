@@ -29,6 +29,7 @@ import {
   deleteAdminLocationZone,
   fetchAdminLocationZones,
 } from "@/lib/react-query/admin-location-zones";
+import { toast } from "@/lib/toast";
 import { LocationZoneForm } from "./location-zone-form";
 
 export function LocationZonesPanel({ locationSlug }: { locationSlug: string }) {
@@ -51,6 +52,7 @@ export function LocationZonesPanel({ locationSlug }: { locationSlug: string }) {
       void queryClient.invalidateQueries({
         queryKey: adminLocationZonesQueryKey(locationSlug),
       });
+      toast.success("Zone deleted");
       setDeletingZone(null);
     },
   });
@@ -168,6 +170,7 @@ export function LocationZonesPanel({ locationSlug }: { locationSlug: string }) {
           void queryClient.invalidateQueries({
             queryKey: adminLocationZonesQueryKey(locationSlug),
           });
+          toast.success("Zone created");
         }}
       />
 
@@ -181,6 +184,7 @@ export function LocationZonesPanel({ locationSlug }: { locationSlug: string }) {
           void queryClient.invalidateQueries({
             queryKey: adminLocationZonesQueryKey(locationSlug),
           });
+          toast.success("Zone saved");
         }}
       />
 

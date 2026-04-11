@@ -36,12 +36,14 @@ import {
 } from "@/lib/admin-models";
 import { toRoute } from "@/lib/routes";
 import { cn } from "@/lib/utils";
+import { MediaPanel } from "../catalog/media/media-panel";
 import { LocationDetailMapCard } from "./location-detail-map-card";
 import { LocationDetailRow } from "./location-detail-row";
 import { LocationEditForm } from "./location-edit-form";
 import { LocationZonesPanel } from "./location-zones-panel";
 
 export function LocationDetailView({
+  canManageMedia,
   error,
   isEditing,
   isPending,
@@ -50,6 +52,7 @@ export function LocationDetailView({
   onStartEdit,
   onSubmit,
 }: {
+  canManageMedia: boolean;
   error: unknown;
   isEditing: boolean;
   isPending: boolean;
@@ -137,6 +140,7 @@ export function LocationDetailView({
           <TabsList className="w-fit">
             <TabsTrigger value="details">Details & Map</TabsTrigger>
             <TabsTrigger value="zones">Storage Zones</TabsTrigger>
+            <TabsTrigger value="media">Media</TabsTrigger>
           </TabsList>
 
           <TabsContent className="mt-0 flex flex-col gap-6" value="details">
@@ -227,6 +231,13 @@ export function LocationDetailView({
 
           <TabsContent className="mt-0" value="zones">
             <LocationZonesPanel locationSlug={location.slug} />
+          </TabsContent>
+          <TabsContent className="mt-0" value="media">
+            <MediaPanel
+              canManage={canManageMedia}
+              entitySlug={location.slug}
+              entityType="location"
+            />
           </TabsContent>
         </Tabs>
       )}

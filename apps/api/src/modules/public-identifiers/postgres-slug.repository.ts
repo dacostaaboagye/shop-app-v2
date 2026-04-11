@@ -7,8 +7,12 @@ import type {
 } from "./slug.service.js";
 
 const slugTableByEntityType: Record<SlugEntityType, string> = {
+  catalog_brand: "catalog_brands",
+  catalog_category: "catalog_categories",
+  catalog_product: "catalog_products",
   location: "locations",
   location_zone: "location_zones",
+  product_variant: "product_variants",
   role: "roles",
   user: "users",
 };

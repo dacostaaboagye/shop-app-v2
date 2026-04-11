@@ -173,6 +173,26 @@ export const PRIMARY_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     section: "Catalog",
   },
   {
+    activeMatchers: [{ mode: "descendants", path: "/admin/products/brands" }],
+    description: "Create and manage brand entities for the catalogue.",
+    href: toRoute("/admin/products/brands"),
+    icon: Store,
+    label: "Brands",
+    requiredPermission: "catalog.brands.manage",
+    section: "Catalog",
+  },
+  {
+    activeMatchers: [
+      { mode: "descendants", path: "/admin/products/categories" },
+    ],
+    description: "Create and manage product categories.",
+    href: toRoute("/admin/products/categories"),
+    icon: Boxes,
+    label: "Categories",
+    requiredPermission: "catalog.categories.manage",
+    section: "Catalog",
+  },
+  {
     activeMatchers: [
       { mode: "descendants", path: "/admin/stock/reservations" },
     ],

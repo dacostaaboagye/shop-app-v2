@@ -57,6 +57,6 @@ We are executing the workbook in dependency order. Foundation work comes first:
 2. Public identifiers and routing infrastructure
 3. Immutable stock ownership ledger
 4. Stock balance and reservation concurrency controls
-5. Locations, products, deliveries, and portal features on top of those primitives
+5. Locations, product-catalog foundations, deliveries, and portal features on top of those primitives
 
 Read [AGENTS.md](./AGENTS.md) before making changes.

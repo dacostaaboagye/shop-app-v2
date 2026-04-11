@@ -25,6 +25,7 @@ import {
   USER_STATUS_META,
 } from "@/lib/admin-models";
 import { toRoute } from "@/lib/routes";
+import { MediaPanel } from "../catalog/media/media-panel";
 import { ActivityTab, EffectiveAccessTab } from "./user-access-detail-tabs";
 import { ForcePasswordResetDialog } from "./user-access-force-password-reset-dialog";
 import { UpdateStatusDialog } from "./user-access-update-status-dialog";
@@ -36,10 +37,12 @@ type DialogState =
 
 export function UserAccessDetailBody({
   canManage,
+  canManageMedia,
   slug,
   user,
 }: {
   canManage: boolean;
+  canManageMedia: boolean;
   slug: string;
   user: AdminUserAccessDetail;
 }) {
@@ -170,6 +173,12 @@ export function UserAccessDetailBody({
           </div>
         </CardContent>
       </Card>
+
+      <MediaPanel
+        canManage={canManageMedia}
+        entitySlug={slug}
+        entityType="user"
+      />
 
       <Tabs defaultValue="effective">
         <TabsList variant="line">

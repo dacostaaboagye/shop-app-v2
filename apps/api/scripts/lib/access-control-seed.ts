@@ -75,6 +75,26 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
     description: "View the admin catalogue management surface.",
   },
   {
+    key: "catalog.brands.manage",
+    description: "Create and update catalog brands.",
+  },
+  {
+    key: "catalog.categories.manage",
+    description: "Create and update product categories.",
+  },
+  {
+    key: "catalog.cost_price.view",
+    description: "View cost price on catalog variants.",
+  },
+  {
+    key: "catalog.products.manage",
+    description: "Create, update, and archive catalog products and variants.",
+  },
+  {
+    key: "catalog.media.manage",
+    description: "Upload, reorder, and delete media for catalog entities.",
+  },
+  {
     key: "inventory.read",
     description: "Read inventory and reservation administrative data.",
   },
@@ -152,6 +172,11 @@ const SYSTEM_ROLES: readonly SystemRole[] = [
       "access.assignments.manage",
       "access.users.view",
       "catalog.view",
+      "catalog.brands.manage",
+      "catalog.categories.manage",
+      "catalog.cost_price.view",
+      "catalog.products.manage",
+      "catalog.media.manage",
       "inventory.read",
       "orders.view",
       "deliveries.view",

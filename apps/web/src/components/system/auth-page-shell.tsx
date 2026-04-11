@@ -19,7 +19,7 @@ export function AuthPageShell({ children }: AuthPageShellProps) {
           >
             <Warehouse className="h-5 w-5 text-primary-foreground" />
           </Link>
-          <span className="text-sm font-semibold text-foreground">Shop</span>
+          <span className="brand-wordmark text-foreground">Shop</span>
         </div>
 
         {children}

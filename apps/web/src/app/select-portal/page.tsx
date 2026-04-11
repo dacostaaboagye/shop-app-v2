@@ -108,7 +108,7 @@ export default function SelectPortalPage() {
           >
             <Warehouse className="h-5 w-5 text-primary-foreground" />
           </Link>
-          <span className="text-sm font-semibold text-foreground">Shop</span>
+          <span className="brand-wordmark text-foreground">Shop</span>
         </div>
 
         <div className="mb-8 text-center">

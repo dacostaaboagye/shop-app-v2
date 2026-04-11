@@ -50,6 +50,34 @@
       "when": 1775656913068,
       "tag": "0006_outstanding_blizzard",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1775854123069,
+      "tag": "0007_clean_rogue",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1775856061961,
+      "tag": "0008_known_mephistopheles",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1775895585808,
+      "tag": "0009_pretty_praxagora",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1775918361982,
+      "tag": "0010_silly_celestials",
+      "breakpoints": true
     }
   ]
 }

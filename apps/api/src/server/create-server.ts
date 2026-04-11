@@ -9,6 +9,11 @@ import { registerAdminLocationQueryRoutes } from "../modules/admin/admin-locatio
 import { registerAdminLocationWriteRoutes } from "../modules/admin/admin-location-write.routes.js";
 import { registerAdminUserAccessRoutes } from "../modules/admin/admin-user-access.routes.js";
 import { registerAuthRoutes } from "../modules/auth/auth.routes.js";
+import { registerCatalogProductOptionsRoutes } from "../modules/catalog/catalog-admin-product-options.routes.js";
+import { registerCatalogAdminQueryRoutes } from "../modules/catalog/catalog-admin-query.routes.js";
+import { registerCatalogAdminWriteRoutes } from "../modules/catalog/catalog-admin-write.routes.js";
+import { registerCatalogBrandRoutes } from "../modules/catalog/catalog-brand.routes.js";
+import { registerCatalogMediaRoutes } from "../modules/catalog/catalog-media.routes.js";
 import { registerStockRoutes } from "../modules/stock/active-reservation-admin.routes.js";
 import { registerHealthRoutes } from "../modules/system/health/health.routes.js";
 import { registerErrorHandling } from "./register-error-handling.js";
@@ -21,6 +26,13 @@ type CreateServerOptions = {
   adminLocationWrite?: Parameters<typeof registerAdminLocationWriteRoutes>[1];
   adminUserAccess?: Parameters<typeof registerAdminUserAccessRoutes>[1];
   auth?: Parameters<typeof registerAuthRoutes>[1];
+  catalogBrands?: Parameters<typeof registerCatalogBrandRoutes>[1];
+  catalogMedia?: Parameters<typeof registerCatalogMediaRoutes>[1];
+  catalogProductOptions?: Parameters<
+    typeof registerCatalogProductOptionsRoutes
+  >[1];
+  catalogQuery?: Parameters<typeof registerCatalogAdminQueryRoutes>[1];
+  catalogWrite?: Parameters<typeof registerCatalogAdminWriteRoutes>[1];
   stock?: Parameters<typeof registerStockRoutes>[1];
 };
 
@@ -52,6 +64,11 @@ export function createServer(options: CreateServerOptions = {}) {
   registerAdminLocationQueryRoutes(server, options.adminLocationQuery);
   registerAdminLocationWriteRoutes(server, options.adminLocationWrite);
   registerAdminUserAccessRoutes(server, options.adminUserAccess);
+  registerCatalogBrandRoutes(server, options.catalogBrands);
+  registerCatalogMediaRoutes(server, options.catalogMedia);
+  registerCatalogAdminQueryRoutes(server, options.catalogQuery);
+  registerCatalogAdminWriteRoutes(server, options.catalogWrite);
+  registerCatalogProductOptionsRoutes(server, options.catalogProductOptions);
   registerStockRoutes(server, options.stock);
   registerHealthRoutes(server);
 

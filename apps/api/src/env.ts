@@ -9,6 +9,11 @@ export type ApiEnv = {
   authRefreshTokenTtlSeconds: number;
   databaseUrl?: string;
   nodeEnv: NodeEnv;
+  r2AccountId?: string;
+  r2AccessKeyId?: string;
+  r2Bucket?: string;
+  r2PublicUrl?: string;
+  r2SecretAccessKey?: string;
   webBaseUrl?: string;
 };
 
@@ -18,6 +23,11 @@ export function getApiEnv(): ApiEnv {
   const nodeEnv = readNodeEnv();
   const configuredCookieSecurity = readBooleanEnv("AUTH_COOKIE_SECURE");
   const webBaseUrl = readStringEnv("WEB_BASE_URL");
+  const r2AccountId = readStringEnv("R2_ACCOUNT_ID");
+  const r2AccessKeyId = readStringEnv("R2_ACCESS_KEY_ID");
+  const r2SecretAccessKey = readStringEnv("R2_SECRET_ACCESS_KEY");
+  const r2Bucket = readStringEnv("R2_BUCKET");
+  const r2PublicUrl = readStringEnv("R2_PUBLIC_URL");
 
   return {
     apiHost: readStringEnv("API_HOST") ?? "0.0.0.0",
@@ -30,6 +40,11 @@ export function getApiEnv(): ApiEnv {
     ...(authAccessTokenSecret ? { authAccessTokenSecret } : {}),
     ...(databaseUrl ? { databaseUrl } : {}),
     nodeEnv,
+    ...(r2AccountId ? { r2AccountId } : {}),
+    ...(r2AccessKeyId ? { r2AccessKeyId } : {}),
+    ...(r2SecretAccessKey ? { r2SecretAccessKey } : {}),
+    ...(r2Bucket ? { r2Bucket } : {}),
+    ...(r2PublicUrl ? { r2PublicUrl } : {}),
     ...(webBaseUrl ? { webBaseUrl } : {}),
   };
 }

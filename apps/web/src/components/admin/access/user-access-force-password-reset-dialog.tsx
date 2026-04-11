@@ -20,6 +20,7 @@ import {
   adminUserAccessDetailQueryKey,
   forceAdminUserPasswordReset,
 } from "@/lib/react-query/admin-user-access";
+import { toast } from "@/lib/toast";
 
 export function ForcePasswordResetDialog({
   onClose,
@@ -38,6 +39,7 @@ export function ForcePasswordResetDialog({
       void queryClient.invalidateQueries({
         queryKey: adminUserAccessDetailQueryKey(slug),
       });
+      toast.success("Password reset forced");
       onClose();
     },
   });

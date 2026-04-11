@@ -21,6 +21,7 @@ import {
   adminUserAccessDetailQueryKey,
   updateAdminUserStatus,
 } from "@/lib/react-query/admin-user-access";
+import { toast } from "@/lib/toast";
 
 const USER_STATUS_OPTIONS = [
   { label: "Active", value: "active" },
@@ -50,6 +51,7 @@ export function UpdateStatusDialog({
       void queryClient.invalidateQueries({
         queryKey: adminUserAccessDetailQueryKey(slug),
       });
+      toast.success("Status updated");
       onClose();
     },
   });

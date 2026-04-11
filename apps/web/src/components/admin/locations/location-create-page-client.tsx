@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { createAdminLocation } from "@/lib/react-query/admin-location-write";
 import { toRoute } from "@/lib/routes";
+import { toast } from "@/lib/toast";
 import {
   DEFAULT_LOCATION_CREATE_VALUES,
   toCreateLocationRequest,
@@ -38,6 +39,7 @@ export function LocationCreatePageClient() {
     mutationFn: createAdminLocation,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin", "locations"] });
+      toast.success("Location created");
       router.push(toRoute("/admin/locations"));
     },
   });

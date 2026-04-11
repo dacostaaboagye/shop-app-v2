@@ -23,6 +23,7 @@ import {
   revokeAdminUserRole,
   setAdminUserPermissionOverride,
 } from "@/lib/react-query/admin-user-access";
+import { toast } from "@/lib/toast";
 import {
   getDialogMeta,
   type ReasonDialogState,
@@ -85,6 +86,7 @@ export function UserAccessManageReasonDialog({
       void queryClient.invalidateQueries({
         queryKey: adminUserAccessDetailQueryKey(slug),
       });
+      toast.success("Access updated");
       form.reset();
       onClose();
     },

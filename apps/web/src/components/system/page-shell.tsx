@@ -146,7 +146,7 @@ type StatCardProps = {
   description?: string;
   icon: LucideIcon;
   label: string;
-  value: number | string;
+  value: ReactNode;
 };
 
 export function StatCard({

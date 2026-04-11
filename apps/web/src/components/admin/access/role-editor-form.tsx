@@ -20,6 +20,7 @@ import {
   updateAdminRole,
 } from "@/lib/react-query/admin-access";
 import { toRoute } from "@/lib/routes";
+import { toast } from "@/lib/toast";
 import { RolePermissionSelector } from "./role-permission-selector";
 
 type RoleEditorFormProps = {
@@ -71,6 +72,7 @@ export function RoleEditorForm({
         queryKey: adminRoleDetailQueryKey(role.slug),
       });
 
+      toast.success(mode === "create" ? "Role created" : "Role saved");
       if (mode === "create") {
         router.push(toRoute(`/admin/access/roles/${role.slug}`));
       }
@@ -83,8 +85,8 @@ export function RoleEditorForm({
       await roleMutation.mutateAsync({
         description: value.description.trim(),
         name: value.name.trim(),
-        permissionKeys: [...new Set(value.permissionKeys)].sort((left, right) =>
-          left.localeCompare(right),
+        permissionKeys: [...new Set(value.permissionKeys)].sort((a, b) =>
+          a.localeCompare(b),
         ),
       });
     },
@@ -113,7 +115,9 @@ export function RoleEditorForm({
         <Alert variant="destructive">
           <AlertTitle>Unable to save role</AlertTitle>
           <AlertDescription>
-            {getErrorMessage(roleMutation.error)}
+            {roleMutation.error instanceof Error
+              ? roleMutation.error.message
+              : "Failed to save role."}
           </AlertDescription>
         </Alert>
       ) : null}
@@ -241,8 +245,4 @@ export function RoleEditorForm({
       </form.Subscribe>
     </form>
   );
-}
-
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Failed to save role.";
 }

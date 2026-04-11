@@ -45,17 +45,28 @@ Inventory interpretation used in this repo:
   developer enforcement tooling
 - `E-01-*`: login, portal, and admin surfaces once the backend primitives exist
 
+## Current execution priority
+
+- foundation auth, access, ownership, stock runtime, and location/admin shells
+  are already substantially ahead of the original repo summary
+- the next implementation focus is `E-03-01` product-catalog foundation so the
+  system can stop treating catalog work as placeholder screens
+- delivery runtime tickets `E-00C-02` to `E-00C-05` remain open, but they are
+  no longer the immediate next slice
+
 ## Current repository reading
 
-- auth, access-control, slug infrastructure, and base schema foundations are in
-  place
-- inventory ownership foundations through assignment and handover writers are in
-  place and now use SKU-based identity
-- stock schema foundation is in place, but stock query, reservation lifecycle,
-  expiry, and adjustment runtimes are still open
-- delivery, catalog, and notification runtimes are still scaffolds
-- frontend currently provides foundation screens and shared system wrappers,
-  not the full portal backlog
+- auth, access-control, slug infrastructure, and reference-number infrastructure
+  are in place
+- inventory ownership foundations through sales attribution are in place and use
+  SKU-based identity
+- stock balance, availability, reservation lifecycle, expiry, movement sync,
+  and active-reservation admin API are in place
+- delivery persistence exists, but delivery runtime remains a scaffold
+- admin access, user-directory, location-management, and portal-shell work are
+  materially underway
+- catalog runtime is still largely absent, making product-catalog work the most
+  valuable next backend and admin-surface investment
 
 ## Current backlog reality
 
