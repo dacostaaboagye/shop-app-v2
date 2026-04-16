@@ -1,112 +1,92 @@
-import type { AdminBrandListQuery, AdminBrandSummary } from "@shop/contracts";
-import type { Pool } from "pg";
+import {
+  AdminBrandListQuery,
+  AdminBrandSummary,
+  CatalogEntityStatus,
+} from "@shop/contracts";
+import { catalogBrands } from "@shop/database";
+import { and, asc, desc, ilike } from "drizzle-orm";
+import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { CatalogBrandQueryRepository } from "./catalog-brand-query.service.js";
-
-type BrandRow = Omit<AdminBrandSummary, "createdAt" | "primaryImageUrl"> & {
-  createdAt: Date;
-  primaryImageUrl: string | null;
-};
-
-const MEDIA_JOIN = `
-  LEFT JOIN catalog_media_assignments cma_img
-    ON cma_img.entity_type = 'brand'
-    AND cma_img.entity_slug = b.slug
-    AND cma_img.is_primary = true
-  LEFT JOIN media_assets ma_img ON ma_img.id = cma_img.asset_id
-`;
 
 export class PostgresCatalogBrandQueryRepository
   implements CatalogBrandQueryRepository
 {
-  constructor(private readonly pool: Pick<Pool, "query">) {}
+  constructor(private readonly db: ApiDatabase) {}
 
   async getBrand(slug: string): Promise<AdminBrandSummary | null> {
-    const result = await this.pool.query<BrandRow>(
-      `
-        SELECT
-          b.slug,
-          b.name,
-          b.description,
-          b.website,
-          b.status,
-          b.created_at AS "createdAt",
-          ma_img.public_url AS "primaryImageUrl"
-        FROM catalog_brands b
-        ${MEDIA_JOIN}
-        WHERE b.slug = $1
-      `,
-      [slug],
-    );
+    const brand = await this.db.query.catalogBrands.findFirst({
+      where: (r, { eq }) => eq(r.slug, slug),
+      with: {
+        mediaAssignments: {
+          where: (ma, { and, eq }) =>
+            and(eq(ma.entityType, "brand"), eq(ma.isPrimary, true)),
+          with: {
+            asset: true,
+          },
+        },
+      },
+    });
 
-    const row = result.rows[0];
-    if (!row) return null;
-    return toBrand(row);
+    if (!brand) return null;
+
+    return {
+      slug: brand.slug,
+      name: brand.name,
+      description: brand.description,
+      website: brand.website,
+      status: brand.status,
+      createdAt: brand.createdAt.toISOString(),
+      primaryImageUrl: brand.mediaAssignments[0]?.asset?.publicUrl ?? null,
+    };
   }
 
   async listBrands(input: AdminBrandListQuery) {
-    const query = input.q.trim();
-    const offset = (input.page - 1) * input.pageSize;
-    const filterValues = [
-      query.length > 0,
-      `%${query}%`,
-      input.status !== "all",
-      input.status === "all" ? null : input.status,
-    ];
+    const { page, pageSize, q, status, sort, dir } = input;
+    const offset = (page - 1) * pageSize;
 
-    const countResult = await this.pool.query<{ count: string }>(
-      `
-        SELECT COUNT(*)::text AS count
-        FROM catalog_brands b
-        WHERE ($1::boolean = false OR b.name ILIKE $2)
-          AND ($3::boolean = false OR b.status = $4)
-      `,
-      filterValues,
-    );
-
-    const result = await this.pool.query<BrandRow>(
-      `
-        SELECT
-          b.slug,
-          b.name,
-          b.description,
-          b.website,
-          b.status,
-          b.created_at AS "createdAt",
-          ma_img.public_url AS "primaryImageUrl"
-        FROM catalog_brands b
-        ${MEDIA_JOIN}
-        WHERE ($1::boolean = false OR b.name ILIKE $2)
-          AND ($3::boolean = false OR b.status = $4)
-        ORDER BY ${getBrandSortClause(input)}
-        LIMIT $5 OFFSET $6
-      `,
-      [...filterValues, input.pageSize, offset],
-    );
+    const [totalCountResult, rows] = await Promise.all([
+      this.db.query.catalogBrands.findMany({
+        where: (r, { and, ilike, eq }) =>
+          and(
+            q.trim() ? ilike(r.name, `%${q.trim()}%`) : undefined,
+            status !== "all" ? eq(r.status, status as CatalogEntityStatus) : undefined,
+          ),
+      }),
+      this.db.query.catalogBrands.findMany({
+        where: (r, { and, ilike, eq }) =>
+          and(
+            q.trim() ? ilike(r.name, `%${q.trim()}%`) : undefined,
+            status !== "all" ? eq(r.status, status as CatalogEntityStatus) : undefined,
+          ),
+        with: {
+          mediaAssignments: {
+            where: (ma, { and, eq }) =>
+              and(eq(ma.entityType, "brand"), eq(ma.isPrimary, true)),
+            with: {
+              asset: true,
+            },
+          },
+        },
+        orderBy: (r, { asc, desc }) => {
+          const column = sort === "createdAt" ? r.createdAt : r.name;
+          return [dir === "desc" ? desc(column) : asc(column), asc(r.id)];
+        },
+        limit: pageSize,
+        offset: offset,
+      }),
+    ]);
 
     return {
-      items: result.rows.map(toBrand),
-      totalCount: Number.parseInt(countResult.rows[0]?.count ?? "0", 10),
+      items: rows.map((brand) => ({
+        slug: brand.slug,
+        name: brand.name,
+        description: brand.description,
+        website: brand.website,
+        status: brand.status,
+        createdAt: brand.createdAt.toISOString(),
+        primaryImageUrl: brand.mediaAssignments[0]?.asset?.publicUrl ?? null,
+      })),
+      totalCount: totalCountResult.length,
     };
-  }
-}
-
-function toBrand(row: BrandRow): AdminBrandSummary {
-  return {
-    ...row,
-    createdAt: row.createdAt.toISOString(),
-    primaryImageUrl: row.primaryImageUrl,
-  };
-}
-
-function getBrandSortClause(input: AdminBrandListQuery): string {
-  const direction = input.dir === "desc" ? "DESC" : "ASC";
-
-  switch (input.sort) {
-    case "createdAt":
-      return `b.created_at ${direction}, b.id ASC`;
-    case "status":
-      return `b.status ${direction}, b.name ASC`;
-    default:
-      return `b.name ${direction}, b.id ASC`;
   }
 }

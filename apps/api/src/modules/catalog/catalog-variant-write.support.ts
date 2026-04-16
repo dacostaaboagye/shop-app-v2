@@ -11,7 +11,7 @@ export function getVariantStatusPatch(
   if (payload.status === "archived") {
     if (payload.isDefault === true) {
       throw new AppError({
-        code: "invalid_operation",
+        code: "validation_error",
         detail: "Archived variants cannot remain the default variant.",
         statusCode: 400,
         title: "Invalid variant state",

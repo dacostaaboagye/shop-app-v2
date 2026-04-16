@@ -1,18 +1,19 @@
-import type { AdminCreateLocationResponse } from "@shop/contracts";
-import type { Pool } from "pg";
+import type {
+  AdminCreateLocationResponse,
+  AdminLocationStatus,
+  AdminLocationType,
+} from "@shop/contracts";
+import { locationZones, locations } from "@shop/database";
+import { and, eq } from "drizzle-orm";
+import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { SlugAllocator } from "../public-identifiers/slug.service.js";
 import type { AdminLocationWriteRepository } from "./admin-location-write.service.js";
-import {
-  buildLocationUpdateValues,
-  toLocationResponse,
-  toZoneResponse,
-} from "./postgres-admin-location-write.support.js";
 
 export class PostgresAdminLocationWriteRepository
   implements AdminLocationWriteRepository
 {
   constructor(
-    private readonly pool: Pick<Pool, "query">,
+    private readonly db: ApiDatabase,
     private readonly slugAllocator: SlugAllocator,
   ) {}
 
@@ -30,31 +31,37 @@ export class PostgresAdminLocationWriteRepository
     };
     slug: string;
   }) {
-    const { sets, values } = buildLocationUpdateValues({
-      ...input.payload,
-      now: input.now,
-      slug: input.slug,
-    });
+    const [row] = await this.db
+      .update(locations)
+      .set({
+        name: input.payload.name,
+        type: input.payload.type as AdminLocationType,
+        status: input.payload.status as AdminLocationStatus,
+        isFulfilmentEnabled: input.payload.isFulfilmentEnabled,
+        latitude: input.payload.latitude !== undefined ? input.payload.latitude?.toString() : undefined,
+        longitude: input.payload.longitude !== undefined ? input.payload.longitude?.toString() : undefined,
+        geoAddress: input.payload.address,
+        updatedAt: input.now,
+      })
+      .where(eq(locations.slug, input.slug))
+      .returning({
+        slug: locations.slug,
+        name: locations.name,
+        type: locations.type,
+        status: locations.status,
+        isFulfilmentEnabled: locations.isFulfilmentEnabled,
+        createdAt: locations.createdAt,
+      });
 
-    const result = await this.pool.query(
-      `
-        UPDATE locations
-        SET ${sets.join(", ")}
-        WHERE slug = $1
-        RETURNING
-          slug,
-          name,
-          type,
-          status,
-          is_fulfilment_enabled AS "isFulfilmentEnabled",
-          NULL::text AS "managerName",
-          created_at AS "createdAt",
-          0::int AS "zoneCount",
-          0::int AS "staffCount"
-      `,
-      values,
-    );
-    return toLocationResponse(result.rows[0]);
+    if (!row) return null;
+
+    return {
+      ...row,
+      managerName: null,
+      zoneCount: 0,
+      staffCount: 0,
+      createdAt: row.createdAt.toISOString(),
+    };
   }
 
   async createLocation(input: {
@@ -74,48 +81,42 @@ export class PostgresAdminLocationWriteRepository
       entityType: "location",
       value: input.payload.name,
     });
-    const result = await this.pool.query<
-      Omit<AdminCreateLocationResponse, "createdAt"> & { createdAt: Date }
-    >(
-      `
-        INSERT INTO locations (
-          slug, name, type, status, is_fulfilment_enabled, latitude, longitude, geo_address, manager_id, created_by, created_at, updated_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NULL, $9, $10, $10)
-        RETURNING
-          slug,
-          name,
-          type,
-          status,
-          is_fulfilment_enabled AS "isFulfilmentEnabled",
-          NULL::text AS "managerName",
-          created_at AS "createdAt",
-          latitude::float AS "latitude",
-          longitude::float AS "longitude",
-          geo_address AS "address",
-          0::int AS "zoneCount",
-          0::int AS "staffCount"
-      `,
-      [
+
+    const [location] = await this.db
+      .insert(locations)
+      .values({
         slug,
-        input.payload.name,
-        input.payload.type,
-        input.payload.status,
-        input.payload.isFulfilmentEnabled,
-        input.payload.latitude ?? null,
-        input.payload.longitude ?? null,
-        input.payload.address ?? null,
-        input.actorId,
-        input.now,
-      ],
-    );
-    const location = result.rows[0];
+        name: input.payload.name,
+        type: input.payload.type as AdminLocationType,
+        status: input.payload.status as AdminLocationStatus,
+        isFulfilmentEnabled: input.payload.isFulfilmentEnabled,
+        latitude: input.payload.latitude?.toString() ?? null,
+        longitude: input.payload.longitude?.toString() ?? null,
+        geoAddress: input.payload.address ?? null,
+        createdBy: input.actorId,
+        createdAt: input.now,
+        updatedAt: input.now,
+      })
+      .returning();
 
     if (!location) {
       throw new Error("Unable to create location.");
     }
 
-    return { ...location, createdAt: location.createdAt.toISOString() };
+    return {
+      slug: location.slug,
+      name: location.name,
+      type: location.type,
+      status: location.status,
+      isFulfilmentEnabled: location.isFulfilmentEnabled,
+      latitude: location.latitude ? parseFloat(location.latitude) : null,
+      longitude: location.longitude ? parseFloat(location.longitude) : null,
+      address: location.geoAddress,
+      managerName: null,
+      zoneCount: 0,
+      staffCount: 0,
+      createdAt: location.createdAt.toISOString(),
+    };
   }
 
   async createLocationZone(input: {
@@ -124,50 +125,41 @@ export class PostgresAdminLocationWriteRepository
     now: Date;
     payload: { description?: string | null; name: string };
   }) {
-    // Look up location id from slug
-    const locationResult = await this.pool.query<{ id: string }>(
-      `SELECT id FROM locations WHERE slug = $1`,
-      [input.locationSlug],
-    );
-    const locationId = locationResult.rows[0]?.id;
-    if (!locationId) throw new Error("Location not found");
-
     const slug = await this.slugAllocator.allocateSlug({
       entityType: "location_zone",
       value: input.payload.name,
     });
 
-    const result = await this.pool.query<{
-      createdAt: Date;
-      description: string | null;
-      name: string;
-      slug: string;
-    }>(
-      `
-        INSERT INTO location_zones (
-          location_id, slug, name, description, created_by, created_at, updated_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $6)
-        RETURNING
-          slug,
-          name,
-          description,
-          created_at AS "createdAt"
-      `,
-      [
-        locationId,
-        slug,
-        input.payload.name,
-        input.payload.description ?? null,
-        input.actorId,
-        input.now,
-      ],
-    );
+    const zone = await this.db.transaction(async (tx) => {
+      const location = await tx.query.locations.findFirst({
+        where: (l, { eq }) => eq(l.slug, input.locationSlug),
+        columns: { id: true },
+      });
 
-    const zone = toZoneResponse(result.rows[0]);
+      if (!location) throw new Error("Location not found");
+
+      const [newZone] = await tx
+        .insert(locationZones)
+        .values({
+          locationId: location.id,
+          slug,
+          name: input.payload.name,
+          description: input.payload.description ?? null,
+          createdAt: input.now,
+        })
+        .returning();
+
+      return newZone;
+    });
+
     if (!zone) throw new Error("Unable to create zone");
 
-    return zone;
+    return {
+      slug: zone.slug,
+      name: zone.name,
+      description: zone.description,
+      createdAt: zone.createdAt.toISOString(),
+    };
   }
 
   async updateLocationZone(input: {
@@ -177,47 +169,39 @@ export class PostgresAdminLocationWriteRepository
     payload: { description?: string | null; name?: string };
     zoneSlug: string;
   }) {
-    // We strictly use both slug and locationSlug for isolation
-    const locationResult = await this.pool.query<{ id: string }>(
-      `SELECT id FROM locations WHERE slug = $1`,
-      [input.locationSlug],
-    );
-    const locationId = locationResult.rows[0]?.id;
-    if (!locationId) return null;
+    const zone = await this.db.transaction(async (tx) => {
+      const location = await tx.query.locations.findFirst({
+        where: (l, { eq }) => eq(l.slug, input.locationSlug),
+        columns: { id: true },
+      });
 
-    const sets: string[] = ["updated_at = $3"];
-    const values: unknown[] = [locationId, input.zoneSlug, input.now];
+      if (!location) return null;
 
-    if (input.payload.name !== undefined) {
-      values.push(input.payload.name);
-      sets.push(`name = $${values.length}`);
-    }
+      const [updatedZone] = await tx
+        .update(locationZones)
+        .set({
+          name: input.payload.name,
+          description: input.payload.description,
+        })
+        .where(
+          and(
+            eq(locationZones.locationId, location.id),
+            eq(locationZones.slug, input.zoneSlug),
+          ),
+        )
+        .returning();
 
-    if (input.payload.description !== undefined) {
-      values.push(input.payload.description);
-      sets.push(`description = $${values.length}`);
-    }
+      return updatedZone;
+    });
 
-    const result = await this.pool.query<{
-      createdAt: Date;
-      description: string | null;
-      name: string;
-      slug: string;
-    }>(
-      `
-        UPDATE location_zones
-        SET ${sets.join(", ")}
-        WHERE location_id = $1 AND slug = $2
-        RETURNING
-          slug,
-          name,
-          description,
-          created_at AS "createdAt"
-      `,
-      values,
-    );
+    if (!zone) return null;
 
-    return toZoneResponse(result.rows[0]);
+    return {
+      slug: zone.slug,
+      name: zone.name,
+      description: zone.description,
+      createdAt: zone.createdAt.toISOString(),
+    };
   }
 
   async deleteLocationZone(input: {
@@ -225,15 +209,26 @@ export class PostgresAdminLocationWriteRepository
     locationSlug: string;
     zoneSlug: string;
   }) {
-    const result = await this.pool.query(
-      `
-        DELETE FROM location_zones
-        WHERE slug = $1 
-        AND location_id = (SELECT id FROM locations WHERE slug = $2)
-      `,
-      [input.zoneSlug, input.locationSlug],
-    );
+    const deleted = await this.db.transaction(async (tx) => {
+      const location = await tx.query.locations.findFirst({
+        where: (l, { eq }) => eq(l.slug, input.locationSlug),
+        columns: { id: true },
+      });
 
-    return (result.rowCount ?? 0) > 0;
+      if (!location) return false;
+
+      const result = await tx
+        .delete(locationZones)
+        .where(
+          and(
+            eq(locationZones.locationId, location.id),
+            eq(locationZones.slug, input.zoneSlug),
+          ),
+        );
+
+      return (result.rowCount ?? 0) > 0;
+    });
+
+    return deleted;
   }
 }

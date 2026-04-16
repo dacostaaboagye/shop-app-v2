@@ -13,6 +13,8 @@ import type {
   AdminUpdateBrandResponse,
   AdminUpdateCategoryRequest,
   AdminUpdateCategoryResponse,
+  AdminDeleteBrandResponse,
+  AdminDeleteCategoryResponse,
 } from "@shop/contracts";
 import { fetchJson } from "@/lib/react-query/fetch-json";
 
@@ -61,6 +63,16 @@ export async function updateAdminBrand(
   return fetchJson<AdminUpdateBrandResponse>(
     `/api/admin/catalog/brands/${encodeURIComponent(slug)}`,
     { body: JSON.stringify(input), headers: jsonHeaders(), method: "PATCH" },
+    { auth: "required" },
+  );
+}
+
+export async function deleteAdminBrand(
+  slug: string,
+): Promise<AdminDeleteBrandResponse> {
+  return fetchJson<AdminDeleteBrandResponse>(
+    `/api/admin/catalog/brands/${encodeURIComponent(slug)}`,
+    { method: "DELETE" },
     { auth: "required" },
   );
 }
@@ -114,6 +126,16 @@ export async function updateAdminCategory(
   );
 }
 
+export async function deleteAdminCategory(
+  slug: string,
+): Promise<AdminDeleteCategoryResponse> {
+  return fetchJson<AdminDeleteCategoryResponse>(
+    `/api/admin/catalog/categories/${encodeURIComponent(slug)}`,
+    { method: "DELETE" },
+    { auth: "required" },
+  );
+}
+
 // ── Shared ───────────────────────────────────────────────────────────────────
 
 function buildSearchParams(query: Record<string, unknown>) {
@@ -128,4 +150,13 @@ function buildSearchParams(query: Record<string, unknown>) {
 
 function jsonHeaders() {
   return { "Content-Type": "application/json" };
+}
+export async function deleteAdminProduct(slug: string) {
+  const response = await fetch(`/api/admin/catalog/products/${slug}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || `Failed to delete product "${slug}"`);
+  }
 }

@@ -2,8 +2,11 @@
 
 import type { AdminUpdateProductRequest } from "@shop/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, Layers, Pencil, X } from "lucide-react";
-import { useState } from "react";
+import { CalendarDays, Layers, Pencil, Trash2, X } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { CatalogDeleteDialog } from "../catalog-delete-dialog";
+import { deleteAdminProduct } from "@/lib/react-query/admin-catalog";
 import {
   PageHeader,
   PageShell,
@@ -49,7 +52,16 @@ const ALL_QUERY = {
 };
 export function ProductDetailPageClient({ slug }: { slug: string }) {
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("edit") === "true") {
+      setIsEditing(true);
+    }
+  }, [searchParams]);
 
   const productQuery = useQuery({
     queryFn: () => fetchAdminProduct(slug),
@@ -118,37 +130,53 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
   const canManage = perms.includes("catalog.products.manage");
   const canSeeCostPrice = perms.includes("catalog.cost_price.view");
   const canManageMedia = perms.includes("catalog.media.manage");
-  const brands = brandsQuery.data?.items ?? []; const categories = categoriesQuery.data?.items ?? [];
+  const brands = brandsQuery.data?.items ?? [];
+  const categories = categoriesQuery.data?.items ?? [];
   return (
     <PageShell>
       <PageHeader
         actions={
-          !isEditing ? (
-            <Button
-              disabled={!canManage}
-              onClick={() => setIsEditing(true)}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <Pencil className="size-3.5" />
-              Edit
-            </Button>
-          ) : (
-            <Button
-              onClick={() => setIsEditing(false)}
-              size="sm"
-              type="button"
-              variant="ghost"
-            >
-              <X className="size-3.5" />
-              Cancel
-            </Button>
-          )
+          <div className="flex items-center gap-2">
+            {!isEditing ? (
+              <>
+                <Button
+                  disabled={!canManage}
+                  onClick={() => setIsEditing(true)}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  <Pencil className="size-3.5" />
+                  Edit
+                </Button>
+                <Button
+                  disabled={!canManage}
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  size="sm"
+                  type="button"
+                  variant="outline-destructive"
+                >
+                  <Trash2 className="size-3.5" />
+                  Delete
+                </Button>
+              </>
+            ) : (
+              <Button
+                onClick={() => setIsEditing(false)}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                <X className="size-3.5" />
+                Cancel
+              </Button>
+            )}
+          </div>
         }
         backHref={toRoute("/admin/products")}
         backLabel="Products"
         description={`/${product.slug}`}
+        image={product.primaryImageUrl ?? null}
         title={product.name}
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -243,6 +271,21 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
         canManage={canManageMedia}
         entitySlug={product.slug}
         entityType="product"
+      />
+      <CatalogDeleteDialog
+        entityName={product.name}
+        entitySlug={product.slug}
+        entityType="product"
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onDelete={async (slug: string) => {
+          await deleteAdminProduct(slug);
+          router.push(toRoute("/admin/products"));
+        }}
+        onSuccessQueryKeys={[
+          ["admin", "catalog", "products"],
+          ["admin", "catalog", "counts"],
+        ]}
       />
     </PageShell>
   );

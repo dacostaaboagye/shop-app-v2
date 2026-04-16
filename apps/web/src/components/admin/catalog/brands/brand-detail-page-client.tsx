@@ -2,7 +2,8 @@
 
 import type { AdminUpdateBrandRequest } from "@shop/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, Pencil, X } from "lucide-react";
+import { CalendarDays, Pencil, Trash2, X } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import {
   PageHeader,
@@ -19,20 +20,28 @@ import {
   adminBrandQueryKey,
   fetchAdminBrand,
   updateAdminBrand,
+  deleteAdminBrand,
 } from "@/lib/react-query/admin-catalog";
 import {
   currentUserPermissionsQueryKey,
   fetchCurrentUserPermissions,
 } from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
-import { toast } from "@/lib/toast";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { readStringParam } from "@/lib/url-state";
 import { MediaPanel } from "../media/media-panel";
+import { CatalogDeleteDialog } from "../catalog-delete-dialog";
 import { BrandEditForm } from "./brand-edit-form";
 
 export function BrandDetailPageClient({ slug }: { slug: string }) {
   const queryClient = useQueryClient();
-  const [isEditing, setIsEditing] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isEditing, setIsEditing] = useState(
+    readStringParam(searchParams, "edit") === "true",
+  );
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const brandQuery = useQuery({
     queryFn: () => fetchAdminBrand(slug),
@@ -94,15 +103,30 @@ export function BrandDetailPageClient({ slug }: { slug: string }) {
       <PageHeader
         actions={
           !isEditing ? (
-            <Button
-              onClick={() => setIsEditing(true)}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <Pencil className="size-3.5" />
-              Edit
-            </Button>
+            <div className="flex gap-2">
+              {permissionsQuery.data?.permissions.includes(
+                "catalog.brands.manage",
+              ) && (
+                <Button
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  size="sm"
+                  type="button"
+                  variant="outline-destructive"
+                >
+                  <Trash2 className="size-3.5" />
+                  Delete
+                </Button>
+              )}
+              <Button
+                onClick={() => setIsEditing(true)}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                <Pencil className="size-3.5" />
+                Edit
+              </Button>
+            </div>
           ) : (
             <Button
               onClick={() => setIsEditing(false)}
@@ -118,6 +142,7 @@ export function BrandDetailPageClient({ slug }: { slug: string }) {
         backHref={toRoute("/admin/products/brands")}
         backLabel="Brands"
         description={`/${brand.slug}`}
+        image={brand.primaryImageUrl ?? null}
         title={brand.name}
       />
 
@@ -193,6 +218,19 @@ export function BrandDetailPageClient({ slug }: { slug: string }) {
         canManage={canManageMedia}
         entitySlug={brand.slug}
         entityType="brand"
+      />
+
+      <CatalogDeleteDialog
+        entityName={brand.name}
+        entitySlug={brand.slug}
+        entityType="brand"
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onDelete={async (slug: string) => {
+          await deleteAdminBrand(slug);
+          router.push(toRoute("/admin/products/brands"));
+        }}
+        onSuccessQueryKeys={[["admin", "catalog", "brands"]]}
       />
     </PageShell>
   );

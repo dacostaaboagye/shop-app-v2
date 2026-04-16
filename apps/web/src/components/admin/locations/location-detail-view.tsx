@@ -74,6 +74,7 @@ export function LocationDetailView({
         backLabel="Locations"
         description={`/${location.slug}`}
         eyebrow={typeMeta.label}
+        image={location.primaryImageUrl ?? null}
         title={location.name}
         actions={
           !isEditing ? (
@@ -103,6 +104,9 @@ export function LocationDetailView({
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           description="Workers and managers at this location."
+          href={toRoute(
+            `/admin/users?locationSlug=${encodeURIComponent(location.slug)}`,
+          )}
           icon={Users}
           label="Staff"
           value={location.staffCount}

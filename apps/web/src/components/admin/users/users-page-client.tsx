@@ -49,6 +49,7 @@ export function UsersPageClient({
   const [draftSearch, setDraftSearch] = useState(
     readStringParam(searchParams, "q"),
   );
+  const locationSlug = readStringParam(searchParams, "locationSlug");
   const query = readStringParam(searchParams, "q");
   const role = readStringParam(searchParams, "role");
   const status = readEnumParam(
@@ -85,8 +86,8 @@ export function UsersPageClient({
   }, [draftSearch, pathname, query, router, searchParams]);
 
   const backendQuery = useMemo<AdminUserListQuery>(
-    () => ({ dir, page, pageSize, q: query, role, sort, status }),
-    [dir, page, pageSize, query, role, sort, status],
+    () => ({ dir, locationSlug, page, pageSize, q: query, role, sort, status }),
+    [dir, locationSlug, page, pageSize, query, role, sort, status],
   );
   const usersQuery = useQuery({
     placeholderData: (previousData) => previousData,
@@ -95,7 +96,7 @@ export function UsersPageClient({
   });
   const totalPages = getPageCount(usersQuery.data?.totalCount ?? 0, pageSize);
   const safePage = Math.min(page, totalPages);
-  const hasFilters = query !== "" || role !== "" || status !== "all";
+  const hasFilters = status !== "all" || !!(query + role + locationSlug);
   const sorting: AppDataTableSort = { columnId: sort, direction: dir };
 
   useEffect(() => {
@@ -158,6 +159,7 @@ export function UsersPageClient({
           <Button
             onClick={() =>
               replaceUserQuery(router, pathname, searchParams, {
+                locationSlug: null,
                 page: null,
                 q: null,
                 role: null,

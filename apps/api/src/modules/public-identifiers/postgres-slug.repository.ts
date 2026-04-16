@@ -1,4 +1,16 @@
-import type { Pool } from "pg";
+import {
+  catalogBrands,
+  catalogCategories,
+  catalogProducts,
+  locationZones,
+  locations,
+  productVariants,
+  roles,
+  slugRedirects,
+  users,
+} from "@shop/database";
+import { and, eq } from "drizzle-orm";
+import type { ApiDatabase } from "../../infrastructure/database.js";
 import type {
   SlugEntityType,
   SlugLookupResult,
@@ -6,19 +18,19 @@ import type {
   SlugRepository,
 } from "./slug.service.js";
 
-const slugTableByEntityType: Record<SlugEntityType, string> = {
-  catalog_brand: "catalog_brands",
-  catalog_category: "catalog_categories",
-  catalog_product: "catalog_products",
-  location: "locations",
-  location_zone: "location_zones",
-  product_variant: "product_variants",
-  role: "roles",
-  user: "users",
+const schemaByEntityType: Record<SlugEntityType, any> = {
+  catalog_brand: catalogBrands,
+  catalog_category: catalogCategories,
+  catalog_product: catalogProducts,
+  location: locations,
+  location_zone: locationZones,
+  product_variant: productVariants,
+  role: roles,
+  user: users,
 };
 
 export class PostgresSlugRepository implements SlugRepository {
-  constructor(private readonly pool: Pool) {}
+  constructor(private readonly db: ApiDatabase) {}
 
   async lookupSlug(input: {
     entityType: SlugEntityType;
@@ -33,19 +45,19 @@ export class PostgresSlugRepository implements SlugRepository {
       };
     }
 
-    const redirectResult = await this.pool.query<{
-      entityUuid: string;
-      newSlug: string;
-    }>(
-      `
-        SELECT entity_uuid AS "entityUuid", new_slug AS "newSlug"
-        FROM slug_redirects
-        WHERE entity_type = $1 AND old_slug = $2
-        LIMIT 1
-      `,
-      [input.entityType, input.slug],
-    );
-    const redirect = redirectResult.rows[0];
+    const [redirect] = await this.db
+      .select({
+        entityUuid: slugRedirects.entityUuid,
+        newSlug: slugRedirects.newSlug,
+      })
+      .from(slugRedirects)
+      .where(
+        and(
+          eq(slugRedirects.entityType, input.entityType),
+          eq(slugRedirects.oldSlug, input.slug),
+        ),
+      )
+      .limit(1);
 
     if (!redirect) {
       return { status: "missing" };
@@ -59,25 +71,27 @@ export class PostgresSlugRepository implements SlugRepository {
   }
 
   async recordRedirect(input: SlugRedirectRecord): Promise<void> {
-    await this.pool.query(
-      `
-        INSERT INTO slug_redirects (entity_type, entity_uuid, old_slug, new_slug)
-        VALUES ($1, $2, $3, $4)
-      `,
-      [input.entityType, input.entityUuid, input.oldSlug, input.newSlug],
-    );
+    await this.db.insert(slugRedirects).values({
+      entityType: input.entityType,
+      entityUuid: input.entityUuid,
+      oldSlug: input.oldSlug,
+      newSlug: input.newSlug,
+    });
   }
 
   private async findActiveEntity(input: {
     entityType: SlugEntityType;
     slug: string;
   }): Promise<{ entityUuid: string } | null> {
-    const tableName = slugTableByEntityType[input.entityType];
-    const result = await this.pool.query<{ entityUuid: string }>(
-      `SELECT id AS "entityUuid" FROM ${tableName} WHERE slug = $1 LIMIT 1`,
-      [input.slug],
-    );
+    const table = schemaByEntityType[input.entityType];
+    if (!table) return null;
 
-    return result.rows[0] ?? null;
+    const [row] = await this.db
+      .select({ entityUuid: table.id })
+      .from(table)
+      .where(eq(table.slug, input.slug))
+      .limit(1);
+
+    return row ?? null;
   }
 }

@@ -32,6 +32,10 @@ export class CatalogProductWriteService {
     return this.productRepo.updateProduct({ actorId, now, payload, slug });
   }
 
+  async deleteProduct(slug: string): Promise<void> {
+    return this.productRepo.deleteProduct({ slug });
+  }
+
   async createVariant(
     actorId: string,
     productSlug: string,
@@ -60,5 +64,9 @@ export class CatalogProductWriteService {
       productSlug,
       variantSlug,
     });
+  }
+
+  async deleteVariant(productSlug: string, variantSlug: string): Promise<void> {
+    return this.variantRepo.deleteVariant({ productSlug, variantSlug });
   }
 }

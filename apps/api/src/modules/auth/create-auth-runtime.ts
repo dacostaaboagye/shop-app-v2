@@ -41,14 +41,14 @@ export function createAuthRuntime(
   }
 
   const userRepository = new PostgresUserRepository(
-    databaseRuntime.pool,
+    databaseRuntime.db,
     new BasicUserRoleService(),
   );
   const slugService = new SlugService(
-    new PostgresSlugRepository(databaseRuntime.pool),
+    new PostgresSlugRepository(databaseRuntime.db),
   );
   const sessionService = new TokenSessionService(
-    new PostgresSessionRepository(databaseRuntime.pool, userRepository),
+    new PostgresSessionRepository(databaseRuntime.db, userRepository),
     {
       accessTokenSecret: env.authAccessTokenSecret,
       accessTokenTtlSeconds: env.authAccessTokenTtlSeconds,
@@ -56,7 +56,7 @@ export function createAuthRuntime(
     },
   );
   const permissionService = new PermissionResolutionService(
-    new PostgresPermissionRepository(databaseRuntime.pool),
+    new PostgresPermissionRepository(databaseRuntime.db),
   );
 
   return {

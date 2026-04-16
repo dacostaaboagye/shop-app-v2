@@ -1,15 +1,24 @@
-import type { Pool } from "pg";
+import {
+  authEvents,
+  loginAttempts,
+  refreshTokens,
+  roles,
+  userRoles,
+  users,
+} from "@shop/database";
+import { and, desc, eq, gte, isNull, sql, type SQL } from "drizzle-orm";
 import type { BasicUserRoleService } from "../access-control/basic-user-role.service.js";
+import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { AccessTokenUserRepository } from "./access-token-authentication.service.js";
 import type {
   AuthRepository,
   AuthUserRecord,
 } from "./authentication.service.js";
 import type { CurrentUserRepository } from "./current-user.service.js";
-import { isUniqueViolation, type UserRow } from "./postgres-auth-user-row.js";
-import { findUserRecord } from "./postgres-user-repository.support.js";
+import { isUniqueViolation } from "./postgres-auth-user-row.js";
 import type { RegistrationRepository } from "./registration.service.js";
 import type { UserAccessLifecycleRepository } from "./user-access-lifecycle.service.js";
+import { PortalKey } from "@shop/contracts";
 
 export class PostgresUserRepository
   implements
@@ -20,15 +29,15 @@ export class PostgresUserRepository
     UserAccessLifecycleRepository
 {
   constructor(
-    private readonly pool: Pool,
+    private readonly db: ApiDatabase,
     private readonly basicUserRoleService: BasicUserRoleService,
   ) {}
 
   async clearLockout(userId: string): Promise<void> {
-    await this.pool.query(
-      `UPDATE users SET locked_until = NULL, updated_at = NOW() WHERE id = $1`,
-      [userId],
-    );
+    await this.db
+      .update(users)
+      .set({ lockedUntil: null, updatedAt: new Date() })
+      .where(eq(users.id, userId));
   }
 
   async createUser(input: {
@@ -42,121 +51,122 @@ export class PostgresUserRepository
     | { status: "created"; user: AuthUserRecord }
     | { status: "email_conflict" | "slug_conflict" }
   > {
-    const client = await this.pool.connect();
-
     try {
-      await client.query("BEGIN");
+      const result = await this.db.transaction(async (tx) => {
+        const [userRow] = await tx
+          .insert(users)
+          .values({
+            slug: input.slug,
+            firstName: input.firstName,
+            lastName: input.lastName,
+            email: input.email,
+            passwordHash: input.passwordHash,
+            status: "active",
+            requiresPasswordChange: false,
+            createdAt: input.now,
+            updatedAt: input.now,
+          })
+          .onConflictDoNothing({ target: users.slug })
+          .returning();
 
-      const insertResult = await client.query<UserRow>(
-        `
-          INSERT INTO users (
-            slug, first_name, last_name, email, password_hash, status,
-            requires_password_change, created_at, updated_at
-          )
-          VALUES ($1, $2, $3, $4, $5, 'active', false, $6, $6)
-          ON CONFLICT (slug) DO NOTHING
-          RETURNING
-            id,
-            slug,
-            first_name AS "firstName",
-            last_name AS "lastName",
-            email,
-            password_hash AS "passwordHash",
-            status,
-            ARRAY[]::text[] AS "availablePortals",
-            preferred_portal AS "preferredPortal",
-            last_login_at AS "lastLoginAt",
-            locked_until AS "lockedUntil",
-            requires_password_change AS "requiresPasswordChange"
-        `,
-        [
-          input.slug,
-          input.firstName,
-          input.lastName,
-          input.email,
-          input.passwordHash,
-          input.now,
-        ],
-      );
+        if (!userRow) {
+          return { status: "slug_conflict" as const };
+        }
 
-      const user = insertResult.rows[0];
+        await this.basicUserRoleService.ensureAssigned({
+          assignedAt: input.now,
+          db: tx,
+          userId: userRow.id,
+        });
 
-      if (!user) {
-        await client.query("ROLLBACK");
-        return { status: "slug_conflict" };
-      }
-
-      await this.basicUserRoleService.ensureAssigned({
-        assignedAt: input.now,
-        client,
-        userId: user.id,
+        return {
+          status: "created" as const,
+          user: {
+            ...userRow,
+            preferredPortal: userRow.preferredPortal as PortalKey | null,
+            availablePortals: [] as PortalKey[],
+          },
+        };
       });
-      await client.query("COMMIT");
 
-      return {
-        status: "created",
-        user,
-      };
+      return result;
     } catch (error) {
-      await client.query("ROLLBACK");
-
       if (isUniqueViolation(error)) {
         return { status: "email_conflict" };
       }
-
       throw error;
-    } finally {
-      client.release();
     }
   }
 
   async deactivateUser(userId: string, now: Date): Promise<boolean> {
-    const result = await this.pool.query(
-      `
-        UPDATE users
-        SET status = 'deactivated', updated_at = $2
-        WHERE id = $1 AND status <> 'deactivated'
-      `,
-      [userId, now],
-    );
+    const result = await this.db
+      .update(users)
+      .set({ status: "deactivated", updatedAt: now })
+      .where(and(eq(users.id, userId), sql`${users.status} <> 'deactivated'`));
 
     return (result.rowCount ?? 0) > 0;
   }
 
   async findUserByEmail(email: string): Promise<AuthUserRecord | null> {
-    return findUserRecord(this.pool, "email = $1", [email]);
+    return this.findUser(eq(users.email, email));
   }
 
   async findUserById(userId: string): Promise<AuthUserRecord | null> {
-    return findUserRecord(this.pool, "id = $1", [userId]);
+    return this.findUser(eq(users.id, userId));
+  }
+
+  private async findUser(where: SQL | undefined): Promise<AuthUserRecord | null> {
+    const user = await this.db.query.users.findFirst({
+      where,
+      with: {
+        userRoles: {
+          where: (ur, { isNull }) => isNull(ur.revokedAt),
+          with: {
+            role: true,
+          },
+        },
+      },
+    });
+
+    if (!user) return null;
+
+    const availablePortals = user.userRoles
+      .map((ur) => ur.role?.slug)
+      .filter((slug): slug is string => 
+        !!slug && ["admin", "manager", "worker", "supplier", "agent"].includes(slug)
+      );
+
+    return {
+      ...user,
+      preferredPortal: user.preferredPortal as PortalKey | null,
+      availablePortals: Array.from(new Set(availablePortals)).sort() as PortalKey[],
+    };
   }
 
   async getRecentFailedAttemptTimes(
     email: string,
     since: Date,
   ): Promise<Date[]> {
-    const result = await this.pool.query<{ occurredAt: Date }>(
-      `
-        SELECT occurred_at AS "occurredAt"
-        FROM login_attempts
-        WHERE email = $1 AND succeeded = false AND occurred_at >= $2
-        ORDER BY occurred_at DESC
-      `,
-      [email, since],
-    );
+    const rows = await this.db
+      .select({ occurredAt: loginAttempts.occurredAt })
+      .from(loginAttempts)
+      .where(
+        and(
+          eq(loginAttempts.email, email),
+          eq(loginAttempts.succeeded, false),
+          gte(loginAttempts.occurredAt, since),
+        ),
+      )
+      .orderBy(desc(loginAttempts.occurredAt));
 
-    return result.rows.map((row: { occurredAt: Date }) => row.occurredAt);
+    return rows.map((r) => r.occurredAt);
   }
 
   async markSuccessfulLogin(userId: string, occurredAt: Date): Promise<void> {
-    await this.pool.query(
-      `
-        UPDATE users
-        SET last_login_at = $2, updated_at = $2
-        WHERE id = $1
-      `,
-      [userId, occurredAt],
-    );
+    await this.db
+      .update(users)
+      .set({ lastLoginAt: occurredAt, updatedAt: occurredAt })
+      .where(eq(users.id, userId));
   }
 
   async recordAuthEvent(event: {
@@ -171,19 +181,13 @@ export class PostgresUserRepository
     userAgent?: string;
     userId?: string;
   }): Promise<void> {
-    await this.pool.query(
-      `
-        INSERT INTO auth_events (user_id, event_type, ip_address, user_agent, occurred_at)
-        VALUES ($1, $2, $3, $4, $5)
-      `,
-      [
-        event.userId ?? null,
-        event.eventType,
-        event.ipAddress ?? null,
-        event.userAgent ?? null,
-        event.occurredAt,
-      ],
-    );
+    await this.db.insert(authEvents).values({
+      userId: event.userId ?? null,
+      eventType: event.eventType,
+      ipAddress: event.ipAddress ?? null,
+      userAgent: event.userAgent ?? null,
+      occurredAt: event.occurredAt,
+    });
   }
 
   async recordLoginAttempt(attempt: {
@@ -192,18 +196,12 @@ export class PostgresUserRepository
     occurredAt: Date;
     succeeded: boolean;
   }): Promise<void> {
-    await this.pool.query(
-      `
-        INSERT INTO login_attempts (email, ip_address, succeeded, occurred_at)
-        VALUES ($1, $2, $3, $4)
-      `,
-      [
-        attempt.email,
-        attempt.ipAddress ?? null,
-        attempt.succeeded,
-        attempt.occurredAt,
-      ],
-    );
+    await this.db.insert(loginAttempts).values({
+      email: attempt.email,
+      ipAddress: attempt.ipAddress ?? null,
+      succeeded: attempt.succeeded,
+      occurredAt: attempt.occurredAt,
+    });
   }
 
   async revokeRefreshTokensForUser(input: {
@@ -211,34 +209,31 @@ export class PostgresUserRepository
     revokedReason: string;
     userId: string;
   }): Promise<void> {
-    await this.pool.query(
-      `
-        UPDATE refresh_tokens
-        SET revoked_at = $2, revoked_reason = $3
-        WHERE user_id = $1 AND revoked_at IS NULL
-      `,
-      [input.userId, input.revokedAt, input.revokedReason],
-    );
+    await this.db
+      .update(refreshTokens)
+      .set({
+        revokedAt: input.revokedAt,
+        revokedReason: input.revokedReason,
+      })
+      .where(
+        and(eq(refreshTokens.userId, input.userId), isNull(refreshTokens.revokedAt)),
+      );
   }
 
   async updatePreferredPortal(
     userId: string,
     preferredPortal: string | null,
   ): Promise<void> {
-    await this.pool.query(
-      `UPDATE users SET preferred_portal = $2, updated_at = NOW() WHERE id = $1`,
-      [userId, preferredPortal],
-    );
+    await this.db
+      .update(users)
+      .set({ preferredPortal: preferredPortal as PortalKey | null, updatedAt: new Date() })
+      .where(eq(users.id, userId));
   }
 
   async setLockout(userId: string, lockedUntil: Date): Promise<void> {
-    await this.pool.query(
-      `
-        UPDATE users
-        SET locked_until = $2, updated_at = $2
-        WHERE id = $1
-      `,
-      [userId, lockedUntil],
-    );
+    await this.db
+      .update(users)
+      .set({ lockedUntil, updatedAt: lockedUntil })
+      .where(eq(users.id, userId));
   }
 }

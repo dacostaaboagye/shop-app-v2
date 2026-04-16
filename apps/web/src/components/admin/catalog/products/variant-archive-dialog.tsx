@@ -34,9 +34,7 @@ export function VariantArchiveDialog({
           <DialogTitle>Archive variant</DialogTitle>
           <DialogDescription>
             {`Archive "${name}" to remove it from active catalogue use.`}
-            {isDefault
-              ? " This variant is currently the default variant."
-              : ""}
+            {isDefault ? " This variant is currently the default variant." : ""}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

@@ -99,6 +99,10 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
     description: "Read inventory and reservation administrative data.",
   },
   {
+    key: "inventory.write",
+    description: "Record stock counts and manual inventory adjustments.",
+  },
+  {
     key: "orders.view",
     description: "View the admin order management surface.",
   },
@@ -178,6 +182,7 @@ const SYSTEM_ROLES: readonly SystemRole[] = [
       "catalog.products.manage",
       "catalog.media.manage",
       "inventory.read",
+      "inventory.write",
       "orders.view",
       "deliveries.view",
       "suppliers.view",

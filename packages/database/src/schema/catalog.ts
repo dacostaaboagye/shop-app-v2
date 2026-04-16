@@ -1,4 +1,5 @@
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
+import { catalogMediaAssignments } from "./media.js";
 import {
   boolean,
   check,
@@ -45,6 +46,7 @@ export const catalogCategories = pgTable(
     name: varchar("name", { length: 160 }).notNull(),
     description: text("description"),
     parentCategoryId: uuid("parent_category_id"),
+    path: text("path").default("").notNull(),
     status: catalogEntityStatusEnum("status").default("active").notNull(),
     createdBy: uuid("created_by").references(() => users.id),
     ...auditColumns,
@@ -111,11 +113,17 @@ export const productVariants = pgTable(
       .notNull(),
     weightGrams: integer("weight_grams"),
     dimensionsCm: jsonb("dimensions_cm")
-      .$type<{ length?: number; width?: number; height?: number }>()
+      .$type<{
+        length?: number | undefined;
+        width?: number | undefined;
+        height?: number | undefined;
+      }>()
       .default(sql`'{}'::jsonb`),
     packagingType: varchar("packaging_type", { length: 80 }),
     manufacturerPartNumber: varchar("manufacturer_part_number", { length: 80 }),
     customsCode: varchar("customs_code", { length: 80 }),
+    isTaxable: boolean("is_taxable"),
+    taxCategory: varchar("tax_category", { length: 80 }),
     isDefault: boolean("is_default").default(false).notNull(),
     status: catalogEntityStatusEnum("status").default("active").notNull(),
     createdBy: uuid("created_by").references(() => users.id),
@@ -180,4 +188,84 @@ export const catalogProductOptionValues = pgTable(
       table.value,
     ),
   ],
+);
+
+// --- Relations ---
+
+export const catalogBrandsRelations = relations(catalogBrands, ({ many }) => ({
+  products: many(catalogProducts),
+  mediaAssignments: many(catalogMediaAssignments, {
+    relationName: "brand_media",
+  }),
+}));
+
+export const catalogCategoriesRelations = relations(
+  catalogCategories,
+  ({ many, one }) => ({
+    parentCategory: one(catalogCategories, {
+      fields: [catalogCategories.parentCategoryId],
+      references: [catalogCategories.id],
+      relationName: "category_hierarchy",
+    }),
+    childCategories: many(catalogCategories, {
+      relationName: "category_hierarchy",
+    }),
+    products: many(catalogProducts),
+    mediaAssignments: many(catalogMediaAssignments, {
+      relationName: "category_media",
+    }),
+  }),
+);
+
+export const catalogProductsRelations = relations(
+  catalogProducts,
+  ({ many, one }) => ({
+    brand: one(catalogBrands, {
+      fields: [catalogProducts.brandId],
+      references: [catalogBrands.id],
+    }),
+    category: one(catalogCategories, {
+      fields: [catalogProducts.categoryId],
+      references: [catalogCategories.id],
+    }),
+    options: many(catalogProductOptions),
+    variants: many(productVariants),
+    mediaAssignments: many(catalogMediaAssignments, {
+      relationName: "product_media",
+    }),
+  }),
+);
+
+export const productVariantsRelations = relations(
+  productVariants,
+  ({ many, one }) => ({
+    product: one(catalogProducts, {
+      fields: [productVariants.productId],
+      references: [catalogProducts.id],
+    }),
+    mediaAssignments: many(catalogMediaAssignments, {
+      relationName: "variant_media",
+    }),
+  }),
+);
+
+export const catalogProductOptionsRelations = relations(
+  catalogProductOptions,
+  ({ many, one }) => ({
+    product: one(catalogProducts, {
+      fields: [catalogProductOptions.productId],
+      references: [catalogProducts.id],
+    }),
+    values: many(catalogProductOptionValues),
+  }),
+);
+
+export const catalogProductOptionValuesRelations = relations(
+  catalogProductOptionValues,
+  ({ one }) => ({
+    option: one(catalogProductOptions, {
+      fields: [catalogProductOptionValues.optionId],
+      references: [catalogProductOptions.id],
+    }),
+  }),
 );

@@ -19,6 +19,26 @@ import { toast } from "@/lib/toast";
 import { MediaGallery } from "./media-gallery";
 import { MediaUploader } from "./media-uploader";
 
+function getEntityDetailKey(
+  entityType: CatalogMediaEntityType,
+  slug: string,
+): unknown[] | null {
+  switch (entityType) {
+    case "brand":
+      return ["admin", "catalog", "brands", slug];
+    case "category":
+      return ["admin", "catalog", "categories", slug];
+    case "product":
+      return ["admin", "catalog", "products", slug];
+    case "location":
+      return ["admin", "locations", slug];
+    case "user":
+      return ["admin", "access", "users", slug];
+    default:
+      return null;
+  }
+}
+
 type Props = {
   canManage: boolean;
   entitySlug: string;
@@ -28,6 +48,13 @@ type Props = {
 export function MediaPanel({ canManage, entitySlug, entityType }: Props) {
   const queryClient = useQueryClient();
   const qKey = adminMediaQueryKey(entityType, entitySlug);
+  const detailKey = getEntityDetailKey(entityType, entitySlug);
+
+  function invalidateDetail() {
+    if (detailKey) {
+      void queryClient.invalidateQueries({ queryKey: detailKey });
+    }
+  }
 
   const mediaQuery = useQuery({
     queryFn: () => fetchAdminMedia(entityType, entitySlug),
@@ -39,6 +66,7 @@ export function MediaPanel({ canManage, entitySlug, entityType }: Props) {
     onError: () => toast.error("Failed to delete media."),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: qKey });
+      invalidateDetail();
       toast.success("Media deleted");
     },
   });
@@ -49,6 +77,7 @@ export function MediaPanel({ canManage, entitySlug, entityType }: Props) {
     onError: () => toast.error("Failed to update primary image."),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: qKey });
+      invalidateDetail();
       toast.success("Primary image updated");
     },
   });
@@ -77,9 +106,10 @@ export function MediaPanel({ canManage, entitySlug, entityType }: Props) {
           entitySlug={entitySlug}
           entityType={entityType}
           nextPosition={items.length}
-          onSuccess={() =>
-            void queryClient.invalidateQueries({ queryKey: qKey })
-          }
+          onSuccess={() => {
+            void queryClient.invalidateQueries({ queryKey: qKey });
+            invalidateDetail();
+          }}
         />
       </CardContent>
     </Card>

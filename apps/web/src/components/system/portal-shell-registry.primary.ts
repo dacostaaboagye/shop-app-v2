@@ -193,6 +193,15 @@ export const PRIMARY_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     section: "Catalog",
   },
   {
+    activeMatchers: [{ mode: "descendants", path: "/admin/stock/balances" }],
+    description: "On-hand, reserved, and available stock per location.",
+    href: toRoute("/admin/stock/balances"),
+    icon: Boxes,
+    label: "Stock levels",
+    requiredPermission: "inventory.read",
+    section: "Supply",
+  },
+  {
     activeMatchers: [
       { mode: "descendants", path: "/admin/stock/reservations" },
     ],

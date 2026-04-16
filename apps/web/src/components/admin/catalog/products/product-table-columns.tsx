@@ -2,10 +2,22 @@
 
 import type { AdminProductSummary } from "@shop/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ImageOff } from "lucide-react";
+import { ImageOff, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { CATALOG_STATUS_META, formatAdminDate } from "@/lib/admin-models";
+import { deleteAdminProduct } from "@/lib/react-query/admin-catalog";
+import { toRoute } from "@/lib/routes";
+import { CatalogDeleteDialog } from "../catalog-delete-dialog";
 
 export const productTableColumns: Array<
   ColumnDef<AdminProductSummary, unknown>
@@ -103,4 +115,58 @@ export const productTableColumns: Array<
       </span>
     ),
   },
+  {
+    id: "actions",
+    size: 48,
+    cell: ({ row }) => <ProductActions product={row.original} />,
+  },
 ];
+
+function ProductActions({ product }: { product: AdminProductSummary }) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" />}>
+          <MoreVertical className="size-4" />
+          <span className="sr-only">Open menu</span>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            render={
+              <Link
+                href={toRoute(
+                  `/admin/products/${product.slug}?edit=true`,
+                )}
+              />
+            }
+          >
+            <Pencil className="mr-2 size-4" />
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => setIsDeleteDialogOpen(true)}
+          >
+            <Trash2 className="mr-2 size-4" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <CatalogDeleteDialog
+        entityName={product.name}
+        entitySlug={product.slug}
+        entityType="product"
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onDelete={deleteAdminProduct}
+        onSuccessQueryKeys={[
+          ["admin", "catalog", "products"],
+          ["admin", "catalog", "counts"],
+        ]}
+      />
+    </>
+  );
+}

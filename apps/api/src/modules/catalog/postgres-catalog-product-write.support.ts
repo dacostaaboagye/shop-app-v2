@@ -1,6 +1,8 @@
 import type { AdminProductSummary, AdminVariantSummary } from "@shop/contracts";
-import type { Pool } from "pg";
+import { eq } from "drizzle-orm";
+import { catalogBrands, catalogCategories } from "@shop/database";
 import { AppError } from "../_core/errors/app-error.js";
+import type { ApiDatabase } from "../../infrastructure/database.js";
 
 export const DUPLICATE_KEY_CODE = "23505";
 
@@ -21,23 +23,6 @@ export type VariantRow = Omit<
   createdAt: Date;
   dimensionsCm: { height?: number; length?: number; width?: number } | null;
 };
-
-export const VARIANT_RETURNING = `
-  slug, name, sku, barcode,
-  unit_of_measure AS "unitOfMeasure",
-  cost_price AS "costPrice",
-  selling_price AS "sellingPrice",
-  attributes,
-  weight_grams AS "weightGrams",
-  dimensions_cm AS "dimensionsCm",
-  packaging_type AS "packagingType",
-  manufacturer_part_number AS "manufacturerPartNumber",
-  customs_code AS "customsCode",
-  is_default AS "isDefault",
-  status,
-  created_at AS "createdAt",
-  archived_at AS "archivedAt"
-`;
 
 export function toProductSummary(row: ProductSummaryRow): AdminProductSummary {
   return {
@@ -76,17 +61,18 @@ export function translateDuplicateKey(error: unknown, sku: string): unknown {
 }
 
 export async function resolveCategoryId(
-  pool: Pick<Pool, "query">,
+  db: ApiDatabase,
   categorySlug: string | null | undefined,
 ): Promise<string | null> {
   if (!categorySlug) return null;
 
-  const result = await pool.query<{ id: string }>(
-    `SELECT id FROM catalog_categories WHERE slug = $1`,
-    [categorySlug],
-  );
+  const result = await db
+    .select({ id: catalogCategories.id })
+    .from(catalogCategories)
+    .where(eq(catalogCategories.slug, categorySlug))
+    .limit(1);
 
-  const id = result.rows[0]?.id;
+  const id = result[0]?.id;
   if (!id) {
     throw new AppError({
       code: "not_found",
@@ -100,17 +86,18 @@ export async function resolveCategoryId(
 }
 
 export async function resolveBrandId(
-  pool: Pick<Pool, "query">,
+  db: ApiDatabase,
   brandSlug: string | null | undefined,
 ): Promise<string | null> {
   if (!brandSlug) return null;
 
-  const result = await pool.query<{ id: string }>(
-    `SELECT id FROM catalog_brands WHERE slug = $1`,
-    [brandSlug],
-  );
+  const result = await db
+    .select({ id: catalogBrands.id })
+    .from(catalogBrands)
+    .where(eq(catalogBrands.slug, brandSlug))
+    .limit(1);
 
-  const id = result.rows[0]?.id;
+  const id = result[0]?.id;
   if (!id) {
     throw new AppError({
       code: "not_found",

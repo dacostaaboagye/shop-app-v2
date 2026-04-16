@@ -3,21 +3,27 @@ import type {
   AdminCreateCategoryRequest,
   AdminUpdateCategoryRequest,
 } from "@shop/contracts";
-import type { Pool } from "pg";
+import { catalogCategories, catalogMediaAssignments } from "@shop/database";
+import { and, eq, sql } from "drizzle-orm";
+import type { ApiDatabase } from "../../infrastructure/database.js";
 import { AppError } from "../_core/errors/app-error.js";
 import type { SlugAllocator } from "../public-identifiers/slug.service.js";
 import type { CatalogCategoryWriteRepository } from "./catalog-category-write.service.js";
+import type { PostgresCatalogDeleteGuard } from "./postgres-catalog-delete-guard.js";
+import { type InferSelectModel } from "drizzle-orm";
 
-type CategoryRow = Omit<AdminCategorySummary, "createdAt"> & {
-  createdAt: Date;
+type CategoryRaw = InferSelectModel<typeof catalogCategories>;
+type CategoryWithParent = CategoryRaw & {
+  parentCategory: { slug: string } | null;
 };
 
 export class PostgresCatalogCategoryWriteRepository
   implements CatalogCategoryWriteRepository
 {
   constructor(
-    private readonly pool: Pick<Pool, "query">,
+    private readonly db: ApiDatabase,
     private readonly slugAllocator: SlugAllocator,
+    private readonly deleteGuard: PostgresCatalogDeleteGuard,
   ) {}
 
   async createCategory(input: {
@@ -25,7 +31,7 @@ export class PostgresCatalogCategoryWriteRepository
     now: Date;
     payload: AdminCreateCategoryRequest;
   }) {
-    const parentId = await this.resolveParentId(
+    const parent = await this.resolveParent(
       input.payload.parentCategorySlug ?? null,
     );
     const slug = await this.slugAllocator.allocateSlug({
@@ -33,40 +39,38 @@ export class PostgresCatalogCategoryWriteRepository
       value: input.payload.name,
     });
 
-    const result = await this.pool.query<CategoryRow>(
-      `
-        WITH inserted AS (
-          INSERT INTO catalog_categories (
-            slug, name, description, parent_category_id, status,
-            created_by, created_at, updated_at
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $7)
-          RETURNING id, slug, name, description, parent_category_id, status, created_at
-        )
-        SELECT
-          i.slug,
-          i.name,
-          i.description,
-          parent.slug AS "parentCategorySlug",
-          i.status,
-          i.created_at AS "createdAt"
-        FROM inserted i
-        LEFT JOIN catalog_categories parent ON parent.id = i.parent_category_id
-      `,
-      [
-        slug,
-        input.payload.name,
-        input.payload.description ?? null,
-        parentId,
-        input.payload.status,
-        input.actorId,
-        input.now,
-      ],
-    );
+    const row = await this.db.transaction(async (tx) => {
+      const id = crypto.randomUUID();
+      const path = parent ? `${parent.path}/${id}` : id;
 
-    const row = result.rows[0];
+      const [inserted] = await tx
+        .insert(catalogCategories)
+        .values({
+          id,
+          slug,
+          name: input.payload.name,
+          description: input.payload.description ?? null,
+          parentCategoryId: parent?.id ?? null,
+          path,
+          status: input.payload.status,
+          createdBy: input.actorId,
+          createdAt: input.now,
+          updatedAt: input.now,
+        })
+        .returning();
+
+      if (!inserted) throw new Error("Unable to create category.");
+
+      return tx.query.catalogCategories.findFirst({
+        where: eq(catalogCategories.id, inserted.id),
+        with: {
+          parentCategory: { columns: { slug: true } },
+        },
+      });
+    });
+
     if (!row) throw new Error("Unable to create category.");
-    return toCategory(row);
+    return toCategory(row as CategoryWithParent);
   }
 
   async updateCategory(input: {
@@ -75,70 +79,116 @@ export class PostgresCatalogCategoryWriteRepository
     payload: AdminUpdateCategoryRequest;
     slug: string;
   }) {
-    const sets: string[] = ["updated_at = $2"];
-    const values: unknown[] = [input.slug, input.now];
+    let oldPath: string | undefined;
+    let newPath: string | undefined;
 
-    if (input.payload.name !== undefined) {
-      values.push(input.payload.name);
-      sets.push(`name = $${values.length}`);
-    }
+    const updatedRow = await this.db.transaction(async (tx) => {
+      const current = await tx.query.catalogCategories.findFirst({
+        where: eq(catalogCategories.slug, input.slug),
+        columns: { id: true, path: true, parentCategoryId: true },
+      });
 
-    if ("description" in input.payload) {
-      values.push(input.payload.description ?? null);
-      sets.push(`description = $${values.length}`);
-    }
+      if (!current) return null;
 
-    if ("parentCategorySlug" in input.payload) {
-      const parentId = await this.resolveParentId(
-        input.payload.parentCategorySlug ?? null,
-      );
-      values.push(parentId);
-      sets.push(`parent_category_id = $${values.length}`);
-    }
+      let parentId: string | null = current.parentCategoryId;
+      if ("parentCategorySlug" in input.payload) {
+        const parent = await this.resolveParent(
+          input.payload.parentCategorySlug ?? null,
+        );
+        parentId = parent?.id ?? null;
+        oldPath = current.path;
+        newPath = parent ? `${parent.path}/${current.id}` : current.id;
 
-    if (input.payload.status !== undefined) {
-      values.push(input.payload.status);
-      sets.push(`status = $${values.length}`);
-    }
+        if (parent && parent.path.startsWith(`${oldPath}/`)) {
+          throw new AppError({
+            code: "validation_error",
+            detail:
+              "Cannot set a category's parent to one of its own descendants.",
+            statusCode: 400,
+            title: "Circular reference detected",
+          });
+        }
+      }
 
-    const result = await this.pool.query<CategoryRow>(
-      `
-        WITH updated AS (
-          UPDATE catalog_categories
-          SET ${sets.join(", ")}
-          WHERE slug = $1
-          RETURNING id, slug, name, description, parent_category_id, status, created_at
-        )
-        SELECT
-          u.slug,
-          u.name,
-          u.description,
-          parent.slug AS "parentCategorySlug",
-          u.status,
-          u.created_at AS "createdAt"
-        FROM updated u
-        LEFT JOIN catalog_categories parent ON parent.id = u.parent_category_id
-      `,
-      values,
-    );
+      await tx
+        .update(catalogCategories)
+        .set({
+          ...(input.payload.name !== undefined && { name: input.payload.name }),
+          ...("description" in input.payload && {
+            description: input.payload.description ?? null,
+          }),
+          ...("parentCategorySlug" in input.payload && {
+            parentCategoryId: parentId,
+            path: newPath,
+          }),
+          ...(input.payload.status !== undefined && {
+            status: input.payload.status,
+          }),
+          updatedAt: input.now,
+        })
+        .where(eq(catalogCategories.slug, input.slug));
 
-    const row = result.rows[0];
-    if (!row) return null;
-    return toCategory(row);
+      if (oldPath && newPath && oldPath !== newPath) {
+        // Update paths of all descendants
+        await tx.execute(sql`
+          UPDATE catalog_categories 
+          SET path = ${newPath} || SUBSTRING(path FROM length(${oldPath}) + 1) 
+          WHERE path LIKE ${sql`${oldPath}/%`} AND path != ${oldPath}
+        `);
+      }
+
+      return tx.query.catalogCategories.findFirst({
+        where: eq(catalogCategories.id, current.id),
+        with: {
+          parentCategory: { columns: { slug: true } },
+        },
+      });
+    });
+
+    if (!updatedRow) return null;
+    return toCategory(updatedRow as CategoryWithParent);
   }
 
-  private async resolveParentId(
+  async deleteCategory(input: { slug: string }) {
+    await this.deleteGuard.assertCategoryCanBeDeleted(input.slug);
+
+    await this.db.transaction(async (tx) => {
+      // Clean up media assignments
+      await tx
+        .delete(catalogMediaAssignments)
+        .where(
+          and(
+            eq(catalogMediaAssignments.entitySlug, input.slug),
+            eq(catalogMediaAssignments.entityType, "category"),
+          ),
+        );
+
+      const result = await tx
+        .delete(catalogCategories)
+        .where(eq(catalogCategories.slug, input.slug));
+
+      if (result.rowCount === 0) {
+        throw new AppError({
+          code: "not_found",
+          detail: `Category "${input.slug}" does not exist.`,
+          statusCode: 404,
+          title: "Category not found",
+        });
+      }
+    });
+  }
+
+  private async resolveParent(
     parentSlug: string | null | undefined,
-  ): Promise<string | null> {
+  ): Promise<{ id: string; path: string } | null> {
     if (!parentSlug) return null;
 
-    const result = await this.pool.query<{ id: string }>(
-      `SELECT id FROM catalog_categories WHERE slug = $1`,
-      [parentSlug],
-    );
+    const row = await this.db.query.catalogCategories.findFirst({
+      where: eq(catalogCategories.slug, parentSlug),
+      columns: { id: true, path: true },
+    });
 
-    const id = result.rows[0]?.id;
-    if (!id) {
+    if (!row) {
       throw new AppError({
         code: "not_found",
         detail: `Parent category "${parentSlug}" does not exist.`,
@@ -147,10 +197,18 @@ export class PostgresCatalogCategoryWriteRepository
       });
     }
 
-    return id;
+    return row;
   }
 }
 
-function toCategory(row: CategoryRow): AdminCategorySummary {
-  return { ...row, createdAt: row.createdAt.toISOString() };
+function toCategory(row: CategoryWithParent): AdminCategorySummary {
+  return {
+    slug: row.slug,
+    name: row.name,
+    description: row.description,
+    parentCategorySlug: row.parentCategory?.slug ?? null,
+    status: row.status,
+    createdAt: row.createdAt.toISOString(),
+    primaryImageUrl: null,
+  };
 }

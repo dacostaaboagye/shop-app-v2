@@ -10,6 +10,7 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { auditColumns, publicUuidColumn, slugColumn } from "./common.js";
 import { users } from "./identity.js";
 
@@ -44,6 +45,14 @@ export const locations = pgTable(
   ],
 );
 
+export const locationsRelations = relations(locations, ({ one, many }) => ({
+  manager: one(users, {
+    fields: [locations.managerId],
+    references: [users.id],
+  }),
+  zones: many(locationZones),
+}));
+
 export const locationZones = pgTable(
   "location_zones",
   {
@@ -60,3 +69,10 @@ export const locationZones = pgTable(
   },
   (table) => [index("location_zones_location_idx").on(table.locationId)],
 );
+
+export const locationZonesRelations = relations(locationZones, ({ one }) => ({
+  location: one(locations, {
+    fields: [locationZones.locationId],
+    references: [locations.id],
+  }),
+}));

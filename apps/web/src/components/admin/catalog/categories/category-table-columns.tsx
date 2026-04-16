@@ -6,6 +6,22 @@ import { ImageOff } from "lucide-react";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { CATALOG_STATUS_META, formatAdminDate } from "@/lib/admin-models";
+import { MoreVertical, Pencil, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { CatalogDeleteDialog } from "../catalog-delete-dialog";
+import {
+  deleteAdminCategory,
+  adminCategoriesQueryKey,
+} from "@/lib/react-query/admin-catalog";
+import { toRoute } from "@/lib/routes";
 
 export const categoryTableColumns: Array<
   ColumnDef<AdminCategorySummary, unknown>
@@ -80,4 +96,58 @@ export const categoryTableColumns: Array<
       </span>
     ),
   },
+  {
+    id: "actions",
+    size: 48,
+    cell: ({ row }) => <CategoryActions category={row.original} />,
+  },
 ];
+
+function CategoryActions({ category }: { category: AdminCategorySummary }) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" />}>
+          <MoreVertical className="size-4" />
+          <span className="sr-only">Open menu</span>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            render={
+              <Link
+                href={toRoute(
+                  `/admin/products/categories/${category.slug}?edit=true`,
+                )}
+              />
+            }
+          >
+            <Pencil className="mr-2 size-4" />
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => setIsDeleteDialogOpen(true)}
+          >
+            <Trash2 className="mr-2 size-4" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <CatalogDeleteDialog
+        entityName={category.name}
+        entitySlug={category.slug}
+        entityType="category"
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onDelete={deleteAdminCategory}
+        onSuccessQueryKeys={[
+          // Invalidate all variations of category queries
+          ["admin", "catalog", "categories"],
+        ]}
+      />
+    </>
+  );
+}

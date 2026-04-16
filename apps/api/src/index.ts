@@ -4,6 +4,7 @@ import { createR2StorageService } from "./infrastructure/r2-storage.js";
 import { createAdminDirectoryRuntime } from "./modules/admin/create-admin-directory-runtime.js";
 import { createAuthRuntime } from "./modules/auth/create-auth-runtime.js";
 import { createCatalogRuntime } from "./modules/catalog/create-catalog-runtime.js";
+import { createStockRuntime } from "./modules/stock/create-stock-runtime.js";
 import { createServer } from "./server/create-server.js";
 
 const env = getApiEnv();
@@ -17,6 +18,7 @@ const storage = createR2StorageService(env);
 const adminDirectoryRuntime = createAdminDirectoryRuntime(databaseRuntime);
 const authRuntime = createAuthRuntime(databaseRuntime, env);
 const catalogRuntime = createCatalogRuntime(databaseRuntime, storage);
+const stockRuntime = createStockRuntime(databaseRuntime);
 const server = createServer({
   accessControl: authRuntime.accessControl,
   adminAccess: adminDirectoryRuntime.adminDirectory,
@@ -32,6 +34,9 @@ const server = createServer({
   },
   catalogQuery: catalogRuntime.catalog,
   catalogWrite: catalogRuntime.catalog,
+  stock: stockRuntime.stock,
+  stockBalance: stockRuntime.stock,
+  stockCount: stockRuntime.stock,
 });
 
 try {

@@ -17,6 +17,7 @@ export type CatalogCategoryWriteRepository = {
     payload: AdminUpdateCategoryRequest;
     slug: string;
   }): Promise<AdminUpdateCategoryResponse | null>;
+  deleteCategory(input: { slug: string }): Promise<void>;
 };
 
 export class CatalogCategoryWriteService {
@@ -37,5 +38,9 @@ export class CatalogCategoryWriteService {
     now: Date,
   ) {
     return this.repository.updateCategory({ actorId, now, payload, slug });
+  }
+
+  async deleteCategory(slug: string) {
+    return this.repository.deleteCategory({ slug });
   }
 }

@@ -10,9 +10,11 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
@@ -62,42 +64,52 @@ export function LocationZoneForm({
   });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onOpenChange(false);
+      }}
+    >
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit zone" : "Add zone"}</DialogTitle>
-          <DialogDescription>
-            {isEditing
-              ? "Update storage zone details."
-              : "Create a new storage zone within this location."}
-          </DialogDescription>
-        </DialogHeader>
-
         <form
-          className="flex flex-col gap-6"
           onSubmit={(event) => {
             event.preventDefault();
-            event.stopPropagation();
             void form.handleSubmit();
           }}
         >
-          <div className="flex flex-col gap-4">
+          <DialogHeader>
+            <DialogTitle>{isEditing ? "Edit zone" : "Add zone"}</DialogTitle>
+            <DialogDescription>
+              {isEditing
+                ? "Update storage zone details."
+                : "Create a new storage zone within this location."}
+            </DialogDescription>
+          </DialogHeader>
+          {mutation.isError ? (
+            <Alert variant="destructive">
+              <AlertTitle>Unable to save zone</AlertTitle>
+              <AlertDescription>
+                {mutation.error instanceof Error
+                  ? mutation.error.message
+                  : "An unexpected error occurred."}
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          <FieldGroup className="py-2">
             <form.Field
               name="name"
               validators={{
                 onChange: ({ value }) =>
-                  Number(value.trim().length) < 1
-                    ? "Name is required"
-                    : undefined,
+                  value.trim().length < 1 ? "Name is required" : undefined,
               }}
             >
               {(field) => (
                 <AppFormField
+                  description="e.g. Aisle 4, Cold Storage, Front Store"
                   errors={field.state.meta.errors}
                   inputId={field.name}
                   label="Name"
                   showErrors={field.state.meta.isBlurred}
-                  description="e.g. Aisle 4, Cold Storage, Front Store"
                 >
                   <Input
                     id={field.name}
@@ -112,15 +124,14 @@ export function LocationZoneForm({
                 </AppFormField>
               )}
             </form.Field>
-
-            <form.Field name="description" validators={{}}>
+            <form.Field name="description">
               {(field) => (
                 <AppFormField
+                  description="Optional context about what is stored here"
                   errors={field.state.meta.errors}
                   inputId={field.name}
                   label="Description"
                   showErrors={field.state.meta.isBlurred}
-                  description="Optional context about what is stored here"
                 >
                   <Textarea
                     id={field.name}
@@ -132,40 +143,23 @@ export function LocationZoneForm({
                 </AppFormField>
               )}
             </form.Field>
-          </div>
-
-          {mutation.error ? (
-            <Alert variant="destructive">
-              <AlertTitle>Unable to save zone</AlertTitle>
-              <AlertDescription>
-                {mutation.error instanceof Error
-                  ? mutation.error.message
-                  : "An unexpected error occurred."}
-              </AlertDescription>
-            </Alert>
-          ) : null}
-
-          <div className="flex justify-end gap-3">
-            <Button
-              onClick={() => onOpenChange(false)}
-              type="button"
-              variant="outline"
-              disabled={form.state.isSubmitting}
-            >
-              Cancel
-            </Button>
+          </FieldGroup>
+          <DialogFooter showCloseButton>
             <form.Subscribe
-              selector={(state) => [state.canSubmit, state.isSubmitting]}
+              selector={(state) => ({
+                canSubmit: state.canSubmit,
+                isSubmitting: state.isSubmitting,
+              })}
             >
-              {([canSubmit, isSubmitting]) => (
+              {({ canSubmit, isSubmitting }) => (
                 <Button
-                  disabled={!canSubmit || (isSubmitting as boolean)}
+                  disabled={!canSubmit || isSubmitting || mutation.isPending}
                   type="submit"
                 >
-                  {isSubmitting ? (
+                  {isSubmitting || mutation.isPending ? (
                     <>
-                      <Spinner />
-                      Saving...
+                      <Spinner data-icon="inline-start" />
+                      Saving…
                     </>
                   ) : (
                     "Save zone"
@@ -173,7 +167,7 @@ export function LocationZoneForm({
                 </Button>
               )}
             </form.Subscribe>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

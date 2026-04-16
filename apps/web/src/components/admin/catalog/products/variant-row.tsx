@@ -139,6 +139,18 @@ export function VariantRow({
             <p className="font-mono text-[0.72rem]">{variant.barcode}</p>
           </div>
         ) : null}
+        {variant.isTaxable !== null ? (
+          <div>
+            <p className="text-xs text-muted-foreground">Taxable?</p>
+            <p>{variant.isTaxable ? "Yes" : "No"}</p>
+          </div>
+        ) : null}
+        {variant.taxCategory ? (
+          <div className="col-span-2 sm:col-span-1">
+            <p className="text-xs text-muted-foreground">Tax category</p>
+            <p>{variant.taxCategory}</p>
+          </div>
+        ) : null}
       </div>
 
       {!isEditing && actionError ? (

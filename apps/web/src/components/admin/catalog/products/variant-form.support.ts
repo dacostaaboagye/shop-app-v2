@@ -22,11 +22,14 @@ export type VariantFormValues = {
   status: "active" | "archived";
   unitOfMeasure: string;
   weightGrams: string;
+  isTaxable: "inherit" | "yes" | "no";
+  taxCategory: string;
 };
 
 export function requiredString(message: string) {
   return {
-    onBlur: ({ value }: { value: string }) => (value.trim() ? undefined : message),
+    onBlur: ({ value }: { value: string }) =>
+      value.trim() ? undefined : message,
     onSubmit: ({ value }: { value: string }) =>
       value.trim() ? undefined : message,
   };
@@ -88,6 +91,13 @@ export function getVariantFormValues(
     status: variant.status,
     unitOfMeasure: variant.unitOfMeasure,
     weightGrams: formatOptionalNumber(variant.weightGrams),
+    isTaxable:
+      variant.isTaxable === true
+        ? "yes"
+        : variant.isTaxable === false
+          ? "no"
+          : "inherit",
+    taxCategory: variant.taxCategory ?? "",
   };
 }
 
@@ -109,10 +119,15 @@ export function getDefaultVariantFormValues(): VariantFormValues {
     status: "active",
     unitOfMeasure: "each",
     weightGrams: "",
+    isTaxable: "inherit",
+    taxCategory: "",
   };
 }
 
-export function toVariantCreateRequest(values: VariantFormValues, canSeeCostPrice: boolean): AdminCreateVariantRequest {
+export function toVariantCreateRequest(
+  values: VariantFormValues,
+  canSeeCostPrice: boolean,
+): AdminCreateVariantRequest {
   return {
     attributes: toAttributesRecord(values.attributesText),
     barcode: toNullableText(values.barcode),
@@ -128,10 +143,20 @@ export function toVariantCreateRequest(values: VariantFormValues, canSeeCostPric
     status: values.status,
     unitOfMeasure: values.unitOfMeasure.trim(),
     weightGrams: toNullableInteger(values.weightGrams),
+    isTaxable:
+      values.isTaxable === "yes"
+        ? true
+        : values.isTaxable === "no"
+          ? false
+          : null,
+    taxCategory: toNullableText(values.taxCategory),
   };
 }
 
-export function toVariantUpdateRequest(values: VariantFormValues, canSeeCostPrice: boolean): AdminUpdateVariantRequest {
+export function toVariantUpdateRequest(
+  values: VariantFormValues,
+  canSeeCostPrice: boolean,
+): AdminUpdateVariantRequest {
   const payload: AdminUpdateVariantRequest = {
     attributes: toAttributesRecord(values.attributesText),
     barcode: toNullableText(values.barcode),
@@ -146,6 +171,13 @@ export function toVariantUpdateRequest(values: VariantFormValues, canSeeCostPric
     status: values.status,
     unitOfMeasure: values.unitOfMeasure.trim(),
     weightGrams: toNullableInteger(values.weightGrams),
+    isTaxable:
+      values.isTaxable === "yes"
+        ? true
+        : values.isTaxable === "no"
+          ? false
+          : null,
+    taxCategory: toNullableText(values.taxCategory),
   };
 
   if (canSeeCostPrice) {
@@ -171,9 +203,9 @@ function isPositiveNumber(value: string): boolean {
   return Number.isFinite(Number(value.trim())) && Number(value.trim()) > 0;
 }
 
-function parseAttributesText(value: string):
-  | { ok: true; value: Record<string, string> }
-  | { ok: false } {
+function parseAttributesText(
+  value: string,
+): { ok: true; value: Record<string, string> } | { ok: false } {
   const entries = value
     .split("\n")
     .map((line) => line.trim())

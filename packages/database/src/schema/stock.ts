@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   check,
   index,
@@ -13,6 +13,7 @@ import {
 import { publicUuidColumn } from "./common.js";
 import { users } from "./identity.js";
 import { locations } from "./locations.js";
+import { productVariants } from "./catalog.js";
 
 export const stockReservationStatusEnum = pgEnum("stock_reservation_status", [
   "active",
@@ -70,6 +71,17 @@ export const stockBalances = pgTable(
   ],
 );
 
+export const stockBalancesRelations = relations(stockBalances, ({ one }) => ({
+  location: one(locations, {
+    fields: [stockBalances.locationId],
+    references: [locations.id],
+  }),
+  variant: one(productVariants, {
+    fields: [stockBalances.skuId],
+    references: [productVariants.id],
+  }),
+}));
+
 export const stockReservations = pgTable(
   "stock_reservations",
   {
@@ -116,6 +128,20 @@ export const stockReservations = pgTable(
   ],
 );
 
+export const stockReservationsRelations = relations(
+  stockReservations,
+  ({ one }) => ({
+    location: one(locations, {
+      fields: [stockReservations.locationId],
+      references: [locations.id],
+    }),
+    variant: one(productVariants, {
+      fields: [stockReservations.skuId],
+      references: [productVariants.id],
+    }),
+  }),
+);
+
 export const stockMovements = pgTable(
   "stock_movements",
   {
@@ -152,3 +178,14 @@ export const stockMovements = pgTable(
     ),
   ],
 );
+
+export const stockMovementsRelations = relations(stockMovements, ({ one }) => ({
+  location: one(locations, {
+    fields: [stockMovements.locationId],
+    references: [locations.id],
+  }),
+  variant: one(productVariants, {
+    fields: [stockMovements.skuId],
+    references: [productVariants.id],
+  }),
+}));

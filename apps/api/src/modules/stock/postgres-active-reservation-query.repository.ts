@@ -1,4 +1,7 @@
-import type { Pool } from "pg";
+import type { ActiveReservationSummary as AdminActiveReservationSummary } from "@shop/contracts";
+import { stockReservations } from "@shop/database";
+import { and, eq, lte } from "drizzle-orm";
+import type { ApiDatabase } from "../../infrastructure/database.js";
 import type {
   ActiveReservationQueryRepository,
   ActiveReservationSummary,
@@ -7,7 +10,7 @@ import type {
 export class PostgresActiveReservationQueryRepository
   implements ActiveReservationQueryRepository
 {
-  constructor(private readonly pool: Pick<Pool, "query">) {}
+  constructor(private readonly db: ApiDatabase) {}
 
   async listActiveReservations(input: {
     expiresAfter?: Date;
@@ -17,42 +20,35 @@ export class PostgresActiveReservationQueryRepository
     skuId?: string;
     sourceType?: string;
   }): Promise<ActiveReservationSummary[]> {
-    const result = await this.pool.query<ActiveReservationSummary>(
-      `
-        SELECT
-          created_at AS "createdAt",
-          expires_at AS "expiresAt",
-          location_id AS "locationId",
-          quantity,
-          sku_id AS "skuId",
-          source_key AS "sourceKey",
-          source_type AS "sourceType",
-          status,
-          updated_at AS "updatedAt"
-        FROM stock_reservations
-        WHERE status = 'active'
-          AND location_id = $1
-          AND ($2::boolean = false OR sku_id = $3)
-          AND ($4::boolean = false OR source_type = $5)
-          AND ($6::boolean = false OR expires_at <= $7)
-          AND ($8::boolean = false OR expires_at >= $9)
-        ORDER BY expires_at ASC NULLS LAST, created_at ASC
-        LIMIT $10
-      `,
-      [
-        input.locationId,
-        input.skuId != null,
-        input.skuId ?? null,
-        input.sourceType != null,
-        input.sourceType ?? null,
-        input.expiresBefore != null,
-        input.expiresBefore ?? null,
-        input.expiresAfter != null,
-        input.expiresAfter ?? null,
-        input.limit,
-      ],
-    );
+    const rows = await this.db.query.stockReservations.findMany({
+      where: (r, { eq, and, lte, gte }) =>
+        and(
+          eq(r.status, "active"),
+          eq(r.locationId, input.locationId),
+          input.skuId ? eq(r.skuId, input.skuId) : undefined,
+          input.sourceType ? eq(r.sourceType, input.sourceType) : undefined,
+          input.expiresBefore ? lte(r.expiresAt, input.expiresBefore) : undefined,
+          input.expiresAfter ? gte(r.expiresAt, input.expiresAfter) : undefined,
+        ),
+      orderBy: (r, { asc }) => [asc(r.expiresAt), asc(r.createdAt)],
+      limit: input.limit,
+    });
 
-    return result.rows;
+    return rows.map((row) => ({
+      ...row,
+      status: "active" as const,
+      expiresAt: row.expiresAt ?? null,
+    }));
+  }
+
+  async findExpiredReservations(now: Date): Promise<string[]> {
+    const rows = await this.db
+      .select({ id: stockReservations.id })
+      .from(stockReservations)
+      .where(
+        and(eq(stockReservations.status, "active"), lte(stockReservations.expiresAt, now)),
+      );
+
+    return rows.map((r) => r.id);
   }
 }

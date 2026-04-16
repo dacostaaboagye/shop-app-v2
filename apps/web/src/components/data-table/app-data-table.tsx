@@ -165,7 +165,17 @@ export function AppDataTable<TData>({
                 key={row.id}
                 className={onRowClick ? "cursor-pointer" : undefined}
                 onClick={
-                  onRowClick ? () => onRowClick(row.original) : undefined
+                  onRowClick
+                    ? (e) => {
+                        const target = e.target as HTMLElement;
+                        const isInteractive = !!target.closest(
+                          'button, a, input, select, textarea, [role="menuitem"], [data-no-row-click="true"]',
+                        );
+                        if (!isInteractive) {
+                          onRowClick(row.original);
+                        }
+                      }
+                    : undefined
                 }
               >
                 {row.getVisibleCells().map((cell) => {

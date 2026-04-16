@@ -1,146 +1,126 @@
-import type {
+import {
   AdminAssignedLocation,
   AdminRoleOption,
   AdminUserListQuery,
   AdminUserSummary,
+  AuthUserStatus,
+  PortalKey,
 } from "@shop/contracts";
-import type { Pool } from "pg";
+import {
+  catalogMediaAssignments,
+  mediaAssets,
+  roles,
+  users,
+} from "@shop/database";
+import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
+import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { AdminUserQueryRepository } from "./admin-user-query.service.js";
-
-type AdminUserRow = Omit<AdminUserSummary, "createdAt" | "lastLoginAt"> & {
-  createdAt: Date;
-  lastLoginAt: Date | null;
-};
-type RoleRow = AdminRoleOption;
 
 export class PostgresAdminUserQueryRepository
   implements AdminUserQueryRepository
 {
-  constructor(private readonly pool: Pick<Pool, "query">) {}
+  constructor(private readonly db: ApiDatabase) {}
 
   async listUsers(input: AdminUserListQuery) {
-    const values = buildUserFilterValues(input);
-    const offset = (input.page - 1) * input.pageSize;
-    const availableRolesResult = await this.pool.query<RoleRow>(
-      `
-        SELECT slug, name
-        FROM roles
-        ORDER BY name ASC, slug ASC
-      `,
-    );
-    const countResult = await this.pool.query<{ count: string }>(
-      `
-        SELECT COUNT(*)::text AS count
-        FROM users
-        WHERE ($1::boolean = false OR CONCAT_WS(' ', first_name, last_name, email) ILIKE $2)
-          AND ($3::boolean = false OR status = $4)
-          AND (
-            $5::boolean = false
-            OR EXISTS (
-              SELECT 1
-              FROM user_roles
-              JOIN roles ON roles.id = user_roles.role_id
-              WHERE user_roles.user_id = users.id
-                AND user_roles.revoked_at IS NULL
-                AND roles.slug = $6
+    const { page, pageSize, q, role, locationSlug, status, sort, dir } = input;
+    const offset = (page - 1) * pageSize;
+    const pattern = `%${q.trim()}%`;
+    const hasQuery = q.trim().length > 0;
+
+    const [availableRoles, totalCountResult, userRows] = await Promise.all([
+      // 1. Available roles
+      this.db.select({ slug: roles.slug, name: roles.name }).from(roles).orderBy(asc(roles.name)),
+
+      // 2. Total count with filters
+      this.db
+        .select({ count: sql<number>`cast(count(distinct ${users.id}) as int)` })
+        .from(users)
+        .leftJoin(sql`user_roles`, sql`user_roles.user_id = users.id`)
+        .leftJoin(roles, eq(roles.id, sql`user_roles.role_id`))
+        .leftJoin(sql`locations`, sql`locations.id = user_roles.location_id`)
+        .where(
+          and(
+            hasQuery ? or(ilike(users.firstName, pattern), ilike(users.lastName, pattern), ilike(users.email, pattern)) : undefined,
+            status !== "all" ? eq(users.status, status as AuthUserStatus) : undefined,
+            role ? eq(roles.slug, role) : undefined,
+            locationSlug ? eq(sql`locations.slug`, locationSlug) : undefined,
+          )
+        ),
+
+      // 3. User details with relations
+      this.db.query.users.findMany({
+        where: (u, { and, or, ilike, eq }) =>
+          and(
+            hasQuery ? or(ilike(u.firstName, pattern), ilike(u.lastName, pattern), ilike(u.email, pattern)) : undefined,
+            status !== "all" ? eq(u.status, status as AuthUserStatus) : undefined,
+          ),
+        with: {
+          userRoles: {
+            where: (ur, { isNull }) => isNull(ur.revokedAt),
+            with: {
+              role: true,
+              location: true,
+            },
+          },
+          // Profile Image
+          // (Need to handle media assignments separately or via another join if not in relations yet)
+        },
+        orderBy: (u, { asc, desc }) => [
+          sort === "createdAt" ? (dir === "desc" ? desc(u.createdAt) : asc(u.createdAt)) : (dir === "desc" ? desc(u.firstName) : asc(u.firstName))
+        ],
+        limit: pageSize,
+        offset: offset,
+      }),
+    ]);
+
+    // Fetch primary images separately for the selected users
+    const userSlugs = userRows.map(u => u.slug);
+    const images = userSlugs.length > 0 
+      ? await this.db
+          .select({
+            userSlug: catalogMediaAssignments.entitySlug,
+            url: mediaAssets.publicUrl,
+          })
+          .from(catalogMediaAssignments)
+          .innerJoin(mediaAssets, eq(mediaAssets.id, catalogMediaAssignments.assetId))
+          .where(
+            and(
+              eq(catalogMediaAssignments.entityType, "user"),
+              sql`${catalogMediaAssignments.entitySlug} IN ${userSlugs}`,
+              eq(catalogMediaAssignments.isPrimary, true)
             )
           )
-      `,
-      values,
-    );
-    const result = await this.pool.query<AdminUserRow>(
-      `
-        SELECT
-          users.slug,
-          users.first_name AS "firstName",
-          users.last_name AS "lastName",
-          users.email,
-          users.status,
-          users.preferred_portal AS "preferredPortal",
-          users.last_login_at AS "lastLoginAt",
-          users.requires_password_change AS "requiresPasswordChange",
-          users.created_at AS "createdAt",
-          COALESCE(
-            JSON_AGG(DISTINCT JSONB_BUILD_OBJECT('slug', roles.slug, 'name', roles.name))
-              FILTER (WHERE user_roles.revoked_at IS NULL AND roles.slug IS NOT NULL),
-            '[]'::json
-          ) AS roles,
-          COALESCE(
-            JSON_AGG(DISTINCT JSONB_BUILD_OBJECT('name', locations.name, 'slug', locations.slug))
-              FILTER (WHERE user_roles.revoked_at IS NULL AND locations.slug IS NOT NULL),
-            '[]'::json
-          ) AS "assignedLocations"
-        FROM users
-        LEFT JOIN user_roles ON user_roles.user_id = users.id
-        LEFT JOIN roles ON roles.id = user_roles.role_id
-        LEFT JOIN locations ON locations.id = user_roles.location_id
-        WHERE ($1::boolean = false OR CONCAT_WS(' ', users.first_name, users.last_name, users.email) ILIKE $2)
-          AND ($3::boolean = false OR users.status = $4)
-          AND (
-            $5::boolean = false
-            OR EXISTS (
-              SELECT 1
-              FROM user_roles filtered_roles
-              JOIN roles filtered_role_defs ON filtered_role_defs.id = filtered_roles.role_id
-              WHERE filtered_roles.user_id = users.id
-                AND filtered_roles.revoked_at IS NULL
-                AND filtered_role_defs.slug = $6
-            )
-          )
-        GROUP BY
-          users.id,
-          users.slug,
-          users.first_name,
-          users.last_name,
-          users.email,
-          users.status,
-          users.preferred_portal,
-          users.last_login_at,
-          users.requires_password_change,
-          users.created_at
-        ORDER BY ${getUserSortClause(input)}
-        LIMIT $7 OFFSET $8
-      `,
-      [...values, input.pageSize, offset],
-    );
+      : [];
+
+    const imageMap = new Map(images.map(img => [img.userSlug, img.url]));
 
     return {
-      availableRoles: availableRolesResult.rows,
-      items: result.rows.map((row) => ({
-        ...row,
-        assignedLocations: row.assignedLocations as AdminAssignedLocation[],
-        roles: row.roles as AdminRoleOption[],
-        createdAt: row.createdAt.toISOString(),
-        lastLoginAt: row.lastLoginAt?.toISOString() ?? null,
-      })),
-      totalCount: Number.parseInt(countResult.rows[0]?.count ?? "0", 10),
+      availableRoles,
+      totalCount: totalCountResult[0]?.count ?? 0,
+      items: userRows.map((user): AdminUserSummary => {
+        const assignedLocations: AdminAssignedLocation[] = [];
+        const userRoles: AdminRoleOption[] = [];
+
+        for (const ur of user.userRoles) {
+          if (ur.role) userRoles.push({ slug: ur.role.slug, name: ur.role.name });
+          if (ur.location) assignedLocations.push({ slug: ur.location.slug, name: ur.location.name });
+        }
+
+        return {
+          slug: user.slug,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          status: user.status,
+          preferredPortal: user.preferredPortal as PortalKey | null,
+          lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
+          requiresPasswordChange: user.requiresPasswordChange,
+          createdAt: user.createdAt.toISOString(),
+          primaryImageUrl: imageMap.get(user.slug) ?? null,
+          roles: userRoles,
+          assignedLocations,
+        };
+      }),
     };
-  }
-}
-
-function buildUserFilterValues(input: AdminUserListQuery) {
-  const query = input.q.trim();
-  const role = input.role.trim();
-
-  return [
-    query.length > 0,
-    `%${query}%`,
-    input.status !== "all",
-    input.status === "all" ? null : input.status,
-    role.length > 0,
-    role.length > 0 ? role : null,
-  ];
-}
-
-function getUserSortClause(input: AdminUserListQuery) {
-  const direction = input.dir === "desc" ? "DESC" : "ASC";
-
-  switch (input.sort) {
-    case "createdAt":
-      return `users.created_at ${direction}, users.id ASC`;
-    case "status":
-      return `users.status ${direction}, users.last_name ASC, users.first_name ASC`;
-    default:
-      return `users.first_name ${direction}, users.last_name ${direction}, users.id ASC`;
   }
 }

@@ -14,6 +14,7 @@ Hierarchical product grouping.
 
 - `slug`: public category identifier for URLs and filters
 - `parent_category_id`: optional self-reference for nested categories
+- `path`: materialized path string (e.g. `parent_id/child_id`) allowing for highly optimized O(1) subtree retrieval without recursive CTEs.
 - `status`: `active` or `archived`
 
 Notes:

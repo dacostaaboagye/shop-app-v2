@@ -1,15 +1,15 @@
-import type { Pool } from "pg";
+import { stockBalances, stockReservations } from "@shop/database";
+import { and, eq, ne, sql } from "drizzle-orm";
+import type { ApiDatabase } from "../../infrastructure/database.js";
 import type {
   StockAvailabilityRepository,
   StockAvailabilitySnapshot,
 } from "./availability-query.service.js";
 
-export type PgQueryable = Pick<Pool, "query">;
-
 export class PostgresStockAvailabilityRepository
   implements StockAvailabilityRepository
 {
-  constructor(private readonly queryable: PgQueryable) {}
+  constructor(private readonly db: ApiDatabase) {}
 
   async getStockAvailabilitySnapshot(input: {
     excludeReservationId?: string;
@@ -17,39 +17,54 @@ export class PostgresStockAvailabilityRepository
     lock?: "for_update";
     skuId: string;
   }): Promise<StockAvailabilitySnapshot | null> {
-    const shouldExcludeReservation = input.excludeReservationId != null;
-    const shouldLockBalance = input.lock === "for_update";
-    const result = await this.queryable.query<StockAvailabilitySnapshot>(
-      `
-        SELECT
-          balance.on_hand_quantity AS "onHandQuantity",
-          balance.reserved_quantity AS "reservedQuantity",
-          COALESCE(reservations.active_reservation_quantity, 0) AS "activeReservationQuantity"
-        FROM stock_balances AS balance
-        LEFT JOIN (
-          SELECT
-            sku_id,
-            location_id,
-            SUM(quantity)::int AS active_reservation_quantity
-          FROM stock_reservations
-          WHERE status = 'active'
-            AND ($3::boolean = false OR id <> $4::uuid)
-          GROUP BY sku_id, location_id
-        ) AS reservations
-          ON reservations.sku_id = balance.sku_id
-         AND reservations.location_id = balance.location_id
-        WHERE balance.sku_id = $1
-          AND balance.location_id = $2
-        ${shouldLockBalance ? "FOR UPDATE OF balance" : ""}
-      `,
-      [
-        input.skuId,
-        input.locationId,
-        shouldExcludeReservation,
-        input.excludeReservationId ?? null,
-      ],
-    );
+    const reservationSubquery = this.db
+      .select({
+        skuId: stockReservations.skuId,
+        locationId: stockReservations.locationId,
+        activeReservationQuantity:
+          sql<number>`cast(sum(${stockReservations.quantity}) as int)`.as(
+            "active_reservation_quantity",
+          ),
+      })
+      .from(stockReservations)
+      .where(
+        and(
+          eq(stockReservations.status, "active"),
+          input.excludeReservationId
+            ? ne(stockReservations.id, input.excludeReservationId)
+            : undefined,
+        ),
+      )
+      .groupBy(stockReservations.skuId, stockReservations.locationId)
+      .as("reservations");
 
-    return result.rows[0] ?? null;
+    const query = this.db
+      .select({
+        onHandQuantity: stockBalances.onHandQuantity,
+        reservedQuantity: stockBalances.reservedQuantity,
+        activeReservationQuantity: sql<number>`coalesce(${reservationSubquery.activeReservationQuantity}, 0)`,
+      })
+      .from(stockBalances)
+      .leftJoin(
+        reservationSubquery,
+        and(
+          eq(reservationSubquery.skuId, stockBalances.skuId),
+          eq(reservationSubquery.locationId, stockBalances.locationId),
+        ),
+      )
+      .where(
+        and(
+          eq(stockBalances.skuId, input.skuId),
+          eq(stockBalances.locationId, input.locationId),
+        ),
+      );
+
+    if (input.lock === "for_update") {
+      query.for("update", { of: stockBalances });
+    }
+
+    const [row] = await query;
+
+    return row ?? null;
   }
 }

@@ -21,7 +21,7 @@ type CatalogBrandRouteDependencies = {
   >;
   catalogBrandWriteService: Pick<
     CatalogBrandWriteService,
-    "createBrand" | "updateBrand"
+    "createBrand" | "updateBrand" | "deleteBrand"
   >;
 };
 
@@ -46,6 +46,12 @@ const createBrandRoute: RouteDefinition = {
 const updateBrandRoute: RouteDefinition = {
   access: { kind: "permission", permission: "catalog.brands.manage" },
   method: "PATCH",
+  url: "/api/admin/catalog/brands/:slug",
+};
+
+const deleteBrandRoute: RouteDefinition = {
+  access: { kind: "permission", permission: "catalog.brands.manage" },
+  method: "DELETE",
   url: "/api/admin/catalog/brands/:slug",
 };
 
@@ -127,6 +133,17 @@ export function registerCatalogBrandRoutes(
       return adminUpdateBrandResponseSchema.parse(result);
     },
   });
+
+  server.route({
+    config: { access: deleteBrandRoute.access },
+    method: deleteBrandRoute.method,
+    url: deleteBrandRoute.url,
+    async handler(request) {
+      const { slug } = request.params as { slug: string };
+      await dependencies.catalogBrandWriteService.deleteBrand(slug);
+      return { success: true };
+    },
+  });
 }
 
 function createUnavailableDependencies(): CatalogBrandRouteDependencies {
@@ -144,6 +161,9 @@ function createUnavailableDependencies(): CatalogBrandRouteDependencies {
         throw unavailableCatalogError();
       },
       async updateBrand() {
+        throw unavailableCatalogError();
+      },
+      async deleteBrand() {
         throw unavailableCatalogError();
       },
     },

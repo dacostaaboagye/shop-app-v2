@@ -1,5 +1,4 @@
 import type {
-  AdminAuditEntry,
   AdminAuditListQuery,
   AdminAuditListResponse,
   AdminPermissionListQuery,
@@ -10,104 +9,120 @@ import type {
   AdminRoleListResponse,
   AdminRoleSummary,
 } from "@shop/contracts";
-import type { Pool } from "pg";
+import {
+  locations,
+  permissionAuditLog,
+  permissions,
+  rolePermissions,
+  roles,
+  userRoles,
+  users,
+} from "@shop/database";
+import { and, asc, desc, eq, ilike, or, sql, aliasedTable } from "drizzle-orm";
+import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { AdminAccessQueryRepository } from "./admin-access-query.service.js";
-
-type RoleRow = AdminRoleSummary;
-type PermissionRow = AdminPermissionSummary;
-type AuditRow = Omit<AdminAuditEntry, "createdAt"> & { createdAt: Date };
 
 export class PostgresAdminAccessQueryRepository
   implements AdminAccessQueryRepository
 {
-  constructor(private readonly pool: Pick<Pool, "query">) {}
+  constructor(private readonly db: ApiDatabase) {}
 
   async getRole(slug: string): Promise<AdminRoleDetail | null> {
-    const roleResult = await this.pool.query<RoleRow>(
-      `
-        SELECT
-          roles.slug,
-          roles.name,
-          roles.description,
-          roles.is_system AS "isSystem",
-          COUNT(DISTINCT role_permissions.permission_id)::int AS "permissionCount",
-          COUNT(DISTINCT user_roles.user_id)::int AS "assignedUserCount"
-        FROM roles
-        LEFT JOIN role_permissions ON role_permissions.role_id = roles.id
-        LEFT JOIN user_roles ON user_roles.role_id = roles.id AND user_roles.revoked_at IS NULL
-        WHERE roles.slug = $1
-        GROUP BY roles.id
-      `,
-      [slug],
-    );
-    const role = roleResult.rows[0];
+    const role = await this.db.query.roles.findFirst({
+      where: (r, { eq }) => eq(r.slug, slug),
+      with: {
+        rolePermissions: {
+          with: {
+            permission: true,
+          },
+        },
+      },
+    });
 
     if (!role) {
       return null;
     }
 
-    const permissionsResult = await this.pool.query<
-      PermissionRow & { granted: boolean }
-    >(
-      `
-        SELECT
-          permissions.key,
-          permissions.description,
-          COUNT(DISTINCT role_permissions.role_id)::int AS "assignedRoleCount",
-          EXISTS (
-            SELECT 1
-            FROM role_permissions role_permissions_for_role
-            JOIN roles roles_for_permission
-              ON roles_for_permission.id = role_permissions_for_role.role_id
-            WHERE roles_for_permission.slug = $1
-              AND role_permissions_for_role.permission_id = permissions.id
-          ) AS granted
-        FROM permissions
-        LEFT JOIN role_permissions ON role_permissions.permission_id = permissions.id
-        GROUP BY permissions.id
-        ORDER BY permissions.key ASC
-      `,
-      [slug],
-    );
+    // counts
+    const counts = await this.db
+      .select({
+        permissionCount: sql<number>`cast(count(distinct ${rolePermissions.permissionId}) as int)`,
+        assignedUserCount: sql<number>`cast(count(distinct ${userRoles.userId}) as int)`,
+      })
+      .from(roles)
+      .leftJoin(rolePermissions, eq(rolePermissions.roleId, roles.id))
+      .leftJoin(
+        userRoles,
+        and(eq(userRoles.roleId, roles.id), sql`${userRoles.revokedAt} IS NULL`),
+      )
+      .where(eq(roles.id, role.id))
+      .groupBy(roles.id, roles.name, roles.slug)
+      .then((rows) => rows[0]);
 
-    return { ...role, permissions: permissionsResult.rows };
+    // all permissions with "granted" flag
+    const allPermissions = await this.db
+      .select({
+        key: permissions.key,
+        description: permissions.description,
+        assignedRoleCount: sql<number>`cast(count(distinct ${rolePermissions.roleId}) as int)`,
+        granted: sql<boolean>`EXISTS (
+          SELECT 1 FROM ${rolePermissions} 
+          WHERE role_id = ${role.id} AND permission_id = ${permissions.id}
+        )`,
+      })
+      .from(permissions)
+      .leftJoin(rolePermissions, eq(rolePermissions.permissionId, permissions.id))
+      .groupBy(permissions.id, permissions.key, permissions.description)
+      .orderBy(asc(permissions.key));
+
+    return {
+      slug: role.slug,
+      name: role.name,
+      description: role.description,
+      isSystem: role.isSystem,
+      permissionCount: counts?.permissionCount ?? 0,
+      assignedUserCount: counts?.assignedUserCount ?? 0,
+      permissions: allPermissions,
+    };
   }
 
   async listAudit(input: AdminAuditListQuery): Promise<AdminAuditListResponse> {
     const offset = (input.page - 1) * input.pageSize;
-    const countResult = await this.pool.query<{ count: string }>(
-      `SELECT COUNT(*)::text AS count FROM permission_audit_log`,
-    );
-    const result = await this.pool.query<AuditRow>(
-      `
-        SELECT
-          permission_audit_log.action,
-          permission_audit_log.permission_key AS "permissionKey",
-          permission_audit_log.role_slug AS "roleSlug",
-          permission_audit_log.override_effect AS "overrideEffect",
-          permission_audit_log.reason,
-          permission_audit_log.created_at AS "createdAt",
-          NULLIF(TRIM(CONCAT_WS(' ', actors.first_name, actors.last_name)), '') AS "actorName",
-          NULLIF(TRIM(CONCAT_WS(' ', targets.first_name, targets.last_name)), '') AS "targetUserName",
-          locations.name AS "locationName"
-        FROM permission_audit_log
-        LEFT JOIN users actors ON actors.id = permission_audit_log.actor_id
-        LEFT JOIN users targets ON targets.id = permission_audit_log.target_user_id
-        LEFT JOIN locations ON locations.id = permission_audit_log.location_id
-        ORDER BY permission_audit_log.created_at DESC, permission_audit_log.id DESC
-        LIMIT $1 OFFSET $2
-      `,
-      [input.pageSize, offset],
-    );
+    
+    const actors = aliasedTable(users, "actors");
+    const targets = aliasedTable(users, "targets");
+
+    const [totalCountResult, rows] = await Promise.all([
+      this.db.select({ count: sql<number>`cast(count(*) as int)` }).from(permissionAuditLog),
+      this.db
+        .select({
+          action: permissionAuditLog.action,
+          permissionKey: permissionAuditLog.permissionKey,
+          roleSlug: permissionAuditLog.roleSlug,
+          overrideEffect: permissionAuditLog.overrideEffect,
+          reason: permissionAuditLog.reason,
+          createdAt: permissionAuditLog.createdAt,
+          actorName: sql<string | null>`NULLIF(TRIM(CONCAT_WS(' ', ${actors.firstName}, ${actors.lastName})), '')`,
+          targetUserName: sql<string | null>`NULLIF(TRIM(CONCAT_WS(' ', ${targets.firstName}, ${targets.lastName})), '')`,
+          locationName: locations.name,
+        })
+        .from(permissionAuditLog)
+        .leftJoin(actors, eq(actors.id, permissionAuditLog.actorId))
+        .leftJoin(targets, eq(targets.id, permissionAuditLog.targetUserId))
+        .leftJoin(locations, eq(locations.id, permissionAuditLog.locationId))
+        .orderBy(desc(permissionAuditLog.createdAt), desc(permissionAuditLog.id))
+        .limit(input.pageSize)
+        .offset(offset),
+    ]);
 
     return {
-      items: result.rows.map((row) => ({
+      items: rows.map((row) => ({
         ...row,
         createdAt: row.createdAt.toISOString(),
       })),
       page: input.page,
       pageSize: input.pageSize,
-      totalCount: Number.parseInt(countResult.rows[0]?.count ?? "0", 10),
+      totalCount: totalCountResult[0]?.count ?? 0,
     };
   }
 
@@ -115,80 +130,87 @@ export class PostgresAdminAccessQueryRepository
     input: AdminPermissionListQuery,
   ): Promise<AdminPermissionListResponse> {
     const offset = (input.page - 1) * input.pageSize;
-    const query = input.q.trim();
-    const filters = [query.length > 0, `%${query}%`];
-    const countResult = await this.pool.query<{ count: string }>(
-      `
-        SELECT COUNT(*)::text AS count
-        FROM permissions
-        WHERE ($1::boolean = false OR CONCAT_WS(' ', key, description) ILIKE $2)
-      `,
-      filters,
-    );
-    const result = await this.pool.query<PermissionRow>(
-      `
-        SELECT
-          permissions.key,
-          permissions.description,
-          COUNT(DISTINCT role_permissions.role_id)::int AS "assignedRoleCount"
-        FROM permissions
-        LEFT JOIN role_permissions ON role_permissions.permission_id = permissions.id
-        WHERE ($1::boolean = false OR CONCAT_WS(' ', permissions.key, permissions.description) ILIKE $2)
-        GROUP BY permissions.id
-        ORDER BY permissions.key ASC
-        LIMIT $3 OFFSET $4
-      `,
-      [...filters, input.pageSize, offset],
-    );
+    const pattern = `%${input.q.trim()}%`;
+    const hasQuery = input.q.trim().length > 0;
 
-    return buildPagedResponse(result.rows, input, countResult.rows[0]?.count);
+    const [totalCountResult, rows] = await Promise.all([
+      this.db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(permissions)
+        .where(
+          hasQuery 
+            ? or(ilike(permissions.key, pattern), ilike(permissions.description, pattern))
+            : undefined
+        ),
+      this.db
+        .select({
+          key: permissions.key,
+          description: permissions.description,
+          assignedRoleCount: sql<number>`cast(count(distinct ${rolePermissions.roleId}) as int)`,
+        })
+        .from(permissions)
+        .leftJoin(rolePermissions, eq(rolePermissions.permissionId, permissions.id))
+        .where(
+          hasQuery 
+            ? or(ilike(permissions.key, pattern), ilike(permissions.description, pattern))
+            : undefined
+        )
+        .groupBy(permissions.id, permissions.key, permissions.description)
+        .orderBy(asc(permissions.key))
+        .limit(input.pageSize)
+        .offset(offset),
+    ]);
+
+    return {
+      items: rows,
+      page: input.page,
+      pageSize: input.pageSize,
+      totalCount: totalCountResult[0]?.count ?? 0,
+    };
   }
 
   async listRoles(input: AdminRoleListQuery): Promise<AdminRoleListResponse> {
     const offset = (input.page - 1) * input.pageSize;
-    const query = input.q.trim();
-    const filters = [query.length > 0, `%${query}%`];
-    const countResult = await this.pool.query<{ count: string }>(
-      `
-        SELECT COUNT(*)::text AS count
-        FROM roles
-        WHERE ($1::boolean = false OR CONCAT_WS(' ', slug, name, description) ILIKE $2)
-      `,
-      filters,
-    );
-    const result = await this.pool.query<RoleRow>(
-      `
-        SELECT
-          roles.slug,
-          roles.name,
-          roles.description,
-          roles.is_system AS "isSystem",
-          COUNT(DISTINCT role_permissions.permission_id)::int AS "permissionCount",
-          COUNT(DISTINCT user_roles.user_id)::int AS "assignedUserCount"
-        FROM roles
-        LEFT JOIN role_permissions ON role_permissions.role_id = roles.id
-        LEFT JOIN user_roles ON user_roles.role_id = roles.id AND user_roles.revoked_at IS NULL
-        WHERE ($1::boolean = false OR CONCAT_WS(' ', roles.slug, roles.name, roles.description) ILIKE $2)
-        GROUP BY roles.id
-        ORDER BY roles.is_system DESC, roles.name ASC, roles.slug ASC
-        LIMIT $3 OFFSET $4
-      `,
-      [...filters, input.pageSize, offset],
-    );
+    const pattern = `%${input.q.trim()}%`;
+    const hasQuery = input.q.trim().length > 0;
 
-    return buildPagedResponse(result.rows, input, countResult.rows[0]?.count);
+    const [totalCountResult, rows] = await Promise.all([
+      this.db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(roles)
+        .where(
+          hasQuery 
+            ? or(ilike(roles.slug, pattern), ilike(roles.name, pattern), ilike(roles.description, pattern))
+            : undefined
+        ),
+      this.db
+        .select({
+          slug: roles.slug,
+          name: roles.name,
+          description: roles.description,
+          isSystem: roles.isSystem,
+          permissionCount: sql<number>`cast(count(distinct ${rolePermissions.permissionId}) as int)`,
+          assignedUserCount: sql<number>`cast(count(distinct ${userRoles.userId}) as int)`,
+        })
+        .from(roles)
+        .leftJoin(rolePermissions, eq(rolePermissions.roleId, roles.id))
+        .leftJoin(userRoles, and(eq(userRoles.roleId, roles.id), sql`${userRoles.revokedAt} IS NULL`))
+        .where(
+          hasQuery 
+            ? or(ilike(roles.slug, pattern), ilike(roles.name, pattern), ilike(roles.description, pattern))
+            : undefined
+        )
+        .groupBy(roles.id, roles.slug, roles.name, roles.description, roles.isSystem)
+        .orderBy(desc(roles.isSystem), asc(roles.name), asc(roles.slug))
+        .limit(input.pageSize)
+        .offset(offset),
+    ]);
+
+    return {
+      items: rows,
+      page: input.page,
+      pageSize: input.pageSize,
+      totalCount: totalCountResult[0]?.count ?? 0,
+    };
   }
-}
-
-function buildPagedResponse<TItem>(
-  items: TItem[],
-  input: { page: number; pageSize: number },
-  totalCount: string | undefined,
-) {
-  return {
-    items,
-    page: input.page,
-    pageSize: input.pageSize,
-    totalCount: Number.parseInt(totalCount ?? "0", 10),
-  };
 }

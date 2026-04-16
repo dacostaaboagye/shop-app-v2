@@ -1,65 +1,48 @@
-import type { Pool, PoolClient } from "pg";
+import { locations, stockBalances } from "@shop/database";
+import { and, eq } from "drizzle-orm";
+import type { ApiDatabase } from "../../infrastructure/database.js";
 import type {
   StockBalanceAdjustmentRepository,
   StockBalanceAdjustmentTransaction,
   StockBalanceRecord,
 } from "./stock-balance-adjustment.contracts.js";
-import {
-  requireStockBalance,
-  STOCK_BALANCE_RECORD_COLUMNS,
-} from "./stock-balance-record.sql.js";
-
-type PgTransactionPool = Pick<Pool, "connect">;
 
 export class PostgresStockBalanceAdjustmentRepository
   implements StockBalanceAdjustmentRepository
 {
-  constructor(private readonly pool: PgTransactionPool) {}
+  constructor(private readonly db: ApiDatabase) {}
 
   async withTransaction<T>(
     callback: (transaction: StockBalanceAdjustmentTransaction) => Promise<T>,
   ): Promise<T> {
-    const client = await this.pool.connect();
-
-    try {
-      await client.query("BEGIN");
-      const result = await callback(
-        new PostgresStockBalanceAdjustmentTransaction(client),
-      );
-      await client.query("COMMIT");
-      return result;
-    } catch (error) {
-      await client.query("ROLLBACK");
-      throw error;
-    } finally {
-      client.release();
-    }
+    return this.db.transaction(async (tx) => {
+      const transaction = new PostgresStockBalanceAdjustmentTransaction(tx);
+      return callback(transaction);
+    });
   }
 }
 
 class PostgresStockBalanceAdjustmentTransaction
   implements StockBalanceAdjustmentTransaction
 {
-  constructor(private readonly client: PoolClient) {}
+  constructor(private readonly tx: ApiDatabase) {}
 
   async getBalanceForUpdate(input: {
     locationId: string;
     skuId: string;
   }): Promise<StockBalanceRecord | null> {
-    const result = await this.client.query<StockBalanceRecord>(
-      `
-        SELECT
-          ${STOCK_BALANCE_RECORD_COLUMNS}
-        FROM stock_balances
-        WHERE sku_id = $1
-          AND location_id = $2
-        LIMIT 1
-        FOR UPDATE
-      `,
-      [input.skuId, input.locationId],
-    );
+    const [row] = await this.tx
+      .select()
+      .from(stockBalances)
+      .where(
+        and(
+          eq(stockBalances.skuId, input.skuId),
+          eq(stockBalances.locationId, input.locationId),
+        ),
+      )
+      .for("update");
 
-    return result.rows[0] ?? null;
+    return row ?? null;
   }
 
   async insertBalance(input: {
@@ -69,34 +52,24 @@ class PostgresStockBalanceAdjustmentTransaction
     skuId: string;
     updatedBy?: string | null;
   }): Promise<StockBalanceRecord> {
-    const result = await this.client.query<StockBalanceRecord>(
-      `
-        INSERT INTO stock_balances (
-          sku_id,
-          location_id,
-          on_hand_quantity,
-          reserved_quantity,
-          updated_by,
-          created_at,
-          updated_at
-        )
-        VALUES ($1, $2, $3, 0, $4, $5, $5)
-        RETURNING
-          ${STOCK_BALANCE_RECORD_COLUMNS}
-      `,
-      [
-        input.skuId,
-        input.locationId,
-        input.onHandQuantity,
-        input.updatedBy ?? null,
-        input.createdAt,
-      ],
-    );
+    const [row] = await this.tx
+      .insert(stockBalances)
+      .values({
+        skuId: input.skuId,
+        locationId: input.locationId,
+        onHandQuantity: input.onHandQuantity,
+        reservedQuantity: 0,
+        updatedBy: input.updatedBy ?? null,
+        createdAt: input.createdAt,
+        updatedAt: input.createdAt,
+      })
+      .returning();
 
-    return requireStockBalance(
-      result.rows[0],
-      "Failed to insert the stock balance row.",
-    );
+    if (!row) {
+      throw new Error("Failed to insert the stock balance row.");
+    }
+
+    return row;
   }
 
   async updateOnHandQuantity(input: {
@@ -106,30 +79,25 @@ class PostgresStockBalanceAdjustmentTransaction
     updatedAt: Date;
     updatedBy?: string | null;
   }): Promise<StockBalanceRecord> {
-    const result = await this.client.query<StockBalanceRecord>(
-      `
-        UPDATE stock_balances
-        SET
-          on_hand_quantity = $3,
-          updated_at = $4,
-          updated_by = $5
-        WHERE sku_id = $1
-          AND location_id = $2
-        RETURNING
-          ${STOCK_BALANCE_RECORD_COLUMNS}
-      `,
-      [
-        input.skuId,
-        input.locationId,
-        input.onHandQuantity,
-        input.updatedAt,
-        input.updatedBy ?? null,
-      ],
-    );
+    const [row] = await this.tx
+      .update(stockBalances)
+      .set({
+        onHandQuantity: input.onHandQuantity,
+        updatedAt: input.updatedAt,
+        updatedBy: input.updatedBy ?? null,
+      })
+      .where(
+        and(
+          eq(stockBalances.skuId, input.skuId),
+          eq(stockBalances.locationId, input.locationId),
+        ),
+      )
+      .returning();
 
-    return requireStockBalance(
-      result.rows[0],
-      "Failed to update the stock balance row.",
-    );
+    if (!row) {
+      throw new Error("Failed to update the stock balance row.");
+    }
+
+    return row;
   }
 }

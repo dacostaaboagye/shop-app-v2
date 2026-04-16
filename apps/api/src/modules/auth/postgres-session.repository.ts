@@ -1,4 +1,6 @@
-import type { Pool } from "pg";
+import { refreshTokens } from "@shop/database";
+import { eq } from "drizzle-orm";
+import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { AuthUserRecord } from "./authentication.service.js";
 import type { PostgresUserRepository } from "./postgres-user.repository.js";
 import type {
@@ -8,7 +10,7 @@ import type {
 
 export class PostgresSessionRepository implements SessionRepository {
   constructor(
-    private readonly pool: Pool,
+    private readonly db: ApiDatabase,
     private readonly userRepository: PostgresUserRepository,
   ) {}
 
@@ -20,42 +22,31 @@ export class PostgresSessionRepository implements SessionRepository {
     userAgent?: string;
     userId: string;
   }): Promise<void> {
-    await this.pool.query(
-      `
-        INSERT INTO refresh_tokens (
-          user_id, token_hash, issued_at, expires_at, ip_address, user_agent
-        )
-        VALUES ($1, $2, $3, $4, $5, $6)
-      `,
-      [
-        input.userId,
-        input.tokenHash,
-        input.issuedAt,
-        input.expiresAt,
-        input.ipAddress ?? null,
-        input.userAgent ?? null,
-      ],
-    );
+    await this.db.insert(refreshTokens).values({
+      userId: input.userId,
+      tokenHash: input.tokenHash,
+      issuedAt: input.issuedAt,
+      expiresAt: input.expiresAt,
+      ipAddress: input.ipAddress ?? null,
+      userAgent: input.userAgent ?? null,
+    });
   }
 
   async findRefreshTokenByHash(
     tokenHash: string,
   ): Promise<StoredRefreshTokenRecord | null> {
-    const result = await this.pool.query<StoredRefreshTokenRecord>(
-      `
-        SELECT
-          id,
-          user_id AS "userId",
-          expires_at AS "expiresAt",
-          revoked_at AS "revokedAt"
-        FROM refresh_tokens
-        WHERE token_hash = $1
-        LIMIT 1
-      `,
-      [tokenHash],
-    );
+    const [row] = await this.db
+      .select({
+        id: refreshTokens.id,
+        userId: refreshTokens.userId,
+        expiresAt: refreshTokens.expiresAt,
+        revokedAt: refreshTokens.revokedAt,
+      })
+      .from(refreshTokens)
+      .where(eq(refreshTokens.tokenHash, tokenHash))
+      .limit(1);
 
-    return result.rows[0] ?? null;
+    return (row as StoredRefreshTokenRecord) ?? null;
   }
 
   async findUserById(userId: string): Promise<AuthUserRecord | null> {
@@ -77,13 +68,12 @@ export class PostgresSessionRepository implements SessionRepository {
     revokedReason: string;
     tokenId: string;
   }): Promise<void> {
-    await this.pool.query(
-      `
-        UPDATE refresh_tokens
-        SET revoked_at = $2, revoked_reason = $3
-        WHERE id = $1
-      `,
-      [input.tokenId, input.revokedAt, input.revokedReason],
-    );
+    await this.db
+      .update(refreshTokens)
+      .set({
+        revokedAt: input.revokedAt,
+        revokedReason: input.revokedReason,
+      })
+      .where(eq(refreshTokens.id, input.tokenId));
   }
 }

@@ -1,24 +1,25 @@
-import type { Pool } from "pg";
+import { users } from "@shop/database";
+import { eq } from "drizzle-orm";
+import type { ApiDatabase } from "../../infrastructure/database.js";
 import { isUniqueViolation } from "../auth/postgres-auth-user-row.js";
 import type { AdminUserAccessWriteRepository } from "./admin-user-access-write.service.js";
+import {
+  assignRoleRecord,
+  removePermissionOverrideRecord,
+  revokeRoleRecord,
+  setPermissionOverrideRecord,
+} from "./postgres-admin-user-access-write-commands.js";
 import {
   duplicateEmailError,
   resolveUser,
   revokeRefreshTokens,
   userNotFoundError,
 } from "./postgres-admin-user-access-write.support.js";
-import {
-  assignRoleRecord,
-  removePermissionOverrideRecord,
-  revokeRoleRecord,
-  runInTransaction,
-  setPermissionOverrideRecord,
-} from "./postgres-admin-user-access-write-commands.js";
 
 export class PostgresAdminUserAccessWriteRepository
   implements AdminUserAccessWriteRepository
 {
-  constructor(private readonly pool: Pool) {}
+  constructor(private readonly db: ApiDatabase) {}
 
   async assignRole(input: {
     actorId: string;
@@ -28,9 +29,9 @@ export class PostgresAdminUserAccessWriteRepository
     roleSlug: string;
     userSlug: string;
   }): Promise<void> {
-    await runInTransaction(this.pool, (client) =>
-      assignRoleRecord(client, input),
-    );
+    await this.db.transaction(async (tx) => {
+      await assignRoleRecord(tx, input);
+    });
   }
 
   async revokeRole(input: {
@@ -41,9 +42,9 @@ export class PostgresAdminUserAccessWriteRepository
     roleSlug: string;
     userSlug: string;
   }): Promise<void> {
-    await runInTransaction(this.pool, (client) =>
-      revokeRoleRecord(client, input),
-    );
+    await this.db.transaction(async (tx) => {
+      await revokeRoleRecord(tx, input);
+    });
   }
 
   async setPermissionOverride(input: {
@@ -55,9 +56,9 @@ export class PostgresAdminUserAccessWriteRepository
     reason: string;
     userSlug: string;
   }): Promise<void> {
-    await runInTransaction(this.pool, (client) =>
-      setPermissionOverrideRecord(client, input),
-    );
+    await this.db.transaction(async (tx) => {
+      await setPermissionOverrideRecord(tx, input);
+    });
   }
 
   async removePermissionOverride(input: {
@@ -68,9 +69,9 @@ export class PostgresAdminUserAccessWriteRepository
     reason: string;
     userSlug: string;
   }): Promise<void> {
-    await runInTransaction(this.pool, (client) =>
-      removePermissionOverrideRecord(client, input),
-    );
+    await this.db.transaction(async (tx) => {
+      await removePermissionOverrideRecord(tx, input);
+    });
   }
 
   async updateProfile(input: {
@@ -80,24 +81,18 @@ export class PostgresAdminUserAccessWriteRepository
     userSlug: string;
   }): Promise<void> {
     try {
-      const result = await this.pool.query(
-        `
-          UPDATE users
-          SET first_name = $2,
-              last_name = $3,
-              email = $4,
-              updated_at = NOW()
-          WHERE slug = $1
-        `,
-        [
-          input.userSlug,
-          input.firstName.trim(),
-          input.lastName.trim(),
-          input.email.trim().toLowerCase(),
-        ],
-      );
+      const [updated] = await this.db
+        .update(users)
+        .set({
+          firstName: input.firstName.trim(),
+          lastName: input.lastName.trim(),
+          email: input.email.trim().toLowerCase(),
+          updatedAt: new Date(),
+        })
+        .where(eq(users.slug, input.userSlug))
+        .returning({ id: users.id });
 
-      if ((result.rowCount ?? 0) === 0) {
+      if (!updated) {
         throw userNotFoundError();
       }
     } catch (error) {
@@ -116,28 +111,29 @@ export class PostgresAdminUserAccessWriteRepository
     status: "active" | "deactivated" | "suspended";
     userSlug: string;
   }): Promise<void> {
-    const user = await resolveUser(this.pool, input.userSlug);
-    const result = await this.pool.query(
-      `
-        UPDATE users
-        SET status = $2,
-            updated_at = $3
-        WHERE id = $1
-      `,
-      [user.id, input.status, input.now],
-    );
+    await this.db.transaction(async (tx) => {
+      const user = await resolveUser(tx, input.userSlug);
+      const [updated] = await tx
+        .update(users)
+        .set({
+          status: input.status,
+          updatedAt: input.now,
+        })
+        .where(eq(users.id, user.id))
+        .returning({ id: users.id });
 
-    if ((result.rowCount ?? 0) === 0) {
-      throw userNotFoundError();
-    }
+      if (!updated) {
+        throw userNotFoundError();
+      }
 
-    if (input.status !== "active") {
-      await revokeRefreshTokens(this.pool, {
-        revokedAt: input.now,
-        revokedReason: input.reason,
-        userId: user.id,
-      });
-    }
+      if (input.status !== "active") {
+        await revokeRefreshTokens(tx, {
+          revokedAt: input.now,
+          revokedReason: input.reason,
+          userId: user.id,
+        });
+      }
+    });
   }
 
   async forcePasswordReset(input: {
@@ -146,25 +142,26 @@ export class PostgresAdminUserAccessWriteRepository
     reason: string;
     userSlug: string;
   }): Promise<void> {
-    const user = await resolveUser(this.pool, input.userSlug);
-    const result = await this.pool.query(
-      `
-        UPDATE users
-        SET requires_password_change = true,
-            updated_at = $2
-        WHERE id = $1
-      `,
-      [user.id, input.now],
-    );
+    await this.db.transaction(async (tx) => {
+      const user = await resolveUser(tx, input.userSlug);
+      const [updated] = await tx
+        .update(users)
+        .set({
+          requiresPasswordChange: true,
+          updatedAt: input.now,
+        })
+        .where(eq(users.id, user.id))
+        .returning({ id: users.id });
 
-    if ((result.rowCount ?? 0) === 0) {
-      throw userNotFoundError();
-    }
+      if (!updated) {
+        throw userNotFoundError();
+      }
 
-    await revokeRefreshTokens(this.pool, {
-      revokedAt: input.now,
-      revokedReason: input.reason,
-      userId: user.id,
+      await revokeRefreshTokens(tx, {
+        revokedAt: input.now,
+        revokedReason: input.reason,
+        userId: user.id,
+      });
     });
   }
 }

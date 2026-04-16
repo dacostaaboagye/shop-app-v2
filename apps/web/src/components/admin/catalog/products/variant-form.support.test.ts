@@ -25,6 +25,8 @@ const variant: AdminVariantSummary = {
   sku: "SKU-RED-M",
   slug: "medium-red",
   status: "active",
+  isTaxable: null,
+  taxCategory: null,
   unitOfMeasure: "each",
   weightGrams: 320,
 };
@@ -48,6 +50,8 @@ describe("variant form support", () => {
       status: "active",
       unitOfMeasure: "each",
       weightGrams: "",
+      isTaxable: "inherit",
+      taxCategory: "",
     });
   });
 
@@ -69,6 +73,8 @@ describe("variant form support", () => {
       status: "active",
       unitOfMeasure: "each",
       weightGrams: "320",
+      isTaxable: "inherit",
+      taxCategory: "",
     });
   });
 
@@ -92,6 +98,8 @@ describe("variant form support", () => {
           status: "active",
           unitOfMeasure: " each ",
           weightGrams: "450",
+          isTaxable: "yes",
+          taxCategory: " Reduced ",
         },
         true,
       ),
@@ -110,6 +118,8 @@ describe("variant form support", () => {
         status: "active",
         unitOfMeasure: "each",
         weightGrams: 450,
+        isTaxable: true,
+        taxCategory: "Reduced",
       },
     );
   });
@@ -139,6 +149,8 @@ describe("variant form support", () => {
         status: "archived",
         unitOfMeasure: "each",
         weightGrams: 320,
+        isTaxable: null,
+        taxCategory: null,
       },
     );
   });

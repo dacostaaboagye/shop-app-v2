@@ -1,4 +1,11 @@
-import type { Pool } from "pg";
+import {
+  permissions,
+  rolePermissions,
+  userPermissionOverrides,
+  userRoles,
+} from "@shop/database";
+import { and, eq, isNull, sql } from "drizzle-orm";
+import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { PermissionResolutionRepository } from "./permission-resolution.service.js";
 
 type PermissionAssignmentRow = {
@@ -11,45 +18,53 @@ type PermissionAssignmentRow = {
 export class PostgresPermissionRepository
   implements PermissionResolutionRepository
 {
-  constructor(private readonly pool: Pool) {}
+  constructor(private readonly db: ApiDatabase) {}
 
   async getPermissionAssignments(
     userId: string,
   ): Promise<PermissionAssignmentRow[]> {
-    const result = await this.pool.query<PermissionAssignmentRow>(
-      `
-        SELECT
-          permissions.key AS "key",
-          user_roles.location_id AS "locationId",
-          NULL::permission_override_effect AS "effect",
-          'role'::text AS "source"
-        FROM user_roles
-        INNER JOIN role_permissions
-          ON role_permissions.role_id = user_roles.role_id
-        INNER JOIN permissions
-          ON permissions.id = role_permissions.permission_id
-        WHERE user_roles.user_id = $1
-          AND user_roles.revoked_at IS NULL
+    const rolePermissionsQuery = this.db
+      .select({
+        key: permissions.key,
+        locationId: userRoles.locationId,
+        effect: sql<"allow" | "deny" | null>`NULL`.as("effect"),
+        source: sql<"role" | "override">`'role'`.as("source"),
+      })
+      .from(userRoles)
+      .innerJoin(rolePermissions, eq(rolePermissions.roleId, userRoles.roleId))
+      .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+      .where(and(eq(userRoles.userId, userId), isNull(userRoles.revokedAt)));
 
-        UNION ALL
+    const overridesQuery = this.db
+      .select({
+        key: permissions.key,
+        locationId: userPermissionOverrides.locationId,
+        effect: userPermissionOverrides.effect,
+        source: sql<"role" | "override">`'override'`.as("source"),
+      })
+      .from(userPermissionOverrides)
+      .innerJoin(
+        permissions,
+        eq(permissions.id, userPermissionOverrides.permissionId),
+      )
+      .where(
+        and(
+          eq(userPermissionOverrides.userId, userId),
+          isNull(userPermissionOverrides.removedAt),
+        ),
+      );
 
-        SELECT
-          permissions.key AS "key",
-          user_permission_overrides.location_id AS "locationId",
-          user_permission_overrides.effect AS "effect",
-          'override'::text AS "source"
-        FROM user_permission_overrides
-        INNER JOIN permissions
-          ON permissions.id = user_permission_overrides.permission_id
-        WHERE user_permission_overrides.user_id = $1
-          AND user_permission_overrides.removed_at IS NULL
+    const rows = await this.db
+      .select({
+        key: sql<string>`"key"`,
+        locationId: sql<string | null>`"location_id"`,
+        effect: sql<"allow" | "deny" | null>`"effect"`,
+        source: sql<"role" | "override">`"source"`,
+      })
+      .from(rolePermissionsQuery.unionAll(overridesQuery).as("assignments"))
+      .orderBy(sql`"source"`, sql`"key"`);
 
-        ORDER BY "source", "key"
-      `,
-      [userId],
-    );
-
-    return result.rows.map((row) => ({
+    return rows.map((row) => ({
       effect: row.effect,
       key: row.key,
       locationId: row.locationId,

@@ -20,6 +20,11 @@ import { PostgresCatalogProductOptionsRepository } from "./postgres-catalog-prod
 import { PostgresCatalogProductQueryRepository } from "./postgres-catalog-product-query.repository.js";
 import { PostgresCatalogProductWriteRepository } from "./postgres-catalog-product-write.repository.js";
 import { PostgresCatalogVariantWriteRepository } from "./postgres-catalog-variant-write.repository.js";
+import { CatalogProductCommands } from "./postgres-catalog-product-write.commands.js";
+import { CatalogVariantCommands } from "./postgres-catalog-variant-write.commands.js";
+import { PostgresCatalogProductDeleteGuard } from "./postgres-catalog-product-delete-guard.js";
+import { PostgresCatalogDeleteGuard } from "./postgres-catalog-delete-guard.js";
+import { PostgresCatalogProductArchiveGuard } from "./postgres-catalog-product-archive-guard.js";
 
 type CatalogRuntime = {
   catalog: {
@@ -40,52 +45,69 @@ export function createCatalogRuntime(
   storage: R2StorageService | null = null,
 ): CatalogRuntime {
   const slugService = new SlugService(
-    new PostgresSlugRepository(databaseRuntime.pool),
+    new PostgresSlugRepository(databaseRuntime.db),
   );
   const permissionResolutionService = new PermissionResolutionService(
-    new PostgresPermissionRepository(databaseRuntime.pool),
+    new PostgresPermissionRepository(databaseRuntime.db),
+  );
+  
+  const productDeleteGuard = new PostgresCatalogProductDeleteGuard(
+    databaseRuntime.db,
+  );
+  const catalogDeleteGuard = new PostgresCatalogDeleteGuard(
+    databaseRuntime.db,
+  );
+  const productArchiveGuard = new PostgresCatalogProductArchiveGuard(
+    databaseRuntime.db,
+  );
+
+  const productCommands = new CatalogProductCommands(
+    databaseRuntime.db,
+    slugService,
+    productDeleteGuard,
+  );
+  const variantCommands = new CatalogVariantCommands(
+    databaseRuntime.db,
+    slugService,
+    productDeleteGuard,
   );
 
   return {
     catalog: {
       catalogBrandQueryService: new CatalogBrandQueryService(
-        new PostgresCatalogBrandQueryRepository(databaseRuntime.pool),
+        new PostgresCatalogBrandQueryRepository(databaseRuntime.db),
       ),
       catalogBrandWriteService: new CatalogBrandWriteService(
         new PostgresCatalogBrandWriteRepository(
-          databaseRuntime.pool,
+          databaseRuntime.db,
           slugService,
+          catalogDeleteGuard,
         ),
       ),
       catalogCategoryQueryService: new CatalogCategoryQueryService(
-        new PostgresCatalogCategoryQueryRepository(databaseRuntime.pool),
+        new PostgresCatalogCategoryQueryRepository(databaseRuntime.db),
       ),
       catalogCategoryWriteService: new CatalogCategoryWriteService(
         new PostgresCatalogCategoryWriteRepository(
-          databaseRuntime.pool,
+          databaseRuntime.db,
           slugService,
+          catalogDeleteGuard,
         ),
       ),
       catalogMediaService: new CatalogMediaService(
-        new PostgresCatalogMediaRepository(databaseRuntime.pool),
+        new PostgresCatalogMediaRepository(databaseRuntime.db),
         storage,
       ),
       catalogProductQueryService: new CatalogProductQueryService(
-        new PostgresCatalogProductQueryRepository(databaseRuntime.pool),
+        new PostgresCatalogProductQueryRepository(databaseRuntime.db),
       ),
       catalogProductWriteService: new CatalogProductWriteService(
-        new PostgresCatalogProductWriteRepository(
-          databaseRuntime.pool,
-          slugService,
-        ),
-        new PostgresCatalogVariantWriteRepository(
-          databaseRuntime.pool,
-          slugService,
-        ),
+        new PostgresCatalogProductWriteRepository(productCommands),
+        new PostgresCatalogVariantWriteRepository(variantCommands),
       ),
       permissionResolutionService,
       productOptionsRepo: new PostgresCatalogProductOptionsRepository(
-        databaseRuntime.pool,
+        databaseRuntime.db,
       ),
     },
   };

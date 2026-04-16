@@ -1,4 +1,6 @@
-import type { Pool, PoolClient } from "pg";
+import { permissionAuditLog, refreshTokens } from "@shop/database";
+import { and, eq, isNull } from "drizzle-orm";
+import type { ApiDatabase } from "../../infrastructure/database.js";
 import { AppError } from "../_core/errors/app-error.js";
 
 export type ResolvedUser = {
@@ -11,30 +13,10 @@ type ResolvedRole = {
   slug: string;
 };
 
-type ResolvedPermission = {
-  id: string;
-  key: string;
-};
-
-type ResolvedLocation = {
-  id: string;
-  slug: string;
-};
-
-export async function resolveUser(
-  database: Pick<Pool, "query"> | Pick<PoolClient, "query">,
-  userSlug: string,
-) {
-  const result = await database.query<ResolvedUser>(
-    `
-      SELECT id, slug
-      FROM users
-      WHERE slug = $1
-      LIMIT 1
-    `,
-    [userSlug],
-  );
-  const user = result.rows[0];
+export async function resolveUser(tx: ApiDatabase, slug: string) {
+  const user = await tx.query.users.findFirst({
+    where: (u, { eq }) => eq(u.slug, slug),
+  });
 
   if (!user) {
     throw userNotFoundError();
@@ -43,87 +25,68 @@ export async function resolveUser(
   return user;
 }
 
-export async function resolveRole(
-  database: Pick<PoolClient, "query">,
-  roleSlug: string,
-) {
-  const result = await database.query<ResolvedRole>(
-    `
-      SELECT id, slug
-      FROM roles
-      WHERE slug = $1
-      LIMIT 1
-    `,
-    [roleSlug],
-  );
-  const role = result.rows[0];
+export async function resolveRole(tx: ApiDatabase, slug: string) {
+  const role = await tx.query.roles.findFirst({
+    where: (r, { eq }) => eq(r.slug, slug),
+  });
 
   if (!role) {
-    throw roleNotFoundError();
+    throw new AppError({
+      code: "not_found",
+      detail: `Role ${slug} not found.`,
+      statusCode: 404,
+      title: "Role not found",
+    });
   }
 
   return role;
 }
 
-export async function resolvePermission(
-  database: Pick<PoolClient, "query">,
-  permissionKey: string,
-) {
-  const result = await database.query<ResolvedPermission>(
-    `
-      SELECT id, key
-      FROM permissions
-      WHERE key = $1
-      LIMIT 1
-    `,
-    [permissionKey],
-  );
-  const permission = result.rows[0];
+export async function resolvePermission(tx: ApiDatabase, key: string) {
+  const permission = await tx.query.permissions.findFirst({
+    where: (p, { eq }) => eq(p.key, key),
+  });
 
   if (!permission) {
-    throw permissionNotFoundError();
+    throw new AppError({
+      code: "not_found",
+      detail: `Permission ${key} not found.`,
+      statusCode: 404,
+      title: "Permission not found",
+    });
   }
 
   return permission;
 }
 
-export async function resolveLocation(
-  database: Pick<PoolClient, "query">,
-  locationSlug: string | null,
-) {
-  if (!locationSlug) {
+export async function resolveLocation(tx: ApiDatabase, slug: string | null) {
+  if (!slug) {
     return null;
   }
 
-  const result = await database.query<ResolvedLocation>(
-    `
-      SELECT id, slug
-      FROM locations
-      WHERE slug = $1
-      LIMIT 1
-    `,
-    [locationSlug],
-  );
-  const location = result.rows[0];
+  const location = await tx.query.locations.findFirst({
+    where: (l, { eq }) => eq(l.slug, slug),
+  });
 
   if (!location) {
-    throw locationNotFoundError();
+    throw new AppError({
+      code: "not_found",
+      detail: `Location ${slug} not found.`,
+      statusCode: 404,
+      title: "Location not found",
+    });
   }
 
   return location;
 }
 
 export async function insertPermissionAudit(
-  client: Pick<PoolClient, "query">,
+  tx: ApiDatabase,
   input: {
-    action:
-      | "override_removed"
-      | "override_set"
-      | "role_assigned"
-      | "role_revoked";
+    action: "role_assigned" | "role_revoked" | "override_set" | "override_removed";
     actorId: string;
     createdAt: Date;
-    locationId?: string | null;
+    locationId: string | null;
     overrideEffect?: "allow" | "deny" | null;
     permissionKey?: string | null;
     reason: string;
@@ -131,88 +94,51 @@ export async function insertPermissionAudit(
     targetUserId: string;
   },
 ) {
-  await client.query(
-    `
-      INSERT INTO permission_audit_log (
-        actor_id,
-        target_user_id,
-        action,
-        location_id,
-        permission_key,
-        role_slug,
-        override_effect,
-        reason,
-        created_at
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    `,
-    [
-      input.actorId,
-      input.targetUserId,
-      input.action,
-      input.locationId ?? null,
-      input.permissionKey ?? null,
-      input.roleSlug ?? null,
-      input.overrideEffect ?? null,
-      input.reason,
-      input.createdAt,
-    ],
-  );
+  await tx.insert(permissionAuditLog).values({
+    actorId: input.actorId,
+    targetUserId: input.targetUserId,
+    action: input.action,
+    permissionKey: input.permissionKey ?? null,
+    roleSlug: input.roleSlug ?? null,
+    locationId: input.locationId,
+    overrideEffect: input.overrideEffect ?? null,
+    reason: input.reason,
+    createdAt: input.createdAt,
+  });
 }
 
 export async function revokeRefreshTokens(
-  database: Pick<Pool, "query"> | Pick<PoolClient, "query">,
+  tx: ApiDatabase,
   input: {
     revokedAt: Date;
     revokedReason: string;
     userId: string;
   },
 ) {
-  await database.query(
-    `
-      UPDATE refresh_tokens
-      SET revoked_at = $2,
-          revoked_reason = $3
-      WHERE user_id = $1
-        AND revoked_at IS NULL
-    `,
-    [input.userId, input.revokedAt, input.revokedReason],
-  );
+  await tx
+    .update(refreshTokens)
+    .set({
+      revokedAt: input.revokedAt,
+      revokedReason: input.revokedReason,
+    })
+    .where(and(eq(refreshTokens.userId, input.userId), isNull(refreshTokens.revokedAt)));
+}
+
+export function userNotFoundError() {
+  return new AppError({
+    code: "not_found",
+    detail: "User not found.",
+    statusCode: 404,
+    title: "User not found",
+  });
 }
 
 export function duplicateEmailError() {
   return new AppError({
     code: "conflict",
-    detail: "An account with that email already exists.",
+    detail: "A user with this email already exists.",
     statusCode: 409,
-    title: "Email already registered",
-  });
-}
-
-export function locationNotFoundError() {
-  return new AppError({
-    code: "not_found",
-    detail: "The requested location could not be found.",
-    statusCode: 404,
-    title: "Location not found",
-  });
-}
-
-export function permissionNotFoundError() {
-  return new AppError({
-    code: "not_found",
-    detail: "The requested permission could not be found.",
-    statusCode: 404,
-    title: "Permission not found",
-  });
-}
-
-export function permissionOverrideNotFoundError() {
-  return new AppError({
-    code: "not_found",
-    detail: "The requested permission override could not be found.",
-    statusCode: 404,
-    title: "Permission override not found",
+    title: "Duplicate email",
   });
 }
 
@@ -234,11 +160,11 @@ export function roleNotFoundError() {
   });
 }
 
-export function userNotFoundError() {
+export function permissionOverrideNotFoundError() {
   return new AppError({
     code: "not_found",
-    detail: "The requested user could not be found.",
+    detail: "The requested permission override could not be found.",
     statusCode: 404,
-    title: "User not found",
+    title: "Override not found",
   });
 }

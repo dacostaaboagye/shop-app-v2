@@ -10,7 +10,10 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import { locations } from "./locations.js";
 import { auditColumns, publicUuidColumn, slugColumn } from "./common.js";
+import { userPermissionOverrides, userRoles } from "./access-control.js";
 
 export const userStatusEnum = pgEnum("user_status", [
   "active",
@@ -46,6 +49,24 @@ export const users = pgTable(
   (table) => [index("users_status_idx").on(table.status)],
 );
 
+export const usersRelations = relations(users, ({ many }) => ({
+  refreshTokens: many(refreshTokens),
+  passwordResetTokens: many(passwordResetTokens),
+  authEvents: many(authEvents),
+  userRoles: many(userRoles, { relationName: "user_roles_user" }),
+  assignedUserRoles: many(userRoles, { relationName: "user_roles_assigned_by" }),
+  revokedUserRoles: many(userRoles, { relationName: "user_roles_revoked_by" }),
+  permissionOverrides: many(userPermissionOverrides, { 
+    relationName: "user_overrides_user" 
+  }),
+  setPermissionOverrides: many(userPermissionOverrides, { 
+    relationName: "user_overrides_set_by" 
+  }),
+  removedPermissionOverrides: many(userPermissionOverrides, { 
+    relationName: "user_overrides_removed_by" 
+  }),
+}));
+
 export const refreshTokens = pgTable(
   "refresh_tokens",
   {
@@ -69,6 +90,13 @@ export const refreshTokens = pgTable(
   ],
 );
 
+export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [refreshTokens.userId],
+    references: [users.id],
+  }),
+}));
+
 export const passwordResetTokens = pgTable(
   "password_reset_tokens",
   {
@@ -82,6 +110,16 @@ export const passwordResetTokens = pgTable(
     ...auditColumns,
   },
   (table) => [index("password_reset_tokens_user_idx").on(table.userId)],
+);
+
+export const passwordResetTokensRelations = relations(
+  passwordResetTokens,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [passwordResetTokens.userId],
+      references: [users.id],
+    }),
+  }),
 );
 
 export const authEvents = pgTable(
@@ -98,6 +136,13 @@ export const authEvents = pgTable(
   },
   (table) => [index("auth_events_user_idx").on(table.userId)],
 );
+
+export const authEventsRelations = relations(authEvents, ({ one }) => ({
+  user: one(users, {
+    fields: [authEvents.userId],
+    references: [users.id],
+  }),
+}));
 
 export const loginAttempts = pgTable(
   "login_attempts",

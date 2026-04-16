@@ -8,7 +8,8 @@ import {
   PageShell,
   StatCard,
 } from "@/components/system/page-shell";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { MediaPanel } from "@/components/admin/catalog/media/media-panel";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -33,10 +34,12 @@ import { UserProfileRecentActivityCard } from "./user-profile-recent-activity-ca
 
 export function UserProfileBody({
   canManageAccess,
+  canManageMedia,
   slug,
   user,
 }: {
   canManageAccess: boolean;
+  canManageMedia: boolean;
   slug: string;
   user: AdminUserAccessDetail;
 }) {
@@ -50,11 +53,6 @@ export function UserProfileBody({
   return (
     <PageShell>
       <PageHeader
-        backHref={toRoute("/admin/users")}
-        backLabel="Users"
-        description={user.email}
-        eyebrow="User profile"
-        title={displayName}
         actions={
           hasNonBasicRole && canManageAccess ? (
             <Link
@@ -66,6 +64,19 @@ export function UserProfileBody({
             </Link>
           ) : undefined
         }
+        avatar={
+          <Avatar className="size-14 shrink-0 rounded-xl">
+            <AvatarFallback className="rounded-xl text-lg">
+              {getInitials(user.firstName, user.lastName)}
+            </AvatarFallback>
+          </Avatar>
+        }
+        backHref={toRoute("/admin/users")}
+        image={user.primaryImageUrl ?? null}
+        backLabel="Users"
+        description={user.email}
+        eyebrow="User profile"
+        title={displayName}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -109,6 +120,9 @@ export function UserProfileBody({
           <CardContent className="flex flex-col gap-5">
             <div className="flex items-center gap-4">
               <Avatar className="size-12">
+                {user.primaryImageUrl ? (
+                  <AvatarImage alt={displayName} src={user.primaryImageUrl} />
+                ) : null}
                 <AvatarFallback className="text-base">
                   {getInitials(user.firstName, user.lastName)}
                 </AvatarFallback>
@@ -197,6 +211,12 @@ export function UserProfileBody({
 
         <UserProfileRecentActivityCard recentActivity={user.recentActivity} />
       </div>
+
+      <MediaPanel
+        canManage={canManageMedia}
+        entitySlug={user.slug}
+        entityType="user"
+      />
     </PageShell>
   );
 }

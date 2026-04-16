@@ -2,7 +2,8 @@
 
 import type { AdminUpdateCategoryRequest } from "@shop/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, Pencil, X } from "lucide-react";
+import { CalendarDays, Pencil, Trash2, X } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import {
   PageHeader,
@@ -21,15 +22,18 @@ import {
   fetchAdminCategories,
   fetchAdminCategory,
   updateAdminCategory,
+  deleteAdminCategory,
 } from "@/lib/react-query/admin-catalog";
 import {
   currentUserPermissionsQueryKey,
   fetchCurrentUserPermissions,
 } from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
-import { toast } from "@/lib/toast";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { readStringParam } from "@/lib/url-state";
 import { MediaPanel } from "../media/media-panel";
+import { CatalogDeleteDialog } from "../catalog-delete-dialog";
 import { CategoryEditForm } from "./category-edit-form";
 
 const PARENT_QUERY = {
@@ -43,7 +47,12 @@ const PARENT_QUERY = {
 
 export function CategoryDetailPageClient({ slug }: { slug: string }) {
   const queryClient = useQueryClient();
-  const [isEditing, setIsEditing] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isEditing, setIsEditing] = useState(
+    readStringParam(searchParams, "edit") === "true",
+  );
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const categoryQuery = useQuery({
     queryFn: () => fetchAdminCategory(slug),
@@ -112,15 +121,30 @@ export function CategoryDetailPageClient({ slug }: { slug: string }) {
       <PageHeader
         actions={
           !isEditing ? (
-            <Button
-              onClick={() => setIsEditing(true)}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <Pencil className="size-3.5" />
-              Edit
-            </Button>
+            <div className="flex gap-2">
+              {permissionsQuery.data?.permissions.includes(
+                "catalog.categories.manage",
+              ) && (
+                <Button
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  size="sm"
+                  type="button"
+                  variant="outline-destructive"
+                >
+                  <Trash2 className="size-3.5" />
+                  Delete
+                </Button>
+              )}
+              <Button
+                onClick={() => setIsEditing(true)}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                <Pencil className="size-3.5" />
+                Edit
+              </Button>
+            </div>
           ) : (
             <Button
               onClick={() => setIsEditing(false)}
@@ -136,6 +160,7 @@ export function CategoryDetailPageClient({ slug }: { slug: string }) {
         backHref={toRoute("/admin/products/categories")}
         backLabel="Categories"
         description={`/${category.slug}`}
+        image={category.primaryImageUrl ?? null}
         title={category.name}
       />
 
@@ -214,6 +239,19 @@ export function CategoryDetailPageClient({ slug }: { slug: string }) {
         canManage={canManageMedia}
         entitySlug={category.slug}
         entityType="category"
+      />
+
+      <CatalogDeleteDialog
+        entityName={category.name}
+        entitySlug={category.slug}
+        entityType="category"
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onDelete={async (slug: string) => {
+          await deleteAdminCategory(slug);
+          router.push(toRoute("/admin/products/categories"));
+        }}
+        onSuccessQueryKeys={[["admin", "catalog", "categories"]]}
       />
     </PageShell>
   );

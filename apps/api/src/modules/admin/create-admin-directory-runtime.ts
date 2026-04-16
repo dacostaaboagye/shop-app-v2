@@ -32,10 +32,10 @@ export function createAdminDirectoryRuntime(
   databaseRuntime: DatabaseRuntime,
 ): AdminDirectoryRuntime {
   const slugService = new SlugService(
-    new PostgresSlugRepository(databaseRuntime.pool),
+    new PostgresSlugRepository(databaseRuntime.db),
   );
   const accessQueryRepository = new PostgresAdminAccessQueryRepository(
-    databaseRuntime.pool,
+    databaseRuntime.db,
   );
 
   return {
@@ -45,28 +45,28 @@ export function createAdminDirectoryRuntime(
       ),
       adminAccessWriteService: new AdminAccessWriteService(
         new PostgresAdminAccessWriteRepository(
-          databaseRuntime.pool,
+          databaseRuntime.db,
           slugService,
           accessQueryRepository,
         ),
       ),
       adminLocationQueryService: new AdminLocationQueryService(
-        new PostgresAdminLocationQueryRepository(databaseRuntime.pool),
+        new PostgresAdminLocationQueryRepository(databaseRuntime.db),
       ),
       adminLocationWriteService: new AdminLocationWriteService(
         new PostgresAdminLocationWriteRepository(
-          databaseRuntime.pool,
+          databaseRuntime.db,
           slugService,
         ),
       ),
       adminUserAccessQueryService: new AdminUserAccessQueryService(
-        new PostgresAdminUserAccessQueryRepository(databaseRuntime.pool),
+        new PostgresAdminUserAccessQueryRepository(databaseRuntime.db),
       ),
       adminUserAccessWriteService: new AdminUserAccessWriteService(
-        new PostgresAdminUserAccessWriteRepository(databaseRuntime.pool),
+        new PostgresAdminUserAccessWriteRepository(databaseRuntime.db),
       ),
       adminUserQueryService: new AdminUserQueryService(
-        new PostgresAdminUserQueryRepository(databaseRuntime.pool),
+        new PostgresAdminUserQueryRepository(databaseRuntime.db),
       ),
     },
   };

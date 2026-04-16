@@ -3,6 +3,7 @@
 import { AppFormField } from "@/components/forms/app-form-field";
 import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import type { VariantFormField } from "./variant-form.field";
 import type { VariantFormApi } from "./variant-form.api";
 import { moneyString } from "./variant-form.support";
@@ -100,6 +101,53 @@ export function VariantFormPricingFields({
               maxLength={80}
               onBlur={field.handleBlur}
               onChange={(event) => field.handleChange(event.target.value)}
+              value={String(field.state.value)}
+            />
+          </AppFormField>
+        )}
+      </form.Field>
+
+      <div className="col-span-1 border-t border-border/60 pb-2 pt-4 sm:col-span-2">
+        <p className="text-sm font-medium">Taxation</p>
+      </div>
+
+      <form.Field name="isTaxable">
+        {(field: VariantFormField) => (
+          <AppFormField
+            errors={field.state.meta.errors}
+            inputId={field.name}
+            label="Is taxable?"
+            showErrors={showErrors}
+          >
+            <Select
+              id={field.name}
+              onChange={(e) =>
+                field.handleChange(e.target.value as "inherit" | "yes" | "no")
+              }
+              value={field.state.value as string}
+            >
+              <option value="inherit">Inherit from product</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </Select>
+          </AppFormField>
+        )}
+      </form.Field>
+
+      <form.Field name="taxCategory">
+        {(field: VariantFormField) => (
+          <AppFormField
+            errors={field.state.meta.errors}
+            inputId={field.name}
+            label="Tax category override"
+            showErrors={showErrors}
+          >
+            <Input
+              id={field.name}
+              maxLength={80}
+              onBlur={field.handleBlur}
+              onChange={(event) => field.handleChange(event.target.value)}
+              placeholder="e.g. Standard rate (leaves blank to inherit)"
               value={String(field.state.value)}
             />
           </AppFormField>

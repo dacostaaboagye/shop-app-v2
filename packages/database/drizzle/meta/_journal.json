@@ -78,6 +78,20 @@
       "when": 1775918361982,
       "tag": "0010_silly_celestials",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1776329752109,
+      "tag": "0011_closed_epoch",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1776329867069,
+      "tag": "0012_bumpy_tusk",
+      "breakpoints": true
     }
   ]
 }

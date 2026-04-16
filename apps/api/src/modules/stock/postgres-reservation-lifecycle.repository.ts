@@ -1,40 +1,25 @@
-import type { Pool, PoolClient } from "pg";
+import { stockBalances, stockReservations } from "@shop/database";
+import { and, eq, sql } from "drizzle-orm";
+import type { ApiDatabase } from "../../infrastructure/database.js";
 import { PostgresStockAvailabilityRepository } from "./postgres-availability-query.repository.js";
 import type {
   StockReservationLifecycleRepository,
   StockReservationRecord,
   StockReservationTransaction,
 } from "./reservation-lifecycle.contracts.js";
-import {
-  requireStockReservation,
-  STOCK_RESERVATION_RECORD_COLUMNS,
-} from "./stock-reservation-record.sql.js";
-
-type PgTransactionPool = Pick<Pool, "connect">;
 
 export class PostgresStockReservationLifecycleRepository
   implements StockReservationLifecycleRepository
 {
-  constructor(private readonly pool: PgTransactionPool) {}
+  constructor(private readonly db: ApiDatabase) {}
 
   async withTransaction<T>(
     callback: (transaction: StockReservationTransaction) => Promise<T>,
   ): Promise<T> {
-    const client = await this.pool.connect();
-
-    try {
-      await client.query("BEGIN");
-      const result = await callback(
-        new PostgresStockReservationTransaction(client),
-      );
-      await client.query("COMMIT");
-      return result;
-    } catch (error) {
-      await client.query("ROLLBACK");
-      throw error;
-    } finally {
-      client.release();
-    }
+    return this.db.transaction(async (tx) => {
+      const transaction = new PostgresStockReservationTransaction(tx);
+      return callback(transaction);
+    });
   }
 }
 
@@ -43,10 +28,8 @@ class PostgresStockReservationTransaction
 {
   private readonly availabilityRepository: PostgresStockAvailabilityRepository;
 
-  constructor(private readonly client: PoolClient) {
-    this.availabilityRepository = new PostgresStockAvailabilityRepository(
-      client,
-    );
+  constructor(private readonly tx: ApiDatabase) {
+    this.availabilityRepository = new PostgresStockAvailabilityRepository(tx);
   }
 
   async adjustStockBalance(input: {
@@ -57,29 +40,23 @@ class PostgresStockReservationTransaction
     updatedAt: Date;
     updatedBy?: string | null;
   }): Promise<boolean> {
-    const result = await this.client.query<{ id: string }>(
-      `
-        UPDATE stock_balances
-        SET
-          on_hand_quantity = on_hand_quantity + $3,
-          reserved_quantity = reserved_quantity + $4,
-          updated_at = $5,
-          updated_by = $6
-        WHERE sku_id = $1
-          AND location_id = $2
-        RETURNING id
-      `,
-      [
-        input.skuId,
-        input.locationId,
-        input.onHandDelta ?? 0,
-        input.reservedDelta ?? 0,
-        input.updatedAt,
-        input.updatedBy ?? null,
-      ],
-    );
+    const result = await this.tx
+      .update(stockBalances)
+      .set({
+        onHandQuantity: sql`${stockBalances.onHandQuantity} + ${input.onHandDelta ?? 0}`,
+        reservedQuantity: sql`${stockBalances.reservedQuantity} + ${input.reservedDelta ?? 0}`,
+        updatedAt: input.updatedAt,
+        updatedBy: input.updatedBy ?? null,
+      })
+      .where(
+        and(
+          eq(stockBalances.skuId, input.skuId),
+          eq(stockBalances.locationId, input.locationId),
+        ),
+      )
+      .returning({ id: stockBalances.id });
 
-    return result.rowCount === 1;
+    return result.length === 1;
   }
 
   async findActiveReservationBySource(input: {
@@ -88,40 +65,32 @@ class PostgresStockReservationTransaction
     sourceKey: string;
     sourceType: string;
   }): Promise<StockReservationRecord | null> {
-    const result = await this.client.query<StockReservationRecord>(
-      `
-        SELECT
-          ${STOCK_RESERVATION_RECORD_COLUMNS}
-        FROM stock_reservations
-        WHERE sku_id = $1
-          AND location_id = $2
-          AND source_type = $3
-          AND source_key = $4
-          AND status = 'active'
-        LIMIT 1
-      `,
-      [input.skuId, input.locationId, input.sourceType, input.sourceKey],
-    );
+    const [row] = await this.tx
+      .select()
+      .from(stockReservations)
+      .where(
+        and(
+          eq(stockReservations.skuId, input.skuId),
+          eq(stockReservations.locationId, input.locationId),
+          eq(stockReservations.sourceType, input.sourceType),
+          eq(stockReservations.sourceKey, input.sourceKey),
+          eq(stockReservations.status, "active"),
+        ),
+      );
 
-    return result.rows[0] ?? null;
+    return row ?? null;
   }
 
   async getReservationForUpdate(
     reservationId: string,
   ): Promise<StockReservationRecord | null> {
-    const result = await this.client.query<StockReservationRecord>(
-      `
-        SELECT
-          ${STOCK_RESERVATION_RECORD_COLUMNS}
-        FROM stock_reservations
-        WHERE id = $1
-        LIMIT 1
-        FOR UPDATE
-      `,
-      [reservationId],
-    );
+    const [row] = await this.tx
+      .select()
+      .from(stockReservations)
+      .where(eq(stockReservations.id, reservationId))
+      .for("update");
 
-    return result.rows[0] ?? null;
+    return row ?? null;
   }
 
   async getStockAvailabilitySnapshot(input: {
@@ -129,11 +98,7 @@ class PostgresStockReservationTransaction
     locationId: string;
     lock?: "for_update";
     skuId: string;
-  }): Promise<{
-    activeReservationQuantity: number;
-    onHandQuantity: number;
-    reservedQuantity: number;
-  } | null> {
+  }) {
     return this.availabilityRepository.getStockAvailabilitySnapshot(input);
   }
 
@@ -147,87 +112,68 @@ class PostgresStockReservationTransaction
     sourceKey: string;
     sourceType: string;
   }): Promise<StockReservationRecord> {
-    const result = await this.client.query<StockReservationRecord>(
-      `
-        INSERT INTO stock_reservations (
-          sku_id,
-          location_id,
-          quantity,
-          status,
-          source_type,
-          source_key,
-          expires_at,
-          created_by,
-          created_at,
-          updated_at
-        )
-        VALUES ($1, $2, $3, 'active', $4, $5, $6, $7, $8, $8)
-        RETURNING
-          ${STOCK_RESERVATION_RECORD_COLUMNS}
-      `,
-      [
-        input.skuId,
-        input.locationId,
-        input.quantity,
-        input.sourceType,
-        input.sourceKey,
-        input.expiresAt,
-        input.createdBy ?? null,
-        input.createdAt,
-      ],
-    );
+    const [row] = await this.tx
+      .insert(stockReservations)
+      .values({
+        skuId: input.skuId,
+        locationId: input.locationId,
+        quantity: input.quantity,
+        status: "active",
+        sourceType: input.sourceType,
+        sourceKey: input.sourceKey,
+        expiresAt: input.expiresAt,
+        createdBy: input.createdBy ?? null,
+        createdAt: input.createdAt,
+        updatedAt: input.createdAt,
+      })
+      .returning();
 
-    return requireStockReservation(
-      result.rows[0],
-      "Failed to insert a stock reservation.",
-    );
+    if (!row) {
+      throw new Error("Failed to insert a stock reservation.");
+    }
+
+    return row;
   }
 
   async markReservationConfirmed(input: {
     confirmedAt: Date;
     reservationId: string;
   }): Promise<StockReservationRecord> {
-    const result = await this.client.query<StockReservationRecord>(
-      `
-        UPDATE stock_reservations
-        SET
-          status = 'confirmed',
-          confirmed_at = $2,
-          updated_at = $2
-        WHERE id = $1
-        RETURNING
-          ${STOCK_RESERVATION_RECORD_COLUMNS}
-      `,
-      [input.reservationId, input.confirmedAt],
-    );
+    const [row] = await this.tx
+      .update(stockReservations)
+      .set({
+        status: "confirmed",
+        confirmedAt: input.confirmedAt,
+        updatedAt: input.confirmedAt,
+      })
+      .where(eq(stockReservations.id, input.reservationId))
+      .returning();
 
-    return requireStockReservation(
-      result.rows[0],
-      "Failed to confirm the stock reservation.",
-    );
+    if (!row) {
+      throw new Error("Failed to confirm the stock reservation.");
+    }
+
+    return row;
   }
 
   async markReservationReleased(input: {
     releasedAt: Date;
     reservationId: string;
   }): Promise<StockReservationRecord> {
-    const result = await this.client.query<StockReservationRecord>(
-      `
-        UPDATE stock_reservations
-        SET
-          status = 'released',
-          released_at = $2,
-          updated_at = $2
-        WHERE id = $1
-        RETURNING
-          ${STOCK_RESERVATION_RECORD_COLUMNS}
-      `,
-      [input.reservationId, input.releasedAt],
-    );
+    const [row] = await this.tx
+      .update(stockReservations)
+      .set({
+        status: "released",
+        releasedAt: input.releasedAt,
+        updatedAt: input.releasedAt,
+      })
+      .where(eq(stockReservations.id, input.reservationId))
+      .returning();
 
-    return requireStockReservation(
-      result.rows[0],
-      "Failed to release the stock reservation.",
-    );
+    if (!row) {
+      throw new Error("Failed to release the stock reservation.");
+    }
+
+    return row;
   }
 }

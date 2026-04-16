@@ -104,7 +104,8 @@ export function VariantFormCoreFields({
             <Select
               id={field.name}
               onChange={(event) => {
-                const status = event.target.value as VariantFormValues["status"];
+                const status = event.target
+                  .value as VariantFormValues["status"];
                 field.handleChange(status);
                 if (status === "archived") {
                   form.setFieldValue("isDefault", false);

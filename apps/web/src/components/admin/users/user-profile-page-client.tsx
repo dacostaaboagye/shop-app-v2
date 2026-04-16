@@ -34,6 +34,10 @@ export function UserProfilePageClient({ slug }: { slug: string }) {
     currentPermissionsQuery.data?.permissions.includes(
       "access.assignments.manage",
     ) ?? false;
+  const canManageMedia =
+    currentPermissionsQuery.data?.permissions.includes(
+      "catalog.media.manage",
+    ) ?? false;
 
   if (detailQuery.isPending && !detailQuery.data) {
     return (
@@ -71,6 +75,7 @@ export function UserProfilePageClient({ slug }: { slug: string }) {
   return (
     <UserProfileBody
       canManageAccess={canManageAccess}
+      canManageMedia={canManageMedia}
       slug={slug}
       user={detailQuery.data}
     />

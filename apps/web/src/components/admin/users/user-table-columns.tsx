@@ -3,7 +3,7 @@
 import type { AdminUserSummary } from "@shop/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Clock } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   deriveAvailablePortals,
@@ -27,6 +27,12 @@ export const userTableColumns: Array<ColumnDef<AdminUserSummary, unknown>> = [
       return (
         <div className="flex items-center gap-3">
           <Avatar>
+            {user.primaryImageUrl ? (
+              <AvatarImage
+                alt={formatDisplayName(user.firstName, user.lastName)}
+                src={user.primaryImageUrl}
+              />
+            ) : null}
             <AvatarFallback>
               {getInitials(user.firstName, user.lastName)}
             </AvatarFallback>

@@ -118,7 +118,9 @@ export function AddVariantForm({
                 Cancel
               </Button>
               <Button
-                disabled={!canSubmit || isSubmitting || createMutation.isPending}
+                disabled={
+                  !canSubmit || isSubmitting || createMutation.isPending
+                }
                 size="sm"
                 type="submit"
               >

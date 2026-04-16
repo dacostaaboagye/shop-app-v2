@@ -13,6 +13,7 @@ export type UserDetailRow = {
   lastLoginAt: Date | null;
   lastName: string;
   preferredPortal: "admin" | "agent" | "manager" | "supplier" | "worker" | null;
+  primaryImageUrl: string | null;
   requiresPasswordChange: boolean;
   slug: string;
   status: "active" | "deactivated" | "suspended";

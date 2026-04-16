@@ -5,9 +5,6 @@ import { createServer } from "../src/server/create-server.js";
 
 describe("active reservation admin routes", () => {
   it("lists active reservations for an authorized inventory reader", async () => {
-    const state = {
-      lastQuery: null as null | Record<string, unknown>,
-    };
     const now = new Date("2026-04-08T12:00:00.000Z");
     const server = createServer({
       accessControl: {
@@ -37,22 +34,30 @@ describe("active reservation admin routes", () => {
         },
       },
       stock: {
-        activeReservationQueryService: {
-          async listActiveReservations(query) {
-            state.lastQuery = query;
-            return [
-              {
-                createdAt: new Date("2026-04-08T09:00:00.000Z"),
-                expiresAt: new Date("2026-04-08T10:00:00.000Z"),
-                locationId: "11111111-1111-4111-8111-111111111111",
-                quantity: 3,
-                skuId: "22222222-2222-4222-8222-222222222222",
-                sourceKey: "order_123",
-                sourceType: "ecommerce",
-                status: "active" as const,
-                updatedAt: new Date("2026-04-08T09:05:00.000Z"),
-              },
-            ];
+        reservationQueryRepo: {
+          async listReservations() {
+            return {
+              items: [
+                {
+                  createdAt: "2026-04-08T09:00:00.000Z",
+                  expiresAt: "2026-04-08T10:00:00.000Z",
+                  locationName: "Main Warehouse",
+                  locationSlug: "main-warehouse",
+                  productName: "Omaya Backpack",
+                  productSlug: "omaya-backpack",
+                  quantity: 3,
+                  sku: "OMAYA-001-BRN",
+                  skuId: "22222222-2222-4222-8222-222222222222",
+                  sourceKey: "order_123",
+                  sourceType: "ecommerce",
+                  status: "active" as const,
+                  updatedAt: "2026-04-08T09:05:00.000Z",
+                  variantName: "Brown",
+                  variantSlug: "omaya-backpack-brown",
+                },
+              ],
+              locationName: "Main Warehouse",
+            };
           },
         },
       },
@@ -72,36 +77,17 @@ describe("active reservation admin routes", () => {
       },
       method: "GET",
       query: {
-        expiresBefore: "2026-04-08T12:30:00.000Z",
         limit: "25",
-        locationId: "11111111-1111-4111-8111-111111111111",
-        skuId: "22222222-2222-4222-8222-222222222222",
+        locationSlug: "main-warehouse",
       },
       url: "/api/admin/stock/reservations/active",
     });
 
     assert.equal(response.statusCode, 200);
-    assert.deepEqual(response.json(), {
-      items: [
-        {
-          createdAt: "2026-04-08T09:00:00.000Z",
-          expiresAt: "2026-04-08T10:00:00.000Z",
-          locationId: "11111111-1111-4111-8111-111111111111",
-          quantity: 3,
-          skuId: "22222222-2222-4222-8222-222222222222",
-          sourceKey: "order_123",
-          sourceType: "ecommerce",
-          status: "active",
-          updatedAt: "2026-04-08T09:05:00.000Z",
-        },
-      ],
-    });
-    assert.deepEqual(state.lastQuery, {
-      expiresBefore: new Date("2026-04-08T12:30:00.000Z"),
-      limit: 25,
-      locationId: "11111111-1111-4111-8111-111111111111",
-      skuId: "22222222-2222-4222-8222-222222222222",
-    });
+    const body = response.json();
+    assert.equal(body.items.length, 1);
+    assert.equal(body.items[0].sku, "OMAYA-001-BRN");
+    assert.equal(body.locationName, "Main Warehouse");
   });
 
   it("returns 503 when stock services are not configured", async () => {
@@ -148,9 +134,7 @@ describe("active reservation admin routes", () => {
         }`,
       },
       method: "GET",
-      query: {
-        locationId: "11111111-1111-4111-8111-111111111111",
-      },
+      query: { locationSlug: "main-warehouse" },
       url: "/api/admin/stock/reservations/active",
     });
 

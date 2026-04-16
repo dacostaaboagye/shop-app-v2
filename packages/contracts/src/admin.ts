@@ -11,6 +11,7 @@ export const adminSortDirectionSchema = z.enum(["asc", "desc"]);
 
 export const adminUserListQuerySchema = z.object({
   dir: adminSortDirectionSchema.default("asc"),
+  locationSlug: z.string().trim().max(120).default(""),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(10),
   q: z.string().trim().max(120).default(""),
@@ -32,6 +33,7 @@ export const adminUserSummarySchema = z.object({
   lastLoginAt: z.iso.datetime().nullable(),
   lastName: z.string().min(1).max(120),
   preferredPortal: portalKeySchema.nullable(),
+  primaryImageUrl: z.string().nullable().optional(),
   requiresPasswordChange: z.boolean(),
   roles: z.array(adminRoleOptionSchema).default([]),
   slug: z.string().min(1).max(120),
@@ -64,6 +66,7 @@ export const adminLocationSummarySchema = z.object({
   longitude: z.number().nullable().optional(),
   managerName: z.string().min(1).max(241).nullable(),
   name: z.string().min(1).max(160),
+  primaryImageUrl: z.string().nullable().optional(),
   slug: z.string().min(1).max(120),
   staffCount: z.number().int().min(0),
   status: adminLocationStatusSchema,

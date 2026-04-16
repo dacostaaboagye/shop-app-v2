@@ -15,6 +15,8 @@ import { registerCatalogAdminWriteRoutes } from "../modules/catalog/catalog-admi
 import { registerCatalogBrandRoutes } from "../modules/catalog/catalog-brand.routes.js";
 import { registerCatalogMediaRoutes } from "../modules/catalog/catalog-media.routes.js";
 import { registerStockRoutes } from "../modules/stock/active-reservation-admin.routes.js";
+import { registerStockBalanceRoutes } from "../modules/stock/stock-balance-admin.routes.js";
+import { registerStockCountRoutes } from "../modules/stock/stock-count-admin.routes.js";
 import { registerHealthRoutes } from "../modules/system/health/health.routes.js";
 import { registerErrorHandling } from "./register-error-handling.js";
 
@@ -34,6 +36,8 @@ type CreateServerOptions = {
   catalogQuery?: Parameters<typeof registerCatalogAdminQueryRoutes>[1];
   catalogWrite?: Parameters<typeof registerCatalogAdminWriteRoutes>[1];
   stock?: Parameters<typeof registerStockRoutes>[1];
+  stockBalance?: Parameters<typeof registerStockBalanceRoutes>[1];
+  stockCount?: Parameters<typeof registerStockCountRoutes>[1];
 };
 
 export function createServer(options: CreateServerOptions = {}) {
@@ -70,6 +74,8 @@ export function createServer(options: CreateServerOptions = {}) {
   registerCatalogAdminWriteRoutes(server, options.catalogWrite);
   registerCatalogProductOptionsRoutes(server, options.catalogProductOptions);
   registerStockRoutes(server, options.stock);
+  registerStockBalanceRoutes(server, options.stockBalance);
+  registerStockCountRoutes(server, options.stockCount);
   registerHealthRoutes(server);
 
   return server;

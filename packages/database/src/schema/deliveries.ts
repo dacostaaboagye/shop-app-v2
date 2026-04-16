@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   check,
   index,
@@ -53,6 +53,18 @@ export const deliveries = pgTable(
   ],
 );
 
+export const deliveriesRelations = relations(deliveries, ({ many, one }) => ({
+  originLocation: one(locations, {
+    fields: [deliveries.originLocationId],
+    references: [locations.id],
+  }),
+  destinationLocation: one(locations, {
+    fields: [deliveries.destinationLocationId],
+    references: [locations.id],
+  }),
+  items: many(deliveryItems),
+}));
+
 export const deliveryItems = pgTable(
   "delivery_items",
   {
@@ -71,3 +83,10 @@ export const deliveryItems = pgTable(
     check("delivery_items_quantity_positive", sql`${table.quantity} > 0`),
   ],
 );
+
+export const deliveryItemsRelations = relations(deliveryItems, ({ one }) => ({
+  delivery: one(deliveries, {
+    fields: [deliveryItems.deliveryId],
+    references: [deliveries.id],
+  }),
+}));

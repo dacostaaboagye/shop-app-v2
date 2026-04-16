@@ -21,6 +21,8 @@ export const adminVariantSummarySchema = z.object({
   customsCode: z.string().max(80).nullable().optional(),
   dimensionsCm: variantDimensionsSchema.nullable().optional(),
   isDefault: z.boolean(),
+  isTaxable: z.boolean().nullable().optional(),
+  taxCategory: z.string().max(80).nullable().optional(),
   manufacturerPartNumber: z.string().max(80).nullable().optional(),
   name: z.string().min(1).max(160),
   packagingType: z.string().max(80).nullable().optional(),
@@ -42,6 +44,8 @@ export const adminCreateVariantRequestSchema = z.object({
   customsCode: z.string().trim().max(80).nullable().optional(),
   dimensionsCm: variantDimensionsSchema.nullable().optional(),
   isDefault: z.boolean().default(false),
+  isTaxable: z.boolean().nullable().optional(),
+  taxCategory: z.string().trim().max(80).nullable().optional(),
   manufacturerPartNumber: z.string().trim().max(80).nullable().optional(),
   name: z.string().trim().min(1).max(160),
   packagingType: z.string().trim().max(80).nullable().optional(),
@@ -68,6 +72,8 @@ export const adminUpdateVariantRequestSchema = z.object({
   customsCode: z.string().trim().max(80).nullable().optional(),
   dimensionsCm: variantDimensionsSchema.nullable().optional(),
   isDefault: z.boolean().optional(),
+  isTaxable: z.boolean().nullable().optional(),
+  taxCategory: z.string().trim().max(80).nullable().optional(),
   manufacturerPartNumber: z.string().trim().max(80).nullable().optional(),
   name: z.string().trim().min(1).max(160).optional(),
   packagingType: z.string().trim().max(80).nullable().optional(),
@@ -83,6 +89,10 @@ export const adminUpdateVariantRequestSchema = z.object({
 
 export const adminUpdateVariantResponseSchema =
   adminVariantSummarySchema.extend({});
+
+export const adminDeleteVariantResponseSchema = z.object({
+  success: z.boolean(),
+});
 
 // ──────────────────────────────────────────────────────────────────────────
 // Products
@@ -174,6 +184,10 @@ export const adminUpdateProductResponseSchema = adminProductDetailSchema.extend(
   {},
 );
 
+export const adminDeleteProductResponseSchema = z.object({
+  success: z.boolean(),
+});
+
 // ──────────────────────────────────────────────────────────────────────────
 // Types
 // ──────────────────────────────────────────────────────────────────────────
@@ -210,4 +224,10 @@ export type AdminUpdateProductRequest = z.infer<
 >;
 export type AdminUpdateProductResponse = z.infer<
   typeof adminUpdateProductResponseSchema
+>;
+export type AdminDeleteProductResponse = z.infer<
+  typeof adminDeleteProductResponseSchema
+>;
+export type AdminDeleteVariantResponse = z.infer<
+  typeof adminDeleteVariantResponseSchema
 >;

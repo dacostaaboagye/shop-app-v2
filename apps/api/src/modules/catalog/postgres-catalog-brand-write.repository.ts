@@ -3,21 +3,21 @@ import type {
   AdminCreateBrandRequest,
   AdminUpdateBrandRequest,
 } from "@shop/contracts";
-import type { Pool } from "pg";
+import { catalogBrands, catalogMediaAssignments } from "@shop/database";
+import { and, eq } from "drizzle-orm";
+import type { ApiDatabase } from "../../infrastructure/database.js";
 import { AppError } from "../_core/errors/app-error.js";
 import type { SlugAllocator } from "../public-identifiers/slug.service.js";
 import type { CatalogBrandWriteRepository } from "./catalog-brand-write.service.js";
-
-type BrandRow = Omit<AdminBrandSummary, "createdAt"> & { createdAt: Date };
-
-const DUPLICATE_KEY_CODE = "23505";
+import type { PostgresCatalogDeleteGuard } from "./postgres-catalog-delete-guard.js";
 
 export class PostgresCatalogBrandWriteRepository
   implements CatalogBrandWriteRepository
 {
   constructor(
-    private readonly pool: Pick<Pool, "query">,
+    private readonly db: ApiDatabase,
     private readonly slugAllocator: SlugAllocator,
+    private readonly deleteGuard: PostgresCatalogDeleteGuard,
   ) {}
 
   async createBrand(input: {
@@ -30,51 +30,22 @@ export class PostgresCatalogBrandWriteRepository
       value: input.payload.name,
     });
 
-    try {
-      const result = await this.pool.query<BrandRow>(
-        `
-          INSERT INTO catalog_brands (
-            slug, name, description, website, status, created_by, created_at, updated_at
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $7)
-          RETURNING
-            slug,
-            name,
-            description,
-            website,
-            status,
-            created_at AS "createdAt"
-        `,
-        [
-          slug,
-          input.payload.name,
-          input.payload.description ?? null,
-          input.payload.website ?? null,
-          input.payload.status,
-          input.actorId,
-          input.now,
-        ],
-      );
+    const [row] = await this.db
+      .insert(catalogBrands)
+      .values({
+        slug,
+        name: input.payload.name,
+        description: input.payload.description ?? null,
+        website: input.payload.website ?? null,
+        status: input.payload.status,
+        createdBy: input.actorId,
+        createdAt: input.now,
+        updatedAt: input.now,
+      })
+      .returning();
 
-      const row = result.rows[0];
-      if (!row) throw new Error("Unable to create brand.");
-      return toBrand(row);
-    } catch (error) {
-      if (
-        error &&
-        typeof error === "object" &&
-        "code" in error &&
-        error.code === DUPLICATE_KEY_CODE
-      ) {
-        throw new AppError({
-          code: "conflict",
-          detail: `A brand named "${input.payload.name}" already exists.`,
-          statusCode: 409,
-          title: "Brand name already exists",
-        });
-      }
-      throw error;
-    }
+    if (!row) throw new Error("Unable to create brand.");
+    return toBrand(row);
   }
 
   async updateBrand(input: {
@@ -83,68 +54,62 @@ export class PostgresCatalogBrandWriteRepository
     payload: AdminUpdateBrandRequest;
     slug: string;
   }) {
-    const sets: string[] = ["updated_at = $2"];
-    const values: unknown[] = [input.slug, input.now];
+    const [row] = await this.db
+      .update(catalogBrands)
+      .set({
+        ...(input.payload.name !== undefined && { name: input.payload.name }),
+        ...("description" in input.payload && {
+          description: input.payload.description ?? null,
+        }),
+        ...("website" in input.payload && {
+          website: input.payload.website ?? null,
+        }),
+        ...(input.payload.status !== undefined && {
+          status: input.payload.status,
+        }),
+        updatedAt: input.now,
+      })
+      .where(eq(catalogBrands.slug, input.slug))
+      .returning();
 
-    if (input.payload.name !== undefined) {
-      values.push(input.payload.name);
-      sets.push(`name = $${values.length}`);
-    }
+    if (!row) return null;
+    return toBrand(row);
+  }
 
-    if ("description" in input.payload) {
-      values.push(input.payload.description ?? null);
-      sets.push(`description = $${values.length}`);
-    }
+  async deleteBrand(input: { slug: string }) {
+    await this.deleteGuard.assertBrandCanBeDeleted(input.slug);
 
-    if ("website" in input.payload) {
-      values.push(input.payload.website ?? null);
-      sets.push(`website = $${values.length}`);
-    }
+    await this.db.transaction(async (tx) => {
+      // Clean up media - delete assignments.
+      await tx
+        .delete(catalogMediaAssignments)
+        .where(
+          and(
+            eq(catalogMediaAssignments.entitySlug, input.slug),
+            eq(catalogMediaAssignments.entityType, "brand"),
+          ),
+        );
 
-    if (input.payload.status !== undefined) {
-      values.push(input.payload.status);
-      sets.push(`status = $${values.length}`);
-    }
+      const result = await tx
+        .delete(catalogBrands)
+        .where(eq(catalogBrands.slug, input.slug));
 
-    try {
-      const result = await this.pool.query<BrandRow>(
-        `
-          UPDATE catalog_brands
-          SET ${sets.join(", ")}
-          WHERE slug = $1
-          RETURNING
-            slug,
-            name,
-            description,
-            website,
-            status,
-            created_at AS "createdAt"
-        `,
-        values,
-      );
-
-      const row = result.rows[0];
-      if (!row) return null;
-      return toBrand(row);
-    } catch (error) {
-      if (
-        error &&
-        typeof error === "object" &&
-        "code" in error &&
-        error.code === DUPLICATE_KEY_CODE
-      ) {
+      if (result.rowCount === 0) {
         throw new AppError({
-          code: "conflict",
-          detail: `A brand with that name already exists.`,
-          statusCode: 409,
-          title: "Brand name already exists",
+          code: "not_found",
+          detail: `Brand "${input.slug}" does not exist.`,
+          statusCode: 404,
+          title: "Brand not found",
         });
       }
-      throw error;
-    }
+    });
   }
 }
 
-function toBrand(row: BrandRow): AdminBrandSummary {
-  return { ...row, createdAt: row.createdAt.toISOString() };
+function toBrand(row: typeof catalogBrands.$inferSelect): AdminBrandSummary {
+  return {
+    ...row,
+    createdAt: row.createdAt.toISOString(),
+    primaryImageUrl: null, // Joined fields not handled here, consistent with previous summary behavior
+  };
 }

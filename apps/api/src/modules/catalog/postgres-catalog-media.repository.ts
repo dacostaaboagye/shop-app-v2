@@ -3,180 +3,163 @@ import type {
   AdminMediaUpdateRequest,
   CatalogMediaEntityType,
 } from "@shop/contracts";
-import type { Pool } from "pg";
+import { catalogMediaAssignments, mediaAssets } from "@shop/database";
+import { and, eq, ne, type InferSelectModel } from "drizzle-orm";
+import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { CatalogMediaRepository } from "./catalog-media.service.js";
 
-type MediaRow = {
-  alt_text: string | null;
-  assigned_at: Date;
-  asset_id: string;
-  entity_slug: string;
-  entity_type: string;
-  file_size_bytes: number | null;
-  height_px: number | null;
-  id: string;
-  is_primary: boolean;
-  media_type: string;
-  mime_type: string;
-  position: number;
-  public_url: string;
-  storage_key: string;
-  width_px: number | null;
+type MediaAssetRaw = InferSelectModel<typeof mediaAssets>;
+type MediaAssignmentRaw = InferSelectModel<typeof catalogMediaAssignments>;
+
+type MediaResult = MediaAssignmentRaw & {
+  asset: MediaAssetRaw;
 };
 
-const SEL = `
-  a.id,
-  a.entity_type,
-  a.entity_slug,
-  a.position,
-  a.is_primary,
-  a.alt_text,
-  a.created_at AS assigned_at,
-  ast.id AS asset_id,
-  ast.storage_key,
-  ast.public_url,
-  ast.mime_type,
-  ast.media_type,
-  ast.file_size_bytes,
-  ast.width_px,
-  ast.height_px
-`.trim();
+function toRecord(row: MediaResult): AdminMediaRecord {
+  if (!row.asset) {
+    throw new Error(`Media assignment ${row.id} is missing its asset.`);
+  }
 
-const FROM = `catalog_media_assignments a
-  JOIN media_assets ast ON ast.id = a.asset_id`;
-
-function toRecord(row: MediaRow): AdminMediaRecord {
   return {
-    altText: row.alt_text ?? undefined,
-    assignedAt: row.assigned_at.toISOString(),
-    assetId: row.asset_id,
-    entitySlug: row.entity_slug,
-    entityType: row.entity_type as CatalogMediaEntityType,
-    fileSizeBytes: row.file_size_bytes ?? undefined,
-    heightPx: row.height_px ?? undefined,
     assignmentId: row.id,
-    isPrimary: row.is_primary,
-    mediaType: row.media_type as "image" | "video",
-    mimeType: row.mime_type,
+    entityType: row.entityType as CatalogMediaEntityType,
+    entitySlug: row.entitySlug,
     position: row.position,
-    publicUrl: row.public_url,
-    storageKey: row.storage_key,
-    widthPx: row.width_px ?? undefined,
+    isPrimary: row.isPrimary,
+    altText: row.altText ?? undefined,
+    assignedAt: row.createdAt.toISOString(),
+    assetId: row.assetId,
+    storageKey: row.asset.storageKey,
+    publicUrl: row.asset.publicUrl,
+    mimeType: row.asset.mimeType,
+    mediaType: row.asset.mediaType as "image" | "video",
+    fileSizeBytes: row.asset.fileSizeBytes ?? undefined,
+    heightPx: row.asset.heightPx ?? undefined,
+    widthPx: row.asset.widthPx ?? undefined,
   };
 }
 
 export class PostgresCatalogMediaRepository implements CatalogMediaRepository {
-  constructor(private readonly pool: Pick<Pool, "query">) {}
+  constructor(private readonly db: ApiDatabase) {}
 
   async confirmMedia(
     input: Parameters<CatalogMediaRepository["confirmMedia"]>[0],
-  ) {
-    if (input.isPrimary) {
-      await this.pool.query(
-        `UPDATE catalog_media_assignments SET is_primary = false
-         WHERE entity_type = $1 AND entity_slug = $2 AND is_primary = true`,
-        [input.entityType, input.entitySlug],
-      );
-    }
-    const r = await this.pool.query<MediaRow>(
-      `WITH asset AS (
-         INSERT INTO media_assets (
-           storage_key, public_url, mime_type, media_type,
-           file_size_bytes, width_px, height_px, uploaded_by
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-         RETURNING id, storage_key, public_url, mime_type, media_type,
-           file_size_bytes, width_px, height_px
-       ),
-       assignment AS (
-         INSERT INTO catalog_media_assignments (
-           asset_id, entity_type, entity_slug,
-           alt_text, position, is_primary, assigned_by
-         )
-         SELECT id,$9,$10,$11,$12,$13,$8 FROM asset
-         RETURNING id, entity_type, entity_slug, position,
-           is_primary, alt_text, created_at AS assigned_at, asset_id
-       )
-       SELECT
-         s.id, s.entity_type, s.entity_slug, s.position, s.is_primary,
-         s.alt_text, s.assigned_at, s.asset_id,
-         a.storage_key, a.public_url, a.mime_type, a.media_type,
-         a.file_size_bytes, a.width_px, a.height_px
-       FROM assignment s, asset a`,
-      [
-        input.key,
-        input.publicUrl,
-        input.mimeType,
-        input.mediaType,
-        input.fileSizeBytes ?? null,
-        input.widthPx ?? null,
-        input.heightPx ?? null,
-        input.actorId,
-        input.entityType,
-        input.entitySlug,
-        input.altText ?? null,
-        input.position,
-        input.isPrimary,
-      ],
-    );
-    const row = r.rows[0];
-    if (!row) throw new Error("Failed to save media record.");
-    return toRecord(row);
+  ): Promise<AdminMediaRecord> {
+    const result = await this.db.transaction(async (tx) => {
+      if (input.isPrimary) {
+        await tx
+          .update(catalogMediaAssignments)
+          .set({ isPrimary: false, updatedAt: new Date() })
+          .where(
+            and(
+              eq(catalogMediaAssignments.entityType, input.entityType),
+              eq(catalogMediaAssignments.entitySlug, input.entitySlug),
+              eq(catalogMediaAssignments.isPrimary, true),
+            ),
+          );
+      }
+
+      const [asset] = await tx
+        .insert(mediaAssets)
+        .values({
+          storageKey: input.key,
+          publicUrl: input.publicUrl,
+          mimeType: input.mimeType,
+          mediaType: input.mediaType,
+          fileSizeBytes: input.fileSizeBytes,
+          widthPx: input.widthPx,
+          heightPx: input.heightPx,
+          uploadedBy: input.actorId,
+        })
+        .returning();
+
+      if (!asset) {
+        throw new Error("Failed to insert asset.");
+      }
+
+      const [assignment] = await tx
+        .insert(catalogMediaAssignments)
+        .values({
+          assetId: asset.id,
+          entityType: input.entityType,
+          entitySlug: input.entitySlug,
+          altText: input.altText,
+          position: input.position,
+          isPrimary: input.isPrimary,
+          assignedBy: input.actorId,
+        })
+        .returning();
+
+      if (!asset || !assignment) {
+        throw new Error("Failed to confirm media.");
+      }
+
+      return { ...assignment, asset };
+    });
+
+    return toRecord(result);
   }
 
   async listMedia(entityType: CatalogMediaEntityType, entitySlug: string) {
-    const r = await this.pool.query<MediaRow>(
-      `SELECT ${SEL} FROM ${FROM}
-       WHERE a.entity_type = $1 AND a.entity_slug = $2
-       ORDER BY a.position ASC, a.created_at ASC`,
-      [entityType, entitySlug],
-    );
-    return r.rows.map(toRecord);
+    const rows = await this.db.query.catalogMediaAssignments.findMany({
+      where: (ma, { and, eq }) =>
+        and(eq(ma.entityType, entityType), eq(ma.entitySlug, entitySlug)),
+      with: {
+        asset: true,
+      },
+      orderBy: (ma, { asc }) => [asc(ma.position), asc(ma.createdAt)],
+    });
+
+    return rows.map(toRecord);
   }
 
   async updateMedia(id: string, patch: AdminMediaUpdateRequest, now: Date) {
-    const sets: string[] = ["updated_at = $2"];
-    const values: unknown[] = [id, now];
-    if ("altText" in patch) {
-      values.push(patch.altText ?? null);
-      sets.push(`alt_text = $${values.length}`);
-    }
-    if (patch.position !== undefined) {
-      values.push(patch.position);
-      sets.push(`position = $${values.length}`);
-    }
-    const r = await this.pool.query<MediaRow>(
-      `WITH upd AS (
-         UPDATE catalog_media_assignments
-         SET ${sets.join(", ")}
-         WHERE id = $1
-         RETURNING id
-       )
-       SELECT ${SEL} FROM ${FROM}
-       WHERE a.id = (SELECT id FROM upd)`,
-      values,
-    );
-    return r.rows[0] ? toRecord(r.rows[0]) : null;
+    const [updated] = await this.db
+      .update(catalogMediaAssignments)
+      .set({
+        ...(patch.altText !== undefined && { altText: patch.altText }),
+        ...(patch.position !== undefined && { position: patch.position }),
+        updatedAt: now,
+      })
+      .where(eq(catalogMediaAssignments.id, id))
+      .returning();
+
+    if (!updated) return null;
+
+    const full = await this.db.query.catalogMediaAssignments.findFirst({
+      where: eq(catalogMediaAssignments.id, updated.id),
+      with: { asset: true },
+    });
+
+    return full ? toRecord(full) : null;
   }
 
   async deleteMedia(id: string) {
-    const del = await this.pool.query<{ asset_id: string }>(
-      `DELETE FROM catalog_media_assignments WHERE id = $1 RETURNING asset_id`,
-      [id],
-    );
-    if (!del.rows[0]) return null;
-    const { asset_id } = del.rows[0];
-    const refs = await this.pool.query<{ count: string }>(
-      `SELECT COUNT(*) FROM catalog_media_assignments WHERE asset_id = $1`,
-      [asset_id],
-    );
-    if (parseInt(refs.rows[0]?.count ?? "0", 10) > 0) {
-      return { storageKey: null };
-    }
-    const gone = await this.pool.query<{ storage_key: string }>(
-      `DELETE FROM media_assets WHERE id = $1 RETURNING storage_key`,
-      [asset_id],
-    );
-    return { storageKey: gone.rows[0]?.storage_key ?? null };
+    return await this.db.transaction(async (tx) => {
+      const [assignment] = await tx
+        .delete(catalogMediaAssignments)
+        .where(eq(catalogMediaAssignments.id, id))
+        .returning({ assetId: catalogMediaAssignments.assetId });
+
+      if (!assignment) return null;
+
+      const otherAssignments = await tx
+        .select({ id: catalogMediaAssignments.id })
+        .from(catalogMediaAssignments)
+        .where(eq(catalogMediaAssignments.assetId, assignment.assetId))
+        .limit(1);
+
+      if (otherAssignments.length > 0) {
+        return { storageKey: null };
+      }
+
+      const [asset] = await tx
+        .delete(mediaAssets)
+        .where(eq(mediaAssets.id, assignment.assetId))
+        .returning({ storageKey: mediaAssets.storageKey });
+
+      return { storageKey: asset?.storageKey ?? null };
+    });
   }
 
   async setPrimary(
@@ -185,24 +168,34 @@ export class PostgresCatalogMediaRepository implements CatalogMediaRepository {
     entitySlug: string,
     now: Date,
   ) {
-    await this.pool.query(
-      `UPDATE catalog_media_assignments
-       SET is_primary = false, updated_at = $1
-       WHERE entity_type = $2 AND entity_slug = $3
-         AND is_primary = true AND id != $4`,
-      [now, entityType, entitySlug, id],
-    );
-    const r = await this.pool.query<MediaRow>(
-      `WITH upd AS (
-         UPDATE catalog_media_assignments
-         SET is_primary = true, updated_at = $1
-         WHERE id = $2
-         RETURNING id
-       )
-       SELECT ${SEL} FROM ${FROM}
-       WHERE a.id = (SELECT id FROM upd)`,
-      [now, id],
-    );
-    return r.rows[0] ? toRecord(r.rows[0]) : null;
+    const result = await this.db.transaction(async (tx) => {
+      await tx
+        .update(catalogMediaAssignments)
+        .set({ isPrimary: false, updatedAt: now })
+        .where(
+          and(
+            eq(catalogMediaAssignments.entityType, entityType),
+            eq(catalogMediaAssignments.entitySlug, entitySlug),
+            eq(catalogMediaAssignments.isPrimary, true),
+            ne(catalogMediaAssignments.id, id),
+          ),
+        );
+
+      const [updated] = await tx
+        .update(catalogMediaAssignments)
+        .set({ isPrimary: true, updatedAt: now })
+        .where(eq(catalogMediaAssignments.id, id))
+        .returning();
+
+      if (!updated) return null;
+
+      return await tx.query.catalogMediaAssignments.findFirst({
+        where: eq(catalogMediaAssignments.id, updated.id),
+        with: { asset: true },
+      });
+    });
+
+    return result ? toRecord(result) : null;
   }
 }
+

@@ -56,6 +56,7 @@ export const adminUserAccessDetailSchema = z.object({
   lastLoginAt: z.iso.datetime().nullable(),
   lastName: z.string().min(1).max(120),
   preferredPortal: portalKeySchema.nullable(),
+  primaryImageUrl: z.string().nullable().optional(),
   recentActivity: z.array(adminUserAccessActivityEventSchema).default([]),
   requiresPasswordChange: z.boolean(),
   roleAssignments: z.array(adminUserRoleAssignmentSchema).default([]),

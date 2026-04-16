@@ -17,6 +17,7 @@ export type CatalogBrandWriteRepository = {
     payload: AdminUpdateBrandRequest;
     slug: string;
   }): Promise<AdminUpdateBrandResponse | null>;
+  deleteBrand(input: { slug: string }): Promise<void>;
 };
 
 export class CatalogBrandWriteService {
@@ -37,5 +38,9 @@ export class CatalogBrandWriteService {
     now: Date,
   ) {
     return this.repository.updateBrand({ actorId, now, payload, slug });
+  }
+
+  async deleteBrand(slug: string) {
+    return this.repository.deleteBrand({ slug });
   }
 }

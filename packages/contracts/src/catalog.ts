@@ -147,3 +147,17 @@ export type AdminUpdateCategoryRequest = z.infer<
 export type AdminUpdateCategoryResponse = z.infer<
   typeof adminUpdateCategoryResponseSchema
 >;
+
+export const adminDeleteBrandResponseSchema = z.object({
+  success: z.boolean(),
+});
+export type AdminDeleteBrandResponse = z.infer<
+  typeof adminDeleteBrandResponseSchema
+>;
+
+export const adminDeleteCategoryResponseSchema = z.object({
+  success: z.boolean(),
+});
+export type AdminDeleteCategoryResponse = z.infer<
+  typeof adminDeleteCategoryResponseSchema
+>;

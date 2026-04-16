@@ -83,10 +83,12 @@ export function HeroPanel({
 type PageHeaderProps = {
   action?: ReactNode;
   actions?: ReactNode;
+  avatar?: ReactNode;
   backHref?: Route;
   backLabel?: string;
   description?: string;
   eyebrow?: string;
+  image?: string | null;
   title: string;
 };
 
@@ -95,9 +97,11 @@ export function PageHeader({
   description,
   action,
   actions,
+  avatar,
   backHref,
   backLabel = "Back",
   eyebrow,
+  image,
 }: PageHeaderProps) {
   const headerActions = actions ?? action;
 
@@ -129,14 +133,25 @@ export function PageHeader({
           ) : null}
         </div>
       ) : null}
-      <div className="min-w-0">
-        {eyebrow ? <p className="editorial-kicker mb-2">{eyebrow}</p> : null}
-        <h1 className="text-xl font-semibold sm:text-2xl">{title}</h1>
-        {description ? (
-          <p className="mt-2 max-w-3xl text-sm text-muted-foreground sm:text-[0.95rem]">
-            {description}
-          </p>
+      <div className="flex min-w-0 items-center gap-4">
+        {image ? (
+          <img
+            alt=""
+            className="h-14 w-14 shrink-0 rounded-xl object-cover ring-1 ring-border/50"
+            src={image}
+          />
+        ) : avatar ? (
+          avatar
         ) : null}
+        <div className="min-w-0">
+          {eyebrow ? <p className="editorial-kicker mb-1">{eyebrow}</p> : null}
+          <h1 className="text-xl font-semibold sm:text-2xl">{title}</h1>
+          {description ? (
+            <p className="mt-1.5 max-w-3xl text-sm text-muted-foreground sm:text-[0.95rem]">
+              {description}
+            </p>
+          ) : null}
+        </div>
       </div>
     </section>
   );
@@ -144,6 +159,7 @@ export function PageHeader({
 
 type StatCardProps = {
   description?: string;
+  href?: Route;
   icon: LucideIcon;
   label: string;
   value: ReactNode;
@@ -151,12 +167,18 @@ type StatCardProps = {
 
 export function StatCard({
   description,
+  href,
   icon: Icon,
   label,
   value,
 }: StatCardProps) {
-  return (
-    <Card className="border-border bg-card shadow-none">
+  const card = (
+    <Card
+      className={cn(
+        "border-border bg-card shadow-none",
+        href && "transition-colors hover:bg-accent/40",
+      )}
+    >
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-2">
           <p className="text-sm font-medium text-muted-foreground">{label}</p>
@@ -173,6 +195,16 @@ export function StatCard({
       </CardContent>
     </Card>
   );
+
+  if (href) {
+    return (
+      <Link className="block" href={href}>
+        {card}
+      </Link>
+    );
+  }
+
+  return card;
 }
 
 export function InsightCard({

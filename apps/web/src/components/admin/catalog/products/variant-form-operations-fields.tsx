@@ -86,9 +86,7 @@ export function VariantFormOperationsFields({
 
       <form.Field
         name="dimensionsLength"
-        validators={positiveNumberOrBlank(
-          "Length must be a positive number.",
-        )}
+        validators={positiveNumberOrBlank("Length must be a positive number.")}
       >
         {(field: VariantFormField) => (
           <AppFormField
@@ -110,9 +108,7 @@ export function VariantFormOperationsFields({
 
       <form.Field
         name="dimensionsWidth"
-        validators={positiveNumberOrBlank(
-          "Width must be a positive number.",
-        )}
+        validators={positiveNumberOrBlank("Width must be a positive number.")}
       >
         {(field: VariantFormField) => (
           <AppFormField
@@ -134,9 +130,7 @@ export function VariantFormOperationsFields({
 
       <form.Field
         name="dimensionsHeight"
-        validators={positiveNumberOrBlank(
-          "Height must be a positive number.",
-        )}
+        validators={positiveNumberOrBlank("Height must be a positive number.")}
       >
         {(field: VariantFormField) => (
           <AppFormField

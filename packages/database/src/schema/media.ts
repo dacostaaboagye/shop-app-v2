@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -63,4 +63,17 @@ export const catalogMediaAssignments = pgTable(
       table.entitySlug,
     ),
   ],
+);
+export const mediaAssetsRelations = relations(mediaAssets, ({ many }) => ({
+  assignments: many(catalogMediaAssignments),
+}));
+
+export const catalogMediaAssignmentsRelations = relations(
+  catalogMediaAssignments,
+  ({ one }) => ({
+    asset: one(mediaAssets, {
+      fields: [catalogMediaAssignments.assetId],
+      references: [mediaAssets.id],
+    }),
+  }),
 );

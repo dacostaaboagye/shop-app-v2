@@ -1,127 +1,113 @@
-import type { AdminUserAccessDetail } from "@shop/contracts";
-import type { Pool } from "pg";
+import {
+  AdminUserAccessActivityEvent,
+  AdminUserAccessDetail,
+  AuthUserStatus,
+  PortalKey,
+} from "@shop/contracts";
+import {
+  catalogMediaAssignments,
+  mediaAssets,
+  permissions,
+  rolePermissions,
+  userPermissionOverrides,
+  userRoles,
+} from "@shop/database";
+import { and, eq, sql } from "drizzle-orm";
+import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { AdminUserAccessQueryRepository } from "./admin-user-access-query.service.js";
 import {
-  type ActivityRow,
   deriveAvailablePortals,
   mergeAssignedLocations,
   type PermissionAssignmentRow,
-  type RoleAssignmentRow,
   resolveEffectivePermissions,
-  type UserDetailRow,
-  type UserOverrideRow,
 } from "./postgres-admin-user-access-query.support.js";
 
 export class PostgresAdminUserAccessQueryRepository
   implements AdminUserAccessQueryRepository
 {
-  constructor(private readonly pool: Pick<Pool, "query">) {}
+  constructor(private readonly db: ApiDatabase) {}
 
   async getUserAccessDetail(
     slug: string,
   ): Promise<AdminUserAccessDetail | null> {
-    const userResult = await this.pool.query<UserDetailRow>(
-      `
-        SELECT
-          users.id,
-          users.slug,
-          users.first_name AS "firstName",
-          users.last_name AS "lastName",
-          users.email,
-          users.status,
-          users.preferred_portal AS "preferredPortal",
-          users.last_login_at AS "lastLoginAt",
-          users.requires_password_change AS "requiresPasswordChange"
-        FROM users
-        WHERE users.slug = $1
-        LIMIT 1
-      `,
-      [slug],
-    );
-    const user = userResult.rows[0];
+    const user = await this.db.query.users.findFirst({
+      where: (u, { eq }) => eq(u.slug, slug),
+      with: {
+        userRoles: {
+          where: (ur, { isNull }) => isNull(ur.revokedAt),
+          with: {
+            role: true,
+            location: true,
+            assignedBy: true,
+          },
+        },
+        permissionOverrides: {
+          where: (po, { isNull }) => isNull(po.removedAt),
+          with: {
+            permission: true,
+            location: true,
+            setBy: true,
+          },
+        },
+        authEvents: {
+          limit: 12,
+          orderBy: (ae, { desc }) => [desc(ae.occurredAt), desc(ae.id)],
+        },
+      },
+    });
 
     if (!user) {
       return null;
     }
 
-    const [roleAssignmentsResult, userOverridesResult, recentActivityResult] =
-      await Promise.all([
-        this.pool.query<RoleAssignmentRow>(
-          `
-            SELECT
-              roles.slug AS "roleSlug",
-              roles.name AS "roleName",
-              locations.slug AS "locationSlug",
-              locations.name AS "locationName",
-              NULLIF(
-                TRIM(CONCAT_WS(' ', assigned_by.first_name, assigned_by.last_name)),
-                ''
-              ) AS "assignedByName",
-              user_roles.assigned_at AS "assignedAt"
-            FROM user_roles
-            INNER JOIN roles ON roles.id = user_roles.role_id
-            LEFT JOIN locations ON locations.id = user_roles.location_id
-            LEFT JOIN users assigned_by ON assigned_by.id = user_roles.assigned_by
-            WHERE user_roles.user_id = $1
-              AND user_roles.revoked_at IS NULL
-            ORDER BY
-              locations.name ASC NULLS FIRST,
-              roles.name ASC,
-              user_roles.assigned_at DESC
-          `,
-          [user.id],
+    // Primary Image
+    const [image] = await this.db
+      .select({ url: mediaAssets.publicUrl })
+      .from(catalogMediaAssignments)
+      .innerJoin(mediaAssets, eq(mediaAssets.id, catalogMediaAssignments.assetId))
+      .where(
+        and(
+          eq(catalogMediaAssignments.entityType, "user"),
+          eq(catalogMediaAssignments.entitySlug, user.slug),
+          eq(catalogMediaAssignments.isPrimary, true),
         ),
-        this.pool.query<UserOverrideRow>(
-          `
-            SELECT
-              permissions.key AS "permissionKey",
-              permissions.description,
-              user_permission_overrides.effect,
-              locations.slug AS "locationSlug",
-              locations.name AS "locationName",
-              user_permission_overrides.reason,
-              NULLIF(
-                TRIM(CONCAT_WS(' ', set_by.first_name, set_by.last_name)),
-                ''
-              ) AS "setByName",
-              user_permission_overrides.created_at AS "createdAt"
-            FROM user_permission_overrides
-            INNER JOIN permissions
-              ON permissions.id = user_permission_overrides.permission_id
-            LEFT JOIN locations ON locations.id = user_permission_overrides.location_id
-            LEFT JOIN users set_by ON set_by.id = user_permission_overrides.set_by
-            WHERE user_permission_overrides.user_id = $1
-              AND user_permission_overrides.removed_at IS NULL
-            ORDER BY
-              user_permission_overrides.created_at DESC,
-              user_permission_overrides.id DESC
-          `,
-          [user.id],
-        ),
-        this.pool.query<ActivityRow>(
-          `
-            SELECT
-              auth_events.event_type AS "eventType",
-              auth_events.ip_address AS "ipAddress",
-              auth_events.user_agent AS "userAgent",
-              auth_events.occurred_at AS "occurredAt"
-            FROM auth_events
-            WHERE auth_events.user_id = $1
-            ORDER BY auth_events.occurred_at DESC, auth_events.id DESC
-            LIMIT 12
-          `,
-          [user.id],
-        ),
-      ]);
+      )
+      .limit(1);
+
     const permissionAssignments = await this.getPermissionAssignments(user.id);
+
+    const roleAssignments = user.userRoles.map((ur) => ({
+      roleSlug: ur.role?.slug ?? "",
+      roleName: ur.role?.name ?? "",
+      locationSlug: ur.location?.slug ?? null,
+      locationName: ur.location?.name ?? null,
+      assignedByName: ur.assignedBy
+        ? `${ur.assignedBy.firstName} ${ur.assignedBy.lastName}`.trim()
+        : null,
+      assignedAt: ur.assignedAt,
+    }));
+
+    const userOverrides = user.permissionOverrides.map((po) => ({
+      permissionKey: po.permission?.key ?? "",
+      description: po.permission?.description ?? "",
+      effect: po.effect,
+      locationSlug: po.location?.slug ?? null,
+      locationName: po.location?.name ?? null,
+      reason: po.reason,
+      setByName: po.setBy
+        ? `${po.setBy.firstName} ${po.setBy.lastName}`.trim()
+        : null,
+      createdAt: po.createdAt,
+    }));
+
     const assignedLocations = mergeAssignedLocations(
-      roleAssignmentsResult.rows,
-      userOverridesResult.rows,
+      roleAssignments,
+      userOverrides,
     );
 
     return {
       assignedLocations,
-      availablePortals: deriveAvailablePortals(roleAssignmentsResult.rows),
+      availablePortals: deriveAvailablePortals(roleAssignments) as PortalKey[],
       effectivePermissions: resolveEffectivePermissions(
         permissionAssignments,
         assignedLocations,
@@ -130,69 +116,73 @@ export class PostgresAdminUserAccessQueryRepository
       firstName: user.firstName,
       lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
       lastName: user.lastName,
-      preferredPortal: user.preferredPortal,
-      recentActivity: recentActivityResult.rows.map((row) => ({
-        ...row,
-        occurredAt: row.occurredAt.toISOString(),
+      preferredPortal: user.preferredPortal as PortalKey | null,
+      primaryImageUrl: image?.url ?? null,
+      recentActivity: user.authEvents.map((ae) => ({
+        eventType: ae.eventType as AdminUserAccessActivityEvent["eventType"],
+        ipAddress: ae.ipAddress,
+        userAgent: ae.userAgent,
+        occurredAt: ae.occurredAt.toISOString(),
       })),
       requiresPasswordChange: user.requiresPasswordChange,
-      roleAssignments: roleAssignmentsResult.rows.map((row) => ({
-        ...row,
-        assignedAt: row.assignedAt.toISOString(),
+      roleAssignments: roleAssignments.map((ra) => ({
+        ...ra,
+        assignedAt: ra.assignedAt.toISOString(),
       })),
       slug: user.slug,
-      status: user.status,
-      userOverrides: userOverridesResult.rows.map((row) => ({
-        ...row,
-        createdAt: row.createdAt.toISOString(),
+      status: user.status as AuthUserStatus,
+      userOverrides: userOverrides.map((uo) => ({
+        ...uo,
+        createdAt: uo.createdAt.toISOString(),
       })),
     };
   }
 
   private async getPermissionAssignments(userId: string) {
-    const result = await this.pool.query<PermissionAssignmentRow>(
-      `
-        SELECT
-          permissions.key AS "key",
-          permissions.description,
-          user_roles.location_id AS "locationId",
-          locations.slug AS "locationSlug",
-          locations.name AS "locationName",
-          NULL::permission_override_effect AS "effect",
-          'role'::text AS "source"
-        FROM user_roles
-        INNER JOIN role_permissions
-          ON role_permissions.role_id = user_roles.role_id
-        INNER JOIN permissions
-          ON permissions.id = role_permissions.permission_id
-        LEFT JOIN locations
-          ON locations.id = user_roles.location_id
-        WHERE user_roles.user_id = $1
-          AND user_roles.revoked_at IS NULL
+    const roleBased = this.db
+      .select({
+        key: permissions.key,
+        description: permissions.description,
+        locationId: userRoles.locationId,
+        locationSlug: sql<string | null>`l.slug`,
+        locationName: sql<string | null>`l.name`,
+        effect: sql<"allow" | "deny" | null>`NULL`,
+        source: sql<"override" | "role">`'role'`,
+      })
+      .from(userRoles)
+      .innerJoin(rolePermissions, eq(rolePermissions.roleId, userRoles.roleId))
+      .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+      .leftJoin(sql`locations l`, sql`l.id = ${userRoles.locationId}`)
+      .where(and(eq(userRoles.userId, userId), sql`${userRoles.revokedAt} IS NULL`));
 
-        UNION ALL
+    const overrideBased = this.db
+      .select({
+        key: permissions.key,
+        description: permissions.description,
+        locationId: userPermissionOverrides.locationId,
+        locationSlug: sql<string | null>`l.slug`,
+        locationName: sql<string | null>`l.name`,
+        effect: userPermissionOverrides.effect,
+        source: sql<"override" | "role">`'override'`,
+      })
+      .from(userPermissionOverrides)
+      .innerJoin(
+        permissions,
+        eq(permissions.id, userPermissionOverrides.permissionId),
+      )
+      .leftJoin(
+        sql`locations l`,
+        sql`l.id = ${userPermissionOverrides.locationId}`,
+      )
+      .where(
+        and(
+          eq(userPermissionOverrides.userId, userId),
+          sql`${userPermissionOverrides.removedAt} IS NULL`,
+        ),
+      );
 
-        SELECT
-          permissions.key AS "key",
-          permissions.description,
-          user_permission_overrides.location_id AS "locationId",
-          locations.slug AS "locationSlug",
-          locations.name AS "locationName",
-          user_permission_overrides.effect AS "effect",
-          'override'::text AS "source"
-        FROM user_permission_overrides
-        INNER JOIN permissions
-          ON permissions.id = user_permission_overrides.permission_id
-        LEFT JOIN locations
-          ON locations.id = user_permission_overrides.location_id
-        WHERE user_permission_overrides.user_id = $1
-          AND user_permission_overrides.removed_at IS NULL
+    const rows = await roleBased.unionAll(overrideBased);
 
-        ORDER BY "source", "key"
-      `,
-      [userId],
-    );
-
-    return result.rows;
+    return rows as PermissionAssignmentRow[];
   }
 }
