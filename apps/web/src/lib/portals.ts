@@ -92,3 +92,15 @@ export function getPortalSelectionState(
     preferredPortal: getPreferredPortal(user),
   };
 }
+
+export function getPrimaryPortal(
+  user: Pick<AuthUser, "availablePortals" | "preferredPortal">,
+): PortalKey | null {
+  const { availablePortals, preferredPortal } = getPortalSelectionState(user);
+
+  if (preferredPortal) {
+    return preferredPortal;
+  }
+
+  return availablePortals[0] ?? null;
+}

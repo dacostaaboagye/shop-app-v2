@@ -5,8 +5,8 @@ import { LogOut, Package, ShieldCheck, Warehouse } from "lucide-react";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { logout } from "@/lib/auth/auth-client";
-import { getPortalHref, getPortalSelectionState } from "@/lib/portals";
-import { currentUserQueryKey } from "@/lib/react-query/auth";
+import { getPortalHref, getPrimaryPortal } from "@/lib/portals";
+import { authQueryKey } from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
@@ -18,13 +18,10 @@ export default function HomePage() {
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess() {
-      queryClient.removeQueries({ queryKey: currentUserQueryKey });
+      queryClient.removeQueries({ queryKey: authQueryKey });
     },
   });
-
-  const portalState = user ? getPortalSelectionState(user) : null;
-  const primaryPortal =
-    portalState?.preferredPortal ?? portalState?.availablePortals[0] ?? null;
+  const primaryPortal = user ? getPrimaryPortal(user) : null;
 
   return (
     <main className="flex min-h-svh flex-col items-center justify-center px-4 py-16">
@@ -67,7 +64,7 @@ export default function HomePage() {
               <LogOut className="size-4" />
             </button>
           </>
-        ) : (
+        ) : status === "refreshing" ? null : (
           <>
             <Link
               className={buttonVariants({ size: "lg" })}

@@ -1,12 +1,15 @@
-import {
+import type {
   AdminProductDetail,
   AdminProductListQuery,
-  AdminProductSummary,
   CatalogEntityStatus,
 } from "@shop/contracts";
-import { catalogBrands, catalogCategories, catalogProducts } from "@shop/database";
-import { and, asc, desc, eq, ilike, or } from "drizzle-orm";
+import { catalogProducts } from "@shop/database";
+import { and, eq, ilike, or } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
+import {
+  getPrimaryImageUrl,
+  listPrimaryImageUrls,
+} from "./catalog-primary-image.loader.js";
 import type { CatalogProductQueryRepository } from "./catalog-product-query.service.js";
 
 export class PostgresCatalogProductQueryRepository
@@ -20,11 +23,6 @@ export class PostgresCatalogProductQueryRepository
       with: {
         brand: { columns: { slug: true } },
         category: { columns: { slug: true } },
-        mediaAssignments: {
-          where: (ma, { and, eq }) =>
-            and(eq(ma.entityType, "product"), eq(ma.isPrimary, true)),
-          with: { asset: true },
-        },
         options: {
           orderBy: (o, { asc }) => [asc(o.position), asc(o.id)],
           with: {
@@ -41,6 +39,12 @@ export class PostgresCatalogProductQueryRepository
 
     if (!product) return null;
 
+    const primaryImageUrl = await getPrimaryImageUrl(
+      this.db,
+      "product",
+      product.slug,
+    );
+
     return {
       slug: product.slug,
       name: product.name,
@@ -56,7 +60,7 @@ export class PostgresCatalogProductQueryRepository
       variantCount: product.variants.length,
       createdAt: product.createdAt.toISOString(),
       archivedAt: product.archivedAt?.toISOString() ?? null,
-      primaryImageUrl: product.mediaAssignments[0]?.asset?.publicUrl ?? null,
+      primaryImageUrl,
       options: product.options.map((opt) => ({
         optionId: opt.id,
         name: opt.name,
@@ -94,6 +98,20 @@ export class PostgresCatalogProductQueryRepository
       input;
     const offset = (page - 1) * pageSize;
 
+    const [categoryId, brandId] = await Promise.all([
+      categorySlug
+        ? this.getCategoryIdBySlug(categorySlug)
+        : Promise.resolve(null),
+      brandSlug ? this.getBrandIdBySlug(brandSlug) : Promise.resolve(null),
+    ]);
+
+    if ((categorySlug && !categoryId) || (brandSlug && !brandId)) {
+      return {
+        items: [],
+        totalCount: 0,
+      };
+    }
+
     const where = and(
       q.trim()
         ? or(
@@ -101,65 +119,23 @@ export class PostgresCatalogProductQueryRepository
             ilike(catalogProducts.slug, `%${q.trim()}%`),
           )
         : undefined,
-      categorySlug
-        ? eq(
-            catalogProducts.categoryId,
-            this.db
-              .select({ id: catalogCategories.id })
-              .from(catalogCategories)
-              .where(eq(catalogCategories.slug, categorySlug)),
-          )
+      categoryId ? eq(catalogProducts.categoryId, categoryId) : undefined,
+      brandId ? eq(catalogProducts.brandId, brandId) : undefined,
+      status !== "all"
+        ? eq(catalogProducts.status, status as CatalogEntityStatus)
         : undefined,
-      brandSlug
-        ? eq(
-            catalogProducts.brandId,
-            this.db
-              .select({ id: catalogBrands.id })
-              .from(catalogBrands)
-              .where(eq(catalogBrands.slug, brandSlug)),
-          )
-        : undefined,
-      status !== "all" ? eq(catalogProducts.status, status as CatalogEntityStatus) : undefined,
     );
 
-    // Optimized count using basic query
     const totalCountResult = await this.db.query.catalogProducts.findMany({
-      where: (r, { and, ilike, or, eq }) =>
-        and(
-          q.trim()
-            ? or(
-                ilike(r.name, `%${q.trim()}%`),
-                ilike(r.slug, `%${q.trim()}%`),
-              )
-            : undefined,
-          status !== "all" ? eq(r.status, status as CatalogEntityStatus) : undefined,
-          // Note: category/brand filtering in many-to-many or complex joins
-          // might be better handled with explicit subqueries or findMany with with filtering
-        ),
-      // We only need the length, but this is a bit inefficient for large tables.
-      // However, for admin catalog it is usually fine.
+      where,
     });
 
     const rows = await this.db.query.catalogProducts.findMany({
-      where: (r, { and, ilike, or, eq }) =>
-        and(
-          q.trim()
-            ? or(
-                ilike(r.name, `%${q.trim()}%`),
-                ilike(r.slug, `%${q.trim()}%`),
-              )
-            : undefined,
-          status !== "all" ? eq(r.status, status as CatalogEntityStatus) : undefined,
-        ),
+      where,
       with: {
         category: { columns: { slug: true } },
         brand: { columns: { slug: true } },
         variants: { columns: { id: true } },
-        mediaAssignments: {
-          where: (ma, { and, eq }) =>
-            and(eq(ma.entityType, "product"), eq(ma.isPrimary, true)),
-          with: { asset: true },
-        },
       },
       orderBy: (r, { asc, desc }) => {
         const column = sort === "createdAt" ? r.createdAt : r.name;
@@ -168,6 +144,12 @@ export class PostgresCatalogProductQueryRepository
       limit: pageSize,
       offset: offset,
     });
+
+    const primaryImageUrls = await listPrimaryImageUrls(
+      this.db,
+      "product",
+      rows.map((product) => product.slug),
+    );
 
     return {
       items: rows.map((product) => ({
@@ -185,9 +167,27 @@ export class PostgresCatalogProductQueryRepository
         variantCount: product.variants.length,
         createdAt: product.createdAt.toISOString(),
         archivedAt: product.archivedAt?.toISOString() ?? null,
-        primaryImageUrl: product.mediaAssignments[0]?.asset?.publicUrl ?? null,
+        primaryImageUrl: primaryImageUrls.get(product.slug) ?? null,
       })),
       totalCount: totalCountResult.length,
     };
+  }
+
+  private async getBrandIdBySlug(slug: string): Promise<string | null> {
+    const brand = await this.db.query.catalogBrands.findFirst({
+      columns: { id: true },
+      where: (r, { eq }) => eq(r.slug, slug),
+    });
+
+    return brand?.id ?? null;
+  }
+
+  private async getCategoryIdBySlug(slug: string): Promise<string | null> {
+    const category = await this.db.query.catalogCategories.findFirst({
+      columns: { id: true },
+      where: (r, { eq }) => eq(r.slug, slug),
+    });
+
+    return category?.id ?? null;
   }
 }

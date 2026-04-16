@@ -14,7 +14,10 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Spinner } from "@/components/ui/spinner";
 import { login } from "@/lib/auth/auth-client";
 import { getAuthErrorMessage } from "@/lib/auth/auth-messages";
-import { currentUserQueryKey } from "@/lib/react-query/auth";
+import {
+  currentUserPermissionsQueryKeyPrefix,
+  currentUserQueryKey,
+} from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
 
 const loginDefaults = { email: "", password: "" };
@@ -27,6 +30,9 @@ export function AuthLoginForm() {
     mutationFn: login,
     onSuccess(session) {
       queryClient.setQueryData(currentUserQueryKey, session.user);
+      queryClient.removeQueries({
+        queryKey: currentUserPermissionsQueryKeyPrefix,
+      });
     },
   });
 

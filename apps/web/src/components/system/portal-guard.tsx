@@ -5,11 +5,14 @@ import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useEffect } from "react";
 import { Spinner } from "@/components/ui/spinner";
 import {
-  currentUserPermissionsQueryKey,
   fetchCurrentUserPermissions,
+  getCurrentUserPermissionsQueryKey,
 } from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
-import { useAuthSessionStore } from "@/store/use-auth-session-store";
+import {
+  isAuthSessionPending,
+  useAuthSessionStore,
+} from "@/store/use-auth-session-store";
 import { canAccessPortalItem, getRouteItem } from "./portal-shell-config";
 
 type AuthGuardProps = {
@@ -30,7 +33,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const permissionsQuery = useQuery({
     enabled: status === "authenticated",
     queryFn: fetchCurrentUserPermissions,
-    queryKey: currentUserPermissionsQueryKey,
+    queryKey: getCurrentUserPermissionsQueryKey(user?.slug ?? null),
   });
   const permissions = permissionsQuery.data?.permissions ?? [];
   const routeItem = getRouteItem(pathname);
@@ -38,7 +41,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
     routeItem === undefined || canAccessPortalItem(routeItem, permissions);
 
   useEffect(() => {
-    if (status === "refreshing") return;
+    if (isAuthSessionPending(status)) return;
 
     if (status === "anonymous") {
       router.replace(toRoute("/login"));

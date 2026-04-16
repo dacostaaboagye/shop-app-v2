@@ -6,8 +6,8 @@ import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { logout } from "@/lib/auth/auth-client";
-import { getPortalSelectionState, PORTALS } from "@/lib/portals";
-import { currentUserQueryKey } from "@/lib/react-query/auth";
+import { getPrimaryPortal, PORTALS } from "@/lib/portals";
+import { authQueryKey } from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
 
@@ -19,18 +19,16 @@ export function AppNav() {
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess() {
-      queryClient.removeQueries({ queryKey: currentUserQueryKey });
+      queryClient.removeQueries({ queryKey: authQueryKey });
     },
   });
 
   const portal = user
     ? (() => {
-        const { preferredPortal } = getPortalSelectionState(user);
-        return preferredPortal ? PORTALS[preferredPortal] : null;
+        const primaryPortal = getPrimaryPortal(user);
+        return primaryPortal ? PORTALS[primaryPortal] : null;
       })()
     : null;
-  const canSwitchPortal =
-    user !== null && getPortalSelectionState(user).availablePortals.length > 1;
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-sidebar/90 backdrop-blur-sm">
@@ -62,14 +60,6 @@ export function AppNav() {
         <div className="flex items-center gap-1">
           {status === "authenticated" && user ? (
             <>
-              {portal && canSwitchPortal ? (
-                <Link
-                  href={toRoute("/select-portal")}
-                  className="hidden text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline sm:block"
-                >
-                  Switch portal
-                </Link>
-              ) : null}
               <span className="mx-2 hidden h-3.5 w-px bg-border sm:block" />
               <span className="hidden text-sm text-muted-foreground sm:block">
                 {user.firstName} {user.lastName}

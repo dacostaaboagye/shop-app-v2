@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
+import { ApiError } from "@/lib/react-query/query-client";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
 import { login, logout, refreshAccessToken, register } from "./auth-client";
 
@@ -130,6 +131,52 @@ describe("auth-client", () => {
 
     assert.equal(session, null);
     assert.equal(useAuthSessionStore.getState().status, "anonymous");
+  });
+
+  it("restores the previous session when refresh fails with a transient error", async () => {
+    globalThis.fetch = async () =>
+      new Response(
+        JSON.stringify({
+          code: "internal_error",
+          detail: "Refresh temporarily failed.",
+          requestId: "req_500",
+          status: 503,
+          timestamp: "2026-04-08T00:00:00.000Z",
+          title: "Internal error",
+        }),
+        {
+          status: 503,
+          headers: { "content-type": "application/json" },
+        },
+      );
+
+    useAuthSessionStore.getState().setSession({
+      accessToken: "a".repeat(64),
+      accessTokenExpiresAt: "2026-04-08T13:00:00.000Z",
+      user: {
+        availablePortals: ["admin"],
+        email: "manager@example.com",
+        firstName: "Store",
+        lastLoginAt: null,
+        lastName: "Manager",
+        preferredPortal: "admin",
+        requiresPasswordChange: false,
+        slug: "store-manager",
+        status: "active",
+      },
+    });
+
+    await assert.rejects(
+      () => refreshAccessToken(),
+      (error: unknown) => {
+        assert.ok(error instanceof ApiError);
+        assert.equal(error.status, 503);
+        return true;
+      },
+    );
+
+    assert.equal(useAuthSessionStore.getState().status, "authenticated");
+    assert.equal(useAuthSessionStore.getState().accessToken, "a".repeat(64));
   });
 
   it("clears the in-memory session when logging out", async () => {

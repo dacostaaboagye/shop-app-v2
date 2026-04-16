@@ -22,8 +22,12 @@ import {
   getAuthErrorMessage,
   isUnauthorizedApiError,
 } from "@/lib/auth/auth-messages";
-import { getPortalHref, getPortalSelectionState } from "@/lib/portals";
-import { currentUserQueryKey, fetchCurrentUser } from "@/lib/react-query/auth";
+import { getPortalHref, getPrimaryPortal } from "@/lib/portals";
+import {
+  authQueryKey,
+  currentUserQueryKey,
+  fetchCurrentUser,
+} from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
 import { AppBanner } from "./app-banner";
@@ -51,27 +55,10 @@ export function AuthWorkspace({ mode = "login" }: AuthWorkspaceProps) {
 
   useEffect(() => {
     if (status !== "authenticated" || !user) return;
-    const { availablePortals, preferredPortal } = getPortalSelectionState(user);
+    const primaryPortal = getPrimaryPortal(user);
 
-    if (preferredPortal) {
-      router.replace(getPortalHref(preferredPortal));
-      return;
-    }
-
-    if (availablePortals.length === 1) {
-      const portal = availablePortals[0];
-
-      if (!portal) {
-        router.replace(toRoute("/"));
-        return;
-      }
-
-      router.replace(getPortalHref(portal));
-      return;
-    }
-
-    if (availablePortals.length > 1) {
-      router.replace(toRoute("/select-portal"));
+    if (primaryPortal) {
+      router.replace(getPortalHref(primaryPortal));
       return;
     }
 
@@ -80,7 +67,7 @@ export function AuthWorkspace({ mode = "login" }: AuthWorkspaceProps) {
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess() {
-      queryClient.removeQueries({ queryKey: currentUserQueryKey });
+      queryClient.removeQueries({ queryKey: authQueryKey });
     },
   });
   const currentUserQuery = useQuery({

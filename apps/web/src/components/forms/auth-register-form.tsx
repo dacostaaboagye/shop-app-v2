@@ -13,7 +13,10 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Spinner } from "@/components/ui/spinner";
 import { register } from "@/lib/auth/auth-client";
 import { getAuthErrorMessage } from "@/lib/auth/auth-messages";
-import { currentUserQueryKey } from "@/lib/react-query/auth";
+import {
+  currentUserPermissionsQueryKeyPrefix,
+  currentUserQueryKey,
+} from "@/lib/react-query/auth";
 
 const registerDefaults = {
   email: "",
@@ -30,6 +33,9 @@ export function AuthRegisterForm() {
     mutationFn: register,
     onSuccess(session) {
       queryClient.setQueryData(currentUserQueryKey, session.user);
+      queryClient.removeQueries({
+        queryKey: currentUserPermissionsQueryKeyPrefix,
+      });
     },
   });
 

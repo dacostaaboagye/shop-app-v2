@@ -1,12 +1,14 @@
-import {
+import type {
   AdminBrandListQuery,
   AdminBrandSummary,
   CatalogEntityStatus,
 } from "@shop/contracts";
-import { catalogBrands } from "@shop/database";
-import { and, asc, desc, ilike } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { CatalogBrandQueryRepository } from "./catalog-brand-query.service.js";
+import {
+  getPrimaryImageUrl,
+  listPrimaryImageUrls,
+} from "./catalog-primary-image.loader.js";
 
 export class PostgresCatalogBrandQueryRepository
   implements CatalogBrandQueryRepository
@@ -16,18 +18,15 @@ export class PostgresCatalogBrandQueryRepository
   async getBrand(slug: string): Promise<AdminBrandSummary | null> {
     const brand = await this.db.query.catalogBrands.findFirst({
       where: (r, { eq }) => eq(r.slug, slug),
-      with: {
-        mediaAssignments: {
-          where: (ma, { and, eq }) =>
-            and(eq(ma.entityType, "brand"), eq(ma.isPrimary, true)),
-          with: {
-            asset: true,
-          },
-        },
-      },
     });
 
     if (!brand) return null;
+
+    const primaryImageUrl = await getPrimaryImageUrl(
+      this.db,
+      "brand",
+      brand.slug,
+    );
 
     return {
       slug: brand.slug,
@@ -36,7 +35,7 @@ export class PostgresCatalogBrandQueryRepository
       website: brand.website,
       status: brand.status,
       createdAt: brand.createdAt.toISOString(),
-      primaryImageUrl: brand.mediaAssignments[0]?.asset?.publicUrl ?? null,
+      primaryImageUrl,
     };
   }
 
@@ -49,24 +48,19 @@ export class PostgresCatalogBrandQueryRepository
         where: (r, { and, ilike, eq }) =>
           and(
             q.trim() ? ilike(r.name, `%${q.trim()}%`) : undefined,
-            status !== "all" ? eq(r.status, status as CatalogEntityStatus) : undefined,
+            status !== "all"
+              ? eq(r.status, status as CatalogEntityStatus)
+              : undefined,
           ),
       }),
       this.db.query.catalogBrands.findMany({
         where: (r, { and, ilike, eq }) =>
           and(
             q.trim() ? ilike(r.name, `%${q.trim()}%`) : undefined,
-            status !== "all" ? eq(r.status, status as CatalogEntityStatus) : undefined,
+            status !== "all"
+              ? eq(r.status, status as CatalogEntityStatus)
+              : undefined,
           ),
-        with: {
-          mediaAssignments: {
-            where: (ma, { and, eq }) =>
-              and(eq(ma.entityType, "brand"), eq(ma.isPrimary, true)),
-            with: {
-              asset: true,
-            },
-          },
-        },
         orderBy: (r, { asc, desc }) => {
           const column = sort === "createdAt" ? r.createdAt : r.name;
           return [dir === "desc" ? desc(column) : asc(column), asc(r.id)];
@@ -76,6 +70,12 @@ export class PostgresCatalogBrandQueryRepository
       }),
     ]);
 
+    const primaryImageUrls = await listPrimaryImageUrls(
+      this.db,
+      "brand",
+      rows.map((brand) => brand.slug),
+    );
+
     return {
       items: rows.map((brand) => ({
         slug: brand.slug,
@@ -84,7 +84,7 @@ export class PostgresCatalogBrandQueryRepository
         website: brand.website,
         status: brand.status,
         createdAt: brand.createdAt.toISOString(),
-        primaryImageUrl: brand.mediaAssignments[0]?.asset?.publicUrl ?? null,
+        primaryImageUrl: primaryImageUrls.get(brand.slug) ?? null,
       })),
       totalCount: totalCountResult.length,
     };

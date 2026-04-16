@@ -3,6 +3,11 @@ import { describe, it } from "node:test";
 import { useAuthSessionStore } from "./use-auth-session-store";
 
 describe("useAuthSessionStore", () => {
+  it("starts in a bootstrapping state until the initial session check finishes", () => {
+    assert.equal(useAuthSessionStore.getState().status, "bootstrapping");
+    assert.equal(useAuthSessionStore.getState().accessToken, null);
+  });
+
   it("stores and clears the current auth session in memory", () => {
     const store = useAuthSessionStore.getState();
 

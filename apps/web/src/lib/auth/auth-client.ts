@@ -62,6 +62,7 @@ export async function refreshAccessToken(): Promise<AuthSession | null> {
 }
 
 async function refreshAccessTokenOnce(): Promise<AuthSession | null> {
+  const previousSession = getStoredSessionSnapshot();
   useAuthSessionStore.getState().setRefreshing();
 
   try {
@@ -73,10 +74,15 @@ async function refreshAccessTokenOnce(): Promise<AuthSession | null> {
 
     return session;
   } catch (error) {
-    useAuthSessionStore.getState().clearSession();
-
     if (error instanceof ApiError && error.status === 401) {
+      useAuthSessionStore.getState().clearSession();
       return null;
+    }
+
+    if (previousSession) {
+      useAuthSessionStore.getState().setSession(previousSession);
+    } else {
+      useAuthSessionStore.getState().clearSession();
     }
 
     throw error;
@@ -126,4 +132,19 @@ async function toApiError(response: Response): Promise<ApiError> {
     problem,
     status: response.status,
   });
+}
+
+function getStoredSessionSnapshot(): AuthSession | null {
+  const { accessToken, accessTokenExpiresAt, user } =
+    useAuthSessionStore.getState();
+
+  if (!accessToken || !accessTokenExpiresAt || !user) {
+    return null;
+  }
+
+  return {
+    accessToken,
+    accessTokenExpiresAt,
+    user,
+  };
 }

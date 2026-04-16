@@ -3,7 +3,11 @@
 import type { AuthSession, AuthUser } from "@shop/contracts";
 import { createUiStore } from "@/store/create-ui-store";
 
-export type AuthSessionStatus = "anonymous" | "authenticated" | "refreshing";
+export type AuthSessionStatus =
+  | "anonymous"
+  | "authenticated"
+  | "bootstrapping"
+  | "refreshing";
 
 type AuthSessionState = {
   accessToken: string | null;
@@ -28,7 +32,12 @@ export const useAuthSessionStore = createUiStore<AuthSessionState>((set) => ({
     }),
   setRefreshing: () =>
     set((state) => ({
-      status: state.status === "authenticated" ? "authenticated" : "refreshing",
+      status:
+        state.status === "authenticated"
+          ? "authenticated"
+          : state.status === "bootstrapping"
+            ? "bootstrapping"
+            : "refreshing",
     })),
   setSession: (session) =>
     set({
@@ -38,6 +47,10 @@ export const useAuthSessionStore = createUiStore<AuthSessionState>((set) => ({
       user: session.user,
     }),
   setUser: (user) => set({ user }),
-  status: "anonymous",
+  status: "bootstrapping",
   user: null,
 }));
+
+export function isAuthSessionPending(status: AuthSessionStatus): boolean {
+  return status === "bootstrapping" || status === "refreshing";
+}

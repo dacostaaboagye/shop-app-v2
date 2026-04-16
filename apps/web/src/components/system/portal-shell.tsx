@@ -11,9 +11,10 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
-  currentUserPermissionsQueryKey,
   fetchCurrentUserPermissions,
+  getCurrentUserPermissionsQueryKey,
 } from "@/lib/react-query/auth";
+import { useAuthSessionStore } from "@/store/use-auth-session-store";
 import { AppAccountDialog, AppNotificationsDialog } from "./portal-overlays";
 import { AppSidebar } from "./portal-sidebar";
 import { AppTopbar } from "./portal-topbar";
@@ -24,12 +25,13 @@ type AppShellProps = {
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
+  const user = useAuthSessionStore((state) => state.user);
   const [accountOpen, setAccountOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const permissionsQuery = useQuery({
     queryFn: fetchCurrentUserPermissions,
-    queryKey: currentUserPermissionsQueryKey,
+    queryKey: getCurrentUserPermissionsQueryKey(user?.slug ?? null),
   });
   const permissions = permissionsQuery.data?.permissions ?? [];
 

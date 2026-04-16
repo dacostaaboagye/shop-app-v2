@@ -4,6 +4,7 @@ import {
   getAvailablePortals,
   getPortalSelectionState,
   getPreferredPortal,
+  getPrimaryPortal,
 } from "./portals";
 
 describe("portals", () => {
@@ -36,6 +37,16 @@ describe("portals", () => {
         availablePortals: ["admin", "manager"],
         preferredPortal: "manager",
       },
+    );
+  });
+
+  it("falls back to the first available portal when no preferred portal is set", () => {
+    assert.equal(
+      getPrimaryPortal({
+        availablePortals: ["admin", "manager"],
+        preferredPortal: null,
+      }),
+      "admin",
     );
   });
 });

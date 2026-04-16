@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/empty";
 import { Spinner } from "@/components/ui/spinner";
 import { logout } from "@/lib/auth/auth-client";
-import { currentUserQueryKey } from "@/lib/react-query/auth";
+import { authQueryKey } from "@/lib/react-query/auth";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
 import { getShellConfig, getShellNotifications } from "./portal-shell-config";
 
@@ -88,7 +88,7 @@ export function AppAccountDialog({ onOpenChange, open }: AppDialogProps) {
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess() {
-      queryClient.removeQueries({ queryKey: currentUserQueryKey });
+      queryClient.removeQueries({ queryKey: authQueryKey });
       onOpenChange(false);
     },
   });

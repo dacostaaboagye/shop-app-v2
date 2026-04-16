@@ -1,12 +1,14 @@
-import {
+import type {
   AdminCategoryListQuery,
   AdminCategorySummary,
   CatalogEntityStatus,
 } from "@shop/contracts";
-import { catalogCategories } from "@shop/database";
-import { and, asc, desc, ilike } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { CatalogCategoryQueryRepository } from "./catalog-category-query.service.js";
+import {
+  getPrimaryImageUrl,
+  listPrimaryImageUrls,
+} from "./catalog-primary-image.loader.js";
 
 export class PostgresCatalogCategoryQueryRepository
   implements CatalogCategoryQueryRepository
@@ -20,17 +22,16 @@ export class PostgresCatalogCategoryQueryRepository
         parentCategory: {
           columns: { slug: true, name: true },
         },
-        mediaAssignments: {
-          where: (ma, { and, eq }) =>
-            and(eq(ma.entityType, "category"), eq(ma.isPrimary, true)),
-          with: {
-            asset: true,
-          },
-        },
       },
     });
 
     if (!category) return null;
+
+    const primaryImageUrl = await getPrimaryImageUrl(
+      this.db,
+      "category",
+      category.slug,
+    );
 
     return {
       slug: category.slug,
@@ -39,7 +40,7 @@ export class PostgresCatalogCategoryQueryRepository
       parentCategorySlug: category.parentCategory?.slug ?? null,
       status: category.status,
       createdAt: category.createdAt.toISOString(),
-      primaryImageUrl: category.mediaAssignments[0]?.asset?.publicUrl ?? null,
+      primaryImageUrl,
     };
   }
 
@@ -52,25 +53,22 @@ export class PostgresCatalogCategoryQueryRepository
         where: (r, { and, ilike, eq }) =>
           and(
             q.trim() ? ilike(r.name, `%${q.trim()}%`) : undefined,
-            status !== "all" ? eq(r.status, status as CatalogEntityStatus) : undefined,
+            status !== "all"
+              ? eq(r.status, status as CatalogEntityStatus)
+              : undefined,
           ),
       }),
       this.db.query.catalogCategories.findMany({
         where: (r, { and, ilike, eq }) =>
           and(
             q.trim() ? ilike(r.name, `%${q.trim()}%`) : undefined,
-            status !== "all" ? eq(r.status, status as CatalogEntityStatus) : undefined,
+            status !== "all"
+              ? eq(r.status, status as CatalogEntityStatus)
+              : undefined,
           ),
         with: {
           parentCategory: {
             columns: { slug: true, name: true },
-          },
-          mediaAssignments: {
-            where: (ma, { and, eq }) =>
-              and(eq(ma.entityType, "category"), eq(ma.isPrimary, true)),
-            with: {
-              asset: true,
-            },
           },
         },
         orderBy: (r, { asc, desc }) => {
@@ -82,6 +80,12 @@ export class PostgresCatalogCategoryQueryRepository
       }),
     ]);
 
+    const primaryImageUrls = await listPrimaryImageUrls(
+      this.db,
+      "category",
+      rows.map((category) => category.slug),
+    );
+
     return {
       items: rows.map((category) => ({
         slug: category.slug,
@@ -90,7 +94,7 @@ export class PostgresCatalogCategoryQueryRepository
         parentCategorySlug: category.parentCategory?.slug ?? null,
         status: category.status,
         createdAt: category.createdAt.toISOString(),
-        primaryImageUrl: category.mediaAssignments[0]?.asset?.publicUrl ?? null,
+        primaryImageUrl: primaryImageUrls.get(category.slug) ?? null,
       })),
       totalCount: totalCountResult.length,
     };
