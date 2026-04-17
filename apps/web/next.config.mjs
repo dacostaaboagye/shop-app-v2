@@ -5,6 +5,7 @@ const configuredApiBaseUrl =
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "standalone",
   async rewrites() {
     if (!configuredApiBaseUrl) {
       return [];

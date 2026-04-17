@@ -14,89 +14,21 @@ import {
 } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
 import { AppError } from "../_core/errors/app-error.js";
-import type { RouteDefinition } from "../_core/route-contract.js";
 import { getAuthenticatedUserId } from "../auth/auth-route-support.js";
-import type { CatalogCategoryWriteService } from "./catalog-category-write.service.js";
-import type { CatalogProductWriteService } from "./catalog-product-write.service.js";
-
-type CatalogWriteRouteDependencies = {
-  catalogCategoryWriteService: Pick<
-    CatalogCategoryWriteService,
-    "createCategory" | "updateCategory" | "deleteCategory"
-  >;
-  catalogProductWriteService: Pick<
-    CatalogProductWriteService,
-    | "createProduct"
-    | "updateProduct"
-    | "deleteProduct"
-    | "createVariant"
-    | "updateVariant"
-    | "deleteVariant"
-  >;
-};
-
-const createCategoryRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "catalog.categories.manage" },
-  method: "POST",
-  url: "/api/admin/catalog/categories",
-};
-
-const updateCategoryRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "catalog.categories.manage" },
-  method: "PATCH",
-  url: "/api/admin/catalog/categories/:slug",
-};
-
-const deleteCategoryRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "catalog.categories.manage" },
-  method: "DELETE",
-  url: "/api/admin/catalog/categories/:slug",
-};
-
-const createProductRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "catalog.products.manage" },
-  method: "POST",
-  url: "/api/admin/catalog/products",
-};
-
-const updateProductRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "catalog.products.manage" },
-  method: "PATCH",
-  url: "/api/admin/catalog/products/:slug",
-};
-
-const deleteProductRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "catalog.products.manage" },
-  method: "DELETE",
-  url: "/api/admin/catalog/products/:slug",
-};
-
-const createVariantRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "catalog.products.manage" },
-  method: "POST",
-  url: "/api/admin/catalog/products/:slug/variants",
-};
-
-const updateVariantRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "catalog.products.manage" },
-  method: "PATCH",
-  url: "/api/admin/catalog/products/:slug/variants/:variantSlug",
-};
-
-const deleteVariantRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "catalog.products.manage" },
-  method: "DELETE",
-  url: "/api/admin/catalog/products/:slug/variants/:variantSlug",
-};
+import {
+  type CatalogWriteRouteDependencies,
+  catalogWriteRoutes,
+  createUnavailableCatalogWriteDependencies,
+} from "./catalog-admin-write-route-support.js";
 
 export function registerCatalogAdminWriteRoutes(
   server: FastifyInstance,
-  dependencies: CatalogWriteRouteDependencies = createUnavailableDependencies(),
+  dependencies: CatalogWriteRouteDependencies = createUnavailableCatalogWriteDependencies(),
 ) {
   server.route({
-    config: { access: createCategoryRoute.access },
-    method: createCategoryRoute.method,
-    url: createCategoryRoute.url,
+    config: { access: catalogWriteRoutes.createCategory.access },
+    method: catalogWriteRoutes.createCategory.method,
+    url: catalogWriteRoutes.createCategory.url,
     async handler(request) {
       const payload = adminCreateCategoryRequestSchema.parse(request.body);
       const result =
@@ -109,12 +41,12 @@ export function registerCatalogAdminWriteRoutes(
     },
   });
 
-  server.route<{ Params: { slug: string } }>({
-    config: { access: updateCategoryRoute.access },
-    method: updateCategoryRoute.method,
-    url: updateCategoryRoute.url,
+  server.route({
+    config: { access: catalogWriteRoutes.updateCategory.access },
+    method: catalogWriteRoutes.updateCategory.method,
+    url: catalogWriteRoutes.updateCategory.url,
     async handler(request) {
-      const { slug } = request.params;
+      const { slug } = request.params as { slug: string };
       const payload = adminUpdateCategoryRequestSchema.parse(request.body);
       const result =
         await dependencies.catalogCategoryWriteService.updateCategory(
@@ -137,21 +69,21 @@ export function registerCatalogAdminWriteRoutes(
     },
   });
 
-  server.route<{ Params: { slug: string } }>({
-    config: { access: deleteCategoryRoute.access },
-    method: deleteCategoryRoute.method,
-    url: deleteCategoryRoute.url,
+  server.route({
+    config: { access: catalogWriteRoutes.deleteCategory.access },
+    method: catalogWriteRoutes.deleteCategory.method,
+    url: catalogWriteRoutes.deleteCategory.url,
     async handler(request) {
-      const { slug } = request.params;
+      const { slug } = request.params as { slug: string };
       await dependencies.catalogCategoryWriteService.deleteCategory(slug);
       return { success: true };
     },
   });
 
   server.route({
-    config: { access: createProductRoute.access },
-    method: createProductRoute.method,
-    url: createProductRoute.url,
+    config: { access: catalogWriteRoutes.createProduct.access },
+    method: catalogWriteRoutes.createProduct.method,
+    url: catalogWriteRoutes.createProduct.url,
     async handler(request) {
       const payload = adminCreateProductRequestSchema.parse(request.body);
       const result =
@@ -164,12 +96,12 @@ export function registerCatalogAdminWriteRoutes(
     },
   });
 
-  server.route<{ Params: { slug: string } }>({
-    config: { access: updateProductRoute.access },
-    method: updateProductRoute.method,
-    url: updateProductRoute.url,
+  server.route({
+    config: { access: catalogWriteRoutes.updateProduct.access },
+    method: catalogWriteRoutes.updateProduct.method,
+    url: catalogWriteRoutes.updateProduct.url,
     async handler(request) {
-      const { slug } = request.params;
+      const { slug } = request.params as { slug: string };
       const payload = adminUpdateProductRequestSchema.parse(request.body);
       const result =
         await dependencies.catalogProductWriteService.updateProduct(
@@ -192,23 +124,23 @@ export function registerCatalogAdminWriteRoutes(
     },
   });
 
-  server.route<{ Params: { slug: string } }>({
-    config: { access: deleteProductRoute.access },
-    method: deleteProductRoute.method,
-    url: deleteProductRoute.url,
+  server.route({
+    config: { access: catalogWriteRoutes.deleteProduct.access },
+    method: catalogWriteRoutes.deleteProduct.method,
+    url: catalogWriteRoutes.deleteProduct.url,
     async handler(request) {
-      const { slug } = request.params;
+      const { slug } = request.params as { slug: string };
       await dependencies.catalogProductWriteService.deleteProduct(slug);
       return { success: true };
     },
   });
 
-  server.route<{ Params: { slug: string } }>({
-    config: { access: createVariantRoute.access },
-    method: createVariantRoute.method,
-    url: createVariantRoute.url,
+  server.route({
+    config: { access: catalogWriteRoutes.createVariant.access },
+    method: catalogWriteRoutes.createVariant.method,
+    url: catalogWriteRoutes.createVariant.url,
     async handler(request) {
-      const { slug: productSlug } = request.params;
+      const { slug: productSlug } = request.params as { slug: string };
       const payload = adminCreateVariantRequestSchema.parse(request.body);
       const result =
         await dependencies.catalogProductWriteService.createVariant(
@@ -221,12 +153,15 @@ export function registerCatalogAdminWriteRoutes(
     },
   });
 
-  server.route<{ Params: { slug: string; variantSlug: string } }>({
-    config: { access: updateVariantRoute.access },
-    method: updateVariantRoute.method,
-    url: updateVariantRoute.url,
+  server.route({
+    config: { access: catalogWriteRoutes.updateVariant.access },
+    method: catalogWriteRoutes.updateVariant.method,
+    url: catalogWriteRoutes.updateVariant.url,
     async handler(request) {
-      const { slug: productSlug, variantSlug } = request.params;
+      const { slug: productSlug, variantSlug } = request.params as {
+        slug: string;
+        variantSlug: string;
+      };
       const payload = adminUpdateVariantRequestSchema.parse(request.body);
       const result =
         await dependencies.catalogProductWriteService.updateVariant(
@@ -250,62 +185,20 @@ export function registerCatalogAdminWriteRoutes(
     },
   });
 
-  server.route<{ Params: { slug: string; variantSlug: string } }>({
-    config: { access: deleteVariantRoute.access },
-    method: deleteVariantRoute.method,
-    url: deleteVariantRoute.url,
+  server.route({
+    config: { access: catalogWriteRoutes.deleteVariant.access },
+    method: catalogWriteRoutes.deleteVariant.method,
+    url: catalogWriteRoutes.deleteVariant.url,
     async handler(request) {
-      const { slug: productSlug, variantSlug } = request.params;
+      const { slug: productSlug, variantSlug } = request.params as {
+        slug: string;
+        variantSlug: string;
+      };
       await dependencies.catalogProductWriteService.deleteVariant(
         productSlug,
         variantSlug,
       );
       return { success: true };
     },
-  });
-}
-
-function createUnavailableDependencies(): CatalogWriteRouteDependencies {
-  return {
-    catalogCategoryWriteService: {
-      async createCategory() {
-        throw unavailableCatalogError();
-      },
-      async updateCategory() {
-        throw unavailableCatalogError();
-      },
-      async deleteCategory() {
-        throw unavailableCatalogError();
-      },
-    },
-    catalogProductWriteService: {
-      async createProduct() {
-        throw unavailableCatalogError();
-      },
-      async updateProduct() {
-        throw unavailableCatalogError();
-      },
-      async createVariant() {
-        throw unavailableCatalogError();
-      },
-      async updateVariant() {
-        throw unavailableCatalogError();
-      },
-      async deleteProduct() {
-        throw unavailableCatalogError();
-      },
-      async deleteVariant() {
-        throw unavailableCatalogError();
-      },
-    },
-  };
-}
-
-function unavailableCatalogError(): AppError {
-  return new AppError({
-    code: "internal_error",
-    detail: "Catalog services are not configured for this environment.",
-    statusCode: 503,
-    title: "Catalog unavailable",
   });
 }

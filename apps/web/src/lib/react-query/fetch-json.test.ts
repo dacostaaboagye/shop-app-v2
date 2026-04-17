@@ -97,6 +97,7 @@ describe("fetchJson", () => {
             user: {
               availablePortals: ["admin"],
               email: "manager@example.com",
+              emailVerified: false,
               firstName: "Store",
               lastLoginAt: null,
               lastName: "Manager",
@@ -136,6 +137,7 @@ describe("fetchJson", () => {
         lastLoginAt: null,
         lastName: "Manager",
         preferredPortal: "admin",
+        emailVerified: false,
         requiresPasswordChange: false,
         slug: "store-manager",
         status: "active",

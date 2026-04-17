@@ -8,12 +8,17 @@ export type ApiEnv = {
   authCookieSecure: boolean;
   authRefreshTokenTtlSeconds: number;
   databaseUrl?: string;
+  emailFromAddress: string;
+  googleCallbackUrl?: string;
+  googleClientId?: string;
+  googleClientSecret?: string;
   nodeEnv: NodeEnv;
   r2AccountId?: string;
   r2AccessKeyId?: string;
   r2Bucket?: string;
   r2PublicUrl?: string;
   r2SecretAccessKey?: string;
+  resendApiKey?: string;
   webBaseUrl?: string;
 };
 
@@ -28,6 +33,10 @@ export function getApiEnv(): ApiEnv {
   const r2SecretAccessKey = readStringEnv("R2_SECRET_ACCESS_KEY");
   const r2Bucket = readStringEnv("R2_BUCKET");
   const r2PublicUrl = readStringEnv("R2_PUBLIC_URL");
+  const googleClientId = readStringEnv("GOOGLE_CLIENT_ID");
+  const googleClientSecret = readStringEnv("GOOGLE_CLIENT_SECRET");
+  const googleCallbackUrl = readStringEnv("GOOGLE_CALLBACK_URL");
+  const resendApiKey = readStringEnv("RESEND_API_KEY");
 
   return {
     apiHost: readStringEnv("API_HOST") ?? "0.0.0.0",
@@ -37,14 +46,20 @@ export function getApiEnv(): ApiEnv {
     authRefreshTokenTtlSeconds:
       readNumberEnv("AUTH_REFRESH_TOKEN_TTL_SECONDS") ?? 604_800,
     authCookieSecure: configuredCookieSecurity ?? nodeEnv !== "development",
+    emailFromAddress:
+      readStringEnv("EMAIL_FROM_ADDRESS") ?? "noreply@shopapp.com",
     ...(authAccessTokenSecret ? { authAccessTokenSecret } : {}),
     ...(databaseUrl ? { databaseUrl } : {}),
+    ...(googleClientId ? { googleClientId } : {}),
+    ...(googleClientSecret ? { googleClientSecret } : {}),
+    ...(googleCallbackUrl ? { googleCallbackUrl } : {}),
     nodeEnv,
     ...(r2AccountId ? { r2AccountId } : {}),
     ...(r2AccessKeyId ? { r2AccessKeyId } : {}),
     ...(r2SecretAccessKey ? { r2SecretAccessKey } : {}),
     ...(r2Bucket ? { r2Bucket } : {}),
     ...(r2PublicUrl ? { r2PublicUrl } : {}),
+    ...(resendApiKey ? { resendApiKey } : {}),
     ...(webBaseUrl ? { webBaseUrl } : {}),
   };
 }

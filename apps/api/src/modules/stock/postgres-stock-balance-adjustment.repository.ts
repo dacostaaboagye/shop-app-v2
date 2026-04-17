@@ -1,4 +1,4 @@
-import { locations, stockBalances } from "@shop/database";
+import { stockBalances } from "@shop/database";
 import { and, eq } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import type {

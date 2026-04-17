@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   adminBrandsQueryKey,
   fetchAdminBrands,
+  updateAdminBrand,
 } from "@/lib/react-query/admin-catalog";
 import {
   currentUserPermissionsQueryKey,
@@ -31,6 +32,7 @@ import {
   readPositiveIntParam,
   readStringParam,
 } from "@/lib/url-state";
+import { createCatalogBulkActions } from "../catalog-bulk-status-actions";
 import { brandTableColumns } from "./brand-table-columns";
 import {
   BRAND_PAGE_SIZE_OPTIONS,
@@ -68,7 +70,6 @@ export function BrandsPageClient() {
   useEffect(() => {
     setDraftSearch(q);
   }, [q]);
-
   useEffect(() => {
     if (draftSearch === q) return;
     const id = window.setTimeout(() => {
@@ -102,14 +103,12 @@ export function BrandsPageClient() {
   const canManage =
     permissionsQuery.data?.permissions.includes("catalog.brands.manage") ??
     false;
-
   useEffect(() => {
     if (!brandsQuery.data || safePage === page) return;
     replaceBrandQuery(router, pathname, searchParams, {
       page: safePage === 1 ? null : safePage,
     });
   }, [brandsQuery.data, page, pathname, router, safePage, searchParams]);
-
   return (
     <PageShell>
       <PageHeader
@@ -191,6 +190,14 @@ export function BrandsPageClient() {
             </Alert>
           ) : null}
           <AppDataTable
+            bulkActions={createCatalogBulkActions({
+              canManage,
+              entityLabelPlural: "Brands",
+              queryKey: adminBrandsQueryKey(backendQuery),
+              selectionAriaLabel: "brand",
+              updateStatus: (row, targetStatus) =>
+                updateAdminBrand(row.slug, { status: targetStatus }),
+            })}
             columns={brandTableColumns}
             data={brandsQuery.data?.items ?? []}
             density="compact"

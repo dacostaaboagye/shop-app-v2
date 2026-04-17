@@ -22,6 +22,7 @@ describe("auth react-query wrappers", () => {
         lastLoginAt: null,
         lastName: "Manager",
         preferredPortal: "admin",
+        emailVerified: false,
         requiresPasswordChange: false,
         slug: "store-manager",
         status: "active",
@@ -41,6 +42,7 @@ describe("auth react-query wrappers", () => {
         JSON.stringify({
           availablePortals: ["admin"],
           email: "manager@example.com",
+          emailVerified: false,
           firstName: "Store",
           lastLoginAt: null,
           lastName: "Manager",
@@ -72,6 +74,7 @@ describe("auth react-query wrappers", () => {
         lastLoginAt: null,
         lastName: "Manager",
         preferredPortal: "admin",
+        emailVerified: false,
         requiresPasswordChange: false,
         slug: "store-manager",
         status: "active",

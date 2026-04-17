@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { UserRoundPlus } from "lucide-react";
 import { useState } from "react";
 import { AppFormField } from "@/components/forms/app-form-field";
+import { AuthGoogleOAuthButton } from "@/components/forms/auth-google-oauth-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
@@ -17,13 +18,12 @@ import {
   currentUserPermissionsQueryKeyPrefix,
   currentUserQueryKey,
 } from "@/lib/react-query/auth";
-
-const registerDefaults = {
-  email: "",
-  firstName: "",
-  lastName: "",
-  password: "",
-};
+import {
+  registerDefaults,
+  validateName,
+  validateRegisterEmail,
+  validateRegisterPassword,
+} from "./auth-register-form.support";
 
 export function AuthRegisterForm() {
   const queryClient = useQueryClient();
@@ -52,197 +52,188 @@ export function AuthRegisterForm() {
   });
 
   return (
-    <form
-      className="flex flex-col gap-4"
-      noValidate
-      onSubmit={(event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        setWasSubmitted(true);
-        void form.handleSubmit();
-      }}
-    >
-      <FieldGroup>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <form.Field
-            name="firstName"
-            validators={{
-              onBlur: ({ value }) =>
-                value.trim() ? validateName(value, "first") : undefined,
-              onSubmit: ({ value }) => validateName(value, "first"),
-            }}
-          >
-            {(field) => (
-              <AppFormField
-                errors={field.state.meta.errors}
-                inputId={field.name}
-                label="First name"
-                showErrors={
-                  (field.state.meta.isDirty && field.state.meta.isBlurred) ||
-                  wasSubmitted
-                }
-              >
-                <Input
-                  autoComplete="given-name"
-                  id={field.name}
-                  name={field.name}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="Solomon"
-                  value={field.state.value}
-                />
-              </AppFormField>
-            )}
-          </form.Field>
+    <div className="flex flex-col gap-4">
+      <AuthGoogleOAuthButton />
+      <div className="relative flex items-center gap-2">
+        <div className="flex-1 border-t border-border" />
+        <span className="text-xs text-muted-foreground">or</span>
+        <div className="flex-1 border-t border-border" />
+      </div>
 
-          <form.Field
-            name="lastName"
-            validators={{
-              onBlur: ({ value }) =>
-                value.trim() ? validateName(value, "last") : undefined,
-              onSubmit: ({ value }) => validateName(value, "last"),
-            }}
-          >
-            {(field) => (
-              <AppFormField
-                errors={field.state.meta.errors}
-                inputId={field.name}
-                label="Last name"
-                showErrors={
-                  (field.state.meta.isDirty && field.state.meta.isBlurred) ||
-                  wasSubmitted
-                }
-              >
-                <Input
-                  autoComplete="family-name"
-                  id={field.name}
-                  name={field.name}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="Aboagye"
-                  value={field.state.value}
-                />
-              </AppFormField>
-            )}
-          </form.Field>
-        </div>
-
-        <form.Field
-          name="email"
-          validators={{
-            onBlur: ({ value }) =>
-              value.trim() ? validateEmail(value) : undefined,
-            onSubmit: ({ value }) => validateEmail(value),
-          }}
-        >
-          {(field) => (
-            <AppFormField
-              errors={field.state.meta.errors}
-              inputId={field.name}
-              label="Email"
-              showErrors={
-                (field.state.meta.isDirty && field.state.meta.isBlurred) ||
-                wasSubmitted
-              }
-            >
-              <Input
-                autoComplete="email"
-                id={field.name}
-                name={field.name}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-                placeholder="name@company.com"
-                type="email"
-                value={field.state.value}
-              />
-            </AppFormField>
-          )}
-        </form.Field>
-
-        <form.Field
-          name="password"
-          validators={{
-            onBlur: ({ value }) =>
-              value.trim() ? validatePassword(value) : undefined,
-            onSubmit: ({ value }) => validatePassword(value),
-          }}
-        >
-          {(field) => (
-            <AppFormField
-              errors={field.state.meta.errors}
-              inputId={field.name}
-              label="Password"
-              showErrors={
-                (field.state.meta.isDirty && field.state.meta.isBlurred) ||
-                wasSubmitted
-              }
-            >
-              <PasswordInput
-                autoComplete="new-password"
-                id={field.name}
-                name={field.name}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-                placeholder="Min. 8 characters"
-                value={field.state.value}
-              />
-            </AppFormField>
-          )}
-        </form.Field>
-      </FieldGroup>
-
-      {authError ? (
-        <Alert variant="destructive">
-          <AlertTitle>{authError.title}</AlertTitle>
-          <AlertDescription>{authError.detail}</AlertDescription>
-        </Alert>
-      ) : null}
-
-      <form.Subscribe
-        selector={(state) => ({
-          canSubmit: state.canSubmit,
-          isSubmitting: state.isSubmitting,
-        })}
+      <form
+        className="flex flex-col gap-4"
+        noValidate
+        onSubmit={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          setWasSubmitted(true);
+          void form.handleSubmit();
+        }}
       >
-        {({ canSubmit, isSubmitting }) => (
-          <Button
-            className="w-full"
-            disabled={!canSubmit || isSubmitting}
-            size="lg"
-            type="submit"
+        <FieldGroup>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <form.Field
+              name="firstName"
+              validators={{
+                onBlur: ({ value }) =>
+                  value.trim() ? validateName(value, "first") : undefined,
+                onSubmit: ({ value }) => validateName(value, "first"),
+              }}
+            >
+              {(field) => (
+                <AppFormField
+                  errors={field.state.meta.errors}
+                  inputId={field.name}
+                  label="First name"
+                  showErrors={
+                    (field.state.meta.isDirty && field.state.meta.isBlurred) ||
+                    wasSubmitted
+                  }
+                >
+                  <Input
+                    autoComplete="given-name"
+                    id={field.name}
+                    name={field.name}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="Solomon"
+                    value={field.state.value}
+                  />
+                </AppFormField>
+              )}
+            </form.Field>
+
+            <form.Field
+              name="lastName"
+              validators={{
+                onBlur: ({ value }) =>
+                  value.trim() ? validateName(value, "last") : undefined,
+                onSubmit: ({ value }) => validateName(value, "last"),
+              }}
+            >
+              {(field) => (
+                <AppFormField
+                  errors={field.state.meta.errors}
+                  inputId={field.name}
+                  label="Last name"
+                  showErrors={
+                    (field.state.meta.isDirty && field.state.meta.isBlurred) ||
+                    wasSubmitted
+                  }
+                >
+                  <Input
+                    autoComplete="family-name"
+                    id={field.name}
+                    name={field.name}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="Aboagye"
+                    value={field.state.value}
+                  />
+                </AppFormField>
+              )}
+            </form.Field>
+          </div>
+
+          <form.Field
+            name="email"
+            validators={{
+              onBlur: ({ value }) =>
+                value.trim() ? validateRegisterEmail(value) : undefined,
+              onSubmit: ({ value }) => validateRegisterEmail(value),
+            }}
           >
-            {isSubmitting ? (
-              <>
-                <Spinner data-icon="inline-start" />
-                Creating account…
-              </>
-            ) : (
-              <>
-                Create account
-                <UserRoundPlus data-icon="inline-end" />
-              </>
+            {(field) => (
+              <AppFormField
+                errors={field.state.meta.errors}
+                inputId={field.name}
+                label="Email"
+                showErrors={
+                  (field.state.meta.isDirty && field.state.meta.isBlurred) ||
+                  wasSubmitted
+                }
+              >
+                <Input
+                  autoComplete="email"
+                  id={field.name}
+                  name={field.name}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="name@company.com"
+                  type="email"
+                  value={field.state.value}
+                />
+              </AppFormField>
             )}
-          </Button>
-        )}
-      </form.Subscribe>
-    </form>
+          </form.Field>
+
+          <form.Field
+            name="password"
+            validators={{
+              onBlur: ({ value }) =>
+                value.trim() ? validateRegisterPassword(value) : undefined,
+              onSubmit: ({ value }) => validateRegisterPassword(value),
+            }}
+          >
+            {(field) => (
+              <AppFormField
+                errors={field.state.meta.errors}
+                inputId={field.name}
+                label="Password"
+                showErrors={
+                  (field.state.meta.isDirty && field.state.meta.isBlurred) ||
+                  wasSubmitted
+                }
+              >
+                <PasswordInput
+                  autoComplete="new-password"
+                  id={field.name}
+                  name={field.name}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="Min. 8 characters"
+                  value={field.state.value}
+                />
+              </AppFormField>
+            )}
+          </form.Field>
+        </FieldGroup>
+
+        {authError ? (
+          <Alert variant="destructive">
+            <AlertTitle>{authError.title}</AlertTitle>
+            <AlertDescription>{authError.detail}</AlertDescription>
+          </Alert>
+        ) : null}
+
+        <form.Subscribe
+          selector={(state) => ({
+            canSubmit: state.canSubmit,
+            isSubmitting: state.isSubmitting,
+          })}
+        >
+          {({ canSubmit, isSubmitting }) => (
+            <Button
+              className="w-full"
+              disabled={!canSubmit || isSubmitting}
+              size="lg"
+              type="submit"
+            >
+              {isSubmitting ? (
+                <>
+                  <Spinner data-icon="inline-start" />
+                  Creating account…
+                </>
+              ) : (
+                <>
+                  Create account
+                  <UserRoundPlus data-icon="inline-end" />
+                </>
+              )}
+            </Button>
+          )}
+        </form.Subscribe>
+      </form>
+    </div>
   );
-}
-
-function validateEmail(value: string) {
-  if (!value.trim()) return "Enter your email address.";
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
-    return "Enter a valid email address.";
-  return undefined;
-}
-
-function validateName(value: string, part: "first" | "last") {
-  if (!value.trim()) return `Enter your ${part} name.`;
-  return undefined;
-}
-
-function validatePassword(value: string) {
-  if (!value.trim()) return "Create a password.";
-  if (value.length < 8) return "Password must be at least 8 characters.";
-  return undefined;
 }

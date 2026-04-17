@@ -1,14 +1,13 @@
-import { and, eq, exists, or, sql } from "drizzle-orm";
 import {
   catalogProducts,
   deliveryItems,
-  productVariants,
   stockBalances,
   stockOwnershipEvents,
   stockReservations,
 } from "@shop/database";
-import { AppError } from "../_core/errors/app-error.js";
+import { and, eq, or, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
+import { AppError } from "../_core/errors/app-error.js";
 
 export class PostgresCatalogProductDeleteGuard {
   constructor(private readonly db: ApiDatabase) {}

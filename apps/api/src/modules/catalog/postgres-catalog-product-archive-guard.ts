@@ -1,4 +1,9 @@
-import { catalogProducts, productVariants, stockBalances, stockReservations } from "@shop/database";
+import {
+  catalogProducts,
+  productVariants,
+  stockBalances,
+  stockReservations,
+} from "@shop/database";
 import { and, eq, or, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import { AppError } from "../_core/errors/app-error.js";
@@ -21,8 +26,16 @@ export class PostgresCatalogProductArchiveGuard {
     const variants = await this.db
       .select({ id: productVariants.id })
       .from(productVariants)
-      .innerJoin(catalogProducts, eq(catalogProducts.id, productVariants.productId))
-      .where(and(eq(catalogProducts.slug, productSlug), eq(productVariants.status, "active")));
+      .innerJoin(
+        catalogProducts,
+        eq(catalogProducts.id, productVariants.productId),
+      )
+      .where(
+        and(
+          eq(catalogProducts.slug, productSlug),
+          eq(productVariants.status, "active"),
+        ),
+      );
 
     for (const { id } of variants) {
       await this.assertNoActiveStock(id, "product");

@@ -4,9 +4,9 @@ import { AppFormField } from "@/components/forms/app-form-field";
 import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import type { VariantFormField } from "./variant-form.field";
 import type { VariantFormApi } from "./variant-form.api";
-import { moneyString } from "./variant-form.support";
+import type { VariantFormField } from "./variant-form.field";
+import { moneyString } from "./variant-form.validators";
 
 type VariantFormPricingFieldsProps = {
   canSeeCostPrice: boolean;

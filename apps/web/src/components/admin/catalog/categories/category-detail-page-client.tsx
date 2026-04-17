@@ -5,45 +5,39 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, Pencil, Trash2, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   PageHeader,
   PageShell,
   StatCard,
 } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { CATALOG_STATUS_META, formatAdminDate } from "@/lib/admin-models";
 import {
   adminCategoriesQueryKey,
   adminCategoryQueryKey,
+  deleteAdminCategory,
   fetchAdminCategories,
   fetchAdminCategory,
   updateAdminCategory,
-  deleteAdminCategory,
 } from "@/lib/react-query/admin-catalog";
 import {
   currentUserPermissionsQueryKey,
   fetchCurrentUserPermissions,
 } from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { readStringParam } from "@/lib/url-state";
-import { MediaPanel } from "../media/media-panel";
+import { cn } from "@/lib/utils";
 import { CatalogDeleteDialog } from "../catalog-delete-dialog";
+import { MediaPanel } from "../media/media-panel";
+import {
+  CATEGORY_PARENT_QUERY,
+  CategoryDetailError,
+  CategoryDetailSkeleton,
+} from "./category-detail-page.support";
 import { CategoryEditForm } from "./category-edit-form";
-
-const PARENT_QUERY = {
-  dir: "asc" as const,
-  page: 1,
-  pageSize: 100,
-  q: "",
-  sort: "name" as const,
-  status: "active" as const,
-};
 
 export function CategoryDetailPageClient({ slug }: { slug: string }) {
   const queryClient = useQueryClient();
@@ -59,8 +53,8 @@ export function CategoryDetailPageClient({ slug }: { slug: string }) {
     queryKey: adminCategoryQueryKey(slug),
   });
   const parentCategoriesQuery = useQuery({
-    queryFn: () => fetchAdminCategories(PARENT_QUERY),
-    queryKey: adminCategoriesQueryKey(PARENT_QUERY),
+    queryFn: () => fetchAdminCategories(CATEGORY_PARENT_QUERY),
+    queryKey: adminCategoriesQueryKey(CATEGORY_PARENT_QUERY),
   });
   const permissionsQuery = useQuery({
     queryFn: fetchCurrentUserPermissions,
@@ -82,26 +76,18 @@ export function CategoryDetailPageClient({ slug }: { slug: string }) {
   });
 
   if (categoryQuery.isPending && !categoryQuery.data) {
-    return (
-      <PageShell>
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-48 w-full" />
-      </PageShell>
-    );
+    return <CategoryDetailSkeleton />;
   }
 
   if (categoryQuery.isError) {
     return (
-      <PageShell>
-        <Alert variant="destructive">
-          <AlertTitle>Unable to load category</AlertTitle>
-          <AlertDescription>
-            {categoryQuery.error instanceof Error
-              ? categoryQuery.error.message
-              : "An unexpected error occurred."}
-          </AlertDescription>
-        </Alert>
-      </PageShell>
+      <CategoryDetailError
+        message={
+          categoryQuery.error instanceof Error
+            ? categoryQuery.error.message
+            : "An unexpected error occurred."
+        }
+      />
     );
   }
 

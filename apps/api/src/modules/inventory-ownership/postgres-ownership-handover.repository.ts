@@ -1,5 +1,5 @@
 import { stockOwnershipEvents } from "@shop/database";
-import { and, desc, eq, asc, sql, lte } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { OwnershipHandoverRepository } from "./ownership-handover.contracts.js";
 import type { OwnershipEventRecord } from "./ownership-query.service.js";

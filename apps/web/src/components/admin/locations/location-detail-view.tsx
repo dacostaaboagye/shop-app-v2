@@ -66,7 +66,6 @@ export function LocationDetailView({
   const TypeIcon = location.type === "store" ? Store : Warehouse;
   const hasCoordinates =
     location.latitude != null && location.longitude != null;
-
   return (
     <PageShell>
       <PageHeader

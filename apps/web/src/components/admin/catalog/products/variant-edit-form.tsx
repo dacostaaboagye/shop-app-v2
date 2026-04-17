@@ -4,8 +4,8 @@ import { useForm } from "@tanstack/react-form";
 import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { VariantFormFields } from "./variant-form-fields";
 import type { VariantFormValues } from "./variant-form.support";
+import { VariantFormFields } from "./variant-form-fields";
 
 type VariantEditFormProps = {
   canSeeCostPrice: boolean;

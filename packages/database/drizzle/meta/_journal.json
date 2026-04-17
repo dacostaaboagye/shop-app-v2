@@ -92,6 +92,13 @@
       "when": 1776329867069,
       "tag": "0012_bumpy_tusk",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1776434000000,
+      "tag": "0013_auth_enhancements",
+      "breakpoints": true
     }
   ]
 }

@@ -136,9 +136,7 @@ function ProductActions({ product }: { product: AdminProductSummary }) {
           <DropdownMenuItem
             render={
               <Link
-                href={toRoute(
-                  `/admin/products/${product.slug}?edit=true`,
-                )}
+                href={toRoute(`/admin/products/${product.slug}?edit=true`)}
               />
             }
           >

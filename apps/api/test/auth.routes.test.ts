@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { issueAccessToken } from "../src/modules/auth/access-token.js";
+import { createUnavailableAuthDependencies } from "../src/modules/auth/auth-route-support.js";
 import type { IssuedSession } from "../src/modules/auth/authentication.service.js";
 import { refreshTokenCookieName } from "../src/modules/auth/refresh-token-cookie.js";
 import { createServer } from "../src/server/create-server.js";
@@ -9,32 +10,10 @@ describe("auth routes", () => {
   it("registers through the injected registration service and sets the refresh cookie", async () => {
     const server = createServer({
       auth: {
+        ...createUnavailableAuthDependencies(),
         authenticationService: {
           async login(command) {
             return createSession(command.email);
-          },
-        },
-        logoutSessionService: {
-          async logout() {},
-        },
-        profileUpdateService: {
-          async updatePreferredPortal() {},
-        },
-        currentUserService: {
-          async getCurrentUser() {
-            return createSession("manager@example.com").user;
-          },
-        },
-        currentUserPermissionService: {
-          async getCurrentPermissions() {
-            return {
-              permissions: ["inventory.read", "users.view"],
-            };
-          },
-        },
-        refreshSessionService: {
-          async refresh() {
-            return createSession("manager@example.com");
           },
         },
         registrationService: {
@@ -67,37 +46,10 @@ describe("auth routes", () => {
   it("logs in through the injected authentication service and sets the refresh cookie", async () => {
     const server = createServer({
       auth: {
+        ...createUnavailableAuthDependencies(),
         authenticationService: {
           async login(command) {
             return createSession(command.email);
-          },
-        },
-        registrationService: {
-          async register(command) {
-            return createSession(command.email);
-          },
-        },
-        profileUpdateService: {
-          async updatePreferredPortal() {},
-        },
-        logoutSessionService: {
-          async logout() {},
-        },
-        currentUserService: {
-          async getCurrentUser() {
-            return createSession("manager@example.com").user;
-          },
-        },
-        currentUserPermissionService: {
-          async getCurrentPermissions() {
-            return {
-              permissions: ["inventory.read", "users.view"],
-            };
-          },
-        },
-        refreshSessionService: {
-          async refresh() {
-            return createSession("manager@example.com");
           },
         },
       },
@@ -124,34 +76,7 @@ describe("auth routes", () => {
   it("refreshes the session through the injected refresh service using the cookie token", async () => {
     const server = createServer({
       auth: {
-        authenticationService: {
-          async login(command) {
-            return createSession(command.email);
-          },
-        },
-        registrationService: {
-          async register(command) {
-            return createSession(command.email);
-          },
-        },
-        profileUpdateService: {
-          async updatePreferredPortal() {},
-        },
-        logoutSessionService: {
-          async logout() {},
-        },
-        currentUserService: {
-          async getCurrentUser() {
-            return createSession("manager@example.com").user;
-          },
-        },
-        currentUserPermissionService: {
-          async getCurrentPermissions() {
-            return {
-              permissions: ["inventory.read", "users.view"],
-            };
-          },
-        },
+        ...createUnavailableAuthDependencies(),
         refreshSessionService: {
           async refresh(command) {
             assert.equal(command.refreshToken, "cookie-refresh-token");
@@ -182,39 +107,10 @@ describe("auth routes", () => {
     let receivedRefreshToken = "";
     const server = createServer({
       auth: {
-        authenticationService: {
-          async login(command) {
-            return createSession(command.email);
-          },
-        },
-        registrationService: {
-          async register(command) {
-            return createSession(command.email);
-          },
-        },
-        profileUpdateService: {
-          async updatePreferredPortal() {},
-        },
+        ...createUnavailableAuthDependencies(),
         logoutSessionService: {
           async logout(command) {
             receivedRefreshToken = command.refreshToken;
-          },
-        },
-        currentUserService: {
-          async getCurrentUser() {
-            return createSession("manager@example.com").user;
-          },
-        },
-        currentUserPermissionService: {
-          async getCurrentPermissions() {
-            return {
-              permissions: ["inventory.read", "users.view"],
-            };
-          },
-        },
-        refreshSessionService: {
-          async refresh() {
-            return createSession("manager@example.com");
           },
         },
       },
@@ -263,39 +159,11 @@ describe("auth routes", () => {
         },
       },
       auth: {
-        authenticationService: {
-          async login(command) {
-            return createSession(command.email);
-          },
-        },
+        ...createUnavailableAuthDependencies(),
         currentUserService: {
           async getCurrentUser(userId) {
             assert.equal(userId, "usr_123");
             return createSession("manager@example.com").user;
-          },
-        },
-        currentUserPermissionService: {
-          async getCurrentPermissions(userId) {
-            assert.equal(userId, "usr_123");
-            return {
-              permissions: ["inventory.read", "users.view"],
-            };
-          },
-        },
-        profileUpdateService: {
-          async updatePreferredPortal() {},
-        },
-        logoutSessionService: {
-          async logout() {},
-        },
-        refreshSessionService: {
-          async refresh() {
-            return createSession("manager@example.com");
-          },
-        },
-        registrationService: {
-          async register(command) {
-            return createSession(command.email);
           },
         },
       },
@@ -348,38 +216,13 @@ describe("auth routes", () => {
         },
       },
       auth: {
-        authenticationService: {
-          async login(command) {
-            return createSession(command.email);
-          },
-        },
+        ...createUnavailableAuthDependencies(),
         currentUserPermissionService: {
           async getCurrentPermissions(userId) {
             assert.equal(userId, "usr_123");
             return {
               permissions: ["inventory.read", "users.view"],
             };
-          },
-        },
-        currentUserService: {
-          async getCurrentUser() {
-            return createSession("manager@example.com").user;
-          },
-        },
-        profileUpdateService: {
-          async updatePreferredPortal() {},
-        },
-        logoutSessionService: {
-          async logout() {},
-        },
-        refreshSessionService: {
-          async refresh() {
-            return createSession("manager@example.com");
-          },
-        },
-        registrationService: {
-          async register(command) {
-            return createSession(command.email);
           },
         },
       },
@@ -432,6 +275,7 @@ function createSession(email: string): IssuedSession {
     user: {
       availablePortals: ["admin"],
       email,
+      emailVerified: false,
       firstName: "Store",
       lastLoginAt: null,
       lastName: "Manager",

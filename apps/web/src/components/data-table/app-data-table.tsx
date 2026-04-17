@@ -4,6 +4,7 @@ import {
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
+  type RowSelectionState,
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
@@ -11,6 +12,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { useState } from "react";
 import { AppPagination } from "@/components/data-table/app-pagination";
 import { AppEmptyState } from "@/components/system/app-empty-state";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -28,10 +30,12 @@ import {
   getColumnMeta,
   getNextSortingState,
 } from "./app-data-table.support";
+import { createSelectionColumn } from "./app-data-table-selection-column";
 
 export type { AppDataTableSort } from "./app-data-table.support";
 
 export function AppDataTable<TData>({
+  bulkActions,
   caption,
   columns,
   data,
@@ -47,16 +51,27 @@ export function AppDataTable<TData>({
   toolbar,
 }: AppDataTableProps<TData>) {
   const [internalSorting, setInternalSorting] = useState<SortingState>([]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const controlledSortingState = sorting
     ? [{ desc: sorting.direction === "desc", id: sorting.columnId }]
     : [];
   const sortingState = onSortingChange
     ? controlledSortingState
     : internalSorting;
+  const selectionEnabled = !!bulkActions;
+  const visibleColumns = selectionEnabled
+    ? [
+        createSelectionColumn<TData>({
+          selectionAriaLabel: bulkActions?.selectionAriaLabel,
+        }),
+        ...columns,
+      ]
+    : columns;
 
   const tableOptions = {
-    columns,
+    columns: visibleColumns,
     data,
+    enableRowSelection: selectionEnabled,
     getCoreRowModel: getCoreRowModel(),
     ...(onSortingChange
       ? { manualSorting: true }
@@ -64,7 +79,9 @@ export function AppDataTable<TData>({
           getSortedRowModel: getSortedRowModel(),
           onSortingChange: setInternalSorting,
         }),
+    ...(selectionEnabled ? { onRowSelectionChange: setRowSelection } : {}),
     state: {
+      ...(selectionEnabled ? { rowSelection } : {}),
       sorting: sortingState,
     },
   };
@@ -78,9 +95,21 @@ export function AppDataTable<TData>({
   const headClassName = compact ? "h-9" : "h-11";
   const cellClassName = compact ? "py-2" : "py-3";
   const visibleColumnCount = table.getVisibleLeafColumns().length || 1;
-
+  const selectedRows = table
+    .getSelectedRowModel()
+    .rows.map((row) => row.original);
   return (
     <div className="flex flex-col gap-4">
+      {selectedRows.length > 0 && bulkActions ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/70 bg-muted/20 px-3 py-2">
+          <Badge variant="secondary">{selectedRows.length} selected</Badge>
+          {bulkActions.render({
+            clearSelection: () => setRowSelection({}),
+            selectedCount: selectedRows.length,
+            selectedRows,
+          })}
+        </div>
+      ) : null}
       {toolbar ? (
         <div className="split-callout">
           <div />

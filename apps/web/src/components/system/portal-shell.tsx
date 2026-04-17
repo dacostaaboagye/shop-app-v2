@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { EmailVerificationGate } from "@/components/auth/email-verification-gate";
 import {
   Sheet,
   SheetContent,
@@ -78,6 +79,7 @@ export function AppShell({ children }: AppShellProps) {
           onMenuOpen={() => setMobileNavOpen(true)}
           onNotificationsOpen={() => setNotificationsOpen(true)}
         />
+        <EmailVerificationGate />
         <div className="pb-10">{children}</div>
       </div>
 

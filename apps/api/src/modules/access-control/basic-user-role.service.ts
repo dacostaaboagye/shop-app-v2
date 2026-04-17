@@ -1,5 +1,4 @@
 import { roles, userRoles } from "@shop/database";
-import { eq } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 
 type EnsureAssignedInput = {
@@ -19,9 +18,9 @@ export class BasicUserRoleService {
         isSystem: true,
         createdAt: input.assignedAt,
       })
-      .onConflictDoUpdate({ 
-        target: roles.slug, 
-        set: { slug: "basic_user" } 
+      .onConflictDoUpdate({
+        target: roles.slug,
+        set: { slug: "basic_user" },
       })
       .returning({ id: roles.id });
 

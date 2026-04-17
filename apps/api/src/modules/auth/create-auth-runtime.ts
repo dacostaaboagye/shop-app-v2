@@ -9,6 +9,10 @@ import { AccessTokenAuthenticationService } from "./access-token-authentication.
 import { PasswordAuthenticationService } from "./authentication.service.js";
 import { CurrentUserService } from "./current-user.service.js";
 import { CurrentUserPermissionService } from "./current-user-permission.service.js";
+import { EmailService } from "./email.service.js";
+import { EmailVerificationService } from "./email-verification.service.js";
+import { GoogleOAuthService } from "./google-oauth.service.js";
+import { PasswordResetService } from "./password-reset.service.js";
 import { PostgresSessionRepository } from "./postgres-session.repository.js";
 import { PostgresUserRepository } from "./postgres-user.repository.js";
 import { PasswordRegistrationService } from "./registration.service.js";
@@ -24,7 +28,10 @@ type AuthRuntime = {
     authenticationService: PasswordAuthenticationService;
     currentUserPermissionService: CurrentUserPermissionService;
     currentUserService: CurrentUserService;
+    emailVerificationService: EmailVerificationService;
+    googleOAuthService: GoogleOAuthService;
     logoutSessionService: TokenSessionService;
+    passwordResetService: PasswordResetService;
     profileUpdateService: CurrentUserService;
     refreshSessionService: TokenSessionService;
     registrationService: PasswordRegistrationService;
@@ -58,6 +65,42 @@ export function createAuthRuntime(
   const permissionService = new PermissionResolutionService(
     new PostgresPermissionRepository(databaseRuntime.db),
   );
+  const emailService = new EmailService(env.resendApiKey, env.emailFromAddress);
+  const webBaseUrl = env.webBaseUrl ?? "http://localhost:3000";
+
+  const emailVerificationService = new EmailVerificationService(
+    databaseRuntime.db,
+    userRepository,
+    emailService,
+    webBaseUrl,
+  );
+
+  const passwordResetService = new PasswordResetService(
+    databaseRuntime.db,
+    userRepository,
+    emailService,
+    webBaseUrl,
+  );
+
+  const googleOAuthService =
+    env.googleClientId && env.googleClientSecret && env.googleCallbackUrl
+      ? new GoogleOAuthService(
+          userRepository,
+          sessionService,
+          env.googleClientId,
+          env.googleClientSecret,
+          env.googleCallbackUrl,
+          webBaseUrl,
+          env.authCookieSecure,
+        )
+      : null;
+
+  const registrationService = new PasswordRegistrationService(
+    userRepository,
+    sessionService,
+    slugService,
+    emailVerificationService,
+  );
 
   return {
     accessControl: {
@@ -76,15 +119,36 @@ export function createAuthRuntime(
         permissionService,
       ),
       currentUserService: new CurrentUserService(userRepository),
+      emailVerificationService,
+      googleOAuthService: googleOAuthService ?? createUnavailableGoogleOAuth(),
       logoutSessionService: sessionService,
+      passwordResetService,
       profileUpdateService: new CurrentUserService(userRepository),
       refreshSessionService: sessionService,
-      registrationService: new PasswordRegistrationService(
-        userRepository,
-        sessionService,
-        slugService,
-      ),
+      registrationService,
     },
     userAccessLifecycleService: new UserAccessLifecycleService(userRepository),
   };
+}
+
+function createUnavailableGoogleOAuth(): GoogleOAuthService {
+  // Returns a service that throws a clear error when Google OAuth is not configured
+  return {
+    initiateFlow: async () => {
+      throw new (await import("../_core/errors/app-error.js")).AppError({
+        code: "internal_error",
+        statusCode: 503,
+        title: "Google sign-in not configured",
+        detail: "Google OAuth is not configured on this server.",
+      });
+    },
+    handleCallback: async () => {
+      throw new (await import("../_core/errors/app-error.js")).AppError({
+        code: "internal_error",
+        statusCode: 503,
+        title: "Google sign-in not configured",
+        detail: "Google OAuth is not configured on this server.",
+      });
+    },
+  } as unknown as GoogleOAuthService;
 }

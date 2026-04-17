@@ -195,6 +195,7 @@ function mapAuthUser(user: AuthUserRecord): IssuedSession["user"] {
   return {
     availablePortals,
     email: user.email,
+    emailVerified: user.emailVerified,
     firstName: user.firstName,
     lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
     lastName: user.lastName,

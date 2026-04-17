@@ -166,7 +166,7 @@ export function LocationMapPicker({ onChange, value }: LocationMapPickerProps) {
                 void forwardGeocode();
               }
             }}
-            placeholder="Search for an address…"
+            placeholder="Search address, coordinates, or Google Maps link..."
             value={searchQuery}
           />
         </div>
@@ -240,7 +240,8 @@ export function LocationMapPicker({ onChange, value }: LocationMapPickerProps) {
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">
-          Click on the map to place a pin, or search for an address above.
+          Click on the map to place a pin, or search with an address,
+          coordinates, or a Google Maps link.
         </p>
       )}
     </div>

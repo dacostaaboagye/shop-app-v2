@@ -4,8 +4,8 @@ import type { AdminStockBalanceSummary } from "@shop/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ClipboardList, Search, X } from "lucide-react";
 import { useId, useState } from "react";
-import { StockCountDialog } from "@/components/admin/stock/stock-count-dialog";
 import { buildStockBalanceColumns } from "@/components/admin/stock/stock-balance-columns";
+import { StockCountDialog } from "@/components/admin/stock/stock-count-dialog";
 import { AppDataTable } from "@/components/data-table/app-data-table";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { Button } from "@/components/ui/button";
@@ -26,27 +26,20 @@ import {
   postStockCount,
   stockBalancesQueryKey,
 } from "@/lib/react-query/stock-admin";
-
-const LOCATIONS_QUERY = {
-  dir: "asc" as const,
-  page: 1,
-  pageSize: 100,
-  q: "",
-  sort: "name" as const,
-  status: "all" as const,
-  type: "all" as const,
-};
-type Filter = { locationSlug: string; q: string };
-const SKELETON_KEYS = ["sb-1", "sb-2", "sb-3", "sb-4", "sb-5"] as const;
+import {
+  getStockBalanceLocationName,
+  STOCK_BALANCE_LOCATIONS_QUERY,
+  STOCK_BALANCE_SKELETON_KEYS,
+  type StockBalanceFilter,
+} from "./page.support";
 
 export default function StockBalancesPage() {
   const locationSelectId = useId();
   const searchId = useId();
   const queryClient = useQueryClient();
-
   const [locationSlug, setLocationSlug] = useState("");
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<Filter | null>(null);
+  const [filter, setFilter] = useState<StockBalanceFilter | null>(null);
   const [countTarget, setCountTarget] =
     useState<AdminStockBalanceSummary | null>(null);
   const [countOpen, setCountOpen] = useState(false);
@@ -57,10 +50,9 @@ export default function StockBalancesPage() {
   });
   const canCount =
     permissionsQuery.data?.permissions.includes("inventory.write") ?? false;
-
   const locationsQuery = useQuery({
-    queryFn: () => fetchAdminLocations(LOCATIONS_QUERY),
-    queryKey: adminLocationsQueryKey(LOCATIONS_QUERY),
+    queryFn: () => fetchAdminLocations(STOCK_BALANCE_LOCATIONS_QUERY),
+    queryKey: adminLocationsQueryKey(STOCK_BALANCE_LOCATIONS_QUERY),
     staleTime: 60_000,
   });
 
@@ -86,7 +78,6 @@ export default function StockBalancesPage() {
         : {},
     ),
   });
-
   const countMutation = useMutation({
     mutationFn: postStockCount,
     onSuccess: () => {
@@ -98,7 +89,6 @@ export default function StockBalancesPage() {
       setCountTarget(null);
     },
   });
-
   function handleLocationChange(slug: string) {
     setLocationSlug(slug);
     setFilter(slug ? { locationSlug: slug, q: search.trim() } : null);
@@ -121,16 +111,15 @@ export default function StockBalancesPage() {
     countMutation.reset();
     setCountOpen(true);
   }
-
-  const locationName =
-    stockQuery.data?.locationName ??
-    locationsQuery.data?.items.find((l) => l.slug === locationSlug)?.name ??
-    locationSlug;
+  const locationName = getStockBalanceLocationName(
+    locationSlug,
+    stockQuery.data?.locationName,
+    locationsQuery.data?.items,
+  );
 
   const columns = buildStockBalanceColumns(
     canCount ? (row) => openCountDialog(row) : null,
   );
-
   return (
     <PageShell>
       <PageHeader
@@ -216,7 +205,7 @@ export default function StockBalancesPage() {
 
       {stockQuery.isFetching && !stockQuery.data ? (
         <div className="flex flex-col gap-2">
-          {SKELETON_KEYS.map((key) => (
+          {STOCK_BALANCE_SKELETON_KEYS.map((key) => (
             <Skeleton key={key} className="h-10 w-full" />
           ))}
         </div>

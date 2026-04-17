@@ -7,6 +7,8 @@ import {
 } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
 import type { RouteDefinition } from "../_core/route-contract.js";
+import { registerOAuthRoutes } from "./auth-oauth.routes.js";
+import { registerRecoveryRoutes } from "./auth-recovery.routes.js";
 import {
   type AuthRouteDependencies,
   createUnavailableAuthDependencies,
@@ -67,7 +69,10 @@ export function registerAuthRoutes(
   dependencies: AuthRouteDependencies = createUnavailableAuthDependencies(),
 ) {
   server.route({
-    config: { access: registerRoute.access },
+    config: {
+      access: registerRoute.access,
+      rateLimit: { max: 5, timeWindow: "1 hour" },
+    },
     method: registerRoute.method,
     url: registerRoute.url,
     async handler(request, reply) {
@@ -86,7 +91,10 @@ export function registerAuthRoutes(
   });
 
   server.route({
-    config: { access: loginRoute.access },
+    config: {
+      access: loginRoute.access,
+      rateLimit: { max: 10, timeWindow: "15 minutes" },
+    },
     method: loginRoute.method,
     url: loginRoute.url,
     async handler(request, reply) {
@@ -178,4 +186,7 @@ export function registerAuthRoutes(
       return reply.status(204).send();
     },
   });
+
+  registerOAuthRoutes(server, dependencies);
+  registerRecoveryRoutes(server, dependencies);
 }

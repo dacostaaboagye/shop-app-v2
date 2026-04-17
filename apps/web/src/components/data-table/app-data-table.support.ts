@@ -19,7 +19,19 @@ export type AppDataTableEmptyState = {
   title?: string;
 };
 
+export type AppDataTableBulkActionsContext<TData> = {
+  clearSelection: () => void;
+  selectedCount: number;
+  selectedRows: TData[];
+};
+
+export type AppDataTableBulkActions<TData> = {
+  render: (context: AppDataTableBulkActionsContext<TData>) => ReactNode;
+  selectionAriaLabel?: string;
+};
+
 export type AppDataTableProps<TData> = {
+  bulkActions?: AppDataTableBulkActions<TData> | undefined;
   caption?: string;
   columns: Array<ColumnDef<TData, unknown>>;
   data: TData[];
@@ -67,4 +79,15 @@ export function getNextSortingState(
   }
 
   return { columnId, direction: "desc" };
+}
+
+export function getBulkSelectionAriaLabel(
+  label: string | undefined,
+  kind: "all" | "row",
+) {
+  if (kind === "all") {
+    return label ? `Select all ${label}` : "Select all rows";
+  }
+
+  return label ? `Select ${label}` : "Select row";
 }

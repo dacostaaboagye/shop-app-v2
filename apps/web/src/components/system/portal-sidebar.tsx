@@ -1,26 +1,25 @@
 "use client";
 
-import * as React from "react";
-
 import { LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { toRoute } from "@/lib/routes";
-import { cn } from "@/lib/utils";
-import { useAuthSessionStore } from "@/store/use-auth-session-store";
-import {
-  getShellConfig,
-  getVisibleNavSections,
-  isPortalItemActive,
-} from "./portal-shell-config";
+import * as React from "react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { toRoute } from "@/lib/routes";
+import { cn } from "@/lib/utils";
+import { useAuthSessionStore } from "@/store/use-auth-session-store";
 import { useInterfacePreferencesStore } from "@/store/use-interface-preferences-store";
+import {
+  getShellConfig,
+  getVisibleNavSections,
+  isPortalItemActive,
+} from "./portal-shell-config";
 
 type AppSidebarProps = {
   isLoadingPermissions?: boolean;

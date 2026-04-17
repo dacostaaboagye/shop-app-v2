@@ -4,7 +4,7 @@ import type {
   CatalogMediaEntityType,
 } from "@shop/contracts";
 import { catalogMediaAssignments, mediaAssets } from "@shop/database";
-import { and, eq, ne, type InferSelectModel } from "drizzle-orm";
+import { and, eq, type InferSelectModel, ne } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { CatalogMediaRepository } from "./catalog-media.service.js";
 
@@ -198,4 +198,3 @@ export class PostgresCatalogMediaRepository implements CatalogMediaRepository {
     return result ? toRecord(result) : null;
   }
 }
-

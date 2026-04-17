@@ -15,16 +15,16 @@ import { PostgresCatalogBrandQueryRepository } from "./postgres-catalog-brand-qu
 import { PostgresCatalogBrandWriteRepository } from "./postgres-catalog-brand-write.repository.js";
 import { PostgresCatalogCategoryQueryRepository } from "./postgres-catalog-category-query.repository.js";
 import { PostgresCatalogCategoryWriteRepository } from "./postgres-catalog-category-write.repository.js";
+import { PostgresCatalogDeleteGuard } from "./postgres-catalog-delete-guard.js";
 import { PostgresCatalogMediaRepository } from "./postgres-catalog-media.repository.js";
+import { PostgresCatalogProductArchiveGuard } from "./postgres-catalog-product-archive-guard.js";
+import { PostgresCatalogProductDeleteGuard } from "./postgres-catalog-product-delete-guard.js";
 import { PostgresCatalogProductOptionsRepository } from "./postgres-catalog-product-options.repository.js";
 import { PostgresCatalogProductQueryRepository } from "./postgres-catalog-product-query.repository.js";
-import { PostgresCatalogProductWriteRepository } from "./postgres-catalog-product-write.repository.js";
-import { PostgresCatalogVariantWriteRepository } from "./postgres-catalog-variant-write.repository.js";
 import { CatalogProductCommands } from "./postgres-catalog-product-write.commands.js";
+import { PostgresCatalogProductWriteRepository } from "./postgres-catalog-product-write.repository.js";
 import { CatalogVariantCommands } from "./postgres-catalog-variant-write.commands.js";
-import { PostgresCatalogProductDeleteGuard } from "./postgres-catalog-product-delete-guard.js";
-import { PostgresCatalogDeleteGuard } from "./postgres-catalog-delete-guard.js";
-import { PostgresCatalogProductArchiveGuard } from "./postgres-catalog-product-archive-guard.js";
+import { PostgresCatalogVariantWriteRepository } from "./postgres-catalog-variant-write.repository.js";
 
 type CatalogRuntime = {
   catalog: {
@@ -50,14 +50,12 @@ export function createCatalogRuntime(
   const permissionResolutionService = new PermissionResolutionService(
     new PostgresPermissionRepository(databaseRuntime.db),
   );
-  
+
   const productDeleteGuard = new PostgresCatalogProductDeleteGuard(
     databaseRuntime.db,
   );
-  const catalogDeleteGuard = new PostgresCatalogDeleteGuard(
-    databaseRuntime.db,
-  );
-  const productArchiveGuard = new PostgresCatalogProductArchiveGuard(
+  const catalogDeleteGuard = new PostgresCatalogDeleteGuard(databaseRuntime.db);
+  const _productArchiveGuard = new PostgresCatalogProductArchiveGuard(
     databaseRuntime.db,
   );
 

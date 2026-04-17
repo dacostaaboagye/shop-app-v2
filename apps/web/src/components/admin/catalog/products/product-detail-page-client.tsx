@@ -2,11 +2,9 @@
 
 import type { AdminUpdateProductRequest } from "@shop/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, Layers, Pencil, Trash2, X } from "lucide-react";
+import { CalendarDays, Layers } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { CatalogDeleteDialog } from "../catalog-delete-dialog";
-import { deleteAdminProduct } from "@/lib/react-query/admin-catalog";
 import {
   PageHeader,
   PageShell,
@@ -14,13 +12,12 @@ import {
 } from "@/components/system/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { CATALOG_STATUS_META, formatAdminDate } from "@/lib/admin-models";
 import {
   adminBrandsQueryKey,
   adminCategoriesQueryKey,
+  deleteAdminProduct,
   fetchAdminBrands,
   fetchAdminCategories,
 } from "@/lib/react-query/admin-catalog";
@@ -36,20 +33,19 @@ import {
 import { toRoute } from "@/lib/routes";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import { CatalogDeleteDialog } from "../catalog-delete-dialog";
 import { MediaPanel } from "../media/media-panel";
 import { DetailRow } from "./detail-row";
+import {
+  PRODUCT_DETAIL_QUERY,
+  ProductDetailSkeleton,
+  ProductHeaderActions,
+  toProductEditValues,
+  toProductUpdateRequest,
+} from "./product-detail-page.support";
 import { ProductEditForm, type ProductEditValues } from "./product-edit-form";
 import { ProductOptionsPanel } from "./product-options-panel";
 import { VariantsPanel } from "./variants-panel";
-
-const ALL_QUERY = {
-  dir: "asc" as const,
-  page: 1,
-  pageSize: 100,
-  q: "",
-  sort: "name" as const,
-  status: "active" as const,
-};
 export function ProductDetailPageClient({ slug }: { slug: string }) {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
@@ -72,12 +68,12 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
     queryKey: currentUserPermissionsQueryKey,
   });
   const brandsQuery = useQuery({
-    queryFn: () => fetchAdminBrands(ALL_QUERY),
-    queryKey: adminBrandsQueryKey(ALL_QUERY),
+    queryFn: () => fetchAdminBrands(PRODUCT_DETAIL_QUERY),
+    queryKey: adminBrandsQueryKey(PRODUCT_DETAIL_QUERY),
   });
   const categoriesQuery = useQuery({
-    queryFn: () => fetchAdminCategories(ALL_QUERY),
-    queryKey: adminCategoriesQueryKey(ALL_QUERY),
+    queryFn: () => fetchAdminCategories(PRODUCT_DETAIL_QUERY),
+    queryKey: adminCategoriesQueryKey(PRODUCT_DETAIL_QUERY),
   });
 
   const updateMutation = useMutation({
@@ -95,17 +91,7 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
   });
 
   if (productQuery.isPending && !productQuery.data) {
-    return (
-      <PageShell>
-        <Skeleton className="h-20 w-full" />
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {["s1", "s2", "s3", "s4"].map((k) => (
-            <Skeleton key={k} className="h-24" />
-          ))}
-        </div>
-        <Skeleton className="h-64 w-full" />
-      </PageShell>
-    );
+    return <ProductDetailSkeleton />;
   }
 
   if (productQuery.isError) {
@@ -136,42 +122,14 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
     <PageShell>
       <PageHeader
         actions={
-          <div className="flex items-center gap-2">
-            {!isEditing ? (
-              <>
-                <Button
-                  disabled={!canManage}
-                  onClick={() => setIsEditing(true)}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  <Pencil className="size-3.5" />
-                  Edit
-                </Button>
-                <Button
-                  disabled={!canManage}
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                  size="sm"
-                  type="button"
-                  variant="outline-destructive"
-                >
-                  <Trash2 className="size-3.5" />
-                  Delete
-                </Button>
-              </>
-            ) : (
-              <Button
-                onClick={() => setIsEditing(false)}
-                size="sm"
-                type="button"
-                variant="ghost"
-              >
-                <X className="size-3.5" />
-                Cancel
-              </Button>
-            )}
-          </div>
+          <ProductHeaderActions
+            canManage={canManage}
+            isEditing={isEditing}
+            isPending={updateMutation.isPending}
+            onCancel={() => setIsEditing(false)}
+            onDelete={() => setIsDeleteDialogOpen(true)}
+            onEdit={() => setIsEditing(true)}
+          />
         }
         backHref={toRoute("/admin/products")}
         backLabel="Products"
@@ -216,28 +174,12 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
         <ProductEditForm
           brands={brands}
           categories={categories}
-          defaultValues={{
-            brandSlug: product.brandSlug ?? "",
-            categorySlug: product.categorySlug ?? "",
-            countryOfOrigin: product.countryOfOrigin ?? "",
-            description: product.description ?? "",
-            features: product.features ?? [],
-            name: product.name,
-            status: product.status,
-          }}
+          defaultValues={toProductEditValues(product)}
           error={updateMutation.isError ? updateMutation.error : null}
           isPending={updateMutation.isPending}
           onCancel={() => setIsEditing(false)}
           onSubmit={(values: ProductEditValues) =>
-            updateMutation.mutate({
-              brandSlug: values.brandSlug || null,
-              categorySlug: values.categorySlug || null,
-              countryOfOrigin: values.countryOfOrigin || null,
-              description: values.description.trim() || null,
-              features: values.features,
-              name: values.name.trim(),
-              status: values.status,
-            })
+            updateMutation.mutate(toProductUpdateRequest(values))
           }
         />
       ) : (

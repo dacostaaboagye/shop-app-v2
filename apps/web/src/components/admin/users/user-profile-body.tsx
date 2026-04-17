@@ -3,13 +3,13 @@
 import type { AdminUserAccessDetail } from "@shop/contracts";
 import { CalendarDays, Clock, LogIn, MapPin, ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import { MediaPanel } from "@/components/admin/catalog/media/media-panel";
 import {
   PageHeader,
   PageShell,
   StatCard,
 } from "@/components/system/page-shell";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MediaPanel } from "@/components/admin/catalog/media/media-panel";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {

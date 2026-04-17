@@ -59,14 +59,20 @@ export class PostgresAdminReservationQueryRepository
         variantSlug: productVariants.slug,
       })
       .from(stockReservations)
-      .innerJoin(productVariants, eq(productVariants.id, stockReservations.skuId))
+      .innerJoin(
+        productVariants,
+        eq(productVariants.id, stockReservations.skuId),
+      )
       .innerJoin(
         catalogProducts,
         eq(catalogProducts.id, productVariants.productId),
       )
       .innerJoin(locations, eq(locations.id, stockReservations.locationId))
       .where(filter)
-      .orderBy(asc(stockReservations.expiresAt), asc(stockReservations.createdAt))
+      .orderBy(
+        asc(stockReservations.expiresAt),
+        asc(stockReservations.createdAt),
+      )
       .limit(limit);
 
     return {

@@ -98,7 +98,6 @@ export function UsersPageClient({
   const safePage = Math.min(page, totalPages);
   const hasFilters = status !== "all" || !!(query + role + locationSlug);
   const sorting: AppDataTableSort = { columnId: sort, direction: dir };
-
   useEffect(() => {
     if (!usersQuery.data || safePage === page) {
       return;
@@ -107,7 +106,6 @@ export function UsersPageClient({
       page: safePage === 1 ? null : safePage,
     });
   }, [page, pathname, router, safePage, searchParams, usersQuery.data]);
-
   return (
     <PageShell>
       <PageHeader description={description} title={title} />

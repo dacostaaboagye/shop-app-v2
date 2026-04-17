@@ -23,6 +23,7 @@ describe("auth contracts", () => {
       user: {
         availablePortals: ["admin"],
         email: "manager@example.com",
+        emailVerified: true,
         firstName: "Store",
         lastLoginAt: null,
         lastName: "Manager",

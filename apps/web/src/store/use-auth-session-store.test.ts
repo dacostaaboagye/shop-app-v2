@@ -21,6 +21,7 @@ describe("useAuthSessionStore", () => {
         lastLoginAt: null,
         lastName: "Manager",
         preferredPortal: "admin",
+        emailVerified: false,
         requiresPasswordChange: false,
         slug: "store-manager",
         status: "active",

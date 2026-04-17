@@ -1,5 +1,5 @@
 import { userPermissionOverrides, userRoles } from "@shop/database";
-import { and, eq, sql, isNull } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { AdminUserAccessWriteRepository } from "./admin-user-access-write.service.js";
 import {
@@ -40,7 +40,7 @@ export async function assignRoleRecord(
       and(
         eq(userRoles.userId, user.id),
         eq(userRoles.roleId, role.id),
-        location?.id 
+        location?.id
           ? eq(userRoles.locationId, location.id)
           : isNull(userRoles.locationId),
         isNull(userRoles.revokedAt),
@@ -90,7 +90,7 @@ export async function revokeRoleRecord(
       and(
         eq(userRoles.userId, user.id),
         eq(userRoles.roleId, role.id),
-        location?.id 
+        location?.id
           ? eq(userRoles.locationId, location.id)
           : isNull(userRoles.locationId),
         isNull(userRoles.revokedAt),
@@ -132,7 +132,7 @@ export async function setPermissionOverrideRecord(
       and(
         eq(userPermissionOverrides.userId, user.id),
         eq(userPermissionOverrides.permissionId, permission.id),
-        location?.id 
+        location?.id
           ? eq(userPermissionOverrides.locationId, location.id)
           : isNull(userPermissionOverrides.locationId),
         isNull(userPermissionOverrides.removedAt),
@@ -180,7 +180,7 @@ export async function removePermissionOverrideRecord(
       and(
         eq(userPermissionOverrides.userId, user.id),
         eq(userPermissionOverrides.permissionId, permission.id),
-        location?.id 
+        location?.id
           ? eq(userPermissionOverrides.locationId, location.id)
           : isNull(userPermissionOverrides.locationId),
         isNull(userPermissionOverrides.removedAt),

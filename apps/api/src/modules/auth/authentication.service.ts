@@ -13,6 +13,7 @@ import {
   invalidCredentialsError,
   type LoginAttemptRecord,
   lockedAccountError,
+  oauthOnlyAccountError,
   type SessionContext,
   toAuthEventRecord,
   toLoginAttemptRecord,
@@ -32,7 +33,7 @@ export type AuthUserRecord = Omit<AuthUser, "lastLoginAt"> & {
   id: string;
   lastLoginAt: Date | null;
   lockedUntil: Date | null;
-  passwordHash: string;
+  passwordHash: string | null;
 };
 
 export type LoginCommand = {
@@ -96,6 +97,10 @@ export class PasswordAuthenticationService {
       email,
       getFailureWindowStart(now, this.policy),
     );
+
+    if (!user.passwordHash) {
+      throw oauthOnlyAccountError();
+    }
 
     if (!verifyPassword(command.password, user.passwordHash)) {
       await this.recordFailedAttempt({

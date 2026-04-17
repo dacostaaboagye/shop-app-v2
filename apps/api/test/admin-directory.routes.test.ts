@@ -64,6 +64,7 @@ describe("admin directory routes", () => {
     assert.equal(response.json().totalCount, 24);
     assert.deepEqual(state.lastQuery, {
       dir: "asc",
+      locationSlug: "",
       page: 2,
       pageSize: 20,
       q: "admin",

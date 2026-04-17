@@ -46,6 +46,7 @@ export class CurrentUserService {
     return authUserSchema.parse({
       availablePortals: user.availablePortals,
       email: user.email,
+      emailVerified: user.emailVerified,
       firstName: user.firstName,
       lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
       lastName: user.lastName,

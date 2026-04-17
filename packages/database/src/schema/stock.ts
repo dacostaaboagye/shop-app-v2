@@ -10,10 +10,10 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
+import { productVariants } from "./catalog.js";
 import { publicUuidColumn } from "./common.js";
 import { users } from "./identity.js";
 import { locations } from "./locations.js";
-import { productVariants } from "./catalog.js";
 
 export const stockReservationStatusEnum = pgEnum("stock_reservation_status", [
   "active",

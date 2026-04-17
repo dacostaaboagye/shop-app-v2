@@ -15,11 +15,11 @@ import {
 } from "@/lib/react-query/admin-catalog-products";
 import { toast } from "@/lib/toast";
 import { OptionsPrefill } from "./add-variant-options-prefill";
-import { VariantFormFields } from "./variant-form-fields";
 import {
   getDefaultVariantFormValues,
   toVariantCreateRequest,
 } from "./variant-form.support";
+import { VariantFormFields } from "./variant-form-fields";
 
 type AddVariantFormProps = {
   canSeeCostPrice: boolean;

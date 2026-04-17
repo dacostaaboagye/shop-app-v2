@@ -137,12 +137,18 @@ function createSessionHarness() {
     },
   };
 
+  const fixedNow = new Date("2026-04-08T12:00:00.000Z");
+
   return {
-    service: new TokenSessionService(repository, {
-      accessTokenSecret: "development-access-secret",
-      accessTokenTtlSeconds: 900,
-      refreshTokenTtlSeconds: 604800,
-    }),
+    service: new TokenSessionService(
+      repository,
+      {
+        accessTokenSecret: "development-access-secret",
+        accessTokenTtlSeconds: 900,
+        refreshTokenTtlSeconds: 604800,
+      },
+      () => fixedNow,
+    ),
     state,
   };
 }
@@ -151,6 +157,7 @@ function createUserRecord(): AuthUserRecord {
   return {
     availablePortals: ["admin"],
     email: "manager@example.com",
+    emailVerified: false,
     firstName: "Store",
     id: "usr_123",
     lastLoginAt: null,

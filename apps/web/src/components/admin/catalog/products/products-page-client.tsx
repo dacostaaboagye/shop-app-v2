@@ -1,5 +1,4 @@
 "use client";
-
 import type { AdminProductListQuery } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { Search, X } from "lucide-react";
@@ -19,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   adminProductsQueryKey,
   fetchAdminProducts,
+  updateAdminProduct,
 } from "@/lib/react-query/admin-catalog-products";
 import {
   currentUserPermissionsQueryKey,
@@ -31,6 +31,7 @@ import {
   readPositiveIntParam,
   readStringParam,
 } from "@/lib/url-state";
+import { createCatalogBulkActions } from "../catalog-bulk-status-actions";
 import { productTableColumns } from "./product-table-columns";
 import {
   getProductsErrorMessage,
@@ -40,7 +41,6 @@ import {
   PRODUCT_STATUS_OPTIONS,
   replaceProductQuery,
 } from "./products-page-client.support";
-
 export function ProductsPageClient() {
   const pathname = usePathname();
   const router = useRouter();
@@ -71,11 +71,9 @@ export function ProductsPageClient() {
     ? rawPageSize
     : 20;
   const page = readPositiveIntParam(searchParams, "page", 1);
-
   useEffect(() => {
     setDraftSearch(q);
   }, [q]);
-
   useEffect(() => {
     if (draftSearch === q) return;
     const id = window.setTimeout(() => {
@@ -87,7 +85,6 @@ export function ProductsPageClient() {
 
     return () => window.clearTimeout(id);
   }, [draftSearch, pathname, q, router, searchParams]);
-
   const backendQuery = useMemo<AdminProductListQuery>(
     () => ({ brandSlug, categorySlug, dir, page, pageSize, q, sort, status }),
     [brandSlug, categorySlug, dir, page, pageSize, q, sort, status],
@@ -109,14 +106,12 @@ export function ProductsPageClient() {
   const canManage =
     permissionsQuery.data?.permissions.includes("catalog.products.manage") ??
     false;
-
   useEffect(() => {
     if (!productsQuery.data || safePage === page) return;
     replaceProductQuery(router, pathname, searchParams, {
       page: safePage === 1 ? null : safePage,
     });
   }, [productsQuery.data, page, pathname, router, safePage, searchParams]);
-
   return (
     <PageShell>
       <PageHeader
@@ -133,7 +128,6 @@ export function ProductsPageClient() {
         description="Browse and manage products and their variants across the catalogue."
         title="Products"
       />
-
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative min-w-56 flex-1">
           <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -198,6 +192,14 @@ export function ProductsPageClient() {
             </Alert>
           ) : null}
           <AppDataTable
+            bulkActions={createCatalogBulkActions({
+              canManage,
+              entityLabelPlural: "Products",
+              queryKey: adminProductsQueryKey(backendQuery),
+              selectionAriaLabel: "product",
+              updateStatus: (row, targetStatus) =>
+                updateAdminProduct(row.slug, { status: targetStatus }),
+            })}
             columns={productTableColumns}
             data={productsQuery.data?.items ?? []}
             density="compact"

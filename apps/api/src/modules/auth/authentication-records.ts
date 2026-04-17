@@ -50,6 +50,16 @@ export function lockedAccountError(remainingLockoutSeconds: number): AppError {
   });
 }
 
+export function oauthOnlyAccountError(): AppError {
+  return new AppError({
+    code: "unauthorized",
+    detail:
+      "This account was created with Google sign-in. Please use the 'Continue with Google' button to sign in.",
+    statusCode: 401,
+    title: "Use Google sign-in",
+  });
+}
+
 export function toLoginAttemptRecord(input: {
   email: string;
   ipAddress: string | undefined;

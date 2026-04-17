@@ -9,6 +9,10 @@ import { ApiError } from "@/lib/react-query/query-client";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
 import { resolveApiUrl } from "./resolve-api-url";
 
+export function getGoogleOAuthUrl(): string {
+  return resolveApiUrl("/api/auth/oauth/google");
+}
+
 type JsonRequestInit = Omit<RequestInit, "body"> & {
   body?: unknown;
 };
@@ -131,6 +135,36 @@ async function toApiError(response: Response): Promise<ApiError> {
   return new ApiError({
     problem,
     status: response.status,
+  });
+}
+
+export async function forgotPassword(email: string): Promise<void> {
+  await request("/api/auth/forgot-password", {
+    body: { email },
+    method: "POST",
+  });
+}
+
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<void> {
+  await request("/api/auth/reset-password", {
+    body: { token, newPassword },
+    method: "POST",
+  });
+}
+
+export async function verifyEmail(token: string): Promise<void> {
+  await request("/api/auth/verify-email", {
+    body: { token },
+    method: "POST",
+  });
+}
+
+export async function resendVerification(): Promise<void> {
+  await request("/api/auth/resend-verification", {
+    method: "POST",
   });
 }
 

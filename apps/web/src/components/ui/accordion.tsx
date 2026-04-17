@@ -2,7 +2,6 @@
 
 import { Accordion as AccordionPrimitive } from "@base-ui/react/accordion";
 import { ChevronRightIcon } from "lucide-react";
-import * as React from "react";
 
 import { cn } from "@/lib/utils";
 

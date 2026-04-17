@@ -1,5 +1,7 @@
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
+import helmet from "@fastify/helmet";
+import rateLimit from "@fastify/rate-limit";
 import Fastify from "fastify";
 import { getApiEnv } from "../env.js";
 import { registerRouteAuthorization } from "../modules/access-control/route-authorization.js";
@@ -59,6 +61,14 @@ export function createServer(options: CreateServerOptions = {}) {
 
       callback(null, origin === env.webBaseUrl);
     },
+  });
+  server.register(helmet, {
+    // Allow API responses to be embedded in the web app
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  });
+  server.register(rateLimit, {
+    global: false, // Apply only to routes that opt-in via config
   });
   registerErrorHandling(server);
   registerRouteAuthorization(server, options.accessControl);

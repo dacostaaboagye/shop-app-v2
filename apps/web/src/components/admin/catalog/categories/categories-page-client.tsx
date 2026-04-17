@@ -1,5 +1,4 @@
 "use client";
-
 import type { AdminCategoryListQuery } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { Search, X } from "lucide-react";
@@ -19,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   adminCategoriesQueryKey,
   fetchAdminCategories,
+  updateAdminCategory,
 } from "@/lib/react-query/admin-catalog";
 import {
   currentUserPermissionsQueryKey,
@@ -31,6 +31,7 @@ import {
   readPositiveIntParam,
   readStringParam,
 } from "@/lib/url-state";
+import { createCatalogBulkActions } from "../catalog-bulk-status-actions";
 import {
   CATEGORY_PAGE_SIZE_OPTIONS,
   CATEGORY_SKELETON_KEYS,
@@ -40,7 +41,6 @@ import {
   replaceCategoryQuery,
 } from "./categories-page-client.support";
 import { categoryTableColumns } from "./category-table-columns";
-
 export function CategoriesPageClient() {
   const pathname = usePathname();
   const router = useRouter();
@@ -69,11 +69,9 @@ export function CategoriesPageClient() {
     ? rawPageSize
     : 20;
   const page = readPositiveIntParam(searchParams, "page", 1);
-
   useEffect(() => {
     setDraftSearch(q);
   }, [q]);
-
   useEffect(() => {
     if (draftSearch === q) return;
     const id = window.setTimeout(() => {
@@ -85,7 +83,6 @@ export function CategoriesPageClient() {
 
     return () => window.clearTimeout(id);
   }, [draftSearch, pathname, q, router, searchParams]);
-
   const backendQuery = useMemo<AdminCategoryListQuery>(
     () => ({ dir, page, pageSize, q, sort, status }),
     [dir, page, pageSize, q, sort, status],
@@ -107,14 +104,12 @@ export function CategoriesPageClient() {
   const canManage =
     permissionsQuery.data?.permissions.includes("catalog.categories.manage") ??
     false;
-
   useEffect(() => {
     if (!categoriesQuery.data || safePage === page) return;
     replaceCategoryQuery(router, pathname, searchParams, {
       page: safePage === 1 ? null : safePage,
     });
   }, [categoriesQuery.data, page, pathname, router, safePage, searchParams]);
-
   return (
     <PageShell>
       <PageHeader
@@ -131,7 +126,6 @@ export function CategoriesPageClient() {
         description="Manage categories used to organise the product catalogue."
         title="Categories"
       />
-
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative min-w-56 flex-1">
           <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -178,7 +172,6 @@ export function CategoriesPageClient() {
           {totalCount} total
         </span>
       </div>
-
       {categoriesQuery.isPending && !categoriesQuery.data ? (
         <div className="flex flex-col gap-2">
           {CATEGORY_SKELETON_KEYS.map((key) => (
@@ -196,6 +189,14 @@ export function CategoriesPageClient() {
             </Alert>
           ) : null}
           <AppDataTable
+            bulkActions={createCatalogBulkActions({
+              canManage,
+              entityLabelPlural: "Categories",
+              queryKey: adminCategoriesQueryKey(backendQuery),
+              selectionAriaLabel: "category",
+              updateStatus: (row, targetStatus) =>
+                updateAdminCategory(row.slug, { status: targetStatus }),
+            })}
             columns={categoryTableColumns}
             data={categoriesQuery.data?.items ?? []}
             density="compact"

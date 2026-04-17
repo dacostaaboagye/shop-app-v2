@@ -4,8 +4,8 @@ import type {
   AdminProductOption,
 } from "@shop/contracts";
 import {
-  catalogProductOptionValues,
   catalogProductOptions,
+  catalogProductOptionValues,
   catalogProducts,
 } from "@shop/database";
 import { and, eq, sql } from "drizzle-orm";
@@ -39,7 +39,7 @@ export class PostgresCatalogProductOptionsRepository {
         .select({ max: sql<number>`max(${catalogProductOptions.position})` })
         .from(catalogProductOptions)
         .where(eq(catalogProductOptions.productId, product.id));
-      
+
       const nextPos = (posResult[0]?.max ?? -1) + 1;
 
       const [option] = await tx
@@ -67,7 +67,7 @@ export class PostgresCatalogProductOptionsRepository {
             updatedAt: now,
           })
           .returning();
-        
+
         if (!val) throw new Error("Unable to create option value");
 
         values.push({
@@ -127,10 +127,12 @@ export class PostgresCatalogProductOptionsRepository {
   ): Promise<{ valueId: string; position: number; value: string }> {
     return await this.db.transaction(async (tx) => {
       const posResult = await tx
-        .select({ max: sql<number>`max(${catalogProductOptionValues.position})` })
+        .select({
+          max: sql<number>`max(${catalogProductOptionValues.position})`,
+        })
         .from(catalogProductOptionValues)
         .where(eq(catalogProductOptionValues.optionId, optionId));
-      
+
       const nextPos = (posResult[0]?.max ?? -1) + 1;
 
       const [val] = await tx

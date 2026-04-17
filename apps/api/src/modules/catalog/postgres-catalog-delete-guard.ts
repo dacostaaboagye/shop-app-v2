@@ -1,5 +1,9 @@
-import { and, eq, sql } from "drizzle-orm";
-import { catalogBrands, catalogCategories, catalogProducts } from "@shop/database";
+import {
+  catalogBrands,
+  catalogCategories,
+  catalogProducts,
+} from "@shop/database";
+import { eq, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import { AppError } from "../_core/errors/app-error.js";
 

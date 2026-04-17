@@ -3,7 +3,7 @@ import type {
   AdminLocationStatus,
   AdminLocationType,
 } from "@shop/contracts";
-import { locationZones, locations } from "@shop/database";
+import { locations, locationZones } from "@shop/database";
 import { and, eq } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { SlugAllocator } from "../public-identifiers/slug.service.js";
@@ -38,8 +38,14 @@ export class PostgresAdminLocationWriteRepository
         type: input.payload.type as AdminLocationType,
         status: input.payload.status as AdminLocationStatus,
         isFulfilmentEnabled: input.payload.isFulfilmentEnabled,
-        latitude: input.payload.latitude !== undefined ? input.payload.latitude?.toString() : undefined,
-        longitude: input.payload.longitude !== undefined ? input.payload.longitude?.toString() : undefined,
+        latitude:
+          input.payload.latitude !== undefined
+            ? input.payload.latitude?.toString()
+            : undefined,
+        longitude:
+          input.payload.longitude !== undefined
+            ? input.payload.longitude?.toString()
+            : undefined,
         geoAddress: input.payload.address,
         updatedAt: input.now,
       })

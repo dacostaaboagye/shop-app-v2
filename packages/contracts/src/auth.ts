@@ -23,6 +23,7 @@ export const authUserSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   email: z.email(),
+  emailVerified: z.boolean(),
   status: authUserStatusSchema,
   availablePortals: portalKeySchema.array().default([]),
   preferredPortal: portalKeySchema.nullable(),
@@ -39,7 +40,38 @@ export const registerRequestSchema = z.object({
   email: z.email(),
   firstName: z.string().trim().min(1).max(120),
   lastName: z.string().trim().min(1).max(120),
-  password: z.string().min(8).max(128),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters.")
+    .max(128, "Password must be at most 128 characters.")
+    .refine(
+      (v) => /[A-Z]/.test(v),
+      "Password must contain an uppercase letter.",
+    )
+    .refine((v) => /[a-z]/.test(v), "Password must contain a lowercase letter.")
+    .refine((v) => /[0-9]/.test(v), "Password must contain a number."),
+});
+
+export const verifyEmailRequestSchema = z.object({
+  token: z.string().min(1),
+});
+
+export const forgotPasswordRequestSchema = z.object({
+  email: z.email(),
+});
+
+export const resetPasswordRequestSchema = z.object({
+  token: z.string().min(1),
+  newPassword: z
+    .string()
+    .min(8, "Password must be at least 8 characters.")
+    .max(128, "Password must be at most 128 characters.")
+    .refine(
+      (v) => /[A-Z]/.test(v),
+      "Password must contain an uppercase letter.",
+    )
+    .refine((v) => /[a-z]/.test(v), "Password must contain a lowercase letter.")
+    .refine((v) => /[0-9]/.test(v), "Password must contain a number."),
 });
 
 export const authSessionSchema = z.object({
@@ -56,7 +88,10 @@ export type AuthSession = z.infer<typeof authSessionSchema>;
 export type AuthPermissionSet = z.infer<typeof authPermissionSetSchema>;
 export type AuthUser = z.infer<typeof authUserSchema>;
 export type AuthUserStatus = z.infer<typeof authUserStatusSchema>;
+export type ForgotPasswordRequest = z.infer<typeof forgotPasswordRequestSchema>;
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
 export type PortalKey = z.infer<typeof portalKeySchema>;
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
+export type ResetPasswordRequest = z.infer<typeof resetPasswordRequestSchema>;
 export type UpdateProfileRequest = z.infer<typeof updateProfileRequestSchema>;
+export type VerifyEmailRequest = z.infer<typeof verifyEmailRequestSchema>;

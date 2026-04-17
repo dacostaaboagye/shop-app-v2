@@ -1,4 +1,4 @@
-import {
+import type {
   AdminLocationListQuery,
   AdminLocationStatus,
   AdminLocationType,
@@ -6,13 +6,13 @@ import {
 } from "@shop/contracts";
 import {
   catalogMediaAssignments,
-  locationZones,
   locations,
+  locationZones,
   mediaAssets,
   userRoles,
   users,
 } from "@shop/database";
-import { and, asc, desc, eq, ilike, or, sql, aliasedTable } from "drizzle-orm";
+import { aliasedTable, and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { AdminLocationQueryRepository } from "./admin-location-query.service.js";
 
@@ -31,7 +31,9 @@ export class PostgresAdminLocationQueryRepository
         type: locations.type,
         status: locations.status,
         isFulfilmentEnabled: locations.isFulfilmentEnabled,
-        managerName: sql<string | null>`NULLIF(TRIM(CONCAT_WS(' ', ${m.firstName}, ${m.lastName})), '')`,
+        managerName: sql<
+          string | null
+        >`NULLIF(TRIM(CONCAT_WS(' ', ${m.firstName}, ${m.lastName})), '')`,
         createdAt: locations.createdAt,
         latitude: sql<number>`cast(${locations.latitude} as float)`,
         longitude: sql<number>`cast(${locations.longitude} as float)`,
@@ -45,7 +47,10 @@ export class PostgresAdminLocationQueryRepository
       .leftJoin(locationZones, eq(locationZones.locationId, locations.id))
       .leftJoin(
         userRoles,
-        and(eq(userRoles.locationId, locations.id), sql`${userRoles.revokedAt} IS NULL`),
+        and(
+          eq(userRoles.locationId, locations.id),
+          sql`${userRoles.revokedAt} IS NULL`,
+        ),
       )
       .leftJoin(
         catalogMediaAssignments,
@@ -55,7 +60,10 @@ export class PostgresAdminLocationQueryRepository
           eq(catalogMediaAssignments.isPrimary, true),
         ),
       )
-      .leftJoin(mediaAssets, eq(mediaAssets.id, catalogMediaAssignments.assetId))
+      .leftJoin(
+        mediaAssets,
+        eq(mediaAssets.id, catalogMediaAssignments.assetId),
+      )
       .where(eq(locations.slug, slug))
       .groupBy(locations.id, m.firstName, m.lastName, mediaAssets.publicUrl);
 
@@ -77,9 +85,18 @@ export class PostgresAdminLocationQueryRepository
         .from(locations)
         .where(
           and(
-            hasQuery ? or(ilike(locations.name, pattern), ilike(locations.slug, pattern)) : undefined,
-            type !== "all" ? eq(locations.type, type as AdminLocationType) : undefined,
-            status !== "all" ? eq(locations.status, status as AdminLocationStatus) : undefined,
+            hasQuery
+              ? or(
+                  ilike(locations.name, pattern),
+                  ilike(locations.slug, pattern),
+                )
+              : undefined,
+            type !== "all"
+              ? eq(locations.type, type as AdminLocationType)
+              : undefined,
+            status !== "all"
+              ? eq(locations.status, status as AdminLocationStatus)
+              : undefined,
           ),
         ),
       this.db
@@ -89,7 +106,9 @@ export class PostgresAdminLocationQueryRepository
           type: locations.type,
           status: locations.status,
           isFulfilmentEnabled: locations.isFulfilmentEnabled,
-          managerName: sql<string | null>`NULLIF(TRIM(CONCAT_WS(' ', ${m.firstName}, ${m.lastName})), '')`,
+          managerName: sql<
+            string | null
+          >`NULLIF(TRIM(CONCAT_WS(' ', ${m.firstName}, ${m.lastName})), '')`,
           createdAt: locations.createdAt,
           latitude: sql<number>`cast(${locations.latitude} as float)`,
           longitude: sql<number>`cast(${locations.longitude} as float)`,
@@ -103,7 +122,10 @@ export class PostgresAdminLocationQueryRepository
         .leftJoin(locationZones, eq(locationZones.locationId, locations.id))
         .leftJoin(
           userRoles,
-          and(eq(userRoles.locationId, locations.id), sql`${userRoles.revokedAt} IS NULL`),
+          and(
+            eq(userRoles.locationId, locations.id),
+            sql`${userRoles.revokedAt} IS NULL`,
+          ),
         )
         .leftJoin(
           catalogMediaAssignments,
@@ -113,19 +135,35 @@ export class PostgresAdminLocationQueryRepository
             eq(catalogMediaAssignments.isPrimary, true),
           ),
         )
-        .leftJoin(mediaAssets, eq(mediaAssets.id, catalogMediaAssignments.assetId))
+        .leftJoin(
+          mediaAssets,
+          eq(mediaAssets.id, catalogMediaAssignments.assetId),
+        )
         .where(
           and(
-            hasQuery ? or(ilike(locations.name, pattern), ilike(locations.slug, pattern)) : undefined,
-            type !== "all" ? eq(locations.type, type as AdminLocationType) : undefined,
-            status !== "all" ? eq(locations.status, status as AdminLocationStatus) : undefined,
+            hasQuery
+              ? or(
+                  ilike(locations.name, pattern),
+                  ilike(locations.slug, pattern),
+                )
+              : undefined,
+            type !== "all"
+              ? eq(locations.type, type as AdminLocationType)
+              : undefined,
+            status !== "all"
+              ? eq(locations.status, status as AdminLocationStatus)
+              : undefined,
           ),
         )
         .groupBy(locations.id, m.firstName, m.lastName, mediaAssets.publicUrl)
         .orderBy(
-          sort === "createdAt" 
-            ? (dir === "desc" ? desc(locations.createdAt) : asc(locations.createdAt)) 
-            : (dir === "desc" ? desc(locations.name) : asc(locations.name))
+          sort === "createdAt"
+            ? dir === "desc"
+              ? desc(locations.createdAt)
+              : asc(locations.createdAt)
+            : dir === "desc"
+              ? desc(locations.name)
+              : asc(locations.name),
         )
         .limit(pageSize)
         .offset(offset),

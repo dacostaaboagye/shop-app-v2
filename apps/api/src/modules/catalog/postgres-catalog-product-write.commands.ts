@@ -6,7 +6,6 @@ import type {
 import {
   catalogBrands,
   catalogCategories,
-  catalogMediaAssignments,
   catalogProducts,
   productVariants,
 } from "@shop/database";
@@ -14,11 +13,13 @@ import { and, asc, desc, eq, ne, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import { AppError } from "../_core/errors/app-error.js";
 import type { SlugAllocator } from "../public-identifiers/slug.service.js";
+import type { PostgresCatalogProductDeleteGuard } from "./postgres-catalog-product-delete-guard.js";
 import {
+  deleteProductMediaAssignments,
   resolveBrandId,
   resolveCategoryId,
+  toProductDetail,
 } from "./postgres-catalog-product-write.support.js";
-import type { PostgresCatalogProductDeleteGuard } from "./postgres-catalog-product-delete-guard.js";
 
 export class CatalogProductCommands {
   constructor(
@@ -191,42 +192,7 @@ export class CatalogProductCommands {
 
     if (!product) return null;
 
-    return {
-      slug: product.updated.slug,
-      name: product.updated.name,
-      description: product.updated.description,
-      features: product.updated.features,
-      categorySlug: product.row?.categorySlug ?? null,
-      brandSlug: product.row?.brandSlug ?? null,
-      countryOfOrigin: product.updated.countryOfOrigin,
-      isTaxable: product.updated.isTaxable,
-      taxCategory: product.updated.taxCategory,
-      priceIncludesTax: product.updated.priceIncludesTax,
-      status: product.updated.status,
-      variantCount: product.row?.variantCount ?? 0,
-      createdAt: product.updated.createdAt.toISOString(),
-      archivedAt: product.updated.archivedAt?.toISOString() ?? null,
-      options: [],
-      variants: product.variants.map((v) => ({
-        slug: v.slug,
-        name: v.name,
-        sku: v.sku,
-        barcode: v.barcode,
-        unitOfMeasure: v.unitOfMeasure,
-        costPrice: v.costPrice,
-        sellingPrice: v.sellingPrice,
-        attributes: v.attributes,
-        weightGrams: v.weightGrams,
-        dimensionsCm: v.dimensionsCm ?? null,
-        packagingType: v.packagingType,
-        manufacturerPartNumber: v.manufacturerPartNumber,
-        customsCode: v.customsCode,
-        isDefault: v.isDefault,
-        status: v.status,
-        createdAt: v.createdAt.toISOString(),
-        archivedAt: v.archivedAt?.toISOString() ?? null,
-      })),
-    };
+    return toProductDetail(product);
   }
 
   async delete(input: { slug: string }): Promise<void> {
@@ -252,32 +218,16 @@ export class CatalogProductCommands {
     await this.deleteGuard.assertCanDeleteProduct(input.slug);
 
     await this.db.transaction(async (tx) => {
-      const variants = product.variants ?? [];
-
-      // 1. Delete media assignments for product
-      await tx.delete(catalogMediaAssignments).where(
-        and(
-          eq(catalogMediaAssignments.entityType, "product"),
-          eq(catalogMediaAssignments.entitySlug, input.slug),
-        ),
+      await deleteProductMediaAssignments(
+        tx,
+        input.slug,
+        (product.variants ?? []).map((variant) => variant.slug),
       );
 
-      // 2. Delete media assignments for all variants
-      for (const variant of variants) {
-        await tx.delete(catalogMediaAssignments).where(
-          and(
-            eq(catalogMediaAssignments.entityType, "variant"),
-            eq(catalogMediaAssignments.entitySlug, variant.slug),
-          ),
-        );
-      }
-
-      // 3. Delete all variants
       await tx
         .delete(productVariants)
         .where(eq(productVariants.productId, product.id));
 
-      // 4. Delete the product itself (options will cascade delete via DB FK)
       const result = await tx
         .delete(catalogProducts)
         .where(eq(catalogProducts.id, product.id))

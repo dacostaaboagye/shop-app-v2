@@ -83,7 +83,11 @@ export async function resolveLocation(tx: ApiDatabase, slug: string | null) {
 export async function insertPermissionAudit(
   tx: ApiDatabase,
   input: {
-    action: "role_assigned" | "role_revoked" | "override_set" | "override_removed";
+    action:
+      | "role_assigned"
+      | "role_revoked"
+      | "override_set"
+      | "override_removed";
     actorId: string;
     createdAt: Date;
     locationId: string | null;
@@ -121,7 +125,12 @@ export async function revokeRefreshTokens(
       revokedAt: input.revokedAt,
       revokedReason: input.revokedReason,
     })
-    .where(and(eq(refreshTokens.userId, input.userId), isNull(refreshTokens.revokedAt)));
+    .where(
+      and(
+        eq(refreshTokens.userId, input.userId),
+        isNull(refreshTokens.revokedAt),
+      ),
+    );
 }
 
 export function userNotFoundError() {

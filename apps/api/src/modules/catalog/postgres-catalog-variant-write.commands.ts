@@ -3,18 +3,20 @@ import type {
   AdminUpdateVariantRequest,
   AdminVariantSummary,
 } from "@shop/contracts";
-import {
-  catalogMediaAssignments,
-  catalogProducts,
-  productVariants,
-} from "@shop/database";
+import { catalogMediaAssignments, productVariants } from "@shop/database";
 import { and, eq } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import { AppError } from "../_core/errors/app-error.js";
 import type { SlugAllocator } from "../public-identifiers/slug.service.js";
-import { getVariantStatusPatch } from "./catalog-variant-write.support.js";
-import { translateDuplicateKey } from "./postgres-catalog-product-write.support.js";
+import {
+  clearExistingDefaultVariant,
+  findProductIdBySlug,
+  getVariantStatusPatch,
+  requireProductIdBySlug,
+  toAdminVariantSummary,
+} from "./catalog-variant-write.support.js";
 import type { PostgresCatalogProductDeleteGuard } from "./postgres-catalog-product-delete-guard.js";
+import { translateDuplicateKey } from "./postgres-catalog-product-write.support.js";
 
 export class CatalogVariantCommands {
   constructor(
@@ -29,19 +31,7 @@ export class CatalogVariantCommands {
     payload: AdminCreateVariantRequest;
     productSlug: string;
   }): Promise<AdminVariantSummary> {
-    const [product] = await this.db
-      .select({ id: catalogProducts.id })
-      .from(catalogProducts)
-      .where(eq(catalogProducts.slug, input.productSlug));
-
-    if (!product) {
-      throw new AppError({
-        code: "not_found",
-        detail: `Product "${input.productSlug}" does not exist.`,
-        statusCode: 404,
-        title: "Product not found",
-      });
-    }
+    const productId = await requireProductIdBySlug(this.db, input.productSlug);
 
     const slug = await this.slugAllocator.allocateSlug({
       entityType: "product_variant",
@@ -51,21 +41,13 @@ export class CatalogVariantCommands {
     try {
       const inserted = await this.db.transaction(async (tx) => {
         if (input.payload.isDefault) {
-          await tx
-            .update(productVariants)
-            .set({ isDefault: false, updatedAt: input.now })
-            .where(
-              and(
-                eq(productVariants.productId, product.id),
-                eq(productVariants.isDefault, true),
-              ),
-            );
+          await clearExistingDefaultVariant(tx, input.now, productId);
         }
 
         const [row] = await tx
           .insert(productVariants)
           .values({
-            productId: product.id,
+            productId,
             slug,
             name: input.payload.name,
             sku: input.payload.sku,
@@ -95,27 +77,7 @@ export class CatalogVariantCommands {
 
       if (!inserted) throw new Error("Unable to create variant.");
 
-      return {
-        slug: inserted.slug,
-        name: inserted.name,
-        sku: inserted.sku,
-        barcode: inserted.barcode,
-        unitOfMeasure: inserted.unitOfMeasure,
-        costPrice: inserted.costPrice,
-        sellingPrice: inserted.sellingPrice,
-        attributes: inserted.attributes,
-        weightGrams: inserted.weightGrams,
-        dimensionsCm: inserted.dimensionsCm ?? null,
-        packagingType: inserted.packagingType,
-        manufacturerPartNumber: inserted.manufacturerPartNumber,
-        customsCode: inserted.customsCode,
-        isTaxable: inserted.isTaxable,
-        taxCategory: inserted.taxCategory,
-        isDefault: inserted.isDefault,
-        status: inserted.status,
-        createdAt: inserted.createdAt.toISOString(),
-        archivedAt: inserted.archivedAt?.toISOString() ?? null,
-      };
+      return toAdminVariantSummary(inserted);
     } catch (error) {
       throw translateDuplicateKey(error, input.payload.sku);
     }
@@ -128,12 +90,9 @@ export class CatalogVariantCommands {
     productSlug: string;
     variantSlug: string;
   }): Promise<AdminVariantSummary | null> {
-    const [product] = await this.db
-      .select({ id: catalogProducts.id })
-      .from(catalogProducts)
-      .where(eq(catalogProducts.slug, input.productSlug));
+    const productId = await findProductIdBySlug(this.db, input.productSlug);
 
-    if (!product) return null;
+    if (!productId) return null;
 
     const statusPatch = getVariantStatusPatch(input.payload, input.now);
 
@@ -181,15 +140,7 @@ export class CatalogVariantCommands {
     try {
       const updated = await this.db.transaction(async (tx) => {
         if (input.payload.isDefault === true) {
-          await tx
-            .update(productVariants)
-            .set({ isDefault: false, updatedAt: input.now })
-            .where(
-              and(
-                eq(productVariants.productId, product.id),
-                eq(productVariants.isDefault, true),
-              ),
-            );
+          await clearExistingDefaultVariant(tx, input.now, productId);
         }
 
         const [row] = await tx
@@ -197,7 +148,7 @@ export class CatalogVariantCommands {
           .set(updates)
           .where(
             and(
-              eq(productVariants.productId, product.id),
+              eq(productVariants.productId, productId),
               eq(productVariants.slug, input.variantSlug),
             ),
           )
@@ -208,27 +159,7 @@ export class CatalogVariantCommands {
 
       if (!updated) return null;
 
-      return {
-        slug: updated.slug,
-        name: updated.name,
-        sku: updated.sku,
-        barcode: updated.barcode,
-        unitOfMeasure: updated.unitOfMeasure,
-        costPrice: updated.costPrice,
-        sellingPrice: updated.sellingPrice,
-        attributes: updated.attributes,
-        weightGrams: updated.weightGrams,
-        dimensionsCm: updated.dimensionsCm ?? null,
-        packagingType: updated.packagingType,
-        manufacturerPartNumber: updated.manufacturerPartNumber,
-        customsCode: updated.customsCode,
-        isTaxable: updated.isTaxable,
-        taxCategory: updated.taxCategory,
-        isDefault: updated.isDefault,
-        status: updated.status,
-        createdAt: updated.createdAt.toISOString(),
-        archivedAt: updated.archivedAt?.toISOString() ?? null,
-      };
+      return toAdminVariantSummary(updated);
     } catch (error) {
       throw translateDuplicateKey(error, input.payload.sku ?? "");
     }
@@ -261,12 +192,14 @@ export class CatalogVariantCommands {
 
     await this.db.transaction(async (tx) => {
       // 1. Delete media assignments
-      await tx.delete(catalogMediaAssignments).where(
-        and(
-          eq(catalogMediaAssignments.entityType, "variant"),
-          eq(catalogMediaAssignments.entitySlug, input.variantSlug),
-        ),
-      );
+      await tx
+        .delete(catalogMediaAssignments)
+        .where(
+          and(
+            eq(catalogMediaAssignments.entityType, "variant"),
+            eq(catalogMediaAssignments.entitySlug, input.variantSlug),
+          ),
+        );
 
       // 2. Delete the variant
       const result = await tx

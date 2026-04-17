@@ -4,13 +4,12 @@ import type {
   AdminUpdateCategoryRequest,
 } from "@shop/contracts";
 import { catalogCategories, catalogMediaAssignments } from "@shop/database";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, type InferSelectModel, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import { AppError } from "../_core/errors/app-error.js";
 import type { SlugAllocator } from "../public-identifiers/slug.service.js";
 import type { CatalogCategoryWriteRepository } from "./catalog-category-write.service.js";
 import type { PostgresCatalogDeleteGuard } from "./postgres-catalog-delete-guard.js";
-import { type InferSelectModel } from "drizzle-orm";
 
 type CategoryRaw = InferSelectModel<typeof catalogCategories>;
 type CategoryWithParent = CategoryRaw & {
@@ -99,7 +98,7 @@ export class PostgresCatalogCategoryWriteRepository
         oldPath = current.path;
         newPath = parent ? `${parent.path}/${current.id}` : current.id;
 
-        if (parent && parent.path.startsWith(`${oldPath}/`)) {
+        if (parent?.path.startsWith(`${oldPath}/`)) {
           throw new AppError({
             code: "validation_error",
             detail:

@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -9,7 +10,6 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
 import { publicUuidColumn, slugColumn } from "./common.js";
 import { users } from "./identity.js";
 import { locations } from "./locations.js";

@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, Pencil, Trash2, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   PageHeader,
   PageShell,
@@ -18,20 +19,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CATALOG_STATUS_META, formatAdminDate } from "@/lib/admin-models";
 import {
   adminBrandQueryKey,
+  deleteAdminBrand,
   fetchAdminBrand,
   updateAdminBrand,
-  deleteAdminBrand,
 } from "@/lib/react-query/admin-catalog";
 import {
   currentUserPermissionsQueryKey,
   fetchCurrentUserPermissions,
 } from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { readStringParam } from "@/lib/url-state";
-import { MediaPanel } from "../media/media-panel";
+import { cn } from "@/lib/utils";
 import { CatalogDeleteDialog } from "../catalog-delete-dialog";
+import { MediaPanel } from "../media/media-panel";
 import { BrandEditForm } from "./brand-edit-form";
 
 export function BrandDetailPageClient({ slug }: { slug: string }) {

@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -10,10 +11,8 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
-import { locations } from "./locations.js";
-import { auditColumns, publicUuidColumn, slugColumn } from "./common.js";
 import { userPermissionOverrides, userRoles } from "./access-control.js";
+import { auditColumns, publicUuidColumn, slugColumn } from "./common.js";
 
 export const userStatusEnum = pgEnum("user_status", [
   "active",
@@ -36,7 +35,8 @@ export const users = pgTable(
     firstName: varchar("first_name", { length: 120 }).notNull(),
     lastName: varchar("last_name", { length: 120 }).notNull(),
     email: varchar("email", { length: 320 }).notNull().unique(),
-    passwordHash: text("password_hash").notNull(),
+    emailVerified: boolean("email_verified").default(false).notNull(),
+    passwordHash: text("password_hash"),
     status: userStatusEnum("status").default("active").notNull(),
     preferredPortal: varchar("preferred_portal", { length: 64 }),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
@@ -52,18 +52,21 @@ export const users = pgTable(
 export const usersRelations = relations(users, ({ many }) => ({
   refreshTokens: many(refreshTokens),
   passwordResetTokens: many(passwordResetTokens),
+  emailVerificationTokens: many(emailVerificationTokens),
   authEvents: many(authEvents),
   userRoles: many(userRoles, { relationName: "user_roles_user" }),
-  assignedUserRoles: many(userRoles, { relationName: "user_roles_assigned_by" }),
+  assignedUserRoles: many(userRoles, {
+    relationName: "user_roles_assigned_by",
+  }),
   revokedUserRoles: many(userRoles, { relationName: "user_roles_revoked_by" }),
-  permissionOverrides: many(userPermissionOverrides, { 
-    relationName: "user_overrides_user" 
+  permissionOverrides: many(userPermissionOverrides, {
+    relationName: "user_overrides_user",
   }),
-  setPermissionOverrides: many(userPermissionOverrides, { 
-    relationName: "user_overrides_set_by" 
+  setPermissionOverrides: many(userPermissionOverrides, {
+    relationName: "user_overrides_set_by",
   }),
-  removedPermissionOverrides: many(userPermissionOverrides, { 
-    relationName: "user_overrides_removed_by" 
+  removedPermissionOverrides: many(userPermissionOverrides, {
+    relationName: "user_overrides_removed_by",
   }),
 }));
 
@@ -143,6 +146,36 @@ export const authEventsRelations = relations(authEvents, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+export const emailVerificationTokens = pgTable(
+  "email_verification_tokens",
+  {
+    id: publicUuidColumn(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("email_verification_tokens_token_hash_idx").on(table.tokenHash),
+    index("email_verification_tokens_user_idx").on(table.userId),
+  ],
+);
+
+export const emailVerificationTokensRelations = relations(
+  emailVerificationTokens,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [emailVerificationTokens.userId],
+      references: [users.id],
+    }),
+  }),
+);
 
 export const loginAttempts = pgTable(
   "login_attempts",

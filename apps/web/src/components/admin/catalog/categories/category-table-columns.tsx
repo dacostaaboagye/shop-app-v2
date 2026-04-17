@@ -2,26 +2,22 @@
 
 import type { AdminCategorySummary } from "@shop/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ImageOff } from "lucide-react";
+import { ImageOff, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import Image from "next/image";
-import { Badge } from "@/components/ui/badge";
-import { CATALOG_STATUS_META, formatAdminDate } from "@/lib/admin-models";
-import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { CatalogDeleteDialog } from "../catalog-delete-dialog";
-import {
-  deleteAdminCategory,
-  adminCategoriesQueryKey,
-} from "@/lib/react-query/admin-catalog";
+import { CATALOG_STATUS_META, formatAdminDate } from "@/lib/admin-models";
+import { deleteAdminCategory } from "@/lib/react-query/admin-catalog";
 import { toRoute } from "@/lib/routes";
+import { CatalogDeleteDialog } from "../catalog-delete-dialog";
 
 export const categoryTableColumns: Array<
   ColumnDef<AdminCategorySummary, unknown>

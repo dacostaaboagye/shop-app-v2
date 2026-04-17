@@ -5,13 +5,10 @@ import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { VariantFormField } from "./variant-form.field";
 import type { VariantFormApi } from "./variant-form.api";
-import {
-  attributeLines,
-  requiredString,
-  type VariantFormValues,
-} from "./variant-form.support";
+import type { VariantFormField } from "./variant-form.field";
+import type { VariantFormValues } from "./variant-form.support";
+import { attributeLines, requiredString } from "./variant-form.validators";
 
 type VariantFormCoreFieldsProps = {
   form: VariantFormApi;

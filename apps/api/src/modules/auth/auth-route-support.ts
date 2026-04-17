@@ -3,7 +3,7 @@ import {
   type AuthUser,
   authSessionSchema,
 } from "@shop/contracts";
-import type { FastifyRequest } from "fastify";
+import type { FastifyReply, FastifyRequest } from "fastify";
 import { AppError } from "../_core/errors/app-error.js";
 import type { IssuedSession, LoginCommand } from "./authentication.service.js";
 import { refreshTokenCookieName } from "./refresh-token-cookie.js";
@@ -23,8 +23,24 @@ export type AuthRouteDependencies = {
   currentUserPermissionService: {
     getCurrentPermissions(userId: string): Promise<AuthPermissionSet>;
   };
+  emailVerificationService: {
+    verify(token: string): Promise<void>;
+    resend(userId: string): Promise<void>;
+  };
+  googleOAuthService: {
+    initiateFlow(reply: FastifyReply): Promise<string>;
+    handleCallback(
+      request: FastifyRequest,
+      reply: FastifyReply,
+      context?: { ipAddress?: string; userAgent?: string },
+    ): Promise<IssuedSession>;
+  };
   logoutSessionService: {
     logout(command: LogoutSessionCommand): Promise<void>;
+  };
+  passwordResetService: {
+    initiateReset(email: string): Promise<void>;
+    resetPassword(token: string, newPassword: string): Promise<void>;
   };
   profileUpdateService: {
     updatePreferredPortal(
@@ -57,8 +73,32 @@ export function createUnavailableAuthDependencies(): AuthRouteDependencies {
         throw unavailableAuthError();
       },
     },
+    emailVerificationService: {
+      async verify() {
+        throw unavailableAuthError();
+      },
+      async resend() {
+        throw unavailableAuthError();
+      },
+    },
+    googleOAuthService: {
+      async initiateFlow() {
+        throw unavailableAuthError();
+      },
+      async handleCallback() {
+        throw unavailableAuthError();
+      },
+    },
     logoutSessionService: {
       async logout() {
+        throw unavailableAuthError();
+      },
+    },
+    passwordResetService: {
+      async initiateReset() {
+        throw unavailableAuthError();
+      },
+      async resetPassword() {
         throw unavailableAuthError();
       },
     },

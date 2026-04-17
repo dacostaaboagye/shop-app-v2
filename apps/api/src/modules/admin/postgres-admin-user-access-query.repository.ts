@@ -1,4 +1,4 @@
-import {
+import type {
   AdminUserAccessActivityEvent,
   AdminUserAccessDetail,
   AuthUserStatus,
@@ -64,7 +64,10 @@ export class PostgresAdminUserAccessQueryRepository
     const [image] = await this.db
       .select({ url: mediaAssets.publicUrl })
       .from(catalogMediaAssignments)
-      .innerJoin(mediaAssets, eq(mediaAssets.id, catalogMediaAssignments.assetId))
+      .innerJoin(
+        mediaAssets,
+        eq(mediaAssets.id, catalogMediaAssignments.assetId),
+      )
       .where(
         and(
           eq(catalogMediaAssignments.entityType, "user"),
@@ -153,7 +156,9 @@ export class PostgresAdminUserAccessQueryRepository
       .innerJoin(rolePermissions, eq(rolePermissions.roleId, userRoles.roleId))
       .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
       .leftJoin(sql`locations l`, sql`l.id = ${userRoles.locationId}`)
-      .where(and(eq(userRoles.userId, userId), sql`${userRoles.revokedAt} IS NULL`));
+      .where(
+        and(eq(userRoles.userId, userId), sql`${userRoles.revokedAt} IS NULL`),
+      );
 
     const overrideBased = this.db
       .select({

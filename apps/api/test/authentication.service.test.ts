@@ -170,6 +170,7 @@ function createSession(user: AuthUserRecord): IssuedSession {
     user: {
       availablePortals: user.availablePortals,
       email: user.email,
+      emailVerified: user.emailVerified,
       firstName: user.firstName,
       lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
       lastName: user.lastName,
@@ -187,6 +188,7 @@ function createUserRecord(
   return {
     availablePortals: ["admin"],
     email: "manager@example.com",
+    emailVerified: false,
     firstName: "Store",
     id: "usr_123",
     lastLoginAt: null,

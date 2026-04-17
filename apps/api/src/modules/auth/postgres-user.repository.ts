@@ -1,30 +1,51 @@
-import {
-  authEvents,
-  loginAttempts,
-  refreshTokens,
-  roles,
-  userRoles,
-  users,
-} from "@shop/database";
-import { and, desc, eq, gte, isNull, sql, type SQL } from "drizzle-orm";
-import type { BasicUserRoleService } from "../access-control/basic-user-role.service.js";
+import type { PortalKey } from "@shop/contracts";
+import { loginAttempts, users } from "@shop/database";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
+import type { BasicUserRoleService } from "../access-control/basic-user-role.service.js";
 import type { AccessTokenUserRepository } from "./access-token-authentication.service.js";
 import type {
   AuthRepository,
   AuthUserRecord,
 } from "./authentication.service.js";
 import type { CurrentUserRepository } from "./current-user.service.js";
+import type { EmailVerificationUserRepository } from "./email-verification.service.js";
+import type { GoogleOAuthRepository } from "./google-oauth.service.js";
+import type { PasswordResetUserRepository } from "./password-reset.service.js";
+import { findAuthUser } from "./postgres-auth-user-record.js";
 import { isUniqueViolation } from "./postgres-auth-user-row.js";
+import {
+  createOAuthUser,
+  findUserByOAuthIdentity,
+  linkOAuthIdentity,
+} from "./postgres-oauth-identity.js";
+import {
+  clearUserLockout,
+  markUserSuccessfulLogin,
+  setUserLockout,
+  updateUserPreferredPortal,
+} from "./postgres-user-account-state.js";
+import {
+  recordUserAuthEvent,
+  recordUserLoginAttempt,
+  revokeUserRefreshTokens,
+} from "./postgres-user-auth-events.js";
+import {
+  findEmailVerificationUser,
+  findPasswordResetUser,
+  setUserEmailVerified,
+} from "./postgres-user-recovery.js";
 import type { RegistrationRepository } from "./registration.service.js";
 import type { UserAccessLifecycleRepository } from "./user-access-lifecycle.service.js";
-import { PortalKey } from "@shop/contracts";
 
 export class PostgresUserRepository
   implements
     AccessTokenUserRepository,
     AuthRepository,
     CurrentUserRepository,
+    EmailVerificationUserRepository,
+    GoogleOAuthRepository,
+    PasswordResetUserRepository,
     RegistrationRepository,
     UserAccessLifecycleRepository
 {
@@ -32,14 +53,9 @@ export class PostgresUserRepository
     private readonly db: ApiDatabase,
     private readonly basicUserRoleService: BasicUserRoleService,
   ) {}
-
   async clearLockout(userId: string): Promise<void> {
-    await this.db
-      .update(users)
-      .set({ lockedUntil: null, updatedAt: new Date() })
-      .where(eq(users.id, userId));
+    await clearUserLockout(this.db, userId);
   }
-
   async createUser(input: {
     email: string;
     firstName: string;
@@ -72,7 +88,6 @@ export class PostgresUserRepository
         if (!userRow) {
           return { status: "slug_conflict" as const };
         }
-
         await this.basicUserRoleService.ensureAssigned({
           assignedAt: input.now,
           db: tx,
@@ -88,7 +103,6 @@ export class PostgresUserRepository
           },
         };
       });
-
       return result;
     } catch (error) {
       if (isUniqueViolation(error)) {
@@ -103,46 +117,14 @@ export class PostgresUserRepository
       .update(users)
       .set({ status: "deactivated", updatedAt: now })
       .where(and(eq(users.id, userId), sql`${users.status} <> 'deactivated'`));
-
     return (result.rowCount ?? 0) > 0;
   }
-
   async findUserByEmail(email: string): Promise<AuthUserRecord | null> {
-    return this.findUser(eq(users.email, email));
+    return findAuthUser(this.db, eq(users.email, email));
   }
-
   async findUserById(userId: string): Promise<AuthUserRecord | null> {
-    return this.findUser(eq(users.id, userId));
+    return findAuthUser(this.db, eq(users.id, userId));
   }
-
-  private async findUser(where: SQL | undefined): Promise<AuthUserRecord | null> {
-    const user = await this.db.query.users.findFirst({
-      where,
-      with: {
-        userRoles: {
-          where: (ur, { isNull }) => isNull(ur.revokedAt),
-          with: {
-            role: true,
-          },
-        },
-      },
-    });
-
-    if (!user) return null;
-
-    const availablePortals = user.userRoles
-      .map((ur) => ur.role?.slug)
-      .filter((slug): slug is string => 
-        !!slug && ["admin", "manager", "worker", "supplier", "agent"].includes(slug)
-      );
-
-    return {
-      ...user,
-      preferredPortal: user.preferredPortal as PortalKey | null,
-      availablePortals: Array.from(new Set(availablePortals)).sort() as PortalKey[],
-    };
-  }
-
   async getRecentFailedAttemptTimes(
     email: string,
     since: Date,
@@ -158,17 +140,11 @@ export class PostgresUserRepository
         ),
       )
       .orderBy(desc(loginAttempts.occurredAt));
-
     return rows.map((r) => r.occurredAt);
   }
-
   async markSuccessfulLogin(userId: string, occurredAt: Date): Promise<void> {
-    await this.db
-      .update(users)
-      .set({ lastLoginAt: occurredAt, updatedAt: occurredAt })
-      .where(eq(users.id, userId));
+    await markUserSuccessfulLogin(this.db, userId, occurredAt);
   }
-
   async recordAuthEvent(event: {
     eventType:
       | "failed_attempt"
@@ -181,13 +157,7 @@ export class PostgresUserRepository
     userAgent?: string;
     userId?: string;
   }): Promise<void> {
-    await this.db.insert(authEvents).values({
-      userId: event.userId ?? null,
-      eventType: event.eventType,
-      ipAddress: event.ipAddress ?? null,
-      userAgent: event.userAgent ?? null,
-      occurredAt: event.occurredAt,
-    });
+    await recordUserAuthEvent(this.db, event);
   }
 
   async recordLoginAttempt(attempt: {
@@ -196,44 +166,84 @@ export class PostgresUserRepository
     occurredAt: Date;
     succeeded: boolean;
   }): Promise<void> {
-    await this.db.insert(loginAttempts).values({
-      email: attempt.email,
-      ipAddress: attempt.ipAddress ?? null,
-      succeeded: attempt.succeeded,
-      occurredAt: attempt.occurredAt,
-    });
+    await recordUserLoginAttempt(this.db, attempt);
   }
-
   async revokeRefreshTokensForUser(input: {
     revokedAt: Date;
     revokedReason: string;
     userId: string;
   }): Promise<void> {
-    await this.db
-      .update(refreshTokens)
-      .set({
-        revokedAt: input.revokedAt,
-        revokedReason: input.revokedReason,
-      })
-      .where(
-        and(eq(refreshTokens.userId, input.userId), isNull(refreshTokens.revokedAt)),
-      );
+    await revokeUserRefreshTokens(this.db, input);
   }
 
   async updatePreferredPortal(
     userId: string,
     preferredPortal: string | null,
   ): Promise<void> {
-    await this.db
-      .update(users)
-      .set({ preferredPortal: preferredPortal as PortalKey | null, updatedAt: new Date() })
-      .where(eq(users.id, userId));
+    await updateUserPreferredPortal(this.db, userId, preferredPortal);
   }
 
   async setLockout(userId: string, lockedUntil: Date): Promise<void> {
-    await this.db
-      .update(users)
-      .set({ lockedUntil, updatedAt: lockedUntil })
-      .where(eq(users.id, userId));
+    await setUserLockout(this.db, userId, lockedUntil);
+  }
+
+  // ─── Email verification ───────────────────────────────────────────
+
+  async findEmailVerificationUser(userId: string): Promise<{
+    id: string;
+    email: string;
+    firstName: string;
+    emailVerified: boolean;
+  } | null> {
+    return findEmailVerificationUser(this.db, userId);
+  }
+
+  async setEmailVerified(userId: string): Promise<void> {
+    await setUserEmailVerified(this.db, userId);
+  }
+
+  // ─── Password reset ──────────────────────────────────────────────
+
+  async findPasswordResetUser(email: string): Promise<{
+    id: string;
+    email: string;
+    firstName: string;
+  } | null> {
+    return findPasswordResetUser(this.db, email);
+  }
+
+  // ─── Google OAuth ────────────────────────────────────────────────
+
+  async findUserByOAuthIdentity(
+    provider: string,
+    providerUserId: string,
+  ): Promise<AuthUserRecord | null> {
+    return findUserByOAuthIdentity(this.db, provider, providerUserId);
+  }
+
+  async createOAuthUser(input: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    displayName: string | null;
+    avatarUrl: string | null;
+    provider: string;
+    providerUserId: string;
+    providerEmail: string;
+    now: Date;
+  }): Promise<AuthUserRecord> {
+    return createOAuthUser(this.db, this.basicUserRoleService, input);
+  }
+
+  async linkOAuthIdentity(input: {
+    userId: string;
+    provider: string;
+    providerUserId: string;
+    providerEmail: string;
+    displayName: string | null;
+    avatarUrl: string | null;
+    now: Date;
+  }): Promise<void> {
+    await linkOAuthIdentity(this.db, input);
   }
 }

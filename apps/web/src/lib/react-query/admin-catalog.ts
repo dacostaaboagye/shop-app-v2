@@ -9,12 +9,12 @@ import type {
   AdminCreateBrandResponse,
   AdminCreateCategoryRequest,
   AdminCreateCategoryResponse,
+  AdminDeleteBrandResponse,
+  AdminDeleteCategoryResponse,
   AdminUpdateBrandRequest,
   AdminUpdateBrandResponse,
   AdminUpdateCategoryRequest,
   AdminUpdateCategoryResponse,
-  AdminDeleteBrandResponse,
-  AdminDeleteCategoryResponse,
 } from "@shop/contracts";
 import { fetchJson } from "@/lib/react-query/fetch-json";
 

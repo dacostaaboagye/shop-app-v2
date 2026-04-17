@@ -3,12 +3,12 @@
 import { AppFormField } from "@/components/forms/app-form-field";
 import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import type { VariantFormField } from "./variant-form.field";
 import type { VariantFormApi } from "./variant-form.api";
+import type { VariantFormField } from "./variant-form.field";
 import {
   positiveIntegerOrBlank,
   positiveNumberOrBlank,
-} from "./variant-form.support";
+} from "./variant-form.validators";
 
 type VariantFormOperationsFieldsProps = {
   form: VariantFormApi;
