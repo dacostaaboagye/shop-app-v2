@@ -31,11 +31,16 @@ export interface RegistrationRepository {
   >;
 }
 
+export type EmailVerificationIssuer = {
+  issueAndSend(userId: string): Promise<void>;
+};
+
 export class PasswordRegistrationService {
   constructor(
     private readonly repository: RegistrationRepository,
     private readonly sessionIssuer: SessionIssuer,
     private readonly slugAllocator: SlugAllocator,
+    private readonly emailVerificationIssuer: EmailVerificationIssuer | null = null,
     private readonly now: () => Date = () => new Date(),
   ) {}
 
@@ -60,12 +65,20 @@ export class PasswordRegistrationService {
       });
 
       switch (creationResult.status) {
-        case "created":
-          return this.sessionIssuer.issueSession(
+        case "created": {
+          const session = await this.sessionIssuer.issueSession(
             creationResult.user,
             now,
             toSessionContext(command.ipAddress, command.userAgent),
           );
+          // Fire-and-forget: don't block registration on email send failure
+          this.emailVerificationIssuer
+            ?.issueAndSend(creationResult.user.id)
+            .catch((err) => {
+              console.error("[auth] Failed to send verification email:", err);
+            });
+          return session;
+        }
         case "email_conflict":
           throw duplicateEmailError();
         case "slug_conflict":

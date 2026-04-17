@@ -168,7 +168,9 @@ function createSession(user: AuthUserRecord): IssuedSession {
     refreshToken: "b".repeat(64),
     refreshTokenExpiresAt: new Date("2026-04-15T12:00:00.000Z").toISOString(),
     user: {
+      availablePortals: user.availablePortals,
       email: user.email,
+      emailVerified: user.emailVerified,
       firstName: user.firstName,
       lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
       lastName: user.lastName,
@@ -184,7 +186,9 @@ function createUserRecord(
   overrides: Partial<AuthUserRecord> = {},
 ): AuthUserRecord {
   return {
+    availablePortals: ["admin"],
     email: "manager@example.com",
+    emailVerified: false,
     firstName: "Store",
     id: "usr_123",
     lastLoginAt: null,

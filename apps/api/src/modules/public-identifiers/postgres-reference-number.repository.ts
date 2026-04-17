@@ -1,10 +1,12 @@
-import type { Pool } from "pg";
+import { sequenceCounters } from "@shop/database";
+import { sql } from "drizzle-orm";
+import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { ReferenceNumberRepository } from "./reference-number.service.js";
 
 export class PostgresReferenceNumberRepository
   implements ReferenceNumberRepository
 {
-  constructor(private readonly pool: Pool) {}
+  constructor(private readonly db: ApiDatabase) {}
 
   async reserveNextSequenceValue(input: {
     description: string;
@@ -12,28 +14,24 @@ export class PostgresReferenceNumberRepository
     sequenceKey: string;
     startsAt: number;
   }): Promise<number> {
-    const result = await this.pool.query<{ currentValue: number }>(
-      `
-        INSERT INTO sequence_counters (
-          sequence_key,
-          current_value,
-          description,
-          created_at,
-          updated_at
-        )
-        VALUES ($1, $2, $3, $4, $4)
-        ON CONFLICT (sequence_key)
-        DO UPDATE
-        SET
-          current_value = sequence_counters.current_value + 1,
-          description = COALESCE(sequence_counters.description, EXCLUDED.description),
-          updated_at = EXCLUDED.updated_at
-        RETURNING current_value AS "currentValue"
-      `,
-      [input.sequenceKey, input.startsAt, input.description, input.now],
-    );
-
-    const row = result.rows[0];
+    const [row] = await this.db
+      .insert(sequenceCounters)
+      .values({
+        sequenceKey: input.sequenceKey,
+        currentValue: input.startsAt,
+        description: input.description,
+        createdAt: input.now,
+        updatedAt: input.now,
+      })
+      .onConflictDoUpdate({
+        target: sequenceCounters.sequenceKey,
+        set: {
+          currentValue: sql`${sequenceCounters.currentValue} + 1`,
+          description: sql`COALESCE(${sequenceCounters.description}, EXCLUDED.description)`,
+          updatedAt: sql`EXCLUDED.updated_at`,
+        },
+      })
+      .returning({ currentValue: sequenceCounters.currentValue });
 
     if (!row) {
       throw new Error("Failed to reserve the next sequence value.");

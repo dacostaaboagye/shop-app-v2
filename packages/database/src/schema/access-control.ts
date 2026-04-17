@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -35,6 +36,11 @@ export const permissions = pgTable(
   (table) => [index("permissions_key_idx").on(table.key)],
 );
 
+export const permissionsRelations = relations(permissions, ({ many }) => ({
+  rolePermissions: many(rolePermissions),
+  overrides: many(userPermissionOverrides),
+}));
+
 export const roles = pgTable(
   "roles",
   {
@@ -49,6 +55,11 @@ export const roles = pgTable(
   },
   (table) => [index("roles_slug_idx").on(table.slug)],
 );
+
+export const rolesRelations = relations(roles, ({ many }) => ({
+  rolePermissions: many(rolePermissions),
+  userRoles: many(userRoles),
+}));
 
 export const rolePermissions = pgTable(
   "role_permissions",
@@ -71,6 +82,20 @@ export const rolePermissions = pgTable(
       table.permissionId,
     ),
   ],
+);
+
+export const rolePermissionsRelations = relations(
+  rolePermissions,
+  ({ one }) => ({
+    role: one(roles, {
+      fields: [rolePermissions.roleId],
+      references: [roles.id],
+    }),
+    permission: one(permissions, {
+      fields: [rolePermissions.permissionId],
+      references: [permissions.id],
+    }),
+  }),
 );
 
 export const userRoles = pgTable(
@@ -98,6 +123,32 @@ export const userRoles = pgTable(
     index("user_roles_location_idx").on(table.locationId),
   ],
 );
+
+export const userRolesRelations = relations(userRoles, ({ one }) => ({
+  user: one(users, {
+    fields: [userRoles.userId],
+    references: [users.id],
+    relationName: "user_roles_user",
+  }),
+  role: one(roles, {
+    fields: [userRoles.roleId],
+    references: [roles.id],
+  }),
+  location: one(locations, {
+    fields: [userRoles.locationId],
+    references: [locations.id],
+  }),
+  assignedBy: one(users, {
+    fields: [userRoles.assignedBy],
+    references: [users.id],
+    relationName: "user_roles_assigned_by",
+  }),
+  revokedBy: one(users, {
+    fields: [userRoles.revokedBy],
+    references: [users.id],
+    relationName: "user_roles_revoked_by",
+  }),
+}));
 
 export const userPermissionOverrides = pgTable(
   "user_permission_overrides",
@@ -127,6 +178,35 @@ export const userPermissionOverrides = pgTable(
     index("user_permission_overrides_permission_idx").on(table.permissionId),
     index("user_permission_overrides_location_idx").on(table.locationId),
   ],
+);
+
+export const userPermissionOverridesRelations = relations(
+  userPermissionOverrides,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [userPermissionOverrides.userId],
+      references: [users.id],
+      relationName: "user_overrides_user",
+    }),
+    permission: one(permissions, {
+      fields: [userPermissionOverrides.permissionId],
+      references: [permissions.id],
+    }),
+    location: one(locations, {
+      fields: [userPermissionOverrides.locationId],
+      references: [locations.id],
+    }),
+    setBy: one(users, {
+      fields: [userPermissionOverrides.setBy],
+      references: [users.id],
+      relationName: "user_overrides_set_by",
+    }),
+    removedBy: one(users, {
+      fields: [userPermissionOverrides.removedBy],
+      references: [users.id],
+      relationName: "user_overrides_removed_by",
+    }),
+  }),
 );
 
 export const permissionAuditLog = pgTable(

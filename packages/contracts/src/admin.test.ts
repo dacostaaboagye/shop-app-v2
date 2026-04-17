@@ -1,0 +1,98 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import {
+  adminLocationListQuerySchema,
+  adminLocationListResponseSchema,
+  adminUserListQuerySchema,
+  adminUserListResponseSchema,
+} from "./admin.js";
+
+describe("admin contracts", () => {
+  it("accepts a valid admin user list query", () => {
+    const parsed = adminUserListQuerySchema.parse({
+      page: "2",
+      pageSize: "20",
+      q: "solomon",
+      role: "regional_ops",
+      sort: "createdAt",
+      status: "active",
+    });
+
+    assert.equal(parsed.page, 2);
+    assert.equal(parsed.pageSize, 20);
+    assert.equal(parsed.role, "regional_ops");
+  });
+
+  it("accepts a valid admin user list response", () => {
+    const parsed = adminUserListResponseSchema.parse({
+      availableRoles: [
+        { name: "Basic user", slug: "basic_user" },
+        { name: "Regional Ops", slug: "regional_ops" },
+      ],
+      items: [
+        {
+          assignedLocations: [
+            {
+              name: "Downtown Store",
+              slug: "downtown-store",
+            },
+          ],
+          createdAt: "2026-04-09T10:00:00.000Z",
+          email: "admin@example.com",
+          firstName: "Admin",
+          lastLoginAt: null,
+          lastName: "User",
+          preferredPortal: "admin",
+          requiresPasswordChange: false,
+          roles: [
+            { name: "Basic user", slug: "basic_user" },
+            { name: "Regional Ops", slug: "regional_ops" },
+          ],
+          slug: "admin-user",
+          status: "active",
+        },
+      ],
+      page: 1,
+      pageSize: 10,
+      totalCount: 1,
+    });
+
+    assert.equal(parsed.items[0]?.roles[1]?.slug, "regional_ops");
+  });
+
+  it("accepts a valid admin location list query", () => {
+    const parsed = adminLocationListQuerySchema.parse({
+      dir: "desc",
+      pageSize: "5",
+      q: "warehouse",
+      status: "active",
+      type: "warehouse",
+    });
+
+    assert.equal(parsed.pageSize, 5);
+    assert.equal(parsed.dir, "desc");
+  });
+
+  it("accepts a valid admin location list response", () => {
+    const parsed = adminLocationListResponseSchema.parse({
+      items: [
+        {
+          createdAt: "2026-04-09T10:00:00.000Z",
+          isFulfilmentEnabled: true,
+          managerName: "Jane Smith",
+          name: "Central Warehouse",
+          slug: "central-warehouse",
+          staffCount: 12,
+          status: "active",
+          type: "warehouse",
+          zoneCount: 4,
+        },
+      ],
+      page: 1,
+      pageSize: 10,
+      totalCount: 1,
+    });
+
+    assert.equal(parsed.items[0]?.zoneCount, 4);
+  });
+});

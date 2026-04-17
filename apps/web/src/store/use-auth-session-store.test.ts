@@ -3,6 +3,11 @@ import { describe, it } from "node:test";
 import { useAuthSessionStore } from "./use-auth-session-store";
 
 describe("useAuthSessionStore", () => {
+  it("starts in a bootstrapping state until the initial session check finishes", () => {
+    assert.equal(useAuthSessionStore.getState().status, "bootstrapping");
+    assert.equal(useAuthSessionStore.getState().accessToken, null);
+  });
+
   it("stores and clears the current auth session in memory", () => {
     const store = useAuthSessionStore.getState();
 
@@ -10,11 +15,13 @@ describe("useAuthSessionStore", () => {
       accessToken: "a".repeat(64),
       accessTokenExpiresAt: "2026-04-08T13:00:00.000Z",
       user: {
+        availablePortals: ["admin"],
         email: "manager@example.com",
         firstName: "Store",
         lastLoginAt: null,
         lastName: "Manager",
         preferredPortal: "admin",
+        emailVerified: false,
         requiresPasswordChange: false,
         slug: "store-manager",
         status: "active",

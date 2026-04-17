@@ -5,9 +5,15 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --font-sans: "Aptos", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --font-sans:
+    "Source Sans 3 Variable", "Aptos", "Segoe UI Variable Text",
+    "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
   --font-heading:
-    "Iowan Old Style", "Book Antiqua", "Palatino Linotype", Georgia, serif;
+    "Source Serif 4 Variable", "Iowan Old Style", "Book Antiqua",
+    "Palatino Linotype", Georgia, serif;
+  --font-mono:
+    "Source Code Pro", "Cascadia Code", "SFMono-Regular", Consolas,
+    "Liberation Mono", monospace;
   --background: oklch(0.982 0.012 84);
   --foreground: oklch(0.29 0.026 42);
   --card: oklch(0.995 0.006 84);
@@ -23,6 +29,10 @@
   --accent: oklch(0.91 0.029 71);
   --accent-foreground: oklch(0.3 0.029 42);
   --destructive: oklch(0.62 0.214 27);
+  --success: oklch(0.58 0.098 160);
+  --success-foreground: oklch(0.24 0.022 42);
+  --warning: oklch(0.72 0.124 72);
+  --warning-foreground: oklch(0.27 0.026 42);
   --border: oklch(0.89 0.015 79);
   --input: oklch(0.972 0.008 83);
   --ring: oklch(0.49 0.089 191);
@@ -31,7 +41,7 @@
   --chart-3: oklch(0.66 0.077 150);
   --chart-4: oklch(0.72 0.054 90);
   --chart-5: oklch(0.43 0.036 35);
-  --radius: 1rem;
+  --radius: 0.25rem;
   --sidebar: oklch(0.968 0.01 84);
   --sidebar-foreground: oklch(0.29 0.026 42);
   --sidebar-primary: oklch(0.49 0.089 191);
@@ -53,6 +63,7 @@
 
 @theme inline {
   --font-heading: var(--font-heading);
+  --font-mono: var(--font-mono);
   --font-sans: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -71,6 +82,10 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning: var(--warning);
+  --color-success-foreground: var(--success-foreground);
+  --color-success: var(--success);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -88,10 +103,10 @@
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-xl: calc(var(--radius) * 1.2);
+  --radius-2xl: calc(var(--radius) * 1.5);
+  --radius-3xl: calc(var(--radius) * 1.8);
+  --radius-4xl: calc(var(--radius) * 2.1);
 }
 
 .dark {
@@ -110,6 +125,10 @@
   --accent: oklch(0.36 0.033 72);
   --accent-foreground: oklch(0.96 0.008 86);
   --destructive: oklch(0.72 0.165 24);
+  --success: oklch(0.72 0.118 162);
+  --success-foreground: oklch(0.94 0.008 86);
+  --warning: oklch(0.8 0.118 78);
+  --warning-foreground: oklch(0.96 0.008 86);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 14%);
   --ring: oklch(0.76 0.087 188);
@@ -139,16 +158,28 @@
 
   html {
     @apply font-sans antialiased;
+    font-kerning: normal;
+    text-rendering: optimizeLegibility;
     scroll-behavior: smooth;
   }
 
   body {
     @apply bg-background text-foreground;
     min-height: 100vh;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
     background:
       radial-gradient(circle at top left, var(--mesh-a), transparent 34%),
       radial-gradient(circle at top right, var(--mesh-b), transparent 28%),
       linear-gradient(180deg, transparent, var(--mesh-c)), var(--background);
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
   }
 
   a {
@@ -163,12 +194,32 @@
   h5,
   h6 {
     font-family: var(--font-heading);
-    letter-spacing: -0.03em;
+    font-optical-sizing: auto;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    line-height: 1.04;
     text-wrap: balance;
+  }
+
+  h1 {
+    letter-spacing: -0.045em;
+    line-height: 0.95;
+  }
+
+  h2,
+  h3 {
+    line-height: 1;
   }
 
   p {
     text-wrap: pretty;
+  }
+
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: var(--font-mono);
   }
 
   ::selection {
@@ -192,7 +243,7 @@
     position: relative;
     overflow: hidden;
     border: 1px solid color-mix(in srgb, var(--border) 78%, white);
-    border-radius: calc(var(--radius) * 2.2);
+    border-radius: calc(var(--radius) * 1.5);
     background: linear-gradient(
       180deg,
       var(--surface-panel-strong),
@@ -217,17 +268,25 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
+    font-family: var(--font-sans);
     text-transform: uppercase;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.16em;
     font-size: 0.74rem;
     font-weight: 600;
     color: var(--muted-foreground);
   }
 
+  .brand-wordmark {
+    font-family: var(--font-heading);
+    font-size: 0.92rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
   .hero-copy {
     max-width: 42rem;
     color: var(--muted-foreground);
-    line-height: 1.7;
+    line-height: 1.72;
   }
 
   .token-row {
@@ -243,7 +302,7 @@
   }
 
   .surface-card {
-    border-radius: calc(var(--radius) * 1.6);
+    border-radius: calc(var(--radius) * 1.15);
     background: color-mix(in srgb, var(--card) 92%, white);
     box-shadow: var(--shadow-soft);
   }
@@ -256,7 +315,7 @@
 
   .support-copy {
     color: var(--muted-foreground);
-    line-height: 1.65;
+    line-height: 1.7;
   }
 
   .split-callout {

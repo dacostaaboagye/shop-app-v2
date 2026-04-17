@@ -1,3 +1,5 @@
+import { resolveOwnerFromEvent } from "./ownership-resolution.policy.js";
+
 export type OwnershipEventType =
   | "assigned"
   | "reassigned"
@@ -65,20 +67,22 @@ export class OwnershipQueryService {
       return null;
     }
 
-    return resolveOwnerFromEvent({
-      event: latestEvent,
-      onWarning: (reason) => {
-        this.reportWarning(
-          {
-            locationId: input.locationId,
-            skuId: input.skuId,
-            timestamp: input.now ?? new Date(),
-          },
-          latestEvent,
-          reason,
-        );
-      },
-    });
+    const resolution = resolveOwnerFromEvent(latestEvent);
+
+    if (resolution.status === "unowned") {
+      this.reportWarning(
+        {
+          locationId: input.locationId,
+          skuId: input.skuId,
+          timestamp: input.now ?? new Date(),
+        },
+        latestEvent,
+        resolution.reason,
+      );
+      return null;
+    }
+
+    return resolution.workerId;
   }
 
   async getOwnerAt(input: {
@@ -92,12 +96,14 @@ export class OwnershipQueryService {
       return null;
     }
 
-    return resolveOwnerFromEvent({
-      event: latestEvent,
-      onWarning: (reason) => {
-        this.reportWarning(input, latestEvent, reason);
-      },
-    });
+    const resolution = resolveOwnerFromEvent(latestEvent);
+
+    if (resolution.status === "unowned") {
+      this.reportWarning(input, latestEvent, resolution.reason);
+      return null;
+    }
+
+    return resolution.workerId;
   }
 
   async getOwnershipHistory(input: {
@@ -144,21 +150,4 @@ export class OwnershipQueryService {
       timestamp: input.timestamp,
     });
   }
-}
-
-function resolveOwnerFromEvent(input: {
-  event: OwnershipEventRecord;
-  onWarning: (reason: OwnershipQueryWarning["reason"]) => void;
-}): string | null {
-  if (input.event.eventType === "cancelled") {
-    input.onWarning("cancelled_owner_event");
-    return null;
-  }
-
-  if (input.event.eventType === "handover_out") {
-    input.onWarning("handover_without_receiver");
-    return null;
-  }
-
-  return input.event.workerId;
 }

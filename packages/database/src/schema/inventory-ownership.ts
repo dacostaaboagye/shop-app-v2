@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   check,
   index,
@@ -65,4 +65,18 @@ export const stockOwnershipEvents = pgTable(
       sql`${table.quantity} > 0`,
     ),
   ],
+);
+
+export const stockOwnershipEventsRelations = relations(
+  stockOwnershipEvents,
+  ({ one }) => ({
+    location: one(locations, {
+      fields: [stockOwnershipEvents.locationId],
+      references: [locations.id],
+    }),
+    worker: one(users, {
+      fields: [stockOwnershipEvents.workerId],
+      references: [users.id],
+    }),
+  }),
 );

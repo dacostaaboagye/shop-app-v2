@@ -41,3 +41,20 @@ location.
 
 This table is intentionally mutable. Unlike ownership events, reservations are
 operational state, not immutable evidence.
+
+## `stock_movements`
+
+Represents append-only synced inventory movements for a single SKU at a single
+location.
+
+- `movement_type`: normalized reason for the balance change such as sale,
+  delivery receipt, dispatch, transfer, or manual adjustment
+- `quantity_delta`: signed change applied to `stock_balances.on_hand_quantity`
+- `source_type` and `source_key`: upstream movement identity used for idempotent
+  sync
+- unique `(sku_id, location_id, source_type, source_key)` index prevents the
+  same movement from being applied twice
+
+This table is append-only operational evidence. Future stock sync and audit
+surfaces should read from it rather than inferring movement history from balance
+snapshots.

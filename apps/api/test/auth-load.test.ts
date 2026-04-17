@@ -75,7 +75,9 @@ describe("auth load evidence", () => {
 
 function createUserRecord(): AuthUserRecord {
   return {
+    availablePortals: [],
     email: "manager@example.com",
+    emailVerified: false,
     firstName: "Store",
     id: "usr_123",
     lastLoginAt: null,

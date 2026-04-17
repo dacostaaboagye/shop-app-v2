@@ -1,0 +1,92 @@
+import type { AdminMediaRecord } from "@shop/contracts";
+import { Star, Trash2 } from "lucide-react";
+import Image from "next/image";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+
+type Props = {
+  canManage: boolean;
+  isPendingDelete: boolean;
+  isPendingSetPrimary: boolean;
+  items: AdminMediaRecord[];
+  onDelete: (id: string) => void;
+  onSetPrimary: (id: string) => void;
+};
+
+export function MediaGallery({
+  canManage,
+  isPendingDelete,
+  isPendingSetPrimary,
+  items,
+  onDelete,
+  onSetPrimary,
+}: Props) {
+  if (items.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        No media yet. Upload an image or video below.
+      </p>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+      {items.map((item) => (
+        <div className="flex flex-col gap-1" key={item.assignmentId}>
+          <div className="relative aspect-square overflow-hidden rounded-md border border-border/60 bg-muted">
+            {item.mediaType === "image" ? (
+              <Image
+                alt={item.altText ?? item.entitySlug}
+                className="object-cover"
+                fill
+                src={item.publicUrl}
+                unoptimized
+              />
+            ) : (
+              <video
+                className="size-full object-cover"
+                muted
+                src={item.publicUrl}
+              />
+            )}
+            {item.isPrimary ? (
+              <Badge
+                className="absolute left-1 top-1 px-1 py-0 text-[0.6rem]"
+                variant="default"
+              >
+                Primary
+              </Badge>
+            ) : null}
+          </div>
+          {canManage ? (
+            <div className="flex gap-1">
+              {!item.isPrimary ? (
+                <Button
+                  className="h-6 flex-1 px-2 text-xs"
+                  disabled={isPendingSetPrimary}
+                  onClick={() => onSetPrimary(item.assignmentId)}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  <Star className="size-3" />
+                  Primary
+                </Button>
+              ) : null}
+              <Button
+                className="h-6 px-2"
+                disabled={isPendingDelete}
+                onClick={() => onDelete(item.assignmentId)}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                <Trash2 className="size-3 text-destructive" />
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}

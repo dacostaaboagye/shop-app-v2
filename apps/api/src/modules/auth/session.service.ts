@@ -7,6 +7,7 @@ import type {
   SessionContext,
   SessionIssuer,
 } from "./authentication.service.js";
+import { normalizePreferredPortal } from "./portal-access.js";
 
 export type RefreshSessionCommand = {
   ipAddress?: string;
@@ -189,12 +190,19 @@ export function hashRefreshToken(token: string): string {
 }
 
 function mapAuthUser(user: AuthUserRecord): IssuedSession["user"] {
+  const availablePortals = user.availablePortals ?? [];
+
   return {
+    availablePortals,
     email: user.email,
+    emailVerified: user.emailVerified,
     firstName: user.firstName,
     lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
     lastName: user.lastName,
-    preferredPortal: user.preferredPortal,
+    preferredPortal: normalizePreferredPortal({
+      availablePortals,
+      preferredPortal: user.preferredPortal,
+    }),
     requiresPasswordChange: user.requiresPasswordChange,
     slug: user.slug,
     status: user.status,

@@ -2,11 +2,16 @@ import {
   type AuthSession,
   authSessionSchema,
   type LoginRequest,
+  type RegisterRequest,
 } from "@shop/contracts";
 import { parseProblemDetails } from "@/lib/errors/problem-details";
 import { ApiError } from "@/lib/react-query/query-client";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
 import { resolveApiUrl } from "./resolve-api-url";
+
+export function getGoogleOAuthUrl(): string {
+  return resolveApiUrl("/api/auth/oauth/google");
+}
 
 type JsonRequestInit = Omit<RequestInit, "body"> & {
   body?: unknown;
@@ -16,6 +21,17 @@ let refreshInFlight: Promise<AuthSession | null> | null = null;
 
 export async function login(input: LoginRequest): Promise<AuthSession> {
   const session = await requestAuthSession("/api/auth/login", {
+    body: input,
+    method: "POST",
+  });
+
+  useAuthSessionStore.getState().setSession(session);
+
+  return session;
+}
+
+export async function register(input: RegisterRequest): Promise<AuthSession> {
+  const session = await requestAuthSession("/api/auth/register", {
     body: input,
     method: "POST",
   });
@@ -50,6 +66,7 @@ export async function refreshAccessToken(): Promise<AuthSession | null> {
 }
 
 async function refreshAccessTokenOnce(): Promise<AuthSession | null> {
+  const previousSession = getStoredSessionSnapshot();
   useAuthSessionStore.getState().setRefreshing();
 
   try {
@@ -61,10 +78,15 @@ async function refreshAccessTokenOnce(): Promise<AuthSession | null> {
 
     return session;
   } catch (error) {
-    useAuthSessionStore.getState().clearSession();
-
     if (error instanceof ApiError && error.status === 401) {
+      useAuthSessionStore.getState().clearSession();
       return null;
+    }
+
+    if (previousSession) {
+      useAuthSessionStore.getState().setSession(previousSession);
+    } else {
+      useAuthSessionStore.getState().clearSession();
     }
 
     throw error;
@@ -114,4 +136,49 @@ async function toApiError(response: Response): Promise<ApiError> {
     problem,
     status: response.status,
   });
+}
+
+export async function forgotPassword(email: string): Promise<void> {
+  await request("/api/auth/forgot-password", {
+    body: { email },
+    method: "POST",
+  });
+}
+
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<void> {
+  await request("/api/auth/reset-password", {
+    body: { token, newPassword },
+    method: "POST",
+  });
+}
+
+export async function verifyEmail(token: string): Promise<void> {
+  await request("/api/auth/verify-email", {
+    body: { token },
+    method: "POST",
+  });
+}
+
+export async function resendVerification(): Promise<void> {
+  await request("/api/auth/resend-verification", {
+    method: "POST",
+  });
+}
+
+function getStoredSessionSnapshot(): AuthSession | null {
+  const { accessToken, accessTokenExpiresAt, user } =
+    useAuthSessionStore.getState();
+
+  if (!accessToken || !accessTokenExpiresAt || !user) {
+    return null;
+  }
+
+  return {
+    accessToken,
+    accessTokenExpiresAt,
+    user,
+  };
 }

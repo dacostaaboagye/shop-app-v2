@@ -1,4 +1,16 @@
-import type { Pool } from "pg";
+import {
+  catalogBrands,
+  catalogCategories,
+  catalogProducts,
+  locations,
+  locationZones,
+  productVariants,
+  roles,
+  slugRedirects,
+  users,
+} from "@shop/database";
+import { and, eq } from "drizzle-orm";
+import type { ApiDatabase } from "../../infrastructure/database.js";
 import type {
   SlugEntityType,
   SlugLookupResult,
@@ -6,14 +18,18 @@ import type {
   SlugRepository,
 } from "./slug.service.js";
 
-const slugTableByEntityType: Record<SlugEntityType, string> = {
-  location: "locations",
-  role: "roles",
-  user: "users",
-};
+type SlugTable =
+  | typeof catalogBrands
+  | typeof catalogCategories
+  | typeof catalogProducts
+  | typeof locations
+  | typeof locationZones
+  | typeof productVariants
+  | typeof roles
+  | typeof users;
 
 export class PostgresSlugRepository implements SlugRepository {
-  constructor(private readonly pool: Pool) {}
+  constructor(private readonly db: ApiDatabase) {}
 
   async lookupSlug(input: {
     entityType: SlugEntityType;
@@ -28,19 +44,19 @@ export class PostgresSlugRepository implements SlugRepository {
       };
     }
 
-    const redirectResult = await this.pool.query<{
-      entityUuid: string;
-      newSlug: string;
-    }>(
-      `
-        SELECT entity_uuid AS "entityUuid", new_slug AS "newSlug"
-        FROM slug_redirects
-        WHERE entity_type = $1 AND old_slug = $2
-        LIMIT 1
-      `,
-      [input.entityType, input.slug],
-    );
-    const redirect = redirectResult.rows[0];
+    const [redirect] = await this.db
+      .select({
+        entityUuid: slugRedirects.entityUuid,
+        newSlug: slugRedirects.newSlug,
+      })
+      .from(slugRedirects)
+      .where(
+        and(
+          eq(slugRedirects.entityType, input.entityType),
+          eq(slugRedirects.oldSlug, input.slug),
+        ),
+      )
+      .limit(1);
 
     if (!redirect) {
       return { status: "missing" };
@@ -54,25 +70,48 @@ export class PostgresSlugRepository implements SlugRepository {
   }
 
   async recordRedirect(input: SlugRedirectRecord): Promise<void> {
-    await this.pool.query(
-      `
-        INSERT INTO slug_redirects (entity_type, entity_uuid, old_slug, new_slug)
-        VALUES ($1, $2, $3, $4)
-      `,
-      [input.entityType, input.entityUuid, input.oldSlug, input.newSlug],
-    );
+    await this.db.insert(slugRedirects).values({
+      entityType: input.entityType,
+      entityUuid: input.entityUuid,
+      oldSlug: input.oldSlug,
+      newSlug: input.newSlug,
+    });
   }
 
   private async findActiveEntity(input: {
     entityType: SlugEntityType;
     slug: string;
   }): Promise<{ entityUuid: string } | null> {
-    const tableName = slugTableByEntityType[input.entityType];
-    const result = await this.pool.query<{ entityUuid: string }>(
-      `SELECT id AS "entityUuid" FROM ${tableName} WHERE slug = $1 LIMIT 1`,
-      [input.slug],
-    );
+    switch (input.entityType) {
+      case "catalog_brand":
+        return this.findActiveEntityInTable(catalogBrands, input.slug);
+      case "catalog_category":
+        return this.findActiveEntityInTable(catalogCategories, input.slug);
+      case "catalog_product":
+        return this.findActiveEntityInTable(catalogProducts, input.slug);
+      case "location":
+        return this.findActiveEntityInTable(locations, input.slug);
+      case "location_zone":
+        return this.findActiveEntityInTable(locationZones, input.slug);
+      case "product_variant":
+        return this.findActiveEntityInTable(productVariants, input.slug);
+      case "role":
+        return this.findActiveEntityInTable(roles, input.slug);
+      case "user":
+        return this.findActiveEntityInTable(users, input.slug);
+    }
+  }
 
-    return result.rows[0] ?? null;
+  private async findActiveEntityInTable(
+    table: SlugTable,
+    slug: string,
+  ): Promise<{ entityUuid: string } | null> {
+    const [row] = await this.db
+      .select({ entityUuid: table.id })
+      .from(table)
+      .where(eq(table.slug, slug))
+      .limit(1);
+
+    return row ?? null;
   }
 }

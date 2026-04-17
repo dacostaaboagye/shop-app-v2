@@ -1,37 +1,26 @@
 import {
-  authSessionSchema,
+  authPermissionSetSchema,
+  authUserSchema,
   loginRequestSchema,
   registerRequestSchema,
+  updateProfileRequestSchema,
 } from "@shop/contracts";
-import type { FastifyInstance, FastifyRequest } from "fastify";
-import { AppError } from "../_core/errors/app-error.js";
+import type { FastifyInstance } from "fastify";
 import type { RouteDefinition } from "../_core/route-contract.js";
-import type { IssuedSession, LoginCommand } from "./authentication.service.js";
+import { registerOAuthRoutes } from "./auth-oauth.routes.js";
+import { registerRecoveryRoutes } from "./auth-recovery.routes.js";
+import {
+  type AuthRouteDependencies,
+  createUnavailableAuthDependencies,
+  getAuthenticatedUserId,
+  getRefreshToken,
+  getRequestMetadata,
+  toPublicSession,
+} from "./auth-route-support.js";
 import {
   clearRefreshTokenCookie,
-  refreshTokenCookieName,
   setRefreshTokenCookie,
 } from "./refresh-token-cookie.js";
-import type { RegisterCommand } from "./registration.service.js";
-import type {
-  LogoutSessionCommand,
-  RefreshSessionCommand,
-} from "./session.service.js";
-
-type AuthRouteDependencies = {
-  authenticationService: {
-    login(command: LoginCommand): Promise<IssuedSession>;
-  };
-  logoutSessionService: {
-    logout(command: LogoutSessionCommand): Promise<void>;
-  };
-  registrationService: {
-    register(command: RegisterCommand): Promise<IssuedSession>;
-  };
-  refreshSessionService: {
-    refresh(command: RefreshSessionCommand): Promise<IssuedSession>;
-  };
-};
 
 const registerRoute: RouteDefinition = {
   access: { kind: "public" },
@@ -57,12 +46,33 @@ const logoutRoute: RouteDefinition = {
   url: "/api/auth/logout",
 };
 
+const currentUserRoute: RouteDefinition = {
+  access: { kind: "authenticated" },
+  method: "GET",
+  url: "/api/auth/me",
+};
+
+const updateProfileRoute: RouteDefinition = {
+  access: { kind: "authenticated" },
+  method: "PATCH",
+  url: "/api/auth/me",
+};
+
+const currentUserPermissionsRoute: RouteDefinition = {
+  access: { kind: "authenticated" },
+  method: "GET",
+  url: "/api/auth/me/permissions",
+};
+
 export function registerAuthRoutes(
   server: FastifyInstance,
   dependencies: AuthRouteDependencies = createUnavailableAuthDependencies(),
 ) {
   server.route({
-    config: { access: registerRoute.access },
+    config: {
+      access: registerRoute.access,
+      rateLimit: { max: 5, timeWindow: "1 hour" },
+    },
     method: registerRoute.method,
     url: registerRoute.url,
     async handler(request, reply) {
@@ -81,7 +91,10 @@ export function registerAuthRoutes(
   });
 
   server.route({
-    config: { access: loginRoute.access },
+    config: {
+      access: loginRoute.access,
+      rateLimit: { max: 10, timeWindow: "15 minutes" },
+    },
     method: loginRoute.method,
     url: loginRoute.url,
     async handler(request, reply) {
@@ -130,88 +143,50 @@ export function registerAuthRoutes(
       return reply.status(204).send();
     },
   });
-}
 
-function createUnavailableAuthDependencies(): AuthRouteDependencies {
-  return {
-    authenticationService: {
-      async login() {
-        throw unavailableAuthError();
-      },
-    },
-    registrationService: {
-      async register() {
-        throw unavailableAuthError();
-      },
-    },
-    logoutSessionService: {
-      async logout() {
-        throw unavailableAuthError();
-      },
-    },
-    refreshSessionService: {
-      async refresh() {
-        throw unavailableAuthError();
-      },
-    },
-  };
-}
+  server.route({
+    config: { access: currentUserRoute.access },
+    method: currentUserRoute.method,
+    url: currentUserRoute.url,
+    async handler(request) {
+      const user = await dependencies.currentUserService.getCurrentUser(
+        getAuthenticatedUserId(request),
+      );
 
-function unavailableAuthError(): AppError {
-  return new AppError({
-    code: "internal_error",
-    detail: "Authentication services are not configured for this environment.",
-    statusCode: 503,
-    title: "Authentication unavailable",
+      return authUserSchema.parse(user);
+    },
   });
-}
 
-function getRequestMetadata(request: FastifyRequest): {
-  ipAddress?: string;
-  userAgent?: string;
-} {
-  const metadata: {
-    ipAddress?: string;
-    userAgent?: string;
-  } = {};
-  const userAgent = getUserAgent(request);
+  server.route({
+    config: { access: currentUserPermissionsRoute.access },
+    method: currentUserPermissionsRoute.method,
+    url: currentUserPermissionsRoute.url,
+    async handler(request) {
+      const permissions =
+        await dependencies.currentUserPermissionService.getCurrentPermissions(
+          getAuthenticatedUserId(request),
+        );
 
-  if (request.ip) {
-    metadata.ipAddress = request.ip;
-  }
-
-  if (userAgent) {
-    metadata.userAgent = userAgent;
-  }
-
-  return metadata;
-}
-
-function getUserAgent(request: FastifyRequest): string | undefined {
-  const userAgent = request.headers["user-agent"];
-
-  return Array.isArray(userAgent) ? userAgent[0] : userAgent;
-}
-
-function getRefreshToken(request: FastifyRequest): string {
-  const refreshToken = request.cookies[refreshTokenCookieName];
-
-  if (!refreshToken) {
-    throw new AppError({
-      code: "unauthorized",
-      detail: "Refresh token cookie is missing or invalid.",
-      statusCode: 401,
-      title: "Invalid session",
-    });
-  }
-
-  return refreshToken;
-}
-
-function toPublicSession(session: IssuedSession) {
-  return authSessionSchema.parse({
-    accessToken: session.accessToken,
-    accessTokenExpiresAt: session.accessTokenExpiresAt,
-    user: session.user,
+      return authPermissionSetSchema.parse(permissions);
+    },
   });
+
+  server.route({
+    config: { access: updateProfileRoute.access },
+    method: updateProfileRoute.method,
+    url: updateProfileRoute.url,
+    async handler(request, reply) {
+      const { preferredPortal } = updateProfileRequestSchema.parse(
+        request.body,
+      );
+      await dependencies.profileUpdateService.updatePreferredPortal(
+        getAuthenticatedUserId(request),
+        preferredPortal,
+      );
+      return reply.status(204).send();
+    },
+  });
+
+  registerOAuthRoutes(server, dependencies);
+  registerRecoveryRoutes(server, dependencies);
 }
