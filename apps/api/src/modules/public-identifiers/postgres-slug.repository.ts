@@ -18,16 +18,15 @@ import type {
   SlugRepository,
 } from "./slug.service.js";
 
-const schemaByEntityType: Record<SlugEntityType, any> = {
-  catalog_brand: catalogBrands,
-  catalog_category: catalogCategories,
-  catalog_product: catalogProducts,
-  location: locations,
-  location_zone: locationZones,
-  product_variant: productVariants,
-  role: roles,
-  user: users,
-};
+type SlugTable =
+  | typeof catalogBrands
+  | typeof catalogCategories
+  | typeof catalogProducts
+  | typeof locations
+  | typeof locationZones
+  | typeof productVariants
+  | typeof roles
+  | typeof users;
 
 export class PostgresSlugRepository implements SlugRepository {
   constructor(private readonly db: ApiDatabase) {}
@@ -83,13 +82,34 @@ export class PostgresSlugRepository implements SlugRepository {
     entityType: SlugEntityType;
     slug: string;
   }): Promise<{ entityUuid: string } | null> {
-    const table = schemaByEntityType[input.entityType];
-    if (!table) return null;
+    switch (input.entityType) {
+      case "catalog_brand":
+        return this.findActiveEntityInTable(catalogBrands, input.slug);
+      case "catalog_category":
+        return this.findActiveEntityInTable(catalogCategories, input.slug);
+      case "catalog_product":
+        return this.findActiveEntityInTable(catalogProducts, input.slug);
+      case "location":
+        return this.findActiveEntityInTable(locations, input.slug);
+      case "location_zone":
+        return this.findActiveEntityInTable(locationZones, input.slug);
+      case "product_variant":
+        return this.findActiveEntityInTable(productVariants, input.slug);
+      case "role":
+        return this.findActiveEntityInTable(roles, input.slug);
+      case "user":
+        return this.findActiveEntityInTable(users, input.slug);
+    }
+  }
 
+  private async findActiveEntityInTable(
+    table: SlugTable,
+    slug: string,
+  ): Promise<{ entityUuid: string } | null> {
     const [row] = await this.db
       .select({ entityUuid: table.id })
       .from(table)
-      .where(eq(table.slug, input.slug))
+      .where(eq(table.slug, slug))
       .limit(1);
 
     return row ?? null;

@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
+import { ApiError } from "@/lib/react-query/query-client";
 
 type CatalogDeleteDialogProps = {
   entityName: string;
@@ -37,6 +38,18 @@ export function CatalogDeleteDialog({
   const queryClient = useQueryClient();
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const getErrorMessage = (error: unknown) => {
+    if (error instanceof ApiError) {
+      return error.problem?.detail ?? error.message;
+    }
+
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    return "An unexpected error occurred.";
+  };
+
   const mutation = useMutation({
     mutationFn: () => onDelete(entitySlug),
     onSuccess: () => {
@@ -51,9 +64,8 @@ export function CatalogDeleteDialog({
       toast.success(`${labels[entityType]} deleted successfully.`);
       onClose();
     },
-    onError: (error: any) => {
-      const detail = error?.detail || "An unexpected error occurred.";
-      toast.error(detail);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error));
     },
     onSettled: () => {
       setIsDeleting(false);

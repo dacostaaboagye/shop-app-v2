@@ -8,6 +8,7 @@
     "dev": "pnpm --filter @shop/contracts build && next dev",
     "lint": "biome check src",
     "prebuild": "pnpm --filter @shop/contracts build",
+    "pretest": "pnpm --filter @shop/contracts build",
     "test": "tsx --test src/**/*.test.ts src/**/*.test.tsx",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

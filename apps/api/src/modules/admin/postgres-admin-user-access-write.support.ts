@@ -8,11 +8,6 @@ export type ResolvedUser = {
   slug: string;
 };
 
-type ResolvedRole = {
-  id: string;
-  slug: string;
-};
-
 export async function resolveUser(tx: ApiDatabase, slug: string) {
   const user = await tx.query.users.findFirst({
     where: (u, { eq }) => eq(u.slug, slug),

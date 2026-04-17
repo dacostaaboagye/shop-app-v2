@@ -135,6 +135,7 @@ export function PageHeader({
       ) : null}
       <div className="flex min-w-0 items-center gap-4">
         {image ? (
+          // biome-ignore lint/performance/noImgElement: This header renders arbitrary media URLs from storage backends that are not constrained to Next image domains.
           <img
             alt=""
             className="h-14 w-14 shrink-0 rounded-xl object-cover ring-1 ring-border/50"

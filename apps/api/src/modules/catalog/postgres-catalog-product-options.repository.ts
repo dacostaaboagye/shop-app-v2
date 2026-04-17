@@ -56,13 +56,13 @@ export class PostgresCatalogProductOptionsRepository {
       if (!option) throw new Error("Unable to create option");
 
       const values: AdminProductOption["values"] = [];
-      for (let i = 0; i < payload.values.length; i++) {
+      for (const [position, value] of payload.values.entries()) {
         const [val] = await tx
           .insert(catalogProductOptionValues)
           .values({
             optionId: option.id,
-            value: payload.values[i]!,
-            position: i,
+            value,
+            position,
             createdAt: now,
             updatedAt: now,
           })
