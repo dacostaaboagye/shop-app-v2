@@ -17,7 +17,6 @@ import { PostgresCatalogCategoryQueryRepository } from "./postgres-catalog-categ
 import { PostgresCatalogCategoryWriteRepository } from "./postgres-catalog-category-write.repository.js";
 import { PostgresCatalogDeleteGuard } from "./postgres-catalog-delete-guard.js";
 import { PostgresCatalogMediaRepository } from "./postgres-catalog-media.repository.js";
-import { PostgresCatalogProductArchiveGuard } from "./postgres-catalog-product-archive-guard.js";
 import { PostgresCatalogProductDeleteGuard } from "./postgres-catalog-product-delete-guard.js";
 import { PostgresCatalogProductOptionsRepository } from "./postgres-catalog-product-options.repository.js";
 import { PostgresCatalogProductQueryRepository } from "./postgres-catalog-product-query.repository.js";
@@ -55,9 +54,6 @@ export function createCatalogRuntime(
     databaseRuntime.db,
   );
   const catalogDeleteGuard = new PostgresCatalogDeleteGuard(databaseRuntime.db);
-  const _productArchiveGuard = new PostgresCatalogProductArchiveGuard(
-    databaseRuntime.db,
-  );
 
   const productCommands = new CatalogProductCommands(
     databaseRuntime.db,
