@@ -10,8 +10,8 @@ import {
   AppDataTable,
   type AppDataTableSort,
 } from "@/components/data-table/app-data-table";
+import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -67,7 +67,6 @@ export function UsersPageClient({
     ? rawPageSize
     : 10;
   const page = readPositiveIntParam(searchParams, "page", 1);
-
   useEffect(() => setDraftSearch(query), [query]);
 
   useEffect(() => {
@@ -186,12 +185,14 @@ export function UsersPageClient({
       ) : (
         <>
           {usersQuery.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Unable to load users</AlertTitle>
-              <AlertDescription>
-                {getUsersErrorMessage(usersQuery.error)}
-              </AlertDescription>
-            </Alert>
+            <AppErrorBanner
+              detail={getUsersErrorMessage(usersQuery.error)}
+              error={usersQuery.error}
+              onRetry={() => {
+                void usersQuery.refetch();
+              }}
+              title="Unable to load users"
+            />
           ) : null}
           <AppDataTable
             columns={userTableColumns}

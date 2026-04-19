@@ -3,6 +3,7 @@
 import type { AdminUpdateLocationRequest } from "@shop/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useAuthorization } from "@/components/providers/authorization-provider";
 import { PageShell } from "@/components/system/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,10 +12,6 @@ import {
   fetchAdminLocation,
   updateAdminLocation,
 } from "@/lib/react-query/admin-location-write";
-import {
-  currentUserPermissionsQueryKey,
-  fetchCurrentUserPermissions,
-} from "@/lib/react-query/auth";
 import { toast } from "@/lib/toast";
 import { LocationDetailView } from "./location-detail-view";
 
@@ -26,24 +23,21 @@ const LOCATION_DETAIL_SKELETON_KEYS = [
 ] as const;
 
 export function LocationDetailPageClient({ slug }: { slug: string }) {
+  const { can } = useAuthorization();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const locationQuery = useQuery({
     queryFn: () => fetchAdminLocation(slug),
     queryKey: adminLocationQueryKey(slug),
   });
-  const permissionsQuery = useQuery({
-    queryFn: fetchCurrentUserPermissions,
-    queryKey: currentUserPermissionsQueryKey,
-  });
-  const canManageMedia =
-    permissionsQuery.data?.permissions.includes("catalog.media.manage") ??
-    false;
+  const canManageMedia = can("catalog.media.manage");
   const updateMutation = useMutation({
     mutationFn: (input: AdminUpdateLocationRequest) =>
       updateAdminLocation(slug, input),
-    onSuccess: (updated) => {
-      queryClient.setQueryData(adminLocationQueryKey(slug), updated);
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: adminLocationQueryKey(slug),
+      });
       void queryClient.invalidateQueries({
         exact: false,
         queryKey: ["admin", "locations"],
@@ -94,7 +88,13 @@ export function LocationDetailPageClient({ slug }: { slug: string }) {
       isPending={updateMutation.isPending}
       location={locationQuery.data}
       onCancelEdit={() => setIsEditing(false)}
-      onStartEdit={() => setIsEditing(true)}
+      onStartEdit={() => {
+        if (!can("locations.create")) {
+          return;
+        }
+
+        setIsEditing(true);
+      }}
       onSubmit={(values) => updateMutation.mutate(values)}
     />
   );

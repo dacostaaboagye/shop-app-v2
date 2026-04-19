@@ -6,7 +6,7 @@ import { LogIn } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { AppFormField } from "@/components/forms/app-form-field";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AppErrorBanner } from "@/components/system/app-error";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -150,10 +150,11 @@ export function AuthLoginForm() {
         </div>
 
         {authError ? (
-          <Alert variant="destructive">
-            <AlertTitle>{authError.title}</AlertTitle>
-            <AlertDescription>{authError.detail}</AlertDescription>
-          </Alert>
+          <AppErrorBanner
+            detail={authError.detail}
+            error={loginMutation.error}
+            title={authError.title}
+          />
         ) : null}
 
         <form.Subscribe

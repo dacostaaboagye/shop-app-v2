@@ -43,6 +43,7 @@ Agents working on the frontend must follow these rules exactly.
 - Every async surface needs at least one loading, empty, and error state
 - Frontend error display must consume the shared problem-details shape where possible
 - Keep user-facing error copy calm, specific, and recoverable
+- Use shared error wrappers such as `AppErrorBanner` and `AppErrorState` for failures instead of hand-rolled destructive alerts
 - Do not mirror server data into Zustand when React Query is the correct cache owner
 
 ## Accessibility rules

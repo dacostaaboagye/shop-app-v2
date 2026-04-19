@@ -221,6 +221,14 @@ describe("auth routes", () => {
           async getCurrentPermissions(userId) {
             assert.equal(userId, "usr_123");
             return {
+              locationScopes: [
+                {
+                  locationId: "11111111-1111-4111-8111-111111111111",
+                  locationName: "Downtown Store",
+                  locationSlug: "downtown-store",
+                  permissions: ["inventory.read"],
+                },
+              ],
               permissions: ["inventory.read", "users.view"],
             };
           },
@@ -246,6 +254,14 @@ describe("auth routes", () => {
 
     assert.equal(response.statusCode, 200);
     assert.deepEqual(response.json(), {
+      locationScopes: [
+        {
+          locationId: "11111111-1111-4111-8111-111111111111",
+          locationName: "Downtown Store",
+          locationSlug: "downtown-store",
+          permissions: ["inventory.read"],
+        },
+      ],
       permissions: ["inventory.read", "users.view"],
     });
   });

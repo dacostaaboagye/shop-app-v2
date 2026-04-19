@@ -7,6 +7,7 @@ import type {
   AdminStockBalanceListResponse,
   AdminStockBalanceSummary,
   AdminStockCountRequest,
+  LocationStockBalanceQuery,
 } from "@shop/contracts";
 import { fetchJson } from "@/lib/react-query/fetch-json";
 
@@ -83,6 +84,46 @@ export async function fetchAdminReservations(
   if (query.q) params.set("q", query.q);
   return fetchJson<AdminReservationListResponse>(
     `/api/admin/stock/reservations/active?${params.toString()}`,
+    undefined,
+    { auth: "required" },
+  );
+}
+
+export const workerStockBalancesQueryKey = (
+  query: Partial<LocationStockBalanceQuery>,
+) => ["stock", "balances", "worker", query] as const;
+
+export const managerStockBalancesQueryKey = (
+  query: Partial<LocationStockBalanceQuery>,
+) => ["stock", "balances", "manager", query] as const;
+
+export async function fetchWorkerStockBalances(
+  query: LocationStockBalanceQuery,
+): Promise<AdminStockBalanceListResponse> {
+  const params = new URLSearchParams({
+    locationId: query.locationId,
+    page: String(query.page),
+    pageSize: String(query.pageSize),
+  });
+  if (query.q) params.set("q", query.q);
+  return fetchJson<AdminStockBalanceListResponse>(
+    `/api/worker/stock/balances?${params.toString()}`,
+    undefined,
+    { auth: "required" },
+  );
+}
+
+export async function fetchManagerStockBalances(
+  query: LocationStockBalanceQuery,
+): Promise<AdminStockBalanceListResponse> {
+  const params = new URLSearchParams({
+    locationId: query.locationId,
+    page: String(query.page),
+    pageSize: String(query.pageSize),
+  });
+  if (query.q) params.set("q", query.q);
+  return fetchJson<AdminStockBalanceListResponse>(
+    `/api/manager/stock/balances?${params.toString()}`,
     undefined,
     { auth: "required" },
   );

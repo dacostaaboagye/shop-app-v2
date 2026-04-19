@@ -151,6 +151,42 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
     description:
       "View transfer requests involving the worker's assigned stock.",
   },
+  {
+    key: "pos.sales.process",
+    description: "Process a POS sale and generate an invoice.",
+  },
+  {
+    key: "pos.sales.view",
+    description: "View own POS sales history and invoices.",
+  },
+  {
+    key: "pos.sales.manage",
+    description: "View all POS sales and invoices for a managed location.",
+  },
+  {
+    key: "stock.assignments.manage",
+    description: "Assign and reassign product variants to workers.",
+  },
+  {
+    key: "stock.assignments.view",
+    description: "View all current stock assignments at a location.",
+  },
+  {
+    key: "stock.assignments.own.view",
+    description: "View own assigned product variants.",
+  },
+  {
+    key: "stock.handovers.manage",
+    description: "Initiate and end stock ownership handovers.",
+  },
+  {
+    key: "stock.supply.request",
+    description: "Create and cancel stock supply requests.",
+  },
+  {
+    key: "stock.supply.manage",
+    description: "View, approve, and reject stock supply requests for a location.",
+  },
 ] as const;
 
 const SYSTEM_ROLES: readonly SystemRole[] = [
@@ -193,6 +229,15 @@ const SYSTEM_ROLES: readonly SystemRole[] = [
       "worker.handovers.view",
       "worker.stock.view",
       "worker.transfers.view",
+      "pos.sales.process",
+      "pos.sales.view",
+      "pos.sales.manage",
+      "stock.assignments.manage",
+      "stock.assignments.view",
+      "stock.assignments.own.view",
+      "stock.handovers.manage",
+      "stock.supply.request",
+      "stock.supply.manage",
     ],
   },
   {
@@ -209,6 +254,12 @@ const SYSTEM_ROLES: readonly SystemRole[] = [
       "worker.handovers.view",
       "worker.stock.view",
       "worker.transfers.view",
+      "pos.sales.manage",
+      "stock.assignments.manage",
+      "stock.assignments.view",
+      "stock.assignments.own.view",
+      "stock.handovers.manage",
+      "stock.supply.manage",
     ],
   },
   {
@@ -221,6 +272,11 @@ const SYSTEM_ROLES: readonly SystemRole[] = [
       "worker.handovers.view",
       "worker.stock.view",
       "worker.transfers.view",
+      "pos.sales.process",
+      "pos.sales.view",
+      "stock.assignments.own.view",
+      "stock.handovers.manage",
+      "stock.supply.request",
     ],
   },
   {

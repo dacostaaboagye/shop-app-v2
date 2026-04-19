@@ -10,14 +10,15 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { AppDataTable } from "@/components/data-table/app-data-table";
+import { AppErrorBanner } from "@/components/system/app-error";
 import {
   PageHeader,
   PageShell,
   StatCard,
 } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getAppErrorMessage } from "@/lib/errors/app-error";
 import {
   adminAuditQueryKey,
   fetchAdminAudit,
@@ -146,12 +147,14 @@ export function AuditPageClient() {
       ) : (
         <>
           {auditQuery.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Unable to load audit entries</AlertTitle>
-              <AlertDescription>
-                {getErrorMessage(auditQuery.error)}
-              </AlertDescription>
-            </Alert>
+            <AppErrorBanner
+              detail={getErrorMessage(auditQuery.error)}
+              error={auditQuery.error}
+              onRetry={() => {
+                void auditQuery.refetch();
+              }}
+              title="Unable to load audit entries"
+            />
           ) : null}
           <AppDataTable
             columns={auditTableColumns}
@@ -183,7 +186,9 @@ export function AuditPageClient() {
 }
 
 function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Failed to load audit log.";
+  return getAppErrorMessage(error, {
+    fallbackDetail: "Failed to load audit log.",
+  });
 }
 
 function getAuditEntryKey(row: {

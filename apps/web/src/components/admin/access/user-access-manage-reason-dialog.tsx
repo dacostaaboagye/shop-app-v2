@@ -1,7 +1,9 @@
 "use client";
 
+import type { AdminLocationSummary } from "@shop/contracts";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { AppFormField } from "@/components/forms/app-form-field";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -14,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { FieldGroup } from "@/components/ui/field";
+import { Select } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -26,23 +29,34 @@ import {
 import { toast } from "@/lib/toast";
 import {
   getDialogMeta,
+  isReasonDialogPending,
+  roleRequiresLocationScope,
   type ReasonDialogState,
 } from "./user-access-manage-support";
 
 export function UserAccessManageReasonDialog({
+  allLocations,
   onClose,
   open,
   slug,
   state,
 }: {
+  allLocations: readonly AdminLocationSummary[];
   onClose: () => void;
   open: boolean;
   slug: string;
   state: ReasonDialogState;
 }) {
   const queryClient = useQueryClient();
+  const [wasSubmitted, setWasSubmitted] = useState(false);
   const mutation = useMutation({
-    mutationFn: async ({ reason }: { reason: string }) => {
+    mutationFn: async ({
+      locationSlug,
+      reason,
+    }: {
+      locationSlug: string;
+      reason: string;
+    }) => {
       switch (state.kind) {
         case "allow-override":
           return setAdminUserPermissionOverride(slug, {
@@ -53,7 +67,7 @@ export function UserAccessManageReasonDialog({
           });
         case "assign-role":
           return assignAdminUserRole(slug, {
-            locationSlug: null,
+            locationSlug: locationSlug || null,
             reason,
             roleSlug: state.roleSlug,
           });
@@ -69,13 +83,13 @@ export function UserAccessManageReasonDialog({
             slug,
             state.override.permissionKey,
             {
-              locationSlug: null,
+              locationSlug: state.override.locationSlug,
               reason,
             },
           );
         case "revoke-role":
           return revokeAdminUserRole(slug, state.assignment.roleSlug, {
-            locationSlug: null,
+            locationSlug: state.assignment.locationSlug,
             reason,
           });
         default:
@@ -87,13 +101,18 @@ export function UserAccessManageReasonDialog({
         queryKey: adminUserAccessDetailQueryKey(slug),
       });
       toast.success("Access updated");
+      setWasSubmitted(false);
       form.reset();
       onClose();
     },
   });
   const form = useForm({
-    defaultValues: { reason: "" },
-    onSubmit: async ({ value }) => mutation.mutate({ reason: value.reason }),
+    defaultValues: { locationSlug: "", reason: "" },
+    onSubmit: async ({ value }) =>
+      mutation.mutateAsync({
+        locationSlug: value.locationSlug.trim(),
+        reason: value.reason,
+      }),
   });
 
   if (state.kind === "closed") {
@@ -101,6 +120,15 @@ export function UserAccessManageReasonDialog({
   }
 
   const meta = getDialogMeta(state);
+  const scopeIsRequired =
+    state.kind === "assign-role" && roleRequiresLocationScope(state.roleSlug);
+  const activeLocations = allLocations.filter(
+    (location) => location.status === "active",
+  );
+  const isPending = isReasonDialogPending({
+    formIsSubmitting: form.state.isSubmitting,
+    mutationIsPending: mutation.isPending,
+  });
 
   return (
     <Dialog
@@ -108,6 +136,7 @@ export function UserAccessManageReasonDialog({
       onOpenChange={(next) => {
         if (!next) {
           mutation.reset();
+          setWasSubmitted(false);
           form.reset();
           onClose();
         }
@@ -117,6 +146,7 @@ export function UserAccessManageReasonDialog({
         <form
           onSubmit={(event) => {
             event.preventDefault();
+            setWasSubmitted(true);
             void form.handleSubmit();
           }}
         >
@@ -137,6 +167,55 @@ export function UserAccessManageReasonDialog({
           ) : null}
 
           <FieldGroup className="py-2">
+            {state.kind === "assign-role" ? (
+              <form.Field
+                name="locationSlug"
+                validators={{
+                  onBlur: ({ value }) =>
+                    scopeIsRequired && !value.trim()
+                      ? "Select a location for this role."
+                      : undefined,
+                  onSubmit: ({ value }) =>
+                    scopeIsRequired && !value.trim()
+                      ? "Select a location for this role."
+                      : undefined,
+                }}
+              >
+                {(field) => (
+                  <AppFormField
+                    description={
+                      scopeIsRequired
+                        ? "Manager and worker access is always scoped to one location."
+                        : "Leave blank to assign this role globally."
+                    }
+                    errors={field.state.meta.errors}
+                    inputId={field.name}
+                    label="Location scope"
+                    showErrors={field.state.meta.isBlurred || wasSubmitted}
+                  >
+                    <Select
+                      disabled={isPending}
+                      id={field.name}
+                      onBlur={field.handleBlur}
+                      onChange={(event) =>
+                        field.handleChange(event.target.value)
+                      }
+                      value={field.state.value}
+                    >
+                      <option value="">
+                        {scopeIsRequired ? "Select a location" : "Global"}
+                      </option>
+                      {activeLocations.map((location) => (
+                        <option key={location.slug} value={location.slug}>
+                          {location.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </AppFormField>
+                )}
+              </form.Field>
+            ) : null}
+
             <form.Field
               name="reason"
               validators={{
@@ -156,10 +235,12 @@ export function UserAccessManageReasonDialog({
                   errors={field.state.meta.errors}
                   inputId={field.name}
                   label="Reason"
-                  showErrors={field.state.meta.isBlurred || mutation.isError}
+                  showErrors={
+                    field.state.meta.isBlurred || mutation.isError || wasSubmitted
+                  }
                 >
                   <Textarea
-                    disabled={form.state.isSubmitting}
+                    disabled={isPending}
                     id={field.name}
                     maxLength={500}
                     onBlur={field.handleBlur}
@@ -182,11 +263,14 @@ export function UserAccessManageReasonDialog({
             >
               {({ canSubmit, isSubmitting }) => (
                 <Button
-                  disabled={!canSubmit || isSubmitting}
+                  disabled={!canSubmit || isPending}
                   type="submit"
                   variant={meta.destructive ? "destructive" : "default"}
                 >
-                  {isSubmitting ? (
+                  {isReasonDialogPending({
+                    formIsSubmitting: isSubmitting,
+                    mutationIsPending: mutation.isPending,
+                  }) ? (
                     <>
                       <Spinner data-icon="inline-start" />
                       Saving...

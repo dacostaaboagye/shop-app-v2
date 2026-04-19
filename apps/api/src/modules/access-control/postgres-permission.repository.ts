@@ -1,4 +1,5 @@
 import {
+  locations,
   permissions,
   rolePermissions,
   userPermissionOverrides,
@@ -13,6 +14,12 @@ type PermissionAssignmentRow = {
   key: string;
   locationId: string | null;
   source: "override" | "role";
+};
+
+type ActiveLocationScopeRow = {
+  locationId: string;
+  locationName: string;
+  locationSlug: string;
 };
 
 export class PostgresPermissionRepository
@@ -70,5 +77,50 @@ export class PostgresPermissionRepository
       locationId: row.locationId,
       source: row.source,
     }));
+  }
+
+  async getActiveLocationScopes(userId: string): Promise<ActiveLocationScopeRow[]> {
+    const [fromRoles, fromOverrides] = await Promise.all([
+      this.db
+        .select({
+          locationId: locations.id,
+          locationName: locations.name,
+          locationSlug: locations.slug,
+        })
+        .from(userRoles)
+        .innerJoin(locations, eq(locations.id, userRoles.locationId))
+        .where(and(eq(userRoles.userId, userId), isNull(userRoles.revokedAt))),
+
+      this.db
+        .select({
+          locationId: locations.id,
+          locationName: locations.name,
+          locationSlug: locations.slug,
+        })
+        .from(userPermissionOverrides)
+        .innerJoin(locations, eq(locations.id, userPermissionOverrides.locationId))
+        .where(
+          and(
+            eq(userPermissionOverrides.userId, userId),
+            isNull(userPermissionOverrides.removedAt),
+          ),
+        ),
+    ]);
+
+    const seen = new Set<string>();
+    const merged: ActiveLocationScopeRow[] = [];
+
+    for (const row of [...fromRoles, ...fromOverrides]) {
+      if (!seen.has(row.locationId)) {
+        seen.add(row.locationId);
+        merged.push(row);
+      }
+    }
+
+    return merged.sort(
+      (a, b) =>
+        a.locationName.localeCompare(b.locationName) ||
+        a.locationSlug.localeCompare(b.locationSlug),
+    );
   }
 }

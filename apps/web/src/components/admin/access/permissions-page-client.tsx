@@ -5,16 +5,17 @@ import { KeyRound, Layers3, Search, ShieldCheck, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppDataTable } from "@/components/data-table/app-data-table";
+import { AppErrorBanner } from "@/components/system/app-error";
 import {
   PageHeader,
   PageShell,
   StatCard,
 } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buildPermissionGroups } from "@/lib/access-control";
+import { getAppErrorMessage } from "@/lib/errors/app-error";
 import {
   adminPermissionsQueryKey,
   fetchAdminPermissions,
@@ -176,12 +177,14 @@ export function PermissionsPageClient() {
       ) : (
         <>
           {permissionsQuery.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Unable to load permissions</AlertTitle>
-              <AlertDescription>
-                {getErrorMessage(permissionsQuery.error)}
-              </AlertDescription>
-            </Alert>
+            <AppErrorBanner
+              detail={getErrorMessage(permissionsQuery.error)}
+              error={permissionsQuery.error}
+              onRetry={() => {
+                void permissionsQuery.refetch();
+              }}
+              title="Unable to load permissions"
+            />
           ) : null}
           <AppDataTable
             columns={permissionTableColumns}
@@ -219,7 +222,9 @@ export function PermissionsPageClient() {
 }
 
 function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Failed to load permissions.";
+  return getAppErrorMessage(error, {
+    fallbackDetail: "Failed to load permissions.",
+  });
 }
 
 function replacePermissionsQuery(

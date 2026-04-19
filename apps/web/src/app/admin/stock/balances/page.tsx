@@ -7,6 +7,7 @@ import { useId, useState } from "react";
 import { buildStockBalanceColumns } from "@/components/admin/stock/stock-balance-columns";
 import { StockCountDialog } from "@/components/admin/stock/stock-count-dialog";
 import { AppDataTable } from "@/components/data-table/app-data-table";
+import { useAuthorization } from "@/components/providers/authorization-provider";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,10 +18,6 @@ import {
   adminLocationsQueryKey,
   fetchAdminLocations,
 } from "@/lib/react-query/admin-directory";
-import {
-  currentUserPermissionsQueryKey,
-  fetchCurrentUserPermissions,
-} from "@/lib/react-query/auth";
 import {
   fetchStockBalances,
   postStockCount,
@@ -34,6 +31,7 @@ import {
 } from "./page.support";
 
 export default function StockBalancesPage() {
+  const { can } = useAuthorization();
   const locationSelectId = useId();
   const searchId = useId();
   const queryClient = useQueryClient();
@@ -44,12 +42,7 @@ export default function StockBalancesPage() {
     useState<AdminStockBalanceSummary | null>(null);
   const [countOpen, setCountOpen] = useState(false);
 
-  const permissionsQuery = useQuery({
-    queryFn: fetchCurrentUserPermissions,
-    queryKey: currentUserPermissionsQueryKey,
-  });
-  const canCount =
-    permissionsQuery.data?.permissions.includes("inventory.write") ?? false;
+  const canCount = can("inventory.write");
   const locationsQuery = useQuery({
     queryFn: () => fetchAdminLocations(STOCK_BALANCE_LOCATIONS_QUERY),
     queryKey: adminLocationsQueryKey(STOCK_BALANCE_LOCATIONS_QUERY),

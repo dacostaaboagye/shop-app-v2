@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { EmailVerificationGate } from "@/components/auth/email-verification-gate";
@@ -11,11 +10,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import {
-  fetchCurrentUserPermissions,
-  getCurrentUserPermissionsQueryKey,
-} from "@/lib/react-query/auth";
-import { useAuthSessionStore } from "@/store/use-auth-session-store";
 import { AppAccountDialog, AppNotificationsDialog } from "./portal-overlays";
 import { AppSidebar } from "./portal-sidebar";
 import { AppTopbar } from "./portal-topbar";
@@ -26,15 +20,9 @@ type AppShellProps = {
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
-  const user = useAuthSessionStore((state) => state.user);
   const [accountOpen, setAccountOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const permissionsQuery = useQuery({
-    queryFn: fetchCurrentUserPermissions,
-    queryKey: getCurrentUserPermissionsQueryKey(user?.slug ?? null),
-  });
-  const permissions = permissionsQuery.data?.permissions ?? [];
 
   useEffect(() => {
     if (pathname) {
@@ -45,11 +33,7 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <div className="min-h-svh">
       <div className="fixed inset-y-0 left-0 z-20 hidden w-72 lg:block">
-        <AppSidebar
-          permissions={permissions}
-          isLoadingPermissions={permissionsQuery.isLoading}
-          onAccountOpen={() => setAccountOpen(true)}
-        />
+        <AppSidebar onAccountOpen={() => setAccountOpen(true)} />
       </div>
 
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
@@ -64,8 +48,6 @@ export function AppShell({ children }: AppShellProps) {
             </SheetDescription>
           </SheetHeader>
           <AppSidebar
-            permissions={permissions}
-            isLoadingPermissions={permissionsQuery.isLoading}
             onAccountOpen={() => setAccountOpen(true)}
             onNavigate={() => setMobileNavOpen(false)}
           />

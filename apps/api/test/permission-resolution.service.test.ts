@@ -88,6 +88,38 @@ describe("PermissionResolutionService", () => {
     assert.equal(otherPermissions.length, 0);
   });
 
+  it("resolves navigation permissions across any active scope", async () => {
+    const service = createService([
+      {
+        effect: null,
+        key: "manager.dashboard.view",
+        locationId: "loc_store_1",
+        source: "role",
+      },
+      {
+        effect: null,
+        key: "access.permissions.view",
+        locationId: "loc_store_1",
+        source: "role",
+      },
+      {
+        effect: "deny",
+        key: "access.permissions.view",
+        locationId: "loc_store_2",
+        source: "override",
+      },
+    ]);
+
+    const permissions = await service.resolvePermissionsForAnyScope({
+      userId: "usr_123",
+    });
+
+    assert.deepEqual(
+      permissions.map((permission) => permission.key),
+      ["access.permissions.view", "manager.dashboard.view"],
+    );
+  });
+
   it("throws forbidden when the requested permission is missing", async () => {
     const service = createService([]);
 
@@ -116,6 +148,9 @@ function createService(
   }>,
 ) {
   return new PermissionResolutionService({
+    async getActiveLocationScopes() {
+      return [];
+    },
     async getPermissionAssignments() {
       return assignments;
     },

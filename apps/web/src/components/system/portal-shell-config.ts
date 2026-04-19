@@ -1,3 +1,5 @@
+import type { PermissionAbility } from "@/lib/authorization/permission-ability";
+import { canUsePermission } from "@/lib/authorization/permission-ability";
 import { PORTALS } from "@/lib/portals";
 import type {
   PortalNavItem,
@@ -18,13 +20,13 @@ export function getShellConfig(): ShellMeta {
 }
 
 export function getVisibleNavSections(
-  permissions: readonly string[],
+  ability: PermissionAbility,
 ): PortalNavSection[] {
   const sectionMap = new Map<string, PortalNavItem[]>();
 
   for (const entry of NAV_REGISTRY) {
     if (entry.sidebar === false) continue;
-    if (!permissions.includes(entry.requiredPermission)) continue;
+    if (!canAccessPortalItem(entry, ability)) continue;
 
     const item: PortalNavItem = {
       ...(entry.activeMatchers ? { activeMatchers: entry.activeMatchers } : {}),
@@ -82,10 +84,10 @@ export function getShellNotifications() {
 
 export function canAccessPortalItem(
   item: Pick<PortalNavItem, "requiredPermission">,
-  permissions: readonly string[],
+  ability: Pick<PermissionAbility, "can">,
 ) {
   return item.requiredPermission
-    ? permissions.includes(item.requiredPermission)
+    ? canUsePermission(ability, item.requiredPermission)
     : true;
 }
 

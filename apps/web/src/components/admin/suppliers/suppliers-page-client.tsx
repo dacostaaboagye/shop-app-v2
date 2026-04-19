@@ -15,8 +15,8 @@ import {
   AppDataTable,
   type AppDataTableSort,
 } from "@/components/data-table/app-data-table";
+import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -171,12 +171,14 @@ export function SuppliersPageClient() {
       ) : (
         <>
           {suppliersQuery.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Unable to load suppliers</AlertTitle>
-              <AlertDescription>
-                {getUsersErrorMessage(suppliersQuery.error)}
-              </AlertDescription>
-            </Alert>
+            <AppErrorBanner
+              detail={getUsersErrorMessage(suppliersQuery.error)}
+              error={suppliersQuery.error}
+              onRetry={() => {
+                void suppliersQuery.refetch();
+              }}
+              title="Unable to load suppliers"
+            />
           ) : null}
           <AppDataTable
             columns={supplierColumns}

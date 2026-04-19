@@ -29,12 +29,20 @@ type AdminAccessRouteDependencies = {
 
 const routes = {
   audit: {
-    access: { kind: "permission", permission: "access.audit.view" },
+    access: {
+      kind: "permission",
+      permission: "access.audit.view",
+      scope: "any_active",
+    },
     method: "GET",
     url: "/api/admin/access/audit",
   } satisfies RouteDefinition,
   permissions: {
-    access: { kind: "permission", permission: "access.permissions.view" },
+    access: {
+      kind: "permission",
+      permission: "access.permissions.view",
+      scope: "any_active",
+    },
     method: "GET",
     url: "/api/admin/access/permissions",
   } satisfies RouteDefinition,
@@ -44,12 +52,20 @@ const routes = {
     url: "/api/admin/access/roles",
   } satisfies RouteDefinition,
   roleDetail: {
-    access: { kind: "permission", permission: "access.roles.view" },
+    access: {
+      kind: "permission",
+      permission: "access.roles.view",
+      scope: "any_active",
+    },
     method: "GET",
     url: "/api/admin/access/roles/:slug",
   } satisfies RouteDefinition,
   roleList: {
-    access: { kind: "permission", permission: "access.roles.view" },
+    access: {
+      kind: "permission",
+      permission: "access.roles.view",
+      scope: "any_active",
+    },
     method: "GET",
     url: "/api/admin/access/roles",
   } satisfies RouteDefinition,

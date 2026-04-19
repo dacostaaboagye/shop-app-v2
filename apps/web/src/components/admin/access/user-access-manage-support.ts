@@ -5,6 +5,7 @@ import type {
   AdminUserPermissionOverride,
   AdminUserRoleAssignment,
 } from "@shop/contracts";
+import { getAppErrorMessage } from "@/lib/errors/app-error";
 
 export type PermissionState =
   | { kind: "allow-override" }
@@ -19,6 +20,8 @@ export type ReasonDialogState =
   | { kind: "deny-override"; permissionKey: string }
   | { kind: "remove-override"; override: AdminUserPermissionOverride }
   | { kind: "revoke-role"; assignment: AdminUserRoleAssignment };
+
+const LOCATION_SCOPED_ROLE_SLUGS = new Set(["manager", "worker"]);
 
 export function derivePermissionState(
   permissionKey: string,
@@ -51,8 +54,9 @@ export function getDialogMeta(state: ReasonDialogState) {
       };
     case "assign-role":
       return {
-        description:
-          "Role assignments are audited and take effect immediately.",
+        description: roleRequiresLocationScope(state.roleSlug)
+          ? "Role assignments are audited, take effect immediately, and require a location scope."
+          : "Role assignments are audited and take effect immediately.",
         destructive: false,
         submitLabel: "Assign role",
         title: `Assign "${state.roleName}"`,
@@ -88,10 +92,40 @@ export function getDialogMeta(state: ReasonDialogState) {
   }
 }
 
+export function getReasonDialogKey(state: ReasonDialogState) {
+  switch (state.kind) {
+    case "allow-override":
+      return `${state.kind}:${state.permissionKey}`;
+    case "assign-role":
+      return `${state.kind}:${state.roleSlug}`;
+    case "deny-override":
+      return `${state.kind}:${state.permissionKey}`;
+    case "remove-override":
+      return `${state.kind}:${state.override.permissionKey}:${state.override.locationSlug ?? "global"}`;
+    case "revoke-role":
+      return `${state.kind}:${state.assignment.roleSlug}:${state.assignment.locationSlug ?? "global"}`;
+    default:
+      return state.kind;
+  }
+}
+
+export function roleRequiresLocationScope(roleSlug: string) {
+  return LOCATION_SCOPED_ROLE_SLUGS.has(roleSlug);
+}
+
+export function isReasonDialogPending(input: {
+  formIsSubmitting: boolean;
+  mutationIsPending: boolean;
+}) {
+  return input.formIsSubmitting || input.mutationIsPending;
+}
+
 export function getQueryErrorMessage(...errors: Array<unknown | null>) {
   for (const error of errors) {
-    if (error instanceof Error) {
-      return error.message;
+    if (error) {
+      return getAppErrorMessage(error, {
+        fallbackDetail: "An unexpected error occurred.",
+      });
     }
   }
 

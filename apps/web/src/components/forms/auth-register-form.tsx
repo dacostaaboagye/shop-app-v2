@@ -6,7 +6,7 @@ import { UserRoundPlus } from "lucide-react";
 import { useState } from "react";
 import { AppFormField } from "@/components/forms/app-form-field";
 import { AuthGoogleOAuthButton } from "@/components/forms/auth-google-oauth-button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AppErrorBanner } from "@/components/system/app-error";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -200,10 +200,11 @@ export function AuthRegisterForm() {
         </FieldGroup>
 
         {authError ? (
-          <Alert variant="destructive">
-            <AlertTitle>{authError.title}</AlertTitle>
-            <AlertDescription>{authError.detail}</AlertDescription>
-          </Alert>
+          <AppErrorBanner
+            detail={authError.detail}
+            error={registerMutation.error}
+            title={authError.title}
+          />
         ) : null}
 
         <form.Subscribe

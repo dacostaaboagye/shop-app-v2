@@ -9,8 +9,10 @@ import {
   AppDataTable,
   type AppDataTableSort,
 } from "@/components/data-table/app-data-table";
+import { useAuthorization } from "@/components/providers/authorization-provider";
+import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PermissionGate } from "@/components/system/permission-gate";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -20,10 +22,6 @@ import {
   fetchAdminProducts,
   updateAdminProduct,
 } from "@/lib/react-query/admin-catalog-products";
-import {
-  currentUserPermissionsQueryKey,
-  fetchCurrentUserPermissions,
-} from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
 import {
   getPageCount,
@@ -42,6 +40,7 @@ import {
   replaceProductQuery,
 } from "./products-page-client.support";
 export function ProductsPageClient() {
+  const { can } = useAuthorization();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -94,18 +93,12 @@ export function ProductsPageClient() {
     queryFn: () => fetchAdminProducts(backendQuery),
     queryKey: adminProductsQueryKey(backendQuery),
   });
-  const permissionsQuery = useQuery({
-    queryFn: fetchCurrentUserPermissions,
-    queryKey: currentUserPermissionsQueryKey,
-  });
   const totalCount = productsQuery.data?.totalCount ?? 0;
   const totalPages = getPageCount(totalCount, pageSize);
   const safePage = Math.min(page, totalPages);
   const hasFilters = q !== "" || status !== "all";
   const sorting: AppDataTableSort = { columnId: sort, direction: dir };
-  const canManage =
-    permissionsQuery.data?.permissions.includes("catalog.products.manage") ??
-    false;
+  const canManage = can("catalog.products.manage");
   useEffect(() => {
     if (!productsQuery.data || safePage === page) return;
     replaceProductQuery(router, pathname, searchParams, {
@@ -116,14 +109,14 @@ export function ProductsPageClient() {
     <PageShell>
       <PageHeader
         actions={
-          canManage ? (
+          <PermissionGate permission="catalog.products.manage">
             <Link
               className={buttonVariants({ size: "sm" })}
               href={toRoute("/admin/products/new")}
             >
               New product
             </Link>
-          ) : null
+          </PermissionGate>
         }
         description="Browse and manage products and their variants across the catalogue."
         title="Products"
@@ -184,12 +177,14 @@ export function ProductsPageClient() {
       ) : (
         <>
           {productsQuery.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Unable to load products</AlertTitle>
-              <AlertDescription>
-                {getProductsErrorMessage(productsQuery.error)}
-              </AlertDescription>
-            </Alert>
+            <AppErrorBanner
+              detail={getProductsErrorMessage(productsQuery.error)}
+              error={productsQuery.error}
+              onRetry={() => {
+                void productsQuery.refetch();
+              }}
+              title="Unable to load products"
+            />
           ) : null}
           <AppDataTable
             bulkActions={createCatalogBulkActions({

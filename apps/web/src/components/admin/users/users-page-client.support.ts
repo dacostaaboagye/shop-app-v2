@@ -2,6 +2,7 @@
 
 import type { Route } from "next";
 import type { useRouter, useSearchParams } from "next/navigation";
+import { getAppErrorMessage } from "@/lib/errors/app-error";
 import { toRoute } from "@/lib/routes";
 import { buildSearchParams } from "@/lib/url-state";
 
@@ -32,7 +33,9 @@ export type UsersPageClientProps = {
 };
 
 export function getUsersErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Failed to load users.";
+  return getAppErrorMessage(error, {
+    fallbackDetail: "Failed to load users.",
+  });
 }
 
 export function replaceUserQuery(

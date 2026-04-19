@@ -1,6 +1,7 @@
 "use client";
 
 import type {
+  AdminLocationSummary,
   AdminPermissionSummary,
   AdminRoleSummary,
   AdminUserAccessDetail,
@@ -10,15 +11,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserAccessManagePermissionsTab } from "./user-access-manage-permissions-tab";
 import { UserAccessManageReasonDialog } from "./user-access-manage-reason-dialog";
 import { UserAccessManageRolesTab } from "./user-access-manage-roles-tab";
-import type { ReasonDialogState } from "./user-access-manage-support";
+import {
+  getReasonDialogKey,
+  type ReasonDialogState,
+} from "./user-access-manage-support";
 
 export function UserAccessManageBody({
+  allLocations,
   allPermissions,
   allRoles,
   canManage,
   slug,
   user,
 }: {
+  allLocations: readonly AdminLocationSummary[];
   allPermissions: readonly AdminPermissionSummary[];
   allRoles: readonly AdminRoleSummary[];
   canManage: boolean;
@@ -67,6 +73,8 @@ export function UserAccessManageBody({
       </Tabs>
 
       <UserAccessManageReasonDialog
+        key={getReasonDialogKey(dialog)}
+        allLocations={allLocations}
         onClose={() => setDialog({ kind: "closed" })}
         open={dialog.kind !== "closed"}
         slug={slug}

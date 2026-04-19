@@ -8,4 +8,7 @@ export * from "./inventory-ownership.js";
 export * from "./locations.js";
 export * from "./media.js";
 export * from "./oauth.js";
+export * from "./sales.js";
 export * from "./stock.js";
+export * from "./goods-transfer.js";
+export * from "./stock-supply.js";

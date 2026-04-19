@@ -120,3 +120,14 @@ export type AdminReservationSummary = z.infer<
 export type AdminStockCountRequest = z.infer<
   typeof adminStockCountRequestSchema
 >;
+
+export const locationStockBalanceQuerySchema = z.object({
+  locationId: z.string().uuid(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(50),
+  q: z.string().trim().max(120).default(""),
+});
+
+export type LocationStockBalanceQuery = z.infer<
+  typeof locationStockBalanceQuerySchema
+>;

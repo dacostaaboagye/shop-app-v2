@@ -4,6 +4,7 @@ import {
   type LoginRequest,
   type RegisterRequest,
 } from "@shop/contracts";
+import { toNetworkError } from "@/lib/errors/app-error";
 import { parseProblemDetails } from "@/lib/errors/problem-details";
 import { ApiError } from "@/lib/react-query/query-client";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
@@ -115,12 +116,18 @@ async function request(path: string, init: JsonRequestInit): Promise<Response> {
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(resolveApiUrl(path), {
-    ...requestInit,
-    credentials: "include",
-    headers,
-    ...(requestBody ? { body: requestBody } : {}),
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(resolveApiUrl(path), {
+      ...requestInit,
+      credentials: "include",
+      headers,
+      ...(requestBody ? { body: requestBody } : {}),
+    });
+  } catch (error) {
+    throw toNetworkError(error);
+  }
 
   if (!response.ok) {
     throw await toApiError(response);

@@ -4,6 +4,7 @@ import type {
 } from "@shop/contracts";
 import { Pencil, Trash2, X } from "lucide-react";
 import { PageShell } from "@/components/system/page-shell";
+import { PermissionGate } from "@/components/system/permission-gate";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ProductEditValues } from "./product-edit-form";
@@ -18,7 +19,6 @@ export const PRODUCT_DETAIL_QUERY = {
 };
 
 type ProductHeaderActionsProps = {
-  canManage: boolean;
   isEditing: boolean;
   isPending: boolean;
   onCancel: () => void;
@@ -27,7 +27,6 @@ type ProductHeaderActionsProps = {
 };
 
 export function ProductHeaderActions({
-  canManage,
   isEditing,
   isPending,
   onCancel,
@@ -38,26 +37,30 @@ export function ProductHeaderActions({
     <div className="flex items-center gap-2">
       {!isEditing ? (
         <>
-          <Button
-            disabled={!canManage || isPending}
-            onClick={onEdit}
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            <Pencil className="size-3.5" />
-            Edit
-          </Button>
-          <Button
-            disabled={!canManage || isPending}
-            onClick={onDelete}
-            size="sm"
-            type="button"
-            variant="outline-destructive"
-          >
-            <Trash2 className="size-3.5" />
-            Delete
-          </Button>
+          <PermissionGate permission="catalog.products.manage">
+            <Button
+              disabled={isPending}
+              onClick={onEdit}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <Pencil className="size-3.5" />
+              Edit
+            </Button>
+          </PermissionGate>
+          <PermissionGate permission="catalog.products.manage">
+            <Button
+              disabled={isPending}
+              onClick={onDelete}
+              size="sm"
+              type="button"
+              variant="outline-destructive"
+            >
+              <Trash2 className="size-3.5" />
+              Delete
+            </Button>
+          </PermissionGate>
         </>
       ) : (
         <Button onClick={onCancel} size="sm" type="button" variant="ghost">

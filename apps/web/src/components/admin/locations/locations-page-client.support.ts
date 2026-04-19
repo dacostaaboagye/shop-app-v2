@@ -2,6 +2,7 @@
 
 import type { Route } from "next";
 import type { useRouter, useSearchParams } from "next/navigation";
+import { getAppErrorMessage } from "@/lib/errors/app-error";
 import { toRoute } from "@/lib/routes";
 import { buildSearchParams } from "@/lib/url-state";
 
@@ -28,7 +29,9 @@ export const LOCATION_SKELETON_KEYS = [
 ] as const;
 
 export function getLocationsErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Failed to load locations.";
+  return getAppErrorMessage(error, {
+    fallbackDetail: "Failed to load locations.",
+  });
 }
 
 export function replaceLocationQuery(

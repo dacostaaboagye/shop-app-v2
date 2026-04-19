@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { MailCheck } from "lucide-react";
 import { useState } from "react";
 import { AppFormField } from "@/components/forms/app-form-field";
+import { AppErrorBanner } from "@/components/system/app-error";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
@@ -92,10 +93,11 @@ export function AuthForgotPasswordForm() {
       </FieldGroup>
 
       {authError ? (
-        <Alert variant="destructive">
-          <AlertTitle>{authError.title}</AlertTitle>
-          <AlertDescription>{authError.detail}</AlertDescription>
-        </Alert>
+        <AppErrorBanner
+          detail={authError.detail}
+          error={mutation.error}
+          title={authError.title}
+        />
       ) : null}
 
       <form.Subscribe

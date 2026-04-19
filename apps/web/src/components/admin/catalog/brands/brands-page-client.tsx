@@ -10,8 +10,10 @@ import {
   AppDataTable,
   type AppDataTableSort,
 } from "@/components/data-table/app-data-table";
+import { useAuthorization } from "@/components/providers/authorization-provider";
+import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PermissionGate } from "@/components/system/permission-gate";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -21,10 +23,6 @@ import {
   fetchAdminBrands,
   updateAdminBrand,
 } from "@/lib/react-query/admin-catalog";
-import {
-  currentUserPermissionsQueryKey,
-  fetchCurrentUserPermissions,
-} from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
 import {
   getPageCount,
@@ -44,6 +42,7 @@ import {
 } from "./brands-page-client.support";
 
 export function BrandsPageClient() {
+  const { can } = useAuthorization();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -91,18 +90,12 @@ export function BrandsPageClient() {
     queryFn: () => fetchAdminBrands(backendQuery),
     queryKey: adminBrandsQueryKey(backendQuery),
   });
-  const permissionsQuery = useQuery({
-    queryFn: fetchCurrentUserPermissions,
-    queryKey: currentUserPermissionsQueryKey,
-  });
   const totalCount = brandsQuery.data?.totalCount ?? 0;
   const totalPages = getPageCount(totalCount, pageSize);
   const safePage = Math.min(page, totalPages);
   const hasFilters = q !== "" || status !== "all";
   const sorting: AppDataTableSort = { columnId: sort, direction: dir };
-  const canManage =
-    permissionsQuery.data?.permissions.includes("catalog.brands.manage") ??
-    false;
+  const canManage = can("catalog.brands.manage");
   useEffect(() => {
     if (!brandsQuery.data || safePage === page) return;
     replaceBrandQuery(router, pathname, searchParams, {
@@ -113,14 +106,14 @@ export function BrandsPageClient() {
     <PageShell>
       <PageHeader
         actions={
-          canManage ? (
+          <PermissionGate permission="catalog.brands.manage">
             <Link
               className={buttonVariants({ size: "sm" })}
               href={toRoute("/admin/products/brands/new")}
             >
               New brand
             </Link>
-          ) : null
+          </PermissionGate>
         }
         description="Manage brand entities used across the product catalogue."
         title="Brands"
@@ -182,12 +175,14 @@ export function BrandsPageClient() {
       ) : (
         <>
           {brandsQuery.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Unable to load brands</AlertTitle>
-              <AlertDescription>
-                {getBrandsErrorMessage(brandsQuery.error)}
-              </AlertDescription>
-            </Alert>
+            <AppErrorBanner
+              detail={getBrandsErrorMessage(brandsQuery.error)}
+              error={brandsQuery.error}
+              onRetry={() => {
+                void brandsQuery.refetch();
+              }}
+              title="Unable to load brands"
+            />
           ) : null}
           <AppDataTable
             bulkActions={createCatalogBulkActions({

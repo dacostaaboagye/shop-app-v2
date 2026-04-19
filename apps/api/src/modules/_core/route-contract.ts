@@ -1,7 +1,11 @@
 export type RouteAccess =
   | { kind: "public" }
   | { kind: "authenticated" }
-  | { kind: "permission"; permission: string };
+  | {
+      kind: "permission";
+      permission: string;
+      scope?: "any_active" | "contextual";
+    };
 
 export type RouteDefinition = {
   access: RouteAccess;

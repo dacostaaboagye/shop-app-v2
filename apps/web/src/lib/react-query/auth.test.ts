@@ -95,6 +95,14 @@ describe("auth react-query wrappers", () => {
 
       return new Response(
         JSON.stringify({
+          locationScopes: [
+            {
+              locationId: "11111111-1111-4111-8111-111111111111",
+              locationName: "Downtown Store",
+              locationSlug: "downtown-store",
+              permissions: ["inventory.read"],
+            },
+          ],
           permissions: ["inventory.read", "users.view"],
         }),
         {
@@ -109,6 +117,14 @@ describe("auth react-query wrappers", () => {
     assert.deepEqual(permissionSet.permissions, [
       "inventory.read",
       "users.view",
+    ]);
+    assert.deepEqual(permissionSet.locationScopes, [
+      {
+        locationId: "11111111-1111-4111-8111-111111111111",
+        locationName: "Downtown Store",
+        locationSlug: "downtown-store",
+        permissions: ["inventory.read"],
+      },
     ]);
   });
 });

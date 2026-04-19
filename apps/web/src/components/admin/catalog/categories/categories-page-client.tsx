@@ -9,8 +9,10 @@ import {
   AppDataTable,
   type AppDataTableSort,
 } from "@/components/data-table/app-data-table";
+import { useAuthorization } from "@/components/providers/authorization-provider";
+import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PermissionGate } from "@/components/system/permission-gate";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -20,10 +22,6 @@ import {
   fetchAdminCategories,
   updateAdminCategory,
 } from "@/lib/react-query/admin-catalog";
-import {
-  currentUserPermissionsQueryKey,
-  fetchCurrentUserPermissions,
-} from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
 import {
   getPageCount,
@@ -42,6 +40,7 @@ import {
 } from "./categories-page-client.support";
 import { categoryTableColumns } from "./category-table-columns";
 export function CategoriesPageClient() {
+  const { can } = useAuthorization();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -92,18 +91,12 @@ export function CategoriesPageClient() {
     queryFn: () => fetchAdminCategories(backendQuery),
     queryKey: adminCategoriesQueryKey(backendQuery),
   });
-  const permissionsQuery = useQuery({
-    queryFn: fetchCurrentUserPermissions,
-    queryKey: currentUserPermissionsQueryKey,
-  });
   const totalCount = categoriesQuery.data?.totalCount ?? 0;
   const totalPages = getPageCount(totalCount, pageSize);
   const safePage = Math.min(page, totalPages);
   const hasFilters = q !== "" || status !== "all";
   const sorting: AppDataTableSort = { columnId: sort, direction: dir };
-  const canManage =
-    permissionsQuery.data?.permissions.includes("catalog.categories.manage") ??
-    false;
+  const canManage = can("catalog.categories.manage");
   useEffect(() => {
     if (!categoriesQuery.data || safePage === page) return;
     replaceCategoryQuery(router, pathname, searchParams, {
@@ -114,14 +107,14 @@ export function CategoriesPageClient() {
     <PageShell>
       <PageHeader
         actions={
-          canManage ? (
+          <PermissionGate permission="catalog.categories.manage">
             <Link
               className={buttonVariants({ size: "sm" })}
               href={toRoute("/admin/products/categories/new")}
             >
               New category
             </Link>
-          ) : null
+          </PermissionGate>
         }
         description="Manage categories used to organise the product catalogue."
         title="Categories"
@@ -181,12 +174,14 @@ export function CategoriesPageClient() {
       ) : (
         <>
           {categoriesQuery.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Unable to load categories</AlertTitle>
-              <AlertDescription>
-                {getCategoriesErrorMessage(categoriesQuery.error)}
-              </AlertDescription>
-            </Alert>
+            <AppErrorBanner
+              detail={getCategoriesErrorMessage(categoriesQuery.error)}
+              error={categoriesQuery.error}
+              onRetry={() => {
+                void categoriesQuery.refetch();
+              }}
+              title="Unable to load categories"
+            />
           ) : null}
           <AppDataTable
             bulkActions={createCatalogBulkActions({

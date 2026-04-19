@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { PageHeader, StatCard } from "@/components/system/page-shell";
+import { PermissionGate } from "@/components/system/permission-gate";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -36,12 +37,10 @@ type DialogState =
   | { kind: "force-password-reset" };
 
 export function UserAccessDetailBody({
-  canManage,
   canManageMedia,
   slug,
   user,
 }: {
-  canManage: boolean;
   canManageMedia: boolean;
   slug: string;
   user: AdminUserAccessDetail;
@@ -61,7 +60,7 @@ export function UserAccessDetailBody({
         eyebrow="Access overview"
         title={displayName}
         actions={
-          canManage ? (
+          <PermissionGate permission="access.assignments.manage">
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 className={buttonVariants({ size: "sm" })}
@@ -89,7 +88,7 @@ export function UserAccessDetailBody({
                 Force reset
               </Button>
             </div>
-          ) : undefined
+          </PermissionGate>
         }
       />
 

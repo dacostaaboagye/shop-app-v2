@@ -1,16 +1,8 @@
-import { TriangleAlert } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
+import { AppErrorState } from "@/components/system/app-error";
 import { PageShell } from "@/components/system/page-shell";
 import { buttonVariants } from "@/components/ui/button";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
 
 type ErrorViewProps = {
   actionHref?: Route;
@@ -27,20 +19,15 @@ export function ErrorView({
 }: ErrorViewProps) {
   return (
     <PageShell className="justify-center">
-      <Empty className="hero-panel border-border/80 bg-card/85 py-14">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <TriangleAlert />
-          </EmptyMedia>
-          <EmptyTitle>{title}</EmptyTitle>
-          <EmptyDescription>{detail}</EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent>
+      <AppErrorState
+        action={
           <Link className={buttonVariants({ size: "lg" })} href={actionHref}>
             {actionLabel}
           </Link>
-        </EmptyContent>
-      </Empty>
+        }
+        detail={detail}
+        title={title}
+      />
     </PageShell>
   );
 }

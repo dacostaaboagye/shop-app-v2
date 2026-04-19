@@ -9,10 +9,10 @@ import {
   locations,
   locationZones,
   mediaAssets,
+  roles,
   userRoles,
-  users,
 } from "@shop/database";
-import { aliasedTable, and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { AdminLocationQueryRepository } from "./admin-location-query.service.js";
 
@@ -22,8 +22,6 @@ export class PostgresAdminLocationQueryRepository
   constructor(private readonly db: ApiDatabase) {}
 
   async getLocation(slug: string) {
-    const m = aliasedTable(users, "m");
-
     const [row] = await this.db
       .select({
         slug: locations.slug,
@@ -31,27 +29,17 @@ export class PostgresAdminLocationQueryRepository
         type: locations.type,
         status: locations.status,
         isFulfilmentEnabled: locations.isFulfilmentEnabled,
-        managerName: sql<
-          string | null
-        >`NULLIF(TRIM(CONCAT_WS(' ', ${m.firstName}, ${m.lastName})), '')`,
+        managerName: managerNameSql(),
         createdAt: locations.createdAt,
         latitude: sql<number>`cast(${locations.latitude} as float)`,
         longitude: sql<number>`cast(${locations.longitude} as float)`,
         address: locations.geoAddress,
         zoneCount: sql<number>`cast(count(distinct ${locationZones.id}) as int)`,
-        staffCount: sql<number>`cast(count(distinct ${userRoles.userId}) as int)`,
+        staffCount: staffCountSql(),
         primaryImageUrl: mediaAssets.publicUrl,
       })
       .from(locations)
-      .leftJoin(m, eq(m.id, locations.managerId))
       .leftJoin(locationZones, eq(locationZones.locationId, locations.id))
-      .leftJoin(
-        userRoles,
-        and(
-          eq(userRoles.locationId, locations.id),
-          sql`${userRoles.revokedAt} IS NULL`,
-        ),
-      )
       .leftJoin(
         catalogMediaAssignments,
         and(
@@ -65,7 +53,7 @@ export class PostgresAdminLocationQueryRepository
         eq(mediaAssets.id, catalogMediaAssignments.assetId),
       )
       .where(eq(locations.slug, slug))
-      .groupBy(locations.id, m.firstName, m.lastName, mediaAssets.publicUrl);
+      .groupBy(locations.id, mediaAssets.publicUrl);
 
     if (!row) return null;
 
@@ -77,7 +65,6 @@ export class PostgresAdminLocationQueryRepository
     const offset = (page - 1) * pageSize;
     const pattern = `%${q.trim()}%`;
     const hasQuery = q.trim().length > 0;
-    const m = aliasedTable(users, "m");
 
     const [totalCountResult, rows] = await Promise.all([
       this.db
@@ -106,27 +93,17 @@ export class PostgresAdminLocationQueryRepository
           type: locations.type,
           status: locations.status,
           isFulfilmentEnabled: locations.isFulfilmentEnabled,
-          managerName: sql<
-            string | null
-          >`NULLIF(TRIM(CONCAT_WS(' ', ${m.firstName}, ${m.lastName})), '')`,
+          managerName: managerNameSql(),
           createdAt: locations.createdAt,
           latitude: sql<number>`cast(${locations.latitude} as float)`,
           longitude: sql<number>`cast(${locations.longitude} as float)`,
           address: locations.geoAddress,
           zoneCount: sql<number>`cast(count(distinct ${locationZones.id}) as int)`,
-          staffCount: sql<number>`cast(count(distinct ${userRoles.userId}) as int)`,
+          staffCount: staffCountSql(),
           primaryImageUrl: mediaAssets.publicUrl,
         })
         .from(locations)
-        .leftJoin(m, eq(m.id, locations.managerId))
         .leftJoin(locationZones, eq(locationZones.locationId, locations.id))
-        .leftJoin(
-          userRoles,
-          and(
-            eq(userRoles.locationId, locations.id),
-            sql`${userRoles.revokedAt} IS NULL`,
-          ),
-        )
         .leftJoin(
           catalogMediaAssignments,
           and(
@@ -155,7 +132,7 @@ export class PostgresAdminLocationQueryRepository
               : undefined,
           ),
         )
-        .groupBy(locations.id, m.firstName, m.lastName, mediaAssets.publicUrl)
+        .groupBy(locations.id, mediaAssets.publicUrl)
         .orderBy(
           sort === "createdAt"
             ? dir === "desc"
@@ -198,4 +175,31 @@ export class PostgresAdminLocationQueryRepository
       createdAt: row.createdAt.toISOString(),
     }));
   }
+}
+
+function managerNameSql() {
+  return sql<string | null>`(
+    select NULLIF(TRIM(CONCAT_WS(' ', staff.first_name, staff.last_name)), '')
+    from ${userRoles}
+    inner join ${roles} on ${roles.id} = ${userRoles.roleId}
+    inner join users as staff on staff.id = ${userRoles.userId}
+    where
+      ${userRoles.locationId} = ${locations.id}
+      and ${userRoles.revokedAt} is null
+      and ${roles.slug} = 'manager'
+    order by ${userRoles.assignedAt} desc, ${userRoles.id} desc
+    limit 1
+  )`;
+}
+
+function staffCountSql() {
+  return sql<number>`(
+    select cast(count(distinct ${userRoles.userId}) as int)
+    from ${userRoles}
+    inner join ${roles} on ${roles.id} = ${userRoles.roleId}
+    where
+      ${userRoles.locationId} = ${locations.id}
+      and ${userRoles.revokedAt} is null
+      and ${roles.slug} in ('manager', 'worker')
+  )`;
 }

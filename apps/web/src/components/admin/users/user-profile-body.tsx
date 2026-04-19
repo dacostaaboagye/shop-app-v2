@@ -9,6 +9,7 @@ import {
   PageShell,
   StatCard,
 } from "@/components/system/page-shell";
+import { PermissionGate } from "@/components/system/permission-gate";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -33,12 +34,10 @@ import { cn } from "@/lib/utils";
 import { UserProfileRecentActivityCard } from "./user-profile-recent-activity-card";
 
 export function UserProfileBody({
-  canManageAccess,
   canManageMedia,
   slug,
   user,
 }: {
-  canManageAccess: boolean;
   canManageMedia: boolean;
   slug: string;
   user: AdminUserAccessDetail;
@@ -54,14 +53,18 @@ export function UserProfileBody({
     <PageShell>
       <PageHeader
         actions={
-          hasNonBasicRole && canManageAccess ? (
-            <Link
-              className={buttonVariants({ size: "sm", variant: "outline" })}
-              href={toRoute(`/admin/access/users/${encodeURIComponent(slug)}`)}
-            >
-              <ShieldCheck className="size-3.5" />
-              Manage access
-            </Link>
+          hasNonBasicRole ? (
+            <PermissionGate permission="access.assignments.manage">
+              <Link
+                className={buttonVariants({ size: "sm", variant: "outline" })}
+                href={toRoute(
+                  `/admin/access/users/${encodeURIComponent(slug)}`,
+                )}
+              >
+                <ShieldCheck className="size-3.5" />
+                Manage access
+              </Link>
+            </PermissionGate>
           ) : undefined
         }
         avatar={

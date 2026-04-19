@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, Layers } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useAuthorization } from "@/components/providers/authorization-provider";
 import {
   PageHeader,
   PageShell,
@@ -26,10 +27,6 @@ import {
   fetchAdminProduct,
   updateAdminProduct,
 } from "@/lib/react-query/admin-catalog-products";
-import {
-  currentUserPermissionsQueryKey,
-  fetchCurrentUserPermissions,
-} from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -47,25 +44,31 @@ import { ProductEditForm, type ProductEditValues } from "./product-edit-form";
 import { ProductOptionsPanel } from "./product-options-panel";
 import { VariantsPanel } from "./variants-panel";
 export function ProductDetailPageClient({ slug }: { slug: string }) {
+  const { can } = useAuthorization();
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const canManage = can("catalog.products.manage");
+  const canSeeCostPrice = can("catalog.cost_price.view");
+  const canManageMedia = can("catalog.media.manage");
 
   useEffect(() => {
-    if (searchParams.get("edit") === "true") {
+    if (searchParams.get("edit") === "true" && canManage) {
       setIsEditing(true);
     }
-  }, [searchParams]);
+  }, [canManage, searchParams]);
+
+  useEffect(() => {
+    if (!canManage && isEditing) {
+      setIsEditing(false);
+    }
+  }, [canManage, isEditing]);
 
   const productQuery = useQuery({
     queryFn: () => fetchAdminProduct(slug),
     queryKey: adminProductQueryKey(slug),
-  });
-  const permissionsQuery = useQuery({
-    queryFn: fetchCurrentUserPermissions,
-    queryKey: currentUserPermissionsQueryKey,
   });
   const brandsQuery = useQuery({
     queryFn: () => fetchAdminBrands(PRODUCT_DETAIL_QUERY),
@@ -112,10 +115,6 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
   if (!productQuery.data) return null;
   const product = productQuery.data;
   const statusMeta = CATALOG_STATUS_META[product.status];
-  const perms = permissionsQuery.data?.permissions ?? [];
-  const canManage = perms.includes("catalog.products.manage");
-  const canSeeCostPrice = perms.includes("catalog.cost_price.view");
-  const canManageMedia = perms.includes("catalog.media.manage");
   const brands = brandsQuery.data?.items ?? [];
   const categories = categoriesQuery.data?.items ?? [];
   return (
@@ -123,7 +122,6 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
       <PageHeader
         actions={
           <ProductHeaderActions
-            canManage={canManage}
             isEditing={isEditing}
             isPending={updateMutation.isPending}
             onCancel={() => setIsEditing(false)}

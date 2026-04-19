@@ -6,12 +6,14 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppDataTable } from "@/components/data-table/app-data-table";
+import { useAuthorization } from "@/components/providers/authorization-provider";
+import { AppErrorBanner } from "@/components/system/app-error";
 import {
   PageHeader,
   PageShell,
   StatCard,
 } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PermissionGate } from "@/components/system/permission-gate";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,10 +21,6 @@ import {
   adminRolesQueryKey,
   fetchAdminRoles,
 } from "@/lib/react-query/admin-access";
-import {
-  currentUserPermissionsQueryKey,
-  fetchCurrentUserPermissions,
-} from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
 import {
   getPageCount,
@@ -38,6 +36,7 @@ import {
 } from "./roles-page-client.support";
 
 export function RolesPageClient() {
+  const { can } = useAuthorization();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -57,13 +56,7 @@ export function RolesPageClient() {
     queryFn: () => fetchAdminRoles({ page, pageSize, q }),
     queryKey: adminRolesQueryKey({ page, pageSize, q }),
   });
-  const currentPermissionsQuery = useQuery({
-    queryFn: fetchCurrentUserPermissions,
-    queryKey: currentUserPermissionsQueryKey,
-  });
-  const canManageRoles =
-    currentPermissionsQuery.data?.permissions.includes("access.roles.manage") ??
-    false;
+  const canManageRoles = can("access.roles.manage");
   const totalPages = getPageCount(rolesQuery.data?.totalCount ?? 0, pageSize);
   const safePage = Math.min(page, totalPages);
   const hasFilters = q !== "";
@@ -108,14 +101,14 @@ export function RolesPageClient() {
     <PageShell>
       <PageHeader
         actions={
-          canManageRoles ? (
+          <PermissionGate permission="access.roles.manage">
             <Link
               className={buttonVariants({ size: "sm" })}
               href={toRoute("/admin/access/roles/new")}
             >
               New role
             </Link>
-          ) : undefined
+          </PermissionGate>
         }
         description="Inspect system and custom roles, permission coverage, and current assignment load."
         title="Roles"
@@ -188,12 +181,14 @@ export function RolesPageClient() {
       ) : (
         <>
           {rolesQuery.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Unable to load roles</AlertTitle>
-              <AlertDescription>
-                {getRolesErrorMessage(rolesQuery.error)}
-              </AlertDescription>
-            </Alert>
+            <AppErrorBanner
+              detail={getRolesErrorMessage(rolesQuery.error)}
+              error={rolesQuery.error}
+              onRetry={() => {
+                void rolesQuery.refetch();
+              }}
+              title="Unable to load roles"
+            />
           ) : null}
           <AppDataTable
             columns={roleTableColumns}

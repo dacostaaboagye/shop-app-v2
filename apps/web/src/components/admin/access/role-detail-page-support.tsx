@@ -7,6 +7,7 @@ import {
   getPermissionActionLabel,
   getPermissionSurfaceLabel,
 } from "@/lib/access-control";
+import { getAppErrorMessage } from "@/lib/errors/app-error";
 
 export const rolePermissionColumns: Array<
   ColumnDef<AdminRoleDetail["permissions"][number], unknown>
@@ -53,5 +54,7 @@ export const rolePermissionColumns: Array<
 ];
 
 export function getRoleErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Failed to load role.";
+  return getAppErrorMessage(error, {
+    fallbackDetail: "Failed to load role.",
+  });
 }

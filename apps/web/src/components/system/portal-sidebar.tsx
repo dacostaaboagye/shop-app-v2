@@ -4,6 +4,7 @@ import { LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";
+import { useAuthorization } from "@/components/providers/authorization-provider";
 import {
   Accordion,
   AccordionContent,
@@ -22,10 +23,8 @@ import {
 } from "./portal-shell-config";
 
 type AppSidebarProps = {
-  isLoadingPermissions?: boolean;
   onAccountOpen: () => void;
   onNavigate?: () => void;
-  permissions?: readonly string[];
 };
 const SIDEBAR_SKELETON_KEYS = [
   "sidebar-loading-1",
@@ -34,19 +33,15 @@ const SIDEBAR_SKELETON_KEYS = [
   "sidebar-loading-4",
 ] as const;
 
-export function AppSidebar({
-  isLoadingPermissions = false,
-  onAccountOpen,
-  onNavigate,
-  permissions = [],
-}: AppSidebarProps) {
+export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
   const pathname = usePathname();
   const user = useAuthSessionStore((state) => state.user);
+  const { ability, isLoading } = useAuthorization();
   const { sidebarExpandedSections, setSidebarExpandedSections } =
     useInterfacePreferencesStore();
 
   const config = getShellConfig();
-  const navSections = getVisibleNavSections(permissions);
+  const navSections = getVisibleNavSections(ability);
   const navigateProps = onNavigate ? { onClick: onNavigate } : {};
 
   const activeLinkRef = React.useRef<HTMLAnchorElement>(null);
@@ -104,7 +99,7 @@ export function AppSidebar({
         className="flex-1 overflow-y-auto px-3 py-4 scrollbar-thin scrollbar-thumb-sidebar-border"
         aria-label="Main navigation"
       >
-        {isLoadingPermissions ? (
+        {isLoading ? (
           <div className="flex flex-col gap-3 px-3">
             {SIDEBAR_SKELETON_KEYS.map((key) => (
               <div

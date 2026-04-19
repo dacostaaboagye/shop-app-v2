@@ -2,6 +2,7 @@
 
 import type { Route } from "next";
 import type { useRouter, useSearchParams } from "next/navigation";
+import { getAppErrorMessage } from "@/lib/errors/app-error";
 import { toRoute } from "@/lib/routes";
 import { buildSearchParams } from "@/lib/url-state";
 
@@ -18,7 +19,9 @@ export const BRAND_SKELETON_KEYS = [
 ] as const;
 
 export function getBrandsErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Failed to load brands.";
+  return getAppErrorMessage(error, {
+    fallbackDetail: "Failed to load brands.",
+  });
 }
 
 export function replaceBrandQuery(

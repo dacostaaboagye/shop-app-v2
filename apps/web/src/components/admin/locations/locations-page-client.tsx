@@ -9,18 +9,15 @@ import {
   AppDataTable,
   type AppDataTableSort,
 } from "@/components/data-table/app-data-table";
+import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PermissionGate } from "@/components/system/permission-gate";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   adminLocationsQueryKey,
   fetchAdminLocations,
 } from "@/lib/react-query/admin-directory";
-import {
-  currentUserPermissionsQueryKey,
-  fetchCurrentUserPermissions,
-} from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
 import {
   getPageCount,
@@ -103,10 +100,6 @@ export function LocationsPageClient() {
     queryFn: () => fetchAdminLocations(backendQuery),
     queryKey: adminLocationsQueryKey(backendQuery),
   });
-  const permissionsQuery = useQuery({
-    queryFn: fetchCurrentUserPermissions,
-    queryKey: currentUserPermissionsQueryKey,
-  });
   const totalPages = getPageCount(
     locationsQuery.data?.totalCount ?? 0,
     pageSize,
@@ -114,8 +107,6 @@ export function LocationsPageClient() {
   const safePage = Math.min(page, totalPages);
   const hasFilters = query !== "" || status !== "all" || type !== "all";
   const sorting: AppDataTableSort = { columnId: sort, direction: dir };
-  const canCreateLocation =
-    permissionsQuery.data?.permissions.includes("locations.create") ?? false;
 
   useEffect(() => {
     if (!locationsQuery.data || safePage === page) {
@@ -130,14 +121,14 @@ export function LocationsPageClient() {
     <PageShell>
       <PageHeader
         actions={
-          canCreateLocation ? (
+          <PermissionGate permission="locations.create">
             <Link
               className={buttonVariants({ size: "sm" })}
               href={toRoute("/admin/locations/new")}
             >
               New location
             </Link>
-          ) : null
+          </PermissionGate>
         }
         description="Backend-backed location directory with URL-synced filters and server pagination."
         title="Locations"
@@ -180,12 +171,14 @@ export function LocationsPageClient() {
       ) : (
         <>
           {locationsQuery.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Unable to load locations</AlertTitle>
-              <AlertDescription>
-                {getLocationsErrorMessage(locationsQuery.error)}
-              </AlertDescription>
-            </Alert>
+            <AppErrorBanner
+              detail={getLocationsErrorMessage(locationsQuery.error)}
+              error={locationsQuery.error}
+              onRetry={() => {
+                void locationsQuery.refetch();
+              }}
+              title="Unable to load locations"
+            />
           ) : null}
           <AppDataTable
             columns={locationTableColumns}

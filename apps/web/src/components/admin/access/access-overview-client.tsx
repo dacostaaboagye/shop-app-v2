@@ -3,12 +3,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { ClipboardList, KeyRound, ShieldCheck, Users } from "lucide-react";
 import Link from "next/link";
+import { useAuthorization } from "@/components/providers/authorization-provider";
 import { AppEmptyState } from "@/components/system/app-empty-state";
 import {
   PageHeader,
   PageShell,
   StatCard,
 } from "@/components/system/page-shell";
+import { PermissionGate } from "@/components/system/permission-gate";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -24,10 +26,6 @@ import {
   fetchAdminPermissions,
   fetchAdminRoles,
 } from "@/lib/react-query/admin-access";
-import {
-  currentUserPermissionsQueryKey,
-  fetchCurrentUserPermissions,
-} from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
 import {
   ACCESS_AUDIT_SKELETON_KEYS,
@@ -36,16 +34,9 @@ import {
 } from "./access-overview-support";
 
 export function AccessOverviewClient() {
-  const currentPermissionsQuery = useQuery({
-    queryFn: fetchCurrentUserPermissions,
-    queryKey: currentUserPermissionsQueryKey,
-  });
-  const currentPermissions = currentPermissionsQuery.data?.permissions ?? [];
-  const canViewAudit = currentPermissions.includes("access.audit.view");
-  const canViewPermissions = currentPermissions.includes(
-    "access.permissions.view",
-  );
-  const canViewUsers = currentPermissions.includes("users.view");
+  const { can, permissions: currentPermissions } = useAuthorization();
+  const canViewAudit = can("access.audit.view");
+  const canViewPermissions = can("access.permissions.view");
   const rolesQuery = useQuery({
     queryFn: () => fetchAdminRoles({ page: 1, pageSize: 5, q: "" }),
     queryKey: ["admin", "access", "overview", "roles"],
@@ -117,27 +108,27 @@ export function AccessOverviewClient() {
               href="/admin/access/roles"
               label="Roles"
             />
-            {canViewUsers ? (
+            <PermissionGate permission="users.view">
               <AccessLinkCard
                 description="Inspect current user role coverage and assigned location scopes."
                 href="/admin/access/users"
                 label="User access"
               />
-            ) : null}
-            {canViewPermissions ? (
+            </PermissionGate>
+            <PermissionGate permission="access.permissions.view">
               <AccessLinkCard
                 description="Inspect page permissions and action permissions across the platform."
                 href="/admin/access/permissions"
                 label="Permissions"
               />
-            ) : null}
-            {canViewAudit ? (
+            </PermissionGate>
+            <PermissionGate permission="access.audit.view">
               <AccessLinkCard
                 description="Review append-only access changes with actor, target, and reason."
                 href="/admin/access/audit"
                 label="Audit log"
               />
-            ) : null}
+            </PermissionGate>
           </CardContent>
         </Card>
 
@@ -172,14 +163,14 @@ export function AccessOverviewClient() {
                 The latest append-only role and override events.
               </CardDescription>
             </div>
-            {canViewAudit ? (
+            <PermissionGate permission="access.audit.view">
               <Link
                 className={buttonVariants({ size: "sm", variant: "outline" })}
                 href={toRoute("/admin/access/audit")}
               >
                 Open audit log
               </Link>
-            ) : null}
+            </PermissionGate>
           </div>
         </CardHeader>
         <CardContent>
