@@ -1,19 +1,8 @@
 "use client";
 
-import type {
-  CurrentAssignment,
-  InvoiceResponse,
-} from "@shop/contracts";
-import { CheckCircle, Minus, Package, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import type { CurrentAssignment } from "@shop/contracts";
+import { Minus, Package, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
 export function VariantRow({
   assignment,
@@ -83,7 +72,7 @@ export function CartRow({
   onUpdate: (delta: number) => void;
 }) {
   const price = parseFloat(item.unitPrice);
-  const lineTotal = isNaN(price) ? 0 : price * item.quantity;
+  const lineTotal = Number.isNaN(price) ? 0 : price * item.quantity;
   const isCustomPrice = item.unitPrice !== item.assignment.sellingPrice;
 
   return (
@@ -93,7 +82,9 @@ export function CartRow({
           <p className="truncate text-sm font-medium leading-snug">
             {item.assignment.productName}
           </p>
-          <p className="text-xs text-muted-foreground">{item.assignment.variantName}</p>
+          <p className="text-xs text-muted-foreground">
+            {item.assignment.variantName}
+          </p>
         </div>
         <button
           aria-label="Remove from cart"
@@ -160,63 +151,11 @@ export function CartRow({
         </div>
 
         {/* Line total */}
-        <p className="text-sm font-semibold tabular-nums">{lineTotal.toFixed(2)}</p>
+        <p className="text-sm font-semibold tabular-nums">
+          {lineTotal.toFixed(2)}
+        </p>
       </div>
     </div>
-  );
-}
-
-export function SaleSuccessPanel({
-  invoice,
-  onNewSale,
-}: {
-  invoice: InvoiceResponse;
-  onNewSale: () => void;
-}) {
-  const paymentLabel =
-    invoice.paymentMethod === "mobile_money"
-      ? "Mobile money"
-      : invoice.paymentMethod
-        ? invoice.paymentMethod.charAt(0).toUpperCase() + invoice.paymentMethod.slice(1)
-        : "-";
-
-  return (
-    <Card className="mx-auto max-w-lg">
-      <CardHeader className="items-center text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/15 text-success">
-          <CheckCircle className="size-6" />
-        </div>
-        <CardTitle className="text-lg">Sale confirmed</CardTitle>
-        <p className="font-mono text-sm text-muted-foreground">{invoice.reference}</p>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        <div className="divide-y divide-border rounded-md border border-border">
-          {invoice.lines.map((line) => (
-            <div key={line.skuId} className="flex items-center gap-3 px-3 py-3">
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{line.skuSnapshot.productName}</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {line.skuSnapshot.variantName} &times; {line.quantity} @ {line.unitPrice}
-                </p>
-              </div>
-              <p className="shrink-0 text-sm font-semibold tabular-nums">{line.lineTotal}</p>
-            </div>
-          ))}
-        </div>
-        <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2.5 text-sm">
-          <span className="text-muted-foreground">Total</span>
-          <span className="font-semibold tabular-nums">{invoice.totalAmount}</span>
-        </div>
-        <p className="text-center text-xs text-muted-foreground">
-          Payment: {paymentLabel}
-        </p>
-      </CardContent>
-      <CardFooter>
-        <Button className="w-full" onClick={onNewSale} variant="outline">
-          New sale
-        </Button>
-      </CardFooter>
-    </Card>
   );
 }
 

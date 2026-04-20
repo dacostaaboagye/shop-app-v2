@@ -2,11 +2,11 @@ import type { FastifyInstance } from "fastify";
 import { AppError } from "../_core/errors/app-error.js";
 import type { RouteDefinition } from "../_core/route-contract.js";
 import type { AuthenticatedActor } from "../auth/access-token-authentication.service.js";
-import { canActorReceivePlatformEvent } from "./platform-event-access.js";
 import {
-  toPlatformEventStreamMessage,
   type PlatformEventSubscriber,
+  toPlatformEventStreamMessage,
 } from "./platform-event.types.js";
+import { canActorReceivePlatformEvent } from "./platform-event-access.js";
 
 const platformEventsStreamRoute: RouteDefinition = {
   access: { kind: "authenticated" },
@@ -50,21 +50,23 @@ export function registerPlatformEventRoutes(
         connectedAt: new Date().toISOString(),
       });
 
-      const unsubscribe = dependencies.eventSubscriber.subscribe(async (event) => {
-        if (
-          !(await canActorReceivePlatformEvent(event, actor, {
-            permissionService: dependencies.permissionService,
-          }))
-        ) {
-          return;
-        }
+      const unsubscribe = dependencies.eventSubscriber.subscribe(
+        async (event) => {
+          if (
+            !(await canActorReceivePlatformEvent(event, actor, {
+              permissionService: dependencies.permissionService,
+            }))
+          ) {
+            return;
+          }
 
-        writeSseFrame(
-          reply.raw,
-          "platform-event",
-          toPlatformEventStreamMessage(event),
-        );
-      });
+          writeSseFrame(
+            reply.raw,
+            "platform-event",
+            toPlatformEventStreamMessage(event),
+          );
+        },
+      );
 
       const keepalive = setInterval(() => {
         reply.raw.write(": keepalive\n\n");
@@ -85,7 +87,8 @@ function createUnavailableDependencies(): PlatformEventRouteDependencies {
   const unavailable = (): never => {
     throw new AppError({
       code: "internal_error",
-      detail: "Platform event services are not configured for this environment.",
+      detail:
+        "Platform event services are not configured for this environment.",
       statusCode: 503,
       title: "Platform events unavailable",
     });

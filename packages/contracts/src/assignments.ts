@@ -141,21 +141,47 @@ export const batchAssignVariantResponseSchema = z.object({
   workerId: z.string().uuid(),
 });
 
-export type BatchAssignVariantItem = z.infer<typeof batchAssignVariantItemSchema>;
-export type BatchAssignVariantRequest = z.infer<typeof batchAssignVariantRequestSchema>;
-export type BatchAssignVariantResponse = z.infer<typeof batchAssignVariantResponseSchema>;
+export type BatchAssignVariantItem = z.infer<
+  typeof batchAssignVariantItemSchema
+>;
+export type BatchAssignVariantRequest = z.infer<
+  typeof batchAssignVariantRequestSchema
+>;
+export type BatchAssignVariantResponse = z.infer<
+  typeof batchAssignVariantResponseSchema
+>;
 export type AssignVariantRequest = z.infer<typeof assignVariantRequestSchema>;
-export type ReassignVariantRequest = z.infer<typeof reassignVariantRequestSchema>;
-export type InitiateHandoverRequest = z.infer<typeof initiateHandoverRequestSchema>;
+export type ReassignVariantRequest = z.infer<
+  typeof reassignVariantRequestSchema
+>;
+export type InitiateHandoverRequest = z.infer<
+  typeof initiateHandoverRequestSchema
+>;
 export type RevertHandoverRequest = z.infer<typeof revertHandoverRequestSchema>;
-export type OwnershipEventResponse = z.infer<typeof ownershipEventResponseSchema>;
+export type OwnershipEventResponse = z.infer<
+  typeof ownershipEventResponseSchema
+>;
 export type CurrentAssignment = z.infer<typeof currentAssignmentSchema>;
-export type WorkerAssignmentListResponse = z.infer<typeof workerAssignmentListResponseSchema>;
-export type LocationAssignmentSummary = z.infer<typeof locationAssignmentSummarySchema>;
-export type LocationAssignmentListResponse = z.infer<typeof locationAssignmentListResponseSchema>;
-export type LocationAssignmentListQuery = z.infer<typeof locationAssignmentListQuerySchema>;
-export type WorkerAssignmentListQuery = z.infer<typeof workerAssignmentListQuerySchema>;
+export type WorkerAssignmentListResponse = z.infer<
+  typeof workerAssignmentListResponseSchema
+>;
+export type LocationAssignmentSummary = z.infer<
+  typeof locationAssignmentSummarySchema
+>;
+export type LocationAssignmentListResponse = z.infer<
+  typeof locationAssignmentListResponseSchema
+>;
+export type LocationAssignmentListQuery = z.infer<
+  typeof locationAssignmentListQuerySchema
+>;
+export type WorkerAssignmentListQuery = z.infer<
+  typeof workerAssignmentListQuerySchema
+>;
 export type HandoverResponse = z.infer<typeof handoverResponseSchema>;
-export type LocationStaffListQuery = z.infer<typeof locationStaffListQuerySchema>;
+export type LocationStaffListQuery = z.infer<
+  typeof locationStaffListQuerySchema
+>;
 export type LocationStaffSummary = z.infer<typeof locationStaffSummarySchema>;
-export type LocationStaffListResponse = z.infer<typeof locationStaffListResponseSchema>;
+export type LocationStaffListResponse = z.infer<
+  typeof locationStaffListResponseSchema
+>;

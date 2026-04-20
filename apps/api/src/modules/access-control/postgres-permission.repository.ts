@@ -79,7 +79,9 @@ export class PostgresPermissionRepository
     }));
   }
 
-  async getActiveLocationScopes(userId: string): Promise<ActiveLocationScopeRow[]> {
+  async getActiveLocationScopes(
+    userId: string,
+  ): Promise<ActiveLocationScopeRow[]> {
     const [fromRoles, fromOverrides] = await Promise.all([
       this.db
         .select({
@@ -98,7 +100,10 @@ export class PostgresPermissionRepository
           locationSlug: locations.slug,
         })
         .from(userPermissionOverrides)
-        .innerJoin(locations, eq(locations.id, userPermissionOverrides.locationId))
+        .innerJoin(
+          locations,
+          eq(locations.id, userPermissionOverrides.locationId),
+        )
         .where(
           and(
             eq(userPermissionOverrides.userId, userId),

@@ -11,12 +11,18 @@ import type {
   OfficialDocumentSettingsPatch,
 } from "./official-document-settings.types.js";
 
-type GlobalSettingsResponse = z.infer<typeof officialDocumentSettingsResponseSchema>;
-type LocationSettingsResponse = z.infer<typeof locationDocumentSettingsResponseSchema>;
+type GlobalSettingsResponse = z.infer<
+  typeof officialDocumentSettingsResponseSchema
+>;
+type LocationSettingsResponse = z.infer<
+  typeof locationDocumentSettingsResponseSchema
+>;
 type ProfileResponse = z.infer<typeof officialDocumentProfileResponseSchema>;
 
 export class OfficialDocumentSettingsService {
-  constructor(private readonly repository: OfficialDocumentSettingsRepository) {}
+  constructor(
+    private readonly repository: OfficialDocumentSettingsRepository,
+  ) {}
 
   async getGlobalSettings(): Promise<GlobalSettingsResponse> {
     return serializeGlobal(await this.repository.getGlobalSettings());
@@ -48,7 +54,9 @@ export class OfficialDocumentSettingsService {
     return serializeGlobal(saved);
   }
 
-  async getLocationSettings(locationId: string): Promise<LocationSettingsResponse> {
+  async getLocationSettings(
+    locationId: string,
+  ): Promise<LocationSettingsResponse> {
     const settings = await this.repository.getLocationSettings(locationId);
     if (!settings) throw locationNotFoundError(locationId);
     return serializeLocation(settings);
@@ -94,7 +102,7 @@ export class OfficialDocumentSettingsService {
       locationName:
         policy.allowLocationDisplayName && location?.displayName
           ? location.displayName
-          : location?.locationName ?? null,
+          : (location?.locationName ?? null),
       logoText: global.brand.logoText,
       paperSize:
         policy.allowLocationPaperSize && location?.defaultPaperSize

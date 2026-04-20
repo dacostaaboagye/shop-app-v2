@@ -37,7 +37,9 @@ export async function openPlatformEventStream(
     }
 
     if (!response.ok || !response.body) {
-      throw new Error(`Platform event stream failed with status ${response.status}.`);
+      throw new Error(
+        `Platform event stream failed with status ${response.status}.`,
+      );
     }
 
     options.onOpen?.();

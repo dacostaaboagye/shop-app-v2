@@ -8,9 +8,11 @@ import type {
 
 export type OfficialDocumentSettings = OfficialDocumentSettingsResponse;
 export type OfficialDocumentProfile = OfficialDocumentProfileResponse;
-export type OfficialDocumentSettingsPatch = UpdateOfficialDocumentSettingsRequest;
+export type OfficialDocumentSettingsPatch =
+  UpdateOfficialDocumentSettingsRequest;
 export type LocationDocumentSettings = LocationDocumentSettingsResponse;
-export type LocationDocumentSettingsPatch = UpdateLocationDocumentSettingsRequest;
+export type LocationDocumentSettingsPatch =
+  UpdateLocationDocumentSettingsRequest;
 
 export type OfficialDocumentSettingsRecord = Omit<
   OfficialDocumentSettings,

@@ -6,5 +6,7 @@ export default async function WorkerInvoicePage({
   params: Promise<{ reference: string }>;
 }) {
   const { reference } = await params;
-  return <WorkerInvoiceDetailPageClient reference={decodeURIComponent(reference)} />;
+  return (
+    <WorkerInvoiceDetailPageClient reference={decodeURIComponent(reference)} />
+  );
 }

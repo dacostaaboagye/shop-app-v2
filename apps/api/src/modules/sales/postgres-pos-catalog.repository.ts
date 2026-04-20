@@ -1,7 +1,10 @@
 import { catalogProducts, productVariants } from "@shop/database";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
-import type { PosCatalogVariantRepository, VariantSaleDetails } from "./sales.contracts.js";
+import type {
+  PosCatalogVariantRepository,
+  VariantSaleDetails,
+} from "./sales.contracts.js";
 
 export class PostgresPosCatalogVariantRepository
   implements PosCatalogVariantRepository
@@ -23,10 +26,15 @@ export class PostgresPosCatalogVariantRepository
         sku: productVariants.sku,
         slug: productVariants.slug,
         skuId: productVariants.id,
-        taxCategory: sql<string | null>`COALESCE(${productVariants.taxCategory}, ${catalogProducts.taxCategory})`,
+        taxCategory: sql<
+          string | null
+        >`COALESCE(${productVariants.taxCategory}, ${catalogProducts.taxCategory})`,
       })
       .from(productVariants)
-      .innerJoin(catalogProducts, eq(productVariants.productId, catalogProducts.id))
+      .innerJoin(
+        catalogProducts,
+        eq(productVariants.productId, catalogProducts.id),
+      )
       .where(
         and(
           inArray(productVariants.id, skuIds),

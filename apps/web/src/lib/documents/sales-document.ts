@@ -1,7 +1,17 @@
 import {
+  downloadDocumentFile,
+  type ShareResult,
+  shareDocumentFile,
+} from "./document-file-actions";
+import {
   DEFAULT_OFFICIAL_DOCUMENT_PROFILE,
   type OfficialDocumentProfile,
 } from "./official-document-profile";
+
+export {
+  downloadDocumentFile,
+  shareDocumentFile,
+} from "./document-file-actions";
 
 export type PrintableInvoiceLine = {
   skuId: string;
@@ -30,11 +40,11 @@ export type PrintableInvoiceData = {
   lines: PrintableInvoiceLine[];
 };
 
-type ShareResult = "shared" | "downloaded" | "unsupported";
-
 export function getSalesDocumentTitle(invoice: PrintableInvoiceData): string {
   if (invoice.type === "credit_note") return "Credit Note";
-  return invoice.status === "voided" ? "Voided Sales Document" : "Sales Receipt";
+  return invoice.status === "voided"
+    ? "Voided Sales Document"
+    : "Sales Receipt";
 }
 
 export function formatDocumentMoney(
@@ -47,7 +57,9 @@ export function formatDocumentMoney(
   return `${profile.currencyCode} ${trimmed}`;
 }
 
-export function getSalesDocumentFilename(invoice: PrintableInvoiceData): string {
+export function getSalesDocumentFilename(
+  invoice: PrintableInvoiceData,
+): string {
   const safeReference = invoice.reference.replace(/[^a-zA-Z0-9_-]+/g, "-");
   return `${safeReference || "sales-document"}.html`;
 }
@@ -61,7 +73,9 @@ export function buildSalesDocumentHtml(
     timeZone: profile.timezone,
   });
   const title = getSalesDocumentTitle(invoice);
-  const lineRows = invoice.lines.map((line) => toLineRowHtml(line, profile)).join("");
+  const lineRows = invoice.lines
+    .map((line) => toLineRowHtml(line, profile))
+    .join("");
 
   return `<!doctype html>
 <html lang="en">
@@ -159,18 +173,7 @@ export function downloadSalesDocument(
   invoice: PrintableInvoiceData,
   profile: OfficialDocumentProfile = DEFAULT_OFFICIAL_DOCUMENT_PROFILE,
 ): boolean {
-  if (typeof document === "undefined") return false;
-
-  const file = createSalesDocumentFile(invoice, profile);
-  const url = URL.createObjectURL(file);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = file.name;
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
-  return true;
+  return downloadDocumentFile(createSalesDocumentFile(invoice, profile));
 }
 
 export async function shareSalesDocument(
@@ -179,25 +182,23 @@ export async function shareSalesDocument(
 ): Promise<ShareResult> {
   if (typeof navigator === "undefined") return "unsupported";
 
-  const file = createSalesDocumentFile(invoice, profile);
-  if (navigator.canShare?.({ files: [file] })) {
-    await navigator.share({
-      files: [file],
-      title: `${getSalesDocumentTitle(invoice)} ${invoice.reference}`,
-    });
-    return "shared";
-  }
-
-  return downloadSalesDocument(invoice, profile) ? "downloaded" : "unsupported";
+  return shareDocumentFile(
+    createSalesDocumentFile(invoice, profile),
+    `${getSalesDocumentTitle(invoice)} ${invoice.reference}`,
+  );
 }
 
 function createSalesDocumentFile(
   invoice: PrintableInvoiceData,
   profile: OfficialDocumentProfile,
 ): File {
-  return new File([buildSalesDocumentHtml(invoice, profile)], getSalesDocumentFilename(invoice), {
-    type: "text/html;charset=utf-8",
-  });
+  return new File(
+    [buildSalesDocumentHtml(invoice, profile)],
+    getSalesDocumentFilename(invoice),
+    {
+      type: "text/html;charset=utf-8",
+    },
+  );
 }
 
 function toLineRowHtml(
@@ -217,7 +218,9 @@ function formatZero(profile: OfficialDocumentProfile): string {
 }
 
 function formatLabel(value: string): string {
-  return value.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+  return value
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function escapeHtml(value: string): string {

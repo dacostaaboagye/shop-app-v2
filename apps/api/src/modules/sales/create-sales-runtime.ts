@@ -4,10 +4,10 @@ import { PostgresOwnershipQueryRepository } from "../inventory-ownership/postgre
 import { SalesAttributionService } from "../inventory-ownership/sales-attribution.service.js";
 import { PostgresReferenceNumberRepository } from "../public-identifiers/postgres-reference-number.repository.js";
 import { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
-import { PostgresInvoiceRepository } from "./postgres-invoice.repository.js";
-import { PostgresPosCatalogVariantRepository } from "./postgres-pos-catalog.repository.js";
-import { PostgresInvoiceQueryRepository } from "./postgres-invoice-query.repository.js";
 import { PosSaleService } from "./pos-sale.service.js";
+import { PostgresInvoiceRepository } from "./postgres-invoice.repository.js";
+import { PostgresInvoiceQueryRepository } from "./postgres-invoice-query.repository.js";
+import { PostgresPosCatalogVariantRepository } from "./postgres-pos-catalog.repository.js";
 
 type SalesRuntime = {
   sales: {
@@ -17,7 +17,9 @@ type SalesRuntime = {
   };
 };
 
-export function createSalesRuntime(databaseRuntime: DatabaseRuntime): SalesRuntime {
+export function createSalesRuntime(
+  databaseRuntime: DatabaseRuntime,
+): SalesRuntime {
   const ownershipQueryService = new OwnershipQueryService(
     new PostgresOwnershipQueryRepository(databaseRuntime.db),
   );
@@ -31,12 +33,18 @@ export function createSalesRuntime(databaseRuntime: DatabaseRuntime): SalesRunti
     databaseRuntime.db,
   );
   const invoiceRepository = new PostgresInvoiceRepository(databaseRuntime.db);
-  const invoiceQueryRepository = new PostgresInvoiceQueryRepository(databaseRuntime.db);
+  const invoiceQueryRepository = new PostgresInvoiceQueryRepository(
+    databaseRuntime.db,
+  );
 
   const combinedInvoiceRepository = {
-    createSaleTransaction: invoiceRepository.createSaleTransaction.bind(invoiceRepository),
-    createReturnTransaction: invoiceRepository.createReturnTransaction.bind(invoiceRepository),
-    findByReference: invoiceQueryRepository.findByReference.bind(invoiceQueryRepository),
+    createSaleTransaction:
+      invoiceRepository.createSaleTransaction.bind(invoiceRepository),
+    createReturnTransaction:
+      invoiceRepository.createReturnTransaction.bind(invoiceRepository),
+    findByReference: invoiceQueryRepository.findByReference.bind(
+      invoiceQueryRepository,
+    ),
   };
 
   const posSaleService = new PosSaleService({

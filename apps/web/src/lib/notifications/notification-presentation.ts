@@ -4,7 +4,10 @@ const relativeTimeFormat = new Intl.RelativeTimeFormat(undefined, {
   numeric: "auto",
 });
 
-export function formatNotificationTimeLabel(occurredAt: string, now = new Date()) {
+export function formatNotificationTimeLabel(
+  occurredAt: string,
+  now = new Date(),
+) {
   const diffMs = new Date(occurredAt).getTime() - now.getTime();
   const diffMinutes = Math.round(diffMs / 60_000);
 

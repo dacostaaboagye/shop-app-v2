@@ -6,12 +6,20 @@ import type {
 import type { QueryKey } from "@tanstack/react-query";
 import { fetchJson } from "@/lib/react-query/fetch-json";
 
-export const notificationsQueryKeyPrefix = ["notifications"] as const satisfies QueryKey;
+export const notificationsQueryKeyPrefix = [
+  "notifications",
+] as const satisfies QueryKey;
 
 export const notificationsQueryKey = (limit = 12) =>
-  [...notificationsQueryKeyPrefix, "list", { limit }] as const satisfies QueryKey;
+  [
+    ...notificationsQueryKeyPrefix,
+    "list",
+    { limit },
+  ] as const satisfies QueryKey;
 
-export async function fetchNotifications(limit = 12): Promise<NotificationListResponse> {
+export async function fetchNotifications(
+  limit = 12,
+): Promise<NotificationListResponse> {
   const params = new URLSearchParams({ limit: String(limit) });
 
   return fetchJson<NotificationListResponse>(

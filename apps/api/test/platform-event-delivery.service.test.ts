@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import type { PlatformEventRecord } from "../src/modules/events/platform-event.types.js";
 import { PlatformEventDeliveryService } from "../src/modules/events/platform-event-delivery.service.js";
 import type { ClaimedPlatformEvent } from "../src/modules/events/postgres-platform-event.repository.js";
-import type { PlatformEventRecord } from "../src/modules/events/platform-event.types.js";
 
 describe("PlatformEventDeliveryService", () => {
   it("projects notifications, marks delivered, and then publishes live", async () => {
@@ -133,7 +133,9 @@ function makeClaimedEvent(
   };
 }
 
-function makeEvent(overrides: Partial<PlatformEventRecord> = {}): PlatformEventRecord {
+function makeEvent(
+  overrides: Partial<PlatformEventRecord> = {},
+): PlatformEventRecord {
   return {
     actor: { userSlug: "worker-a" },
     audience: [{ kind: "user", userId: "worker-a" }],

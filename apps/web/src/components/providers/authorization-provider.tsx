@@ -1,9 +1,9 @@
 "use client";
 
 import { createContextualCan, useAbility } from "@casl/react";
+import type { AuthLocationPermissionScope } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { createContext, type ReactNode, useContext, useMemo } from "react";
-import type { AuthLocationPermissionScope } from "@shop/contracts";
 import {
   canUseAllPermissions,
   canUseAnyPermission,

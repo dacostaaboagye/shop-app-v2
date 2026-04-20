@@ -11,7 +11,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { AppAccountDialog, AppNotificationsDialog } from "./portal-overlays";
+import { AppAccountDialog } from "./portal-account-dialog";
+import { AppNotificationsDialog } from "./portal-overlays";
 import { AppSidebar } from "./portal-sidebar";
 import { AppTopbar } from "./portal-topbar";
 

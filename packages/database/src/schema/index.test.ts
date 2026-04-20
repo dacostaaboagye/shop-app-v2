@@ -12,19 +12,19 @@ import {
   deliveries,
   deliveryItems,
   deliveryStatusEnum,
-  mediaAssets,
-  platformEventAudienceKindEnum,
-  platformEventDeliveryStatusEnum,
-  platformEventAudiences,
-  platformEvents,
-  officialDocumentSettings,
-  officialDocumentTypeEnum,
   issuedDocuments,
   locationDocumentSettings,
+  mediaAssets,
+  officialDocumentSettings,
+  officialDocumentTypeEnum,
   permissionAuditActionEnum,
   permissionAuditLog,
   permissionOverrideEffectEnum,
   permissions,
+  platformEventAudienceKindEnum,
+  platformEventAudiences,
+  platformEventDeliveryStatusEnum,
+  platformEvents,
   productVariants,
   rolePermissions,
   roles,
@@ -35,9 +35,9 @@ import {
   stockOwnershipEvents,
   stockReservationStatusEnum,
   stockReservations,
-  userPermissionOverrides,
   userNotificationStatusEnum,
   userNotifications,
+  userPermissionOverrides,
   userRoles,
   users,
 } from "./index.js";
@@ -63,8 +63,14 @@ assert.equal(getTableName(stockMovements), "stock_movements");
 assert.equal(getTableName(stockOwnershipEvents), "stock_ownership_events");
 assert.equal(getTableName(stockReservations), "stock_reservations");
 assert.equal(getTableName(platformEvents), "platform_events");
-assert.equal(getTableName(officialDocumentSettings), "official_document_settings");
-assert.equal(getTableName(locationDocumentSettings), "location_document_settings");
+assert.equal(
+  getTableName(officialDocumentSettings),
+  "official_document_settings",
+);
+assert.equal(
+  getTableName(locationDocumentSettings),
+  "location_document_settings",
+);
 assert.equal(getTableName(issuedDocuments), "issued_documents");
 assert.equal(getTableName(platformEventAudiences), "platform_event_audiences");
 assert.equal(getTableName(userNotifications), "user_notifications");

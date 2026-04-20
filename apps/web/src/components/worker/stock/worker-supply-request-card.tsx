@@ -27,7 +27,9 @@ export function WorkerSupplyRequestCard({
   const cancelMutation = useMutation({
     mutationFn: () => patchWorkerCancelSupplyRequest(item.supplyRequestId),
     onError(error) {
-      toast.error(getAppErrorMessage(error, { fallbackDetail: "Failed to cancel." }));
+      toast.error(
+        getAppErrorMessage(error, { fallbackDetail: "Failed to cancel." }),
+      );
     },
     onSuccess() {
       toast.success("Supply request cancelled.");
@@ -38,21 +40,42 @@ export function WorkerSupplyRequestCard({
   });
 
   return (
-    <article className={cn("relative overflow-hidden rounded-xl border bg-card shadow-sm", accent.border)}>
+    <article
+      className={cn(
+        "relative overflow-hidden rounded-xl border bg-card shadow-sm",
+        accent.border,
+      )}
+    >
       <div className={cn("absolute left-0 top-0 h-full w-1", accent.bar)} />
       <div className="flex flex-col gap-4 py-4 pl-5 pr-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-3">
-            <div className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-xl", accent.icon)}>
+            <div
+              className={cn(
+                "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
+                accent.icon,
+              )}
+            >
               <ClipboardList className="size-5" />
             </div>
             <div className="min-w-0">
-              <p className="font-semibold leading-tight">{item.skuSnapshot.productName}</p>
-              <p className="mt-0.5 text-sm text-muted-foreground">{item.skuSnapshot.variantName}</p>
-              <p className="mt-0.5 font-mono text-xs text-muted-foreground">{item.reference}</p>
+              <p className="font-semibold leading-tight">
+                {item.skuSnapshot.productName}
+              </p>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                {item.skuSnapshot.variantName}
+              </p>
+              <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+                {item.reference}
+              </p>
             </div>
           </div>
-          <span className={cn("flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium", accent.badge)}>
+          <span
+            className={cn(
+              "flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium",
+              accent.badge,
+            )}
+          >
             <StatusIcon className="size-3" />
             {label}
           </span>
@@ -69,7 +92,11 @@ export function WorkerSupplyRequestCard({
         {canConfirm || canCancel ? (
           <div className="flex flex-col gap-2 border-t border-border pt-3">
             {canConfirm ? (
-              <Button className="w-full gap-2" onClick={() => onConfirmReceipt(item)} size="lg">
+              <Button
+                className="w-full gap-2"
+                onClick={() => onConfirmReceipt(item)}
+                size="lg"
+              >
                 <PackageCheck className="size-4" />
                 Confirm receipt
               </Button>
@@ -105,14 +132,19 @@ function RequestRoute({ item }: { item: StockSupplyRequestResponse }) {
         <div className="flex items-center gap-1.5">
           <ArrowRight className="size-3 shrink-0" />
           <span>
-            From <span className="font-medium text-foreground">{item.sourceLocationName}</span>
+            From{" "}
+            <span className="font-medium text-foreground">
+              {item.sourceLocationName}
+            </span>
           </span>
         </div>
       ) : null}
       {item.gtnReference ? (
         <div className="flex items-center gap-1.5">
           <span className="text-muted-foreground">GTN:</span>
-          <span className="font-mono font-medium text-foreground">{item.gtnReference}</span>
+          <span className="font-mono font-medium text-foreground">
+            {item.gtnReference}
+          </span>
         </div>
       ) : null}
     </div>
@@ -124,7 +156,9 @@ function RequestQuantities({ item }: { item: StockSupplyRequestResponse }) {
     <dl className="grid grid-cols-2 divide-x divide-border rounded-lg border border-border bg-muted/30">
       <div className="px-4 py-2.5 text-center">
         <dt className="text-xs text-muted-foreground">Requested</dt>
-        <dd className="mt-1 text-sm font-semibold tabular-nums">{item.requestedQuantity}</dd>
+        <dd className="mt-1 text-sm font-semibold tabular-nums">
+          {item.requestedQuantity}
+        </dd>
       </div>
       <div className="px-4 py-2.5 text-center">
         <dt className="text-xs text-muted-foreground">Approved</dt>

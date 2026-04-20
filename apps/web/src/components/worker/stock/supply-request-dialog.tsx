@@ -27,15 +27,7 @@ import {
   supplyRequestSourcesQueryKey,
   workerSupplyRequestsQueryKey,
 } from "@/lib/react-query/stock-supply";
-
-type SupplyRequestTarget = {
-  locationId: string;
-  locationName: string;
-  productName: string;
-  sku: string;
-  skuId: string;
-  variantName: string;
-};
+import type { SupplyRequestTarget } from "./supply-request-dialog.types";
 
 type Props = {
   onOpenChange: (open: boolean) => void;
@@ -54,7 +46,12 @@ export function SupplyRequestDialog({ onOpenChange, open, target }: Props) {
 
   const sourceLocationsQuery = useQuery({
     enabled: open && !!target,
-    queryFn: () => fetchSupplyRequestSources(target!.locationId),
+    queryFn: () => {
+      if (!target) {
+        throw new Error("A destination location is required.");
+      }
+      return fetchSupplyRequestSources(target.locationId);
+    },
     queryKey: supplyRequestSourcesQueryKey(target?.locationId ?? ""),
     staleTime: 60_000,
   });
@@ -81,7 +78,9 @@ export function SupplyRequestDialog({ onOpenChange, open, target }: Props) {
     },
     onError(error) {
       toast.error(
-        getAppErrorMessage(error, { fallbackDetail: "Failed to submit supply request." }),
+        getAppErrorMessage(error, {
+          fallbackDetail: "Failed to submit supply request.",
+        }),
       );
     },
   });
@@ -114,7 +113,8 @@ export function SupplyRequestDialog({ onOpenChange, open, target }: Props) {
         <DialogHeader>
           <DialogTitle>Request supply</DialogTitle>
           <DialogDescription>
-            Choose the location that should send stock into your assigned location.
+            Choose the location that should send stock into your assigned
+            location.
           </DialogDescription>
         </DialogHeader>
 
@@ -123,14 +123,20 @@ export function SupplyRequestDialog({ onOpenChange, open, target }: Props) {
             <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/30 px-3 py-3">
               <div>
                 <p className="font-medium">{target.productName}</p>
-                <p className="text-sm text-muted-foreground">{target.variantName}</p>
-                <p className="font-mono text-xs text-muted-foreground">{target.sku}</p>
+                <p className="text-sm text-muted-foreground">
+                  {target.variantName}
+                </p>
+                <p className="font-mono text-xs text-muted-foreground">
+                  {target.sku}
+                </p>
               </div>
 
               <div className="flex items-start gap-2 rounded-md bg-background/70 px-2.5 py-2 text-xs text-muted-foreground">
                 <MapPin className="mt-0.5 size-3.5 shrink-0" />
                 <div className="flex flex-col gap-1">
-                  <span className="font-medium text-foreground">Destination location</span>
+                  <span className="font-medium text-foreground">
+                    Destination location
+                  </span>
                   <span>{target.locationName}</span>
                 </div>
               </div>
@@ -145,7 +151,8 @@ export function SupplyRequestDialog({ onOpenChange, open, target }: Props) {
                   onRetry={() => void sourceLocationsQuery.refetch()}
                   title="Unable to load source locations"
                 />
-              ) : sourceLocations.length === 0 && !sourceLocationsQuery.isPending ? (
+              ) : sourceLocations.length === 0 &&
+                !sourceLocationsQuery.isPending ? (
                 <AppEmptyState
                   description="No other active locations are currently available as transfer sources for this destination."
                   icon={Building2}
@@ -161,17 +168,23 @@ export function SupplyRequestDialog({ onOpenChange, open, target }: Props) {
                   onChange={(e) => setSourceLocationId(e.target.value)}
                 >
                   <option value="" disabled>
-                    {sourceLocationsQuery.isPending ? "Loading..." : "Select a source location"}
+                    {sourceLocationsQuery.isPending
+                      ? "Loading..."
+                      : "Select a source location"}
                   </option>
                   {sourceLocations.map((location) => (
-                    <option key={location.locationId} value={location.locationId}>
+                    <option
+                      key={location.locationId}
+                      value={location.locationId}
+                    >
                       {location.locationName}
                     </option>
                   ))}
                 </Select>
               )}
               <p className="text-xs text-muted-foreground">
-                Only source locations eligible to send stock into {target.locationName} are shown.
+                Only source locations eligible to send stock into{" "}
+                {target.locationName} are shown.
               </p>
             </div>
 
@@ -209,10 +222,18 @@ export function SupplyRequestDialog({ onOpenChange, open, target }: Props) {
             ) : null}
 
             <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancel
               </Button>
-              <Button type="submit" disabled={submitDisabled} aria-disabled={submitDisabled}>
+              <Button
+                type="submit"
+                disabled={submitDisabled}
+                aria-disabled={submitDisabled}
+              >
                 {mutation.isPending ? "Submitting..." : "Submit request"}
               </Button>
             </DialogFooter>

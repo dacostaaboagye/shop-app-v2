@@ -4,13 +4,13 @@ import type { PermissionResolutionService } from "../access-control/permission-r
 import { PlatformEventNotificationProjector } from "../notifications/platform-event-notification-projector.js";
 import { PostgresNotificationRecipientRepository } from "../notifications/postgres-notification-recipient.repository.js";
 import { PostgresUserNotificationRepository } from "../notifications/postgres-user-notification.repository.js";
+import type { PlatformEventPublisher } from "./platform-event.types.js";
+import { PlatformEventDeliveryService } from "./platform-event-delivery.service.js";
 import { PlatformEventDeliveryHealthService } from "./platform-event-delivery-health.service.js";
 import { PlatformEventDeliveryLoop } from "./platform-event-delivery-loop.js";
-import { PlatformEventDeliveryService } from "./platform-event-delivery.service.js";
 import { PlatformEventPipelinePublisher } from "./platform-event-pipeline.publisher.js";
-import type { PlatformEventPublisher } from "./platform-event.types.js";
-import { PostgresPlatformEventDeliveryHealthRepository } from "./postgres-platform-event-delivery-health.repository.js";
 import { PostgresPlatformEventRepository } from "./postgres-platform-event.repository.js";
+import { PostgresPlatformEventDeliveryHealthRepository } from "./postgres-platform-event-delivery-health.repository.js";
 
 type PlatformEventRuntimeEnv = Pick<
   ApiEnv,
@@ -33,9 +33,10 @@ export function createPlatformEventRuntime(
     dependencies.databaseRuntime.db,
   );
   const notificationProjector = new PlatformEventNotificationProjector({
-    notificationRecipientRepository: new PostgresNotificationRecipientRepository(
-      dependencies.databaseRuntime.db,
-    ),
+    notificationRecipientRepository:
+      new PostgresNotificationRecipientRepository(
+        dependencies.databaseRuntime.db,
+      ),
     permissionService: dependencies.permissionService,
     userNotificationRepository: new PostgresUserNotificationRepository(
       dependencies.databaseRuntime.db,
@@ -59,7 +60,8 @@ export function createPlatformEventRuntime(
 
   return {
     platformEventDeliveryHealthService: new PlatformEventDeliveryHealthService({
-      processingLeaseMs: dependencies.env.platformEventDeliveryProcessingLeaseMs,
+      processingLeaseMs:
+        dependencies.env.platformEventDeliveryProcessingLeaseMs,
       repository: new PostgresPlatformEventDeliveryHealthRepository(
         dependencies.databaseRuntime.db,
       ),

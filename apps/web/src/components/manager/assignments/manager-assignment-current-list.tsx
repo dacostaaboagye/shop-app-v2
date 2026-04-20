@@ -49,7 +49,9 @@ export function ManagerAssignmentCurrentList({
             </div>
             <div className="text-right text-sm">
               <p className="font-medium">{item.workerName}</p>
-              <p className="text-xs text-muted-foreground">{item.workerEmail}</p>
+              <p className="text-xs text-muted-foreground">
+                {item.workerEmail}
+              </p>
               <div className="mt-1 flex items-center justify-end gap-2">
                 <Badge className="text-xs" variant="outline">
                   qty {item.quantity}

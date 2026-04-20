@@ -27,8 +27,15 @@ export function WorkerStockPageClient() {
 
   const stockQuery = useQuery({
     enabled: !!selectedLocationScope,
-    queryFn: () => fetchWorkerAssignments(selectedLocationScope!.locationId),
-    queryKey: workerAssignmentsQueryKey(selectedLocationScope?.locationId ?? ""),
+    queryFn: () => {
+      if (!selectedLocationScope) {
+        throw new Error("A stock location is required.");
+      }
+      return fetchWorkerAssignments(selectedLocationScope.locationId);
+    },
+    queryKey: workerAssignmentsQueryKey(
+      selectedLocationScope?.locationId ?? "",
+    ),
     staleTime: 30_000,
   });
 
@@ -123,8 +130,12 @@ function StockRow({ item }: { item: CurrentAssignment }) {
         </div>
         <div className="min-w-0">
           <p className="font-medium leading-none">{item.productName}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{item.variantName}</p>
-          <p className="mt-0.5 font-mono text-xs text-muted-foreground">{item.sku}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {item.variantName}
+          </p>
+          <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+            {item.sku}
+          </p>
         </div>
       </div>
       <div className="flex items-center gap-3 text-sm">

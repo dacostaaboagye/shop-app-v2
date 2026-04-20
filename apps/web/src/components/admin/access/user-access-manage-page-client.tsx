@@ -8,14 +8,17 @@ import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  fetchAdminPermissions,
+  fetchAdminRoles,
+} from "@/lib/react-query/admin-access";
+import {
   adminLocationsQueryKey,
   fetchAdminLocations,
 } from "@/lib/react-query/admin-directory";
 import {
-  fetchAdminPermissions,
-  fetchAdminRoles,
-} from "@/lib/react-query/admin-access";
-import { adminUserAccessDetailQueryKey, fetchAdminUserAccessDetail } from "@/lib/react-query/admin-user-access";
+  adminUserAccessDetailQueryKey,
+  fetchAdminUserAccessDetail,
+} from "@/lib/react-query/admin-user-access";
 import { toRoute } from "@/lib/routes";
 import { UserAccessManageBody } from "./user-access-manage-body";
 import { getQueryErrorMessage } from "./user-access-manage-support";

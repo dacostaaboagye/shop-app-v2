@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, LogOut } from "lucide-react";
+import { Bell } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -24,29 +24,30 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
-import { logout } from "@/lib/auth/auth-client";
-import {
-  formatNotificationTimeLabel,
-  getNotificationActorLabel,
-  getNotificationEventLabel,
-} from "@/lib/notifications/notification-presentation";
 import { getNotificationCenterHref } from "@/lib/notifications/notification-route";
-import { authQueryKey } from "@/lib/react-query/auth";
 import {
   fetchNotifications,
-  notificationsQueryKeyPrefix,
   notificationsQueryKey,
+  notificationsQueryKeyPrefix,
   patchAllNotificationsRead,
   patchNotificationRead,
 } from "@/lib/react-query/notifications";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
 import { AppErrorBanner } from "./app-error";
+import { NotificationFeedCard } from "./notification-feed-card";
 import { getShellConfig } from "./portal-shell-config";
 
 type AppDialogProps = {
   onOpenChange: (open: boolean) => void;
   open: boolean;
 };
+
+const NOTIFICATION_DIALOG_SKELETON_KEYS = [
+  "notification-dialog-skeleton-1",
+  "notification-dialog-skeleton-2",
+  "notification-dialog-skeleton-3",
+  "notification-dialog-skeleton-4",
+] as const;
 
 export function AppNotificationsDialog({ onOpenChange, open }: AppDialogProps) {
   const config = getShellConfig();
@@ -77,8 +78,12 @@ export function AppNotificationsDialog({ onOpenChange, open }: AppDialogProps) {
   });
   const notifications = notificationsQuery.data?.items ?? [];
   const unreadCount = notificationsQuery.data?.unreadCount ?? 0;
-  const unreadItems = notifications.filter((notification) => notification.status === "unread");
-  const readItems = notifications.filter((notification) => notification.status === "read");
+  const unreadItems = notifications.filter(
+    (notification) => notification.status === "unread",
+  );
+  const readItems = notifications.filter(
+    (notification) => notification.status === "read",
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -96,9 +101,9 @@ export function AppNotificationsDialog({ onOpenChange, open }: AppDialogProps) {
 
         {notificationsQuery.isPending ? (
           <div className="flex flex-col gap-3">
-            {Array.from({ length: 4 }, (_, index) => (
+            {NOTIFICATION_DIALOG_SKELETON_KEYS.map((key) => (
               <div
-                key={`notification-skeleton-${index}`}
+                key={key}
                 className="rounded-lg border border-border bg-muted/25 p-4"
               >
                 <Skeleton className="h-4 w-2/3" />
@@ -141,12 +146,18 @@ export function AppNotificationsDialog({ onOpenChange, open }: AppDialogProps) {
                   ) : null}
                 </div>
                 {unreadItems.map((notification) => (
-                  <NotificationCard
+                  <NotificationFeedCard
                     key={notification.notificationKey}
                     notification={notification}
-                    pending={markReadMutation.variables === notification.notificationKey && markReadMutation.isPending}
+                    pending={
+                      markReadMutation.variables ===
+                        notification.notificationKey &&
+                      markReadMutation.isPending
+                    }
                     onMarkRead={() =>
-                      void markReadMutation.mutateAsync(notification.notificationKey)
+                      void markReadMutation.mutateAsync(
+                        notification.notificationKey,
+                      )
                     }
                   />
                 ))}
@@ -160,7 +171,7 @@ export function AppNotificationsDialog({ onOpenChange, open }: AppDialogProps) {
                     Earlier
                   </p>
                   {readItems.map((notification) => (
-                    <NotificationCard
+                    <NotificationFeedCard
                       key={notification.notificationKey}
                       notification={notification}
                     />
@@ -194,107 +205,5 @@ export function AppNotificationsDialog({ onOpenChange, open }: AppDialogProps) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-export function AppAccountDialog({ onOpenChange, open }: AppDialogProps) {
-  const queryClient = useQueryClient();
-  const user = useAuthSessionStore((state) => state.user);
-  const logoutMutation = useMutation({
-    mutationFn: logout,
-    onSuccess() {
-      queryClient.removeQueries({ queryKey: authQueryKey });
-      onOpenChange(false);
-    },
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Account</DialogTitle>
-          <DialogDescription>
-            Access is permission-scoped. Pages appear in the sidebar based on
-            your assigned roles and permissions.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex flex-col gap-4">
-          <div className="rounded-lg border border-border bg-muted/35 p-4">
-            <p className="text-sm font-medium">
-              {user ? `${user.firstName} ${user.lastName}` : "Signed out"}
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {user?.email ?? "No active session"}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Badge variant="secondary">{user?.status ?? "anonymous"}</Badge>
-            </div>
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={() => void logoutMutation.mutateAsync()}
-            disabled={logoutMutation.isPending}
-          >
-            {logoutMutation.isPending ? (
-              <Spinner data-icon="inline-start" />
-            ) : null}
-            Sign out
-            <LogOut data-icon="inline-end" />
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function NotificationCard({
-  notification,
-  onMarkRead,
-  pending = false,
-}: {
-  notification: Awaited<ReturnType<typeof fetchNotifications>>["items"][number];
-  onMarkRead?: () => void;
-  pending?: boolean;
-}) {
-  return (
-    <div
-      className={`rounded-lg border border-border bg-muted/35 p-4 ${
-        notification.status === "read" ? "opacity-75" : ""
-      }`}
-    >
-      <div className="flex flex-wrap items-center gap-2">
-        <p className="text-sm font-medium">{notification.summary}</p>
-        <Badge variant="outline">
-          {getNotificationEventLabel(notification.eventType)}
-        </Badge>
-        <Badge variant="outline">
-          {formatNotificationTimeLabel(notification.occurredAt)}
-        </Badge>
-      </div>
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <span>{getNotificationActorLabel(notification)}</span>
-        <span>&bull;</span>
-        <span>{notification.resource.reference}</span>
-      </div>
-      {notification.status === "unread" && onMarkRead ? (
-        <div className="mt-3">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={onMarkRead}
-            disabled={pending}
-          >
-            {pending ? <Spinner data-icon="inline-start" /> : null}
-            Mark read
-          </Button>
-        </div>
-      ) : null}
-    </div>
   );
 }

@@ -7,10 +7,15 @@ import { statusMeta } from "./manager-supply-requests.support";
 
 export function CompactIncomingRequestList({
   items,
+  manageableLocationId,
   onAction,
 }: {
   items: StockSupplyRequestResponse[];
-  onAction: (action: SupplyRequestAction, item: StockSupplyRequestResponse) => void;
+  manageableLocationId: string | null;
+  onAction: (
+    action: SupplyRequestAction,
+    item: StockSupplyRequestResponse,
+  ) => void;
 }) {
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
@@ -20,6 +25,7 @@ export function CompactIncomingRequestList({
           item={item}
           itemCount={items.length}
           key={item.supplyRequestId}
+          manageableLocationId={manageableLocationId}
           onAction={onAction}
         />
       ))}
@@ -31,16 +37,22 @@ function CompactIncomingRequestRow({
   index,
   item,
   itemCount,
+  manageableLocationId,
   onAction,
 }: {
   index: number;
   item: StockSupplyRequestResponse;
   itemCount: number;
-  onAction: (action: SupplyRequestAction, item: StockSupplyRequestResponse) => void;
+  manageableLocationId: string | null;
+  onAction: (
+    action: SupplyRequestAction,
+    item: StockSupplyRequestResponse,
+  ) => void;
 }) {
   const { accent, icon: StatusIcon, label } = statusMeta(item.status);
-  const canApprove = item.status === "pending";
-  const canDispatch = item.status === "approved";
+  const canManage = item.sourceLocationId === manageableLocationId;
+  const canApprove = canManage && item.status === "pending";
+  const canDispatch = canManage && item.status === "approved";
 
   return (
     <div
@@ -49,7 +61,10 @@ function CompactIncomingRequestRow({
         index !== itemCount - 1 && "border-b border-border",
       )}
     >
-      <div aria-hidden className={cn("absolute left-0 top-0 h-full w-0.5", accent.bar)} />
+      <div
+        aria-hidden
+        className={cn("absolute left-0 top-0 h-full w-0.5", accent.bar)}
+      />
       <div className="min-w-0 flex-1 pl-1">
         <p className="truncate text-sm font-medium leading-tight">
           {item.skuSnapshot.productName}
@@ -71,8 +86,15 @@ function CompactIncomingRequestRow({
           </p>
         </div>
         <div className="min-w-[80px]">
-          <p className="text-center text-[10px] text-muted-foreground">Status</p>
-          <div className={cn("mt-0.5 flex items-center justify-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium", accent.badge)}>
+          <p className="text-center text-[10px] text-muted-foreground">
+            Status
+          </p>
+          <div
+            className={cn(
+              "mt-0.5 flex items-center justify-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium",
+              accent.badge,
+            )}
+          >
             <StatusIcon className="size-2.5" />
             {label}
           </div>
@@ -97,22 +119,41 @@ function RowActions({
   canApprove: boolean;
   canDispatch: boolean;
   item: StockSupplyRequestResponse;
-  onAction: (action: SupplyRequestAction, item: StockSupplyRequestResponse) => void;
+  onAction: (
+    action: SupplyRequestAction,
+    item: StockSupplyRequestResponse,
+  ) => void;
 }) {
   return (
     <div className="flex items-center gap-2">
       {canApprove ? (
         <div className="flex gap-1">
-          <Button className="h-8 w-8 p-0" onClick={() => onAction("approve", item)} size="sm" title="Approve" variant="outline">
+          <Button
+            className="h-8 w-8 p-0"
+            onClick={() => onAction("approve", item)}
+            size="sm"
+            title="Approve"
+            variant="outline"
+          >
             <CheckCircle2 className="size-3.5 text-success" />
           </Button>
-          <Button className="h-8 w-8 p-0" onClick={() => onAction("reject", item)} size="sm" title="Reject" variant="outline">
+          <Button
+            className="h-8 w-8 p-0"
+            onClick={() => onAction("reject", item)}
+            size="sm"
+            title="Reject"
+            variant="outline"
+          >
             <XCircle className="size-3.5 text-destructive" />
           </Button>
         </div>
       ) : null}
       {canDispatch ? (
-        <Button className="h-8 shrink-0 gap-1.5 px-3 text-xs" onClick={() => onAction("dispatch", item)} size="sm">
+        <Button
+          className="h-8 shrink-0 gap-1.5 px-3 text-xs"
+          onClick={() => onAction("dispatch", item)}
+          size="sm"
+        >
           <ArrowRight className="size-3.5" />
           <span className="hidden sm:inline">Dispatch</span>
         </Button>

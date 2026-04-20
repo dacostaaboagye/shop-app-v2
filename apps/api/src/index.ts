@@ -13,6 +13,7 @@ import { NotificationWriteService } from "./modules/notifications/notification-w
 import { PostgresNotificationQueryRepository } from "./modules/notifications/postgres-notification-query.repository.js";
 import { PostgresNotificationWriteRepository } from "./modules/notifications/postgres-notification-write.repository.js";
 import { createOfficialDocumentSettingsRuntime } from "./modules/official-documents/create-official-document-settings-runtime.js";
+import { SalesIssuedDocumentSnapshotService } from "./modules/official-documents/sales-issued-document-snapshot.service.js";
 import { createSalesRuntime } from "./modules/sales/create-sales-runtime.js";
 import { createStockRuntime } from "./modules/stock/create-stock-runtime.js";
 import { createServer } from "./server/create-server.js";
@@ -46,7 +47,15 @@ const notificationQueryService = new NotificationQueryService(
 const notificationWriteService = new NotificationWriteService(
   new PostgresNotificationWriteRepository(databaseRuntime.db),
 );
-const officialDocumentRuntime = createOfficialDocumentSettingsRuntime(databaseRuntime);
+const officialDocumentRuntime =
+  createOfficialDocumentSettingsRuntime(databaseRuntime);
+const salesDocumentSnapshotService = new SalesIssuedDocumentSnapshotService({
+  invoiceRepository: salesRuntime.sales.invoiceQueryRepository,
+  permissionService: authRuntime.accessControl.permissionService,
+  settingsService: officialDocumentRuntime.officialDocuments.settingsService,
+  snapshotService:
+    officialDocumentRuntime.officialDocuments.issuedDocumentSnapshotService,
+});
 const server = createServer({
   accessControl: authRuntime.accessControl,
   adminAccess: adminDirectoryRuntime.adminDirectory,
@@ -56,7 +65,9 @@ const server = createServer({
   adminUserAccess: adminDirectoryRuntime.adminDirectory,
   auth: authRuntime.auth,
   catalogManagerQuery: {
-    variantSearchRepository: new PostgresVariantSearchRepository(databaseRuntime.db),
+    variantSearchRepository: new PostgresVariantSearchRepository(
+      databaseRuntime.db,
+    ),
   },
   catalogBrands: catalogRuntime.catalog,
   catalogMedia: catalogRuntime.catalog,
@@ -72,6 +83,9 @@ const server = createServer({
     notificationQueryService,
     notificationWriteService,
   },
+  issuedDocuments: {
+    salesDocumentSnapshotService,
+  },
   officialDocuments: {
     permissionService: authRuntime.accessControl.permissionService,
     settingsService: officialDocumentRuntime.officialDocuments.settingsService,
@@ -83,12 +97,15 @@ const server = createServer({
   catalogWrite: catalogRuntime.catalog,
   posSales: {
     invoiceRepository: salesRuntime.sales.invoiceQueryRepository,
+    permissionService: authRuntime.accessControl.permissionService,
     posSaleService: salesRuntime.sales.posSaleService,
   },
   stock: stockRuntime.stock,
   stockAssignments: assignmentsRuntime.assignments,
   stockBalance: stockRuntime.stock,
-  stockBalanceLocation: { stockBalanceQueryRepo: stockRuntime.stock.stockBalanceQueryRepo },
+  stockBalanceLocation: {
+    stockBalanceQueryRepo: stockRuntime.stock.stockBalanceQueryRepo,
+  },
   stockCount: stockRuntime.stock,
   stockSupply: {
     locationRepository: stockRuntime.stock.locationRepository,

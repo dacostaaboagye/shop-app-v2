@@ -6,11 +6,19 @@ describe("PlatformEventDeliveryWorkerRuntime", () => {
   it("starts the delivery loop when enabled", async () => {
     const calls: string[] = [];
     const runtime = createPlatformEventDeliveryWorkerRuntime({
-      databasePool: { async end() { calls.push("pool-end"); } },
+      databasePool: {
+        async end() {
+          calls.push("pool-end");
+        },
+      },
       deliveryEnabled: true,
       deliveryLoop: {
-        start() { calls.push("loop-start"); },
-        stop() { calls.push("loop-stop"); },
+        start() {
+          calls.push("loop-start");
+        },
+        stop() {
+          calls.push("loop-stop");
+        },
       },
     });
 
@@ -23,11 +31,19 @@ describe("PlatformEventDeliveryWorkerRuntime", () => {
   it("does not start the delivery loop when disabled", async () => {
     const calls: string[] = [];
     const runtime = createPlatformEventDeliveryWorkerRuntime({
-      databasePool: { async end() { calls.push("pool-end"); } },
+      databasePool: {
+        async end() {
+          calls.push("pool-end");
+        },
+      },
       deliveryEnabled: false,
       deliveryLoop: {
-        start() { calls.push("loop-start"); },
-        stop() { calls.push("loop-stop"); },
+        start() {
+          calls.push("loop-start");
+        },
+        stop() {
+          calls.push("loop-stop");
+        },
       },
     });
 
@@ -40,11 +56,19 @@ describe("PlatformEventDeliveryWorkerRuntime", () => {
   it("stops the delivery loop before closing the database pool", async () => {
     const calls: string[] = [];
     const runtime = createPlatformEventDeliveryWorkerRuntime({
-      databasePool: { async end() { calls.push("pool-end"); } },
+      databasePool: {
+        async end() {
+          calls.push("pool-end");
+        },
+      },
       deliveryEnabled: true,
       deliveryLoop: {
-        start() { calls.push("loop-start"); },
-        stop() { calls.push("loop-stop"); },
+        start() {
+          calls.push("loop-start");
+        },
+        stop() {
+          calls.push("loop-stop");
+        },
       },
     });
 

@@ -6,9 +6,9 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
   varchar,
-  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { auditColumns, publicUuidColumn } from "./common.js";
 import { users } from "./identity.js";
@@ -112,7 +112,9 @@ export const officialDocumentSettings = pgTable(
     updatedBy: uuid("updated_by").references(() => users.id),
     ...auditColumns,
   },
-  (table) => [index("official_document_settings_key_idx").on(table.settingsKey)],
+  (table) => [
+    index("official_document_settings_key_idx").on(table.settingsKey),
+  ],
 );
 
 export const locationDocumentSettings = pgTable(
@@ -134,7 +136,9 @@ export const locationDocumentSettings = pgTable(
     updatedBy: uuid("updated_by").references(() => users.id),
     ...auditColumns,
   },
-  (table) => [index("location_document_settings_location_idx").on(table.locationId)],
+  (table) => [
+    index("location_document_settings_location_idx").on(table.locationId),
+  ],
 );
 
 export const issuedDocuments = pgTable(
@@ -203,13 +207,16 @@ export const locationDocumentSettingsRelations = relations(
   }),
 );
 
-export const issuedDocumentsRelations = relations(issuedDocuments, ({ one }) => ({
-  issuedByUser: one(users, {
-    fields: [issuedDocuments.issuedBy],
-    references: [users.id],
+export const issuedDocumentsRelations = relations(
+  issuedDocuments,
+  ({ one }) => ({
+    issuedByUser: one(users, {
+      fields: [issuedDocuments.issuedBy],
+      references: [users.id],
+    }),
+    location: one(locations, {
+      fields: [issuedDocuments.locationId],
+      references: [locations.id],
+    }),
   }),
-  location: one(locations, {
-    fields: [issuedDocuments.locationId],
-    references: [locations.id],
-  }),
-}));
+);

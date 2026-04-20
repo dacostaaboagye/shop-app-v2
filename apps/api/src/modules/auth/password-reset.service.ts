@@ -63,11 +63,16 @@ export class PasswordResetService {
 
     const resetUrl = `${this.webBaseUrl}/reset-password?token=${token}`;
 
-    await this.emailService.sendPasswordResetEmail({
-      to: user.email,
-      firstName: user.firstName,
-      resetUrl,
-    });
+    try {
+      await this.emailService.sendPasswordResetEmail({
+        to: user.email,
+        firstName: user.firstName,
+        resetUrl,
+      });
+    } catch (error) {
+      // Preserve forgot-password anti-enumeration behavior; operators use logs.
+      console.error("[auth] Failed to send password reset email:", error);
+    }
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {

@@ -78,10 +78,7 @@ export const stockSupplyRequests = pgTable(
   },
   (table) => [
     uniqueIndex("supply_requests_reference_unique").on(table.reference),
-    check(
-      "supply_requests_qty_positive",
-      sql`${table.requestedQuantity} > 0`,
-    ),
+    check("supply_requests_qty_positive", sql`${table.requestedQuantity} > 0`),
     check(
       "supply_requests_approved_qty_positive",
       sql`${table.approvedQuantity} IS NULL OR ${table.approvedQuantity} > 0`,

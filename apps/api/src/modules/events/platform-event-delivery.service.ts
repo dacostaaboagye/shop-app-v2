@@ -1,4 +1,7 @@
-import type { PlatformEventPublisher, PlatformEventRecord } from "./platform-event.types.js";
+import type {
+  PlatformEventPublisher,
+  PlatformEventRecord,
+} from "./platform-event.types.js";
 import type { ClaimedPlatformEvent } from "./postgres-platform-event.repository.js";
 
 type EventDeliveryLogger = {
@@ -45,21 +48,24 @@ const DEFAULT_RETRY_BASE_DELAY_MS = 2_000;
 const MAX_RETRY_DELAY_MS = 60_000;
 
 export class PlatformEventDeliveryService {
-  constructor(private readonly dependencies: PlatformEventDeliveryDependencies) {}
+  constructor(
+    private readonly dependencies: PlatformEventDeliveryDependencies,
+  ) {}
 
-  async dispatchAvailable(input: {
-    batchSize?: number;
-    now?: Date;
-  } = {}): Promise<PlatformEventDeliveryResult> {
+  async dispatchAvailable(
+    input: { batchSize?: number; now?: Date } = {},
+  ): Promise<PlatformEventDeliveryResult> {
     const now = input.now ?? new Date();
-    const claimed = await this.dependencies.eventLogRepository.claimPendingBatch({
-      limit: input.batchSize ?? DEFAULT_BATCH_SIZE,
-      now,
-      staleProcessingBefore: new Date(
-        now.getTime() -
-          (this.dependencies.processingLeaseMs ?? DEFAULT_PROCESSING_LEASE_MS),
-      ),
-    });
+    const claimed =
+      await this.dependencies.eventLogRepository.claimPendingBatch({
+        limit: input.batchSize ?? DEFAULT_BATCH_SIZE,
+        now,
+        staleProcessingBefore: new Date(
+          now.getTime() -
+            (this.dependencies.processingLeaseMs ??
+              DEFAULT_PROCESSING_LEASE_MS),
+        ),
+      });
 
     let deliveredCount = 0;
     let failedCount = 0;
@@ -68,7 +74,9 @@ export class PlatformEventDeliveryService {
     for (const claimedEvent of claimed) {
       try {
         if (this.dependencies.notificationProjector) {
-          await this.dependencies.notificationProjector.project(claimedEvent.event);
+          await this.dependencies.notificationProjector.project(
+            claimedEvent.event,
+          );
         }
 
         await this.dependencies.eventLogRepository.markDelivered({
@@ -95,7 +103,8 @@ export class PlatformEventDeliveryService {
             now.getTime() +
               getRetryDelayMs(
                 claimedEvent.deliveryAttempts,
-                this.dependencies.retryBaseDelayMs ?? DEFAULT_RETRY_BASE_DELAY_MS,
+                this.dependencies.retryBaseDelayMs ??
+                  DEFAULT_RETRY_BASE_DELAY_MS,
               ),
           ),
           terminal,
@@ -104,7 +113,11 @@ export class PlatformEventDeliveryService {
         if (terminal) {
           failedCount += 1;
           this.dependencies.logger?.error(
-            { err: error, eventId: claimedEvent.event.id, eventType: claimedEvent.event.type },
+            {
+              err: error,
+              eventId: claimedEvent.event.id,
+              eventType: claimedEvent.event.type,
+            },
             "Platform event delivery failed permanently",
           );
         } else {
@@ -147,7 +160,10 @@ async function publishLiveBestEffort(
 }
 
 function getRetryDelayMs(attempt: number, baseDelayMs: number) {
-  return Math.min(baseDelayMs * 2 ** Math.max(attempt - 1, 0), MAX_RETRY_DELAY_MS);
+  return Math.min(
+    baseDelayMs * 2 ** Math.max(attempt - 1, 0),
+    MAX_RETRY_DELAY_MS,
+  );
 }
 
 function serializeError(error: unknown) {

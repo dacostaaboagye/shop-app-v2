@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { issueAccessToken } from "../src/modules/auth/access-token.js";
 import { AppError } from "../src/modules/_core/errors/app-error.js";
+import { issueAccessToken } from "../src/modules/auth/access-token.js";
 import { createServer } from "../src/server/create-server.js";
 
 const NOW = new Date("2026-04-20T00:00:00.000Z");

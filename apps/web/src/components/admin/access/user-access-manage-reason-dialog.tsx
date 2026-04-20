@@ -19,19 +19,14 @@ import { FieldGroup } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  adminUserAccessDetailQueryKey,
-  assignAdminUserRole,
-  removeAdminUserPermissionOverride,
-  revokeAdminUserRole,
-  setAdminUserPermissionOverride,
-} from "@/lib/react-query/admin-user-access";
+import { adminUserAccessDetailQueryKey } from "@/lib/react-query/admin-user-access";
 import { toast } from "@/lib/toast";
+import { submitUserAccessReasonAction } from "./user-access-manage-actions";
 import {
   getDialogMeta,
   isReasonDialogPending,
-  roleRequiresLocationScope,
   type ReasonDialogState,
+  roleRequiresLocationScope,
 } from "./user-access-manage-support";
 
 export function UserAccessManageReasonDialog({
@@ -50,52 +45,8 @@ export function UserAccessManageReasonDialog({
   const queryClient = useQueryClient();
   const [wasSubmitted, setWasSubmitted] = useState(false);
   const mutation = useMutation({
-    mutationFn: async ({
-      locationSlug,
-      reason,
-    }: {
-      locationSlug: string;
-      reason: string;
-    }) => {
-      switch (state.kind) {
-        case "allow-override":
-          return setAdminUserPermissionOverride(slug, {
-            effect: "allow",
-            locationSlug: null,
-            permissionKey: state.permissionKey,
-            reason,
-          });
-        case "assign-role":
-          return assignAdminUserRole(slug, {
-            locationSlug: locationSlug || null,
-            reason,
-            roleSlug: state.roleSlug,
-          });
-        case "deny-override":
-          return setAdminUserPermissionOverride(slug, {
-            effect: "deny",
-            locationSlug: null,
-            permissionKey: state.permissionKey,
-            reason,
-          });
-        case "remove-override":
-          return removeAdminUserPermissionOverride(
-            slug,
-            state.override.permissionKey,
-            {
-              locationSlug: state.override.locationSlug,
-              reason,
-            },
-          );
-        case "revoke-role":
-          return revokeAdminUserRole(slug, state.assignment.roleSlug, {
-            locationSlug: state.assignment.locationSlug,
-            reason,
-          });
-        default:
-          throw new Error("No access action is selected.");
-      }
-    },
+    mutationFn: (value: { locationSlug: string; reason: string }) =>
+      submitUserAccessReasonAction({ ...value, slug, state }),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: adminUserAccessDetailQueryKey(slug),
@@ -236,7 +187,9 @@ export function UserAccessManageReasonDialog({
                   inputId={field.name}
                   label="Reason"
                   showErrors={
-                    field.state.meta.isBlurred || mutation.isError || wasSubmitted
+                    field.state.meta.isBlurred ||
+                    mutation.isError ||
+                    wasSubmitted
                   }
                 >
                   <Textarea

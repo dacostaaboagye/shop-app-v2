@@ -138,14 +138,32 @@ export const gtnResponseSchema = z.object({
 
 export type SupplyRequestStatus = z.infer<typeof supplyRequestStatusSchema>;
 export type GtnStatus = z.infer<typeof gtnStatusSchema>;
-export type CreateStockSupplyRequest = z.infer<typeof createStockSupplyRequestSchema>;
-export type ApproveStockSupplyRequest = z.infer<typeof approveStockSupplyRequestSchema>;
-export type RejectStockSupplyRequest = z.infer<typeof rejectStockSupplyRequestSchema>;
-export type DispatchStockSupplyRequest = z.infer<typeof dispatchStockSupplyRequestSchema>;
+export type CreateStockSupplyRequest = z.infer<
+  typeof createStockSupplyRequestSchema
+>;
+export type ApproveStockSupplyRequest = z.infer<
+  typeof approveStockSupplyRequestSchema
+>;
+export type RejectStockSupplyRequest = z.infer<
+  typeof rejectStockSupplyRequestSchema
+>;
+export type DispatchStockSupplyRequest = z.infer<
+  typeof dispatchStockSupplyRequestSchema
+>;
 export type ConfirmReceipt = z.infer<typeof confirmReceiptSchema>;
-export type StockSupplyRequestResponse = z.infer<typeof stockSupplyRequestResponseSchema>;
-export type StockSupplyRequestListResponse = z.infer<typeof stockSupplyRequestListResponseSchema>;
-export type StockSupplyRequestListQuery = z.infer<typeof stockSupplyRequestListQuerySchema>;
-export type SupplyRequestSourceListQuery = z.infer<typeof supplyRequestSourceListQuerySchema>;
-export type SupplyRequestSourceListResponse = z.infer<typeof supplyRequestSourceListResponseSchema>;
+export type StockSupplyRequestResponse = z.infer<
+  typeof stockSupplyRequestResponseSchema
+>;
+export type StockSupplyRequestListResponse = z.infer<
+  typeof stockSupplyRequestListResponseSchema
+>;
+export type StockSupplyRequestListQuery = z.infer<
+  typeof stockSupplyRequestListQuerySchema
+>;
+export type SupplyRequestSourceListQuery = z.infer<
+  typeof supplyRequestSourceListQuerySchema
+>;
+export type SupplyRequestSourceListResponse = z.infer<
+  typeof supplyRequestSourceListResponseSchema
+>;
 export type GtnResponse = z.infer<typeof gtnResponseSchema>;

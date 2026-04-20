@@ -47,7 +47,10 @@ function CompactWorkerSupplyRequestRow({
         index !== itemCount - 1 && "border-b border-border",
       )}
     >
-      <div aria-hidden className={cn("absolute left-0 top-0 h-full w-0.5", accent.bar)} />
+      <div
+        aria-hidden
+        className={cn("absolute left-0 top-0 h-full w-0.5", accent.bar)}
+      />
       <div className="min-w-0 flex-1 pl-1">
         <p className="truncate text-sm font-medium leading-tight">
           {item.skuSnapshot.productName}
@@ -68,8 +71,15 @@ function CompactWorkerSupplyRequestRow({
           </p>
         </div>
         <div className="min-w-[80px]">
-          <p className="text-center text-[10px] text-muted-foreground">Status</p>
-          <div className={cn("mt-0.5 flex items-center justify-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium", accent.badge)}>
+          <p className="text-center text-[10px] text-muted-foreground">
+            Status
+          </p>
+          <div
+            className={cn(
+              "mt-0.5 flex items-center justify-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium",
+              accent.badge,
+            )}
+          >
             <StatusIcon className="size-2.5" />
             {label}
           </div>
@@ -80,7 +90,11 @@ function CompactWorkerSupplyRequestRow({
           <StatusIcon className="size-3.5" />
         </span>
         {canConfirm ? (
-          <Button className="h-8 shrink-0 gap-1.5 px-3 text-xs" onClick={() => onConfirmReceipt(item)} size="sm">
+          <Button
+            className="h-8 shrink-0 gap-1.5 px-3 text-xs"
+            onClick={() => onConfirmReceipt(item)}
+            size="sm"
+          >
             <PackageCheck className="size-3.5" />
             <span className="hidden sm:inline">Confirm</span>
           </Button>

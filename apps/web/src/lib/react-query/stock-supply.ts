@@ -5,9 +5,9 @@ import type {
   DispatchStockSupplyRequest,
   GtnResponse,
   RejectStockSupplyRequest,
-  SupplyRequestSourceListResponse,
   StockSupplyRequestListResponse,
   StockSupplyRequestResponse,
+  SupplyRequestSourceListResponse,
   SupplyRequestStatus,
 } from "@shop/contracts";
 import { fetchJson } from "@/lib/react-query/fetch-json";
@@ -26,6 +26,9 @@ export const workerSupplyRequestsQueryKey = (query: SupplyRequestListQuery) =>
 export const managerIncomingSupplyRequestsQueryKey = (
   query: SupplyRequestListQuery,
 ) => ["supply-requests", "manager-incoming", query] as const;
+
+export const managerSupplyRequestsQueryKey = (query: SupplyRequestListQuery) =>
+  ["supply-requests", "manager-location", query] as const;
 
 export const gtnQueryKey = (id: string) => ["gtn", id] as const;
 
@@ -71,6 +74,23 @@ export async function fetchManagerIncomingSupplyRequests(
 
   return fetchJson<StockSupplyRequestListResponse>(
     `/api/manager/stock/supply-requests/incoming?${params.toString()}`,
+    undefined,
+    { auth: "required" },
+  );
+}
+
+export async function fetchManagerSupplyRequests(
+  query: SupplyRequestListQuery & { locationId: string },
+): Promise<StockSupplyRequestListResponse> {
+  const params = new URLSearchParams({
+    locationId: query.locationId,
+    page: String(query.page ?? 1),
+    pageSize: String(query.pageSize ?? 25),
+  });
+  if (query.status) params.set("status", query.status);
+
+  return fetchJson<StockSupplyRequestListResponse>(
+    `/api/manager/stock/supply-requests?${params.toString()}`,
     undefined,
     { auth: "required" },
   );
@@ -157,7 +177,10 @@ export async function patchManagerDispatch(
   id: string,
   body: DispatchStockSupplyRequest,
 ): Promise<{ supplyRequest: StockSupplyRequestResponse; gtn: GtnResponse }> {
-  return fetchJson<{ supplyRequest: StockSupplyRequestResponse; gtn: GtnResponse }>(
+  return fetchJson<{
+    supplyRequest: StockSupplyRequestResponse;
+    gtn: GtnResponse;
+  }>(
     `/api/manager/stock/supply-requests/${encodeURIComponent(id)}/dispatch`,
     {
       body: JSON.stringify(body),

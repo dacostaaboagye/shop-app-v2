@@ -187,7 +187,9 @@ Tradeoffs:
 
 ## Current Implementation Notes
 
-The current frontend phase shares and downloads standalone HTML documents for
-sales receipts and credit notes. This is intentionally not presented as final
-PDF support. Production PDF support should be implemented server-side from
-persisted document snapshots.
+Sales receipts, sales invoices, and credit notes now read from immutable issued
+document snapshots before printing, downloading, or sharing. Downloads and
+native file shares use an access-controlled server-rendered PDF generated from
+the stored snapshot, with content-hash evidence embedded in the document. The
+invoice detail UI also renders the same issued PDF inline so users preview the
+official document before download or share.

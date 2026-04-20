@@ -65,7 +65,13 @@ export function createAuthRuntime(
   const permissionService = new PermissionResolutionService(
     new PostgresPermissionRepository(databaseRuntime.db),
   );
-  const emailService = new EmailService(env.resendApiKey, env.emailFromAddress);
+  const emailService = new EmailService(
+    env.resendApiKey,
+    env.emailFromAddress,
+    {
+      allowConsoleFallback: env.nodeEnv !== "production",
+    },
+  );
   const webBaseUrl = env.webBaseUrl ?? "http://localhost:3000";
 
   const emailVerificationService = new EmailVerificationService(

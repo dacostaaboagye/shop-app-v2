@@ -19,9 +19,15 @@ export const currencyOptions = prioritizeOptions(
 export const timeZoneOptions = prioritizeOptions(
   supportedTimeZones,
   PREFERRED_TIME_ZONES,
-).map((timeZone) => ({ label: formatTimeZoneLabel(timeZone), value: timeZone }));
+).map((timeZone) => ({
+  label: formatTimeZoneLabel(timeZone),
+  value: timeZone,
+}));
 
-function prioritizeOptions(values: readonly string[], preferred: readonly string[]) {
+function prioritizeOptions(
+  values: readonly string[],
+  preferred: readonly string[],
+) {
   const valueSet = new Set(values);
   const preferredValues = preferred.filter((value) => valueSet.has(value));
   const remaining = values.filter((value) => !preferredValues.includes(value));
@@ -29,7 +35,9 @@ function prioritizeOptions(values: readonly string[], preferred: readonly string
 }
 
 function formatCurrencyLabel(code: string) {
-  const displayName = new Intl.DisplayNames(["en"], { type: "currency" }).of(code);
+  const displayName = new Intl.DisplayNames(["en"], { type: "currency" }).of(
+    code,
+  );
   return displayName ? `${code} - ${displayName}` : code;
 }
 

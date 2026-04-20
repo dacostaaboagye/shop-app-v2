@@ -5,9 +5,9 @@ import {
   Boxes,
   ClipboardList,
   Package,
-  Settings,
   Receipt,
   Route as RouteIcon,
+  Settings,
   ShoppingCart,
   UserCheck,
   Users,
@@ -54,7 +54,9 @@ export const SECONDARY_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     section: "People",
   },
   {
-    activeMatchers: [{ mode: "descendants", path: "/manager/settings/documents" }],
+    activeMatchers: [
+      { mode: "descendants", path: "/manager/settings/documents" },
+    ],
     description: "Configure official printed details for managed locations.",
     href: toRoute("/manager/settings/documents"),
     icon: Settings,
@@ -148,7 +150,9 @@ export const SECONDARY_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     section: "Operations",
   },
   {
-    activeMatchers: [{ mode: "descendants", path: "/manager/stock/supply-requests" }],
+    activeMatchers: [
+      { mode: "descendants", path: "/manager/stock/supply-requests" },
+    ],
     description: "Review and respond to worker stock restocking requests.",
     href: toRoute("/manager/stock/supply-requests"),
     icon: ClipboardList,
@@ -157,7 +161,9 @@ export const SECONDARY_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     section: "Operations",
   },
   {
-    activeMatchers: [{ mode: "descendants", path: "/worker/stock/supply-requests" }],
+    activeMatchers: [
+      { mode: "descendants", path: "/worker/stock/supply-requests" },
+    ],
     description: "View and manage your stock restocking requests.",
     href: toRoute("/worker/stock/supply-requests"),
     icon: ClipboardList,

@@ -1,8 +1,8 @@
 "use client";
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { FormEvent } from "react";
 import { useId, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,15 +13,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { getAppErrorMessage } from "@/lib/errors/app-error";
 import {
   patchManagerApproveSupplyRequest,
   patchManagerDispatch,
   patchManagerRejectSupplyRequest,
 } from "@/lib/react-query/stock-supply";
+import {
+  ApprovedQuantityField,
+  getActionTitle,
+  getSubmitLabel,
+  isValidApprovedQuantity,
+  MutationErrorMessage,
+  NotesField,
+} from "./manager-supply-request-action-dialog.parts";
 import type { ResolveTarget } from "./manager-supply-requests.support";
 
 export function ActionDialog({
@@ -54,7 +59,11 @@ export function ActionDialog({
         ...(notes.trim() ? { resolutionNotes: notes.trim() } : {}),
       }),
     onError(error) {
-      toast.error(getAppErrorMessage(error, { fallbackDetail: "Failed to approve request." }));
+      toast.error(
+        getAppErrorMessage(error, {
+          fallbackDetail: "Failed to approve request.",
+        }),
+      );
     },
     onSuccess() {
       toast.success("Supply request approved.");
@@ -70,7 +79,11 @@ export function ActionDialog({
         ...(notes.trim() ? { resolutionNotes: notes.trim() } : {}),
       }),
     onError(error) {
-      toast.error(getAppErrorMessage(error, { fallbackDetail: "Failed to reject request." }));
+      toast.error(
+        getAppErrorMessage(error, {
+          fallbackDetail: "Failed to reject request.",
+        }),
+      );
     },
     onSuccess() {
       toast.success("Supply request rejected.");
@@ -86,7 +99,9 @@ export function ActionDialog({
         ...(notes.trim() ? { notes: notes.trim() } : {}),
       }),
     onError(error) {
-      toast.error(getAppErrorMessage(error, { fallbackDetail: "Failed to dispatch." }));
+      toast.error(
+        getAppErrorMessage(error, { fallbackDetail: "Failed to dispatch." }),
+      );
     },
     onSuccess() {
       toast.success("Goods dispatched. GTN created.");
@@ -109,7 +124,8 @@ export function ActionDialog({
       approveMutation.mutate(target.item.supplyRequestId);
     }
     if (action === "reject") rejectMutation.mutate(target.item.supplyRequestId);
-    if (action === "dispatch") dispatchMutation.mutate(target.item.supplyRequestId);
+    if (action === "dispatch")
+      dispatchMutation.mutate(target.item.supplyRequestId);
   }
 
   return (
@@ -145,7 +161,11 @@ export function ActionDialog({
             }
           />
           <DialogFooter>
-            <Button onClick={() => onOpenChange(false)} type="button" variant="ghost">
+            <Button
+              onClick={() => onOpenChange(false)}
+              type="button"
+              variant="ghost"
+            >
               Cancel
             </Button>
             <Button
@@ -163,85 +183,8 @@ export function ActionDialog({
   );
 }
 
-function ApprovedQuantityField({
-  approvedQty,
-  approvedQtyId,
-  setApprovedQty,
-}: {
-  approvedQty: string;
-  approvedQtyId: string;
-  setApprovedQty: (value: string) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={approvedQtyId}>Quantity you can send</Label>
-      <Input
-        id={approvedQtyId}
-        inputMode="numeric"
-        min={1}
-        onChange={(event) => setApprovedQty(event.target.value)}
-        required
-        type="number"
-        value={approvedQty}
-      />
-    </div>
-  );
-}
-
-function NotesField({
-  action,
-  notes,
-  notesId,
-  setNotes,
-}: {
-  action: ResolveTarget["action"] | undefined;
-  notes: string;
-  notesId: string;
-  setNotes: (value: string) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={notesId}>
-        {action === "dispatch" ? "Dispatch notes (optional)" : "Note to worker (optional)"}
-      </Label>
-      <Textarea
-        id={notesId}
-        maxLength={500}
-        onChange={(event) => setNotes(event.target.value)}
-        placeholder={action === "dispatch" ? "Any notes about this shipment..." : "Reason or additional context..."}
-        rows={3}
-        value={notes}
-      />
-    </div>
-  );
-}
-
-function MutationErrorMessage({ error }: { error: Error | null }) {
-  if (!error) return null;
-  return (
-    <p className="text-sm text-destructive">
-      {getAppErrorMessage(error, { fallbackDetail: "Something went wrong." })}
-    </p>
-  );
-}
-
-function isValidApprovedQuantity(value: string) {
-  const quantity = parseInt(value, 10);
-  return Number.isInteger(quantity) && quantity > 0;
-}
-
-function getActionTitle(action: ResolveTarget["action"] | undefined) {
-  if (action === "approve") return "Approve request";
-  if (action === "dispatch") return "Dispatch goods";
-  return "Reject request";
-}
-
-function getSubmitLabel(action: ResolveTarget["action"] | undefined) {
-  if (action === "approve") return "Approve";
-  if (action === "dispatch") return "Dispatch";
-  return "Reject";
-}
-
-function invalidateSupplyRequests(queryClient: ReturnType<typeof useQueryClient>) {
+function invalidateSupplyRequests(
+  queryClient: ReturnType<typeof useQueryClient>,
+) {
   void queryClient.invalidateQueries({ queryKey: ["supply-requests"] });
 }

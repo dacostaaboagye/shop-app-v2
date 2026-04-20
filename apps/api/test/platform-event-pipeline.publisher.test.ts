@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { PlatformEventPipelinePublisher } from "../src/modules/events/platform-event-pipeline.publisher.js";
 import type { PlatformEventRecord } from "../src/modules/events/platform-event.types.js";
+import { PlatformEventPipelinePublisher } from "../src/modules/events/platform-event-pipeline.publisher.js";
 
 describe("PlatformEventPipelinePublisher", () => {
   it("persists the event and triggers delivery", async () => {
@@ -40,7 +40,10 @@ describe("PlatformEventPipelinePublisher", () => {
       },
     });
 
-    await publisher.appendWithinTransaction(makeEvent(), transactionClient as never);
+    await publisher.appendWithinTransaction(
+      makeEvent(),
+      transactionClient as never,
+    );
     assert.deepEqual(calls, ["append-in-transaction"]);
 
     await publisher.notifyAppendCommitted();

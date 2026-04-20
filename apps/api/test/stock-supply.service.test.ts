@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { StockSupplyService } from "../src/modules/stock/stock-supply.service.js";
 import type { PlatformEventRecord } from "../src/modules/events/platform-event.types.js";
+import { StockSupplyService } from "../src/modules/stock/stock-supply.service.js";
 
 const NOW = new Date("2026-04-20T01:30:00.000Z");
 
@@ -14,14 +14,20 @@ describe("StockSupplyService", () => {
 
     const service = new StockSupplyService(
       {
-        async transaction(callback: (transaction: typeof tx) => Promise<unknown>) {
+        async transaction(
+          callback: (transaction: typeof tx) => Promise<unknown>,
+        ) {
           inTransaction = true;
           const result = await callback(tx);
           inTransaction = false;
           return result;
         },
       } as never,
-      { async generateReference() { return "unused"; } } as never,
+      {
+        async generateReference() {
+          return "unused";
+        },
+      } as never,
       {
         async appendWithinTransaction(event, db) {
           assert.equal(inTransaction, true);

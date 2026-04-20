@@ -3,8 +3,8 @@
 import type { AdminStockBalanceSummary } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { AppDataTable } from "@/components/data-table/app-data-table";
 import { buildStockBalanceColumns } from "@/components/admin/stock/stock-balance-columns";
+import { AppDataTable } from "@/components/data-table/app-data-table";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
@@ -40,9 +40,7 @@ export function ManagerStockPageClient() {
   const stockQuery = useQuery({
     enabled: !!selectedLocationScope,
     queryFn: () => fetchManagerStockBalances(query),
-    queryKey: managerStockBalancesQueryKey(
-      selectedLocationScope ? query : {},
-    ),
+    queryKey: managerStockBalancesQueryKey(selectedLocationScope ? query : {}),
     staleTime: 30_000,
   });
 

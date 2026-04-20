@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { AppError } from "../_core/errors/app-error.js";
 
 export type EmailOptions = {
   to: string;
@@ -7,14 +8,40 @@ export type EmailOptions = {
   text: string;
 };
 
+type EmailTransport = {
+  send(options: EmailOptions & { from: string }): Promise<{
+    error?: { message?: string } | null;
+  }>;
+};
+
+type EmailServiceOptions = {
+  allowConsoleFallback?: boolean;
+  logger?: Pick<Console, "error" | "log">;
+  transport?: EmailTransport | null;
+};
+
 export class EmailService {
-  private readonly resend: Resend | null;
+  private readonly allowConsoleFallback: boolean;
+  private readonly logger: Pick<Console, "error" | "log">;
+  private readonly transport: EmailTransport | null;
 
   constructor(
     readonly apiKey: string | undefined,
     private readonly fromAddress: string,
+    options: EmailServiceOptions = {},
   ) {
-    this.resend = apiKey ? new Resend(apiKey) : null;
+    assertValidFromAddress(fromAddress);
+    this.allowConsoleFallback = options.allowConsoleFallback ?? true;
+    this.logger = options.logger ?? console;
+    this.transport =
+      options.transport ??
+      (apiKey
+        ? (new Resend(apiKey).emails as unknown as EmailTransport)
+        : null);
+
+    if (!this.transport && !this.allowConsoleFallback) {
+      throw new Error("RESEND_API_KEY must be configured for email delivery.");
+    }
   }
 
   async sendVerificationEmail(input: {
@@ -44,25 +71,58 @@ export class EmailService {
   }
 
   private async send(options: EmailOptions): Promise<void> {
-    if (!this.resend) {
-      // Development fallback: log to console
-      console.log(`[EMAIL] To: ${options.to} | Subject: ${options.subject}`);
-      console.log(`[EMAIL] Text: ${options.text}`);
+    if (!this.transport) {
+      this.logger.log(
+        `[EMAIL] To: ${options.to} | Subject: ${options.subject}`,
+      );
+      this.logger.log(`[EMAIL] Text: ${options.text}`);
       return;
     }
 
-    const { error } = await this.resend.emails.send({
-      from: this.fromAddress,
-      to: options.to,
-      subject: options.subject,
-      html: options.html,
-      text: options.text,
-    });
+    try {
+      const { error } = await this.transport.send({
+        from: this.fromAddress,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
+      });
 
-    if (error) {
-      throw new Error(`Failed to send email: ${error.message}`);
+      if (error) {
+        this.logger.error("[email] Provider rejected message.", {
+          error: error.message,
+          subject: options.subject,
+          to: options.to,
+        });
+        throw emailDeliveryError();
+      }
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      this.logger.error("[email] Provider request failed.", {
+        error: error instanceof Error ? error.message : String(error),
+        subject: options.subject,
+        to: options.to,
+      });
+      throw emailDeliveryError();
     }
   }
+}
+
+function assertValidFromAddress(fromAddress: string): void {
+  if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(fromAddress)) return;
+  if (/^.+ <[^@\s]+@[^@\s]+\.[^@\s]+>$/.test(fromAddress)) return;
+
+  throw new Error("EMAIL_FROM_ADDRESS must be a valid email sender address.");
+}
+
+function emailDeliveryError(): AppError {
+  return new AppError({
+    code: "internal_error",
+    detail:
+      "The email provider could not deliver this message. Try again later or contact support.",
+    statusCode: 502,
+    title: "Email delivery failed",
+  });
 }
 
 function verificationEmailHtml(firstName: string, url: string): string {

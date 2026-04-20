@@ -18,7 +18,10 @@ describe("notification presentation helpers", () => {
   });
 
   it("maps transfer event types to operator-friendly labels", () => {
-    assert.equal(getNotificationEventLabel("transfer.dispatched"), "In transit");
+    assert.equal(
+      getNotificationEventLabel("transfer.dispatched"),
+      "In transit",
+    );
     assert.equal(getNotificationEventLabel("transfer.received"), "Received");
   });
 

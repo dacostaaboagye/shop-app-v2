@@ -1,48 +1,16 @@
 import { z } from "zod";
 
-const FALLBACK_CURRENCY_CODES = [
-  "GHS",
-  "NGN",
-  "KES",
-  "ZAR",
-  "USD",
-  "EUR",
-  "GBP",
-] as const;
+export {
+  officialDocumentTypeValues,
+  supportedCurrencyCodes,
+  supportedTimeZones,
+} from "./official-document-options.js";
 
-const FALLBACK_TIME_ZONES = [
-  "Africa/Accra",
-  "Africa/Lagos",
-  "Africa/Nairobi",
-  "Africa/Johannesburg",
-  "Europe/London",
-  "Europe/Berlin",
-  "America/New_York",
-  "UTC",
-] as const;
-
-export const officialDocumentTypeValues = [
-  "sales_receipt",
-  "sales_invoice",
-  "credit_note",
-  "refund_note",
-  "goods_transfer_note",
-  "dispatch_note",
-  "stock_adjustment",
-  "stock_count",
-  "purchase_order",
-  "supplier_invoice",
-] as const;
-
-export const supportedCurrencyCodes = getSupportedIntlValues(
-  "currency",
-  FALLBACK_CURRENCY_CODES,
-).map((code) => code.toUpperCase());
-
-export const supportedTimeZones = getSupportedIntlValues(
-  "timeZone",
-  FALLBACK_TIME_ZONES,
-);
+import {
+  officialDocumentTypeValues,
+  supportedCurrencyCodes,
+  supportedTimeZones,
+} from "./official-document-options.js";
 
 const currencyCodeSchema = z
   .string()
@@ -53,10 +21,12 @@ const currencyCodeSchema = z
     message: "Select a supported ISO 4217 currency code.",
   });
 
-const timeZoneSchema = z.string().trim().refine(
-  (value) => supportedTimeZones.includes(value),
-  { message: "Select a supported IANA time zone." },
-);
+const timeZoneSchema = z
+  .string()
+  .trim()
+  .refine((value) => supportedTimeZones.includes(value), {
+    message: "Select a supported IANA time zone.",
+  });
 
 export const documentBrandSettingsSchema = z.object({
   brandName: z.string().trim().min(1).max(160),
@@ -126,7 +96,8 @@ const updateBrandSettingsSchema = documentBrandSettingsSchema.partial();
 const updateBusinessSettingsSchema = documentBusinessSettingsSchema.partial();
 const updateMoneySettingsSchema = moneySettingsSchema.partial();
 const updateDocumentDefaultsSchema = documentDefaultsSchema.partial();
-const updateLocationOverridePolicySchema = locationOverridePolicySchema.partial();
+const updateLocationOverridePolicySchema =
+  locationOverridePolicySchema.partial();
 
 export const updateOfficialDocumentSettingsRequestSchema = z.object({
   brand: updateBrandSettingsSchema.optional(),
@@ -191,9 +162,20 @@ export const issuedDocumentSnapshotResponseSchema = z.object({
   schemaVersion: z.string(),
 });
 
+export const issuedSalesDocumentSnapshotParamsSchema = z.object({
+  reference: z.string().trim().min(1).max(120),
+});
+
 export const updateLocationDocumentSettingsRequestSchema = z.object({
-  addressLines: z.array(z.string().trim().min(1).max(200)).max(4).nullable().optional(),
-  defaultPaperSize: z.enum(["receipt_80mm", "a4", "letter"]).nullable().optional(),
+  addressLines: z
+    .array(z.string().trim().min(1).max(200))
+    .max(4)
+    .nullable()
+    .optional(),
+  defaultPaperSize: z
+    .enum(["receipt_80mm", "a4", "letter"])
+    .nullable()
+    .optional(),
   displayName: z.string().trim().min(1).max(160).nullable().optional(),
   documentPrefix: z.string().trim().min(1).max(20).nullable().optional(),
   email: z.string().trim().email().max(160).nullable().optional(),
@@ -220,23 +202,10 @@ export type OfficialDocumentProfileResponse = z.infer<
 export type IssuedDocumentSnapshotResponse = z.infer<
   typeof issuedDocumentSnapshotResponseSchema
 >;
+export type IssuedSalesDocumentSnapshotParams = z.infer<
+  typeof issuedSalesDocumentSnapshotParamsSchema
+>;
 export type OfficialDocumentType = z.infer<typeof officialDocumentTypeSchema>;
 export type UpdateLocationDocumentSettingsRequest = z.infer<
   typeof updateLocationDocumentSettingsRequestSchema
 >;
-
-function getSupportedIntlValues(
-  key: "currency" | "timeZone",
-  fallback: readonly string[],
-) {
-  const intlWithSupportedValues = Intl as unknown as {
-    supportedValuesOf?: (input: string) => string[];
-  };
-  const values = intlWithSupportedValues.supportedValuesOf?.(key);
-
-  if (!values?.length) return [...fallback];
-
-  return [...new Set([...fallback, ...values])].sort((a, b) =>
-    a.localeCompare(b),
-  );
-}

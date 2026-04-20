@@ -2,12 +2,7 @@
 
 import type { CurrentAssignment, PosPaymentMethod } from "@shop/contracts";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,7 +14,7 @@ export type CartItem = {
   unitPrice: string;
 };
 
-type CartBodyProps = {
+export type CartBodyProps = {
   cart: CartItem[];
   error: unknown;
   isPending: boolean;
@@ -55,7 +50,7 @@ export function CartBody({
 }: CartBodyProps) {
   const total = cart.reduce((sum, item) => {
     const price = parseFloat(item.unitPrice);
-    return sum + (isNaN(price) ? 0 : price * item.quantity);
+    return sum + (Number.isNaN(price) ? 0 : price * item.quantity);
   }, 0);
 
   if (cart.length === 0) {
@@ -73,7 +68,9 @@ export function CartBody({
           <CartRow
             key={item.assignment.skuId}
             item={item}
-            onPriceChange={(price) => onPriceChange(item.assignment.skuId, price)}
+            onPriceChange={(price) =>
+              onPriceChange(item.assignment.skuId, price)
+            }
             onRemove={() => onRemove(item.assignment.skuId)}
             onUpdate={(delta) => onUpdate(item.assignment.skuId, delta)}
           />

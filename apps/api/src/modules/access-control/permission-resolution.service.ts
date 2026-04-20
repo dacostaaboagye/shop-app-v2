@@ -79,7 +79,10 @@ export class PermissionResolutionService {
     const permissions = new Map<string, EffectivePermission>();
 
     for (const scope of [undefined, ...scopes]) {
-      for (const permission of resolveEffectivePermissions(assignments, scope)) {
+      for (const permission of resolveEffectivePermissions(
+        assignments,
+        scope,
+      )) {
         if (!permissions.has(permission.key)) {
           permissions.set(permission.key, permission);
         }
@@ -99,7 +102,9 @@ export class PermissionResolutionService {
 
   async resolveAllPermissions(input: { userId: string }): Promise<{
     anyActivePermissions: EffectivePermission[];
-    locationScopes: Array<ActiveLocationScope & { permissions: EffectivePermission[] }>;
+    locationScopes: Array<
+      ActiveLocationScope & { permissions: EffectivePermission[] }
+    >;
   }> {
     const [assignments, locationScopes] = await Promise.all([
       this.repository.getPermissionAssignments(input.userId),
@@ -108,15 +113,16 @@ export class PermissionResolutionService {
 
     const uniqueLocationIds = Array.from(
       new Set(
-        assignments
-          .map((a) => a.locationId)
-          .filter((id): id is string => !!id),
+        assignments.map((a) => a.locationId).filter((id): id is string => !!id),
       ),
     ).sort((a, b) => a.localeCompare(b));
 
     const anyActiveMap = new Map<string, EffectivePermission>();
     for (const scope of [undefined, ...uniqueLocationIds]) {
-      for (const permission of resolveEffectivePermissions(assignments, scope)) {
+      for (const permission of resolveEffectivePermissions(
+        assignments,
+        scope,
+      )) {
         if (!anyActiveMap.has(permission.key)) {
           anyActiveMap.set(permission.key, permission);
         }

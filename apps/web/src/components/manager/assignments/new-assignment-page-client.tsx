@@ -1,6 +1,9 @@
 "use client";
 
-import type { LocationStaffSummary, VariantSearchResult } from "@shop/contracts";
+import type {
+  LocationStaffSummary,
+  VariantSearchResult,
+} from "@shop/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
@@ -8,7 +11,6 @@ import { AppErrorBanner } from "@/components/system/app-error";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
 import {
   fetchManagerStaff,
@@ -19,12 +21,12 @@ import {
   postBatchAssignVariants,
 } from "@/lib/react-query/worker-assignments";
 import { toRoute } from "@/lib/routes";
-import { AssignmentQuantityEditor } from "./assignment-quantity-editor";
 import type { SelectedVariantEntry } from "./assignment-quantity-editor";
-import { AssignmentVariantList } from "./assignment-variant-list";
-import { AssignmentWorkerGrid } from "./assignment-worker-grid";
-
-const STAFF_SKELETON_KEYS = [1, 2, 3, 4];
+import {
+  AssignmentQuantityStep,
+  AssignmentVariantStep,
+  AssignmentWorkerStep,
+} from "./new-assignment-sections";
 
 export function NewAssignmentPageClient() {
   const router = useRouter();
@@ -46,16 +48,18 @@ export function NewAssignmentPageClient() {
 
   const staffQuery = useQuery({
     enabled: !!selectedLocationScope,
-    queryFn: () => fetchManagerStaff(selectedLocationScope!.locationId),
+    queryFn: () => {
+      if (!selectedLocationScope) {
+        throw new Error("An assignment location is required.");
+      }
+      return fetchManagerStaff(selectedLocationScope.locationId);
+    },
     queryKey: managerStaffQueryKey(selectedLocationScope?.locationId ?? ""),
     staleTime: 60_000,
   });
 
   const activeWorkers = useMemo(
-    () =>
-      (staffQuery.data?.items ?? []).filter(
-        (m) => m.status === "active",
-      ),
+    () => (staffQuery.data?.items ?? []).filter((m) => m.status === "active"),
     [staffQuery.data?.items],
   );
 
@@ -103,7 +107,9 @@ export function NewAssignmentPageClient() {
     onSuccess: () => {
       if (selectedLocationScope) {
         void queryClient.invalidateQueries({
-          queryKey: locationAssignmentsQueryKey(selectedLocationScope.locationId),
+          queryKey: locationAssignmentsQueryKey(
+            selectedLocationScope.locationId,
+          ),
         });
         void queryClient.invalidateQueries({
           queryKey: managerStaffQueryKey(selectedLocationScope.locationId),
@@ -118,7 +124,11 @@ export function NewAssignmentPageClient() {
   });
 
   function handleSubmit() {
-    if (!selectedWorker || !selectedLocationScope || selectedVariants.size === 0)
+    if (
+      !selectedWorker ||
+      !selectedLocationScope ||
+      selectedVariants.size === 0
+    )
       return;
     assignMutation.mutate({
       items: quantityEntries.map(({ variant, quantity }) => ({
@@ -131,9 +141,7 @@ export function NewAssignmentPageClient() {
   }
 
   const canSubmit =
-    !!selectedWorker &&
-    selectedVariants.size > 0 &&
-    !assignMutation.isPending;
+    !!selectedWorker && selectedVariants.size > 0 && !assignMutation.isPending;
 
   const variantCount = selectedVariants.size;
 
@@ -164,74 +172,29 @@ export function NewAssignmentPageClient() {
 
       {selectedLocationScope && (
         <div className="flex flex-col gap-8">
-          {/* Step 1 */}
-          <section className="flex flex-col gap-3">
-            <div>
-              <h2 className="text-base font-semibold">1. Select worker</h2>
-              <p className="text-sm text-muted-foreground">
-                Choose who will take ownership of the assigned stock.
-              </p>
-            </div>
-            {staffQuery.isPending ? (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                {STAFF_SKELETON_KEYS.map((k) => (
-                  <Skeleton className="h-28 w-full rounded-lg" key={k} />
-                ))}
-              </div>
-            ) : staffQuery.isError ? (
-              <AppErrorBanner
-                detail="Could not load staff for this location."
-                error={staffQuery.error}
-                onRetry={() => void staffQuery.refetch()}
-                title="Unable to load workers"
-              />
-            ) : (
-              <AssignmentWorkerGrid
-                onSelect={setSelectedWorker}
-                selected={selectedWorker}
-                workers={activeWorkers}
-              />
-            )}
-          </section>
+          <AssignmentWorkerStep
+            activeWorkers={activeWorkers}
+            error={staffQuery.error}
+            isError={staffQuery.isError}
+            isPending={staffQuery.isPending}
+            onRetry={() => void staffQuery.refetch()}
+            onSelect={setSelectedWorker}
+            selectedWorker={selectedWorker}
+          />
 
-          {/* Step 2 */}
-          <section className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-semibold">2. Select variants</h2>
-                <p className="text-sm text-muted-foreground">
-                  Search and check the product variants to include.
-                </p>
-              </div>
-              {variantCount > 0 && (
-                <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground">
-                  {variantCount} selected
-                </span>
-              )}
-            </div>
-            <AssignmentVariantList
-              locationId={selectedLocationScope.locationId}
-              onToggle={toggleVariant}
-              selectedIds={selectedIds}
-            />
-          </section>
+          <AssignmentVariantStep
+            locationId={selectedLocationScope.locationId}
+            onToggle={toggleVariant}
+            selectedIds={selectedIds}
+            variantCount={variantCount}
+          />
 
-          {/* Step 3 */}
-          {variantCount > 0 && (
-            <section className="flex flex-col gap-3">
-              <div>
-                <h2 className="text-base font-semibold">3. Set quantities</h2>
-                <p className="text-sm text-muted-foreground">
-                  Confirm how many units of each variant to assign.
-                </p>
-              </div>
-              <AssignmentQuantityEditor
-                entries={quantityEntries}
-                onQuantityChange={updateQuantity}
-                onRemove={removeVariant}
-              />
-            </section>
-          )}
+          <AssignmentQuantityStep
+            entries={quantityEntries}
+            onQuantityChange={updateQuantity}
+            onRemove={removeVariant}
+            variantCount={variantCount}
+          />
 
           {/* Submit */}
           <div className="flex flex-col gap-3 border-t border-border pt-4">

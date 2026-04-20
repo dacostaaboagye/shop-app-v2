@@ -6,7 +6,11 @@ import { BarChart3, Receipt } from "lucide-react";
 import Link from "next/link";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
-import { PageHeader, PageShell, StatCard } from "@/components/system/page-shell";
+import {
+  PageHeader,
+  PageShell,
+  StatCard,
+} from "@/components/system/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";

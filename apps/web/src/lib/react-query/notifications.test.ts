@@ -25,14 +25,14 @@ describe("notifications react-query helpers", () => {
       globalThis,
       "fetch",
       async (input: RequestInfo | URL) => {
-      assert.match(String(input), /\/api\/notifications\?limit=8$/);
-      return new Response(
-        JSON.stringify({
-          items: [],
-          unreadCount: 0,
-        }),
-        { status: 200 },
-      );
+        assert.match(String(input), /\/api\/notifications\?limit=8$/);
+        return new Response(
+          JSON.stringify({
+            items: [],
+            unreadCount: 0,
+          }),
+          { status: 200 },
+        );
       },
     );
 
@@ -47,19 +47,19 @@ describe("notifications react-query helpers", () => {
       globalThis,
       "fetch",
       async (input: RequestInfo | URL, init?: RequestInit) => {
-      assert.match(
-        String(input),
-        /\/api\/notifications\/11111111-1111-4111-8111-111111111111\/read$/,
-      );
-      assert.equal(init?.method, "PATCH");
-      return new Response(
-        JSON.stringify({
-          notificationKey: "11111111-1111-4111-8111-111111111111",
-          readAt: "2026-04-20T01:00:00.000Z",
-          status: "read",
-        }),
-        { status: 200 },
-      );
+        assert.match(
+          String(input),
+          /\/api\/notifications\/11111111-1111-4111-8111-111111111111\/read$/,
+        );
+        assert.equal(init?.method, "PATCH");
+        return new Response(
+          JSON.stringify({
+            notificationKey: "11111111-1111-4111-8111-111111111111",
+            readAt: "2026-04-20T01:00:00.000Z",
+            status: "read",
+          }),
+          { status: 200 },
+        );
       },
     );
 
@@ -76,9 +76,11 @@ describe("notifications react-query helpers", () => {
       globalThis,
       "fetch",
       async (input: RequestInfo | URL, init?: RequestInit) => {
-      assert.match(String(input), /\/api\/notifications\/read-all$/);
-      assert.equal(init?.method, "PATCH");
-      return new Response(JSON.stringify({ updatedCount: 4 }), { status: 200 });
+        assert.match(String(input), /\/api\/notifications\/read-all$/);
+        assert.equal(init?.method, "PATCH");
+        return new Response(JSON.stringify({ updatedCount: 4 }), {
+          status: 200,
+        });
       },
     );
 

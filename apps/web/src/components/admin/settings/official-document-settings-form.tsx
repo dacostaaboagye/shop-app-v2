@@ -7,27 +7,21 @@ import type {
 import { useForm } from "@tanstack/react-form";
 import { Save } from "lucide-react";
 import { AppFormField } from "@/components/forms/app-form-field";
-import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  CurrencySelect,
+  TimeZoneSelect,
+} from "@/components/settings/document-setting-selects";
+import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { OfficialDocumentSettingsCard } from "./official-document-settings-card";
 import {
-  CurrencySelect,
-  TimeZoneSelect,
-} from "@/components/settings/document-setting-selects";
-import {
+  type OfficialDocumentSettingsFormValues,
   toOfficialDocumentSettingsFormValues,
   toOfficialDocumentSettingsPayload,
-  type OfficialDocumentSettingsFormValues,
 } from "./official-document-settings-form.support";
 
 type Props = {
@@ -64,14 +58,10 @@ export function OfficialDocumentSettingsForm({
         </TabsList>
 
         <TabsContent className="flex flex-col gap-4" value="identity">
-        <Card>
-          <CardHeader>
-            <CardTitle>Brand and legal identity</CardTitle>
-            <CardDescription>
-              Global identity applied to receipts, invoices, GTNs, and future PDFs.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+          <OfficialDocumentSettingsCard
+            description="Global identity applied to receipts, invoices, GTNs, and future PDFs."
+            title="Brand and legal identity"
+          >
             <FieldGroup>
               <form.Field name="brandName">
                 {(field) => (
@@ -79,7 +69,9 @@ export function OfficialDocumentSettingsForm({
                     <Input
                       id={field.name}
                       onBlur={field.handleBlur}
-                      onChange={(event) => field.handleChange(event.target.value)}
+                      onChange={(event) =>
+                        field.handleChange(event.target.value)
+                      }
                       value={field.state.value}
                     />
                   </AppFormField>
@@ -92,7 +84,9 @@ export function OfficialDocumentSettingsForm({
                       id={field.name}
                       maxLength={8}
                       onBlur={field.handleBlur}
-                      onChange={(event) => field.handleChange(event.target.value)}
+                      onChange={(event) =>
+                        field.handleChange(event.target.value)
+                      }
                       value={field.state.value}
                     />
                   </AppFormField>
@@ -100,11 +94,16 @@ export function OfficialDocumentSettingsForm({
               </form.Field>
               <form.Field name="legalName">
                 {(field) => (
-                  <AppFormField inputId={field.name} label="Legal business name">
+                  <AppFormField
+                    inputId={field.name}
+                    label="Legal business name"
+                  >
                     <Input
                       id={field.name}
                       onBlur={field.handleBlur}
-                      onChange={(event) => field.handleChange(event.target.value)}
+                      onChange={(event) =>
+                        field.handleChange(event.target.value)
+                      }
                       value={field.state.value}
                     />
                   </AppFormField>
@@ -116,26 +115,23 @@ export function OfficialDocumentSettingsForm({
                     <Input
                       id={field.name}
                       onBlur={field.handleBlur}
-                      onChange={(event) => field.handleChange(event.target.value)}
+                      onChange={(event) =>
+                        field.handleChange(event.target.value)
+                      }
                       value={field.state.value}
                     />
                   </AppFormField>
                 )}
               </form.Field>
             </FieldGroup>
-          </CardContent>
-        </Card>
+          </OfficialDocumentSettingsCard>
         </TabsContent>
 
         <TabsContent className="flex flex-col gap-4" value="money">
-        <Card>
-          <CardHeader>
-            <CardTitle>Money and document defaults</CardTitle>
-            <CardDescription>
-              Currency-safe defaults for sales now and ecommerce later.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+          <OfficialDocumentSettingsCard
+            description="Currency-safe defaults for sales now and ecommerce later."
+            title="Money and document defaults"
+          >
             <FieldGroup>
               <form.Field name="baseCurrencyCode">
                 {(field) => (
@@ -167,7 +163,9 @@ export function OfficialDocumentSettingsForm({
                       max={4}
                       min={0}
                       onBlur={field.handleBlur}
-                      onChange={(event) => field.handleChange(Number(event.target.value))}
+                      onChange={(event) =>
+                        field.handleChange(Number(event.target.value))
+                      }
                       type="number"
                       value={field.state.value}
                     />
@@ -181,7 +179,8 @@ export function OfficialDocumentSettingsForm({
                       id={field.name}
                       onChange={(event) =>
                         field.handleChange(
-                          event.target.value as OfficialDocumentSettingsFormValues["defaultPaperSize"],
+                          event.target
+                            .value as OfficialDocumentSettingsFormValues["defaultPaperSize"],
                         )
                       }
                       value={field.state.value}
@@ -205,35 +204,29 @@ export function OfficialDocumentSettingsForm({
                 )}
               </form.Field>
             </FieldGroup>
-          </CardContent>
-        </Card>
+          </OfficialDocumentSettingsCard>
         </TabsContent>
 
         <TabsContent className="flex flex-col gap-4" value="documents">
-      <Card>
-        <CardHeader>
-          <CardTitle>Official document footer</CardTitle>
-          <CardDescription>
-            Appears on issued sales documents until location overrides are enabled.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form.Field name="receiptFooter">
-            {(field) => (
-              <AppFormField inputId={field.name} label="Footer">
-                <Textarea
-                  id={field.name}
-                  maxLength={500}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  rows={3}
-                  value={field.state.value}
-                />
-              </AppFormField>
-            )}
-          </form.Field>
-        </CardContent>
-      </Card>
+          <OfficialDocumentSettingsCard
+            description="Appears on issued sales documents until location overrides are enabled."
+            title="Official document footer"
+          >
+            <form.Field name="receiptFooter">
+              {(field) => (
+                <AppFormField inputId={field.name} label="Footer">
+                  <Textarea
+                    id={field.name}
+                    maxLength={500}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                    rows={3}
+                    value={field.state.value}
+                  />
+                </AppFormField>
+              )}
+            </form.Field>
+          </OfficialDocumentSettingsCard>
         </TabsContent>
       </Tabs>
 

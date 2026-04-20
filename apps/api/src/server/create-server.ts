@@ -10,25 +10,26 @@ import { registerAdminDirectoryRoutes } from "../modules/admin/admin-directory.r
 import { registerAdminLocationQueryRoutes } from "../modules/admin/admin-location-query.routes.js";
 import { registerAdminLocationWriteRoutes } from "../modules/admin/admin-location-write.routes.js";
 import { registerAdminUserAccessRoutes } from "../modules/admin/admin-user-access.routes.js";
+import { registerManagerStaffRoutes } from "../modules/assignments/manager-staff.routes.js";
+import { registerStockAssignmentRoutes } from "../modules/assignments/stock-assignment.routes.js";
 import { registerAuthRoutes } from "../modules/auth/auth.routes.js";
 import { registerCatalogProductOptionsRoutes } from "../modules/catalog/catalog-admin-product-options.routes.js";
 import { registerCatalogAdminQueryRoutes } from "../modules/catalog/catalog-admin-query.routes.js";
 import { registerCatalogAdminWriteRoutes } from "../modules/catalog/catalog-admin-write.routes.js";
 import { registerCatalogBrandRoutes } from "../modules/catalog/catalog-brand.routes.js";
-import { registerCatalogMediaRoutes } from "../modules/catalog/catalog-media.routes.js";
 import { registerCatalogManagerQueryRoutes } from "../modules/catalog/catalog-manager-query.routes.js";
+import { registerCatalogMediaRoutes } from "../modules/catalog/catalog-media.routes.js";
 import { registerPlatformEventAdminRoutes } from "../modules/events/platform-event-admin.routes.js";
 import { registerPlatformEventRoutes } from "../modules/events/platform-events.routes.js";
 import { registerNotificationRoutes } from "../modules/notifications/notification.routes.js";
+import { registerIssuedDocumentRoutes } from "../modules/official-documents/issued-document.routes.js";
 import { registerOfficialDocumentSettingsRoutes } from "../modules/official-documents/official-document-settings.routes.js";
-import { registerManagerStaffRoutes } from "../modules/assignments/manager-staff.routes.js";
-import { registerStockAssignmentRoutes } from "../modules/assignments/stock-assignment.routes.js";
 import { registerPosSaleRoutes } from "../modules/sales/pos-sale.routes.js";
 import { registerStockRoutes } from "../modules/stock/active-reservation-admin.routes.js";
-import { registerStockSupplyRoutes } from "../modules/stock/supply-request.routes.js";
 import { registerStockBalanceRoutes } from "../modules/stock/stock-balance-admin.routes.js";
 import { registerStockBalanceLocationRoutes } from "../modules/stock/stock-balance-location.routes.js";
 import { registerStockCountRoutes } from "../modules/stock/stock-count-admin.routes.js";
+import { registerStockSupplyRoutes } from "../modules/stock/supply-request.routes.js";
 import { registerHealthRoutes } from "../modules/system/health/health.routes.js";
 import { registerErrorHandling } from "./register-error-handling.js";
 
@@ -46,7 +47,10 @@ type CreateServerOptions = {
   events?: Parameters<typeof registerPlatformEventRoutes>[1];
   eventsAdmin?: Parameters<typeof registerPlatformEventAdminRoutes>[1];
   notifications?: Parameters<typeof registerNotificationRoutes>[1];
-  officialDocuments?: Parameters<typeof registerOfficialDocumentSettingsRoutes>[1];
+  issuedDocuments?: Parameters<typeof registerIssuedDocumentRoutes>[1];
+  officialDocuments?: Parameters<
+    typeof registerOfficialDocumentSettingsRoutes
+  >[1];
   catalogProductOptions?: Parameters<
     typeof registerCatalogProductOptionsRoutes
   >[1];
@@ -57,7 +61,9 @@ type CreateServerOptions = {
   stockSupply?: Parameters<typeof registerStockSupplyRoutes>[1];
   stockAssignments?: Parameters<typeof registerStockAssignmentRoutes>[1];
   stockBalance?: Parameters<typeof registerStockBalanceRoutes>[1];
-  stockBalanceLocation?: Parameters<typeof registerStockBalanceLocationRoutes>[1];
+  stockBalanceLocation?: Parameters<
+    typeof registerStockBalanceLocationRoutes
+  >[1];
   stockCount?: Parameters<typeof registerStockCountRoutes>[1];
 };
 
@@ -105,6 +111,7 @@ export function createServer(options: CreateServerOptions = {}) {
   registerPlatformEventRoutes(server, options.events);
   registerPlatformEventAdminRoutes(server, options.eventsAdmin);
   registerNotificationRoutes(server, options.notifications);
+  registerIssuedDocumentRoutes(server, options.issuedDocuments);
   registerOfficialDocumentSettingsRoutes(server, options.officialDocuments);
   registerStockRoutes(server, options.stock);
   registerStockBalanceRoutes(server, options.stockBalance);

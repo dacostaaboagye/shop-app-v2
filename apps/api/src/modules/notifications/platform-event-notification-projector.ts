@@ -70,10 +70,12 @@ export class PlatformEventNotificationProjector {
       );
     activeUserIds.sort((left, right) => left.localeCompare(right));
 
-    await this.dependencies.userNotificationRepository.createUnreadNotifications({
-      eventId: event.id,
-      userIds: activeUserIds,
-    });
+    await this.dependencies.userNotificationRepository.createUnreadNotifications(
+      {
+        eventId: event.id,
+        userIds: activeUserIds,
+      },
+    );
   }
 }
 

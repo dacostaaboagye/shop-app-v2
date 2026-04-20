@@ -1,13 +1,18 @@
-import { invoiceLineItems, invoices, stockBalances, stockMovements } from "@shop/database";
+import {
+  invoiceLineItems,
+  invoices,
+  stockBalances,
+  stockMovements,
+} from "@shop/database";
 import { and, eq, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
+import { mapInvoice, mapLineItem } from "./postgres-invoice.mappers.js";
 import {
-  InsufficientStockForSaleError,
   type CreateSaleTransactionInput,
+  InsufficientStockForSaleError,
   type InvoiceLineItemRecord,
   type InvoiceWithLines,
 } from "./sales.contracts.js";
-import { mapInvoice, mapLineItem } from "./postgres-invoice.mappers.js";
 
 export class PostgresInvoiceRepository {
   constructor(private readonly db: ApiDatabase) {}

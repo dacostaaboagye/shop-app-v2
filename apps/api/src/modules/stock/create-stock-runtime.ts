@@ -1,6 +1,7 @@
 import { catalogProducts, locations, productVariants } from "@shop/database";
 import { and, asc, eq } from "drizzle-orm";
 import type { DatabaseRuntime } from "../../infrastructure/database.js";
+import type { PlatformEventPipelinePublisher } from "../events/platform-event-pipeline.publisher.js";
 import { PostgresReferenceNumberRepository } from "../public-identifiers/postgres-reference-number.repository.js";
 import { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
 import { ActiveReservationQueryService } from "./active-reservation-query.service.js";
@@ -10,7 +11,6 @@ import { AdminStockCountRepository } from "./postgres-admin-stock-count.reposito
 import { PostgresStockBalanceQueryRepository } from "./postgres-stock-balance-query.repository.js";
 import { PostgresSupplyRequestRepository } from "./postgres-supply-request.repository.js";
 import { StockSupplyService } from "./stock-supply.service.js";
-import type { PlatformEventPipelinePublisher } from "../events/platform-event-pipeline.publisher.js";
 
 type CreateStockRuntimeOptions = {
   platformEventPublisher?: Pick<
@@ -32,9 +32,11 @@ type StockRuntime = {
     supplyRequestRepository: PostgresSupplyRequestRepository;
     supplyService: StockSupplyService;
     variantSnapshotRepository: {
-      getVariantSnapshot(
-        skuId: string,
-      ): Promise<{ sku: string; productName: string; variantName: string } | null>;
+      getVariantSnapshot(skuId: string): Promise<{
+        sku: string;
+        productName: string;
+        variantName: string;
+      } | null>;
     };
   };
 };
@@ -47,7 +49,9 @@ export function createStockRuntime(
     new PostgresReferenceNumberRepository(databaseRuntime.db),
   );
 
-  const supplyRequestRepository = new PostgresSupplyRequestRepository(databaseRuntime.db);
+  const supplyRequestRepository = new PostgresSupplyRequestRepository(
+    databaseRuntime.db,
+  );
   const supplyService = new StockSupplyService(
     databaseRuntime.db,
     referenceNumberService,
@@ -87,7 +91,10 @@ export function createStockRuntime(
               variantName: productVariants.name,
             })
             .from(productVariants)
-            .innerJoin(catalogProducts, eq(productVariants.productId, catalogProducts.id))
+            .innerJoin(
+              catalogProducts,
+              eq(productVariants.productId, catalogProducts.id),
+            )
             .where(
               and(
                 eq(productVariants.id, skuId),

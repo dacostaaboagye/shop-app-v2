@@ -7,11 +7,18 @@ import type { RouteDefinition } from "../_core/route-contract.js";
 import type { PostgresVariantSearchRepository } from "./postgres-variant-search.repository.js";
 
 type CatalogManagerQueryDependencies = {
-  variantSearchRepository: Pick<PostgresVariantSearchRepository, "searchVariants">;
+  variantSearchRepository: Pick<
+    PostgresVariantSearchRepository,
+    "searchVariants"
+  >;
 };
 
 const searchVariantsRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "stock.assignments.manage", scope: "any_active" },
+  access: {
+    kind: "permission",
+    permission: "stock.assignments.manage",
+    scope: "any_active",
+  },
   method: "GET",
   url: "/api/manager/catalog/variants",
 };

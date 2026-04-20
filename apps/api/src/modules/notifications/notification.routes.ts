@@ -48,10 +48,11 @@ export function registerNotificationRoutes(
     async handler(request) {
       const userId = getAuthenticatedUserId(request);
       const query = notificationListQuerySchema.parse(request.query);
-      const result = await dependencies.notificationQueryService.listNotifications({
-        limit: query.limit,
-        userId,
-      });
+      const result =
+        await dependencies.notificationQueryService.listNotifications({
+          limit: query.limit,
+          userId,
+        });
 
       return notificationListResponseSchema.parse(result);
     },

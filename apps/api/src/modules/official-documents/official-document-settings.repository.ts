@@ -37,7 +37,12 @@ export class OfficialDocumentSettingsRepository {
       })
       .from(officialDocumentSettings)
       .leftJoin(users, eq(users.id, officialDocumentSettings.updatedBy))
-      .where(eq(officialDocumentSettings.settingsKey, OFFICIAL_DOCUMENT_SETTINGS_KEY))
+      .where(
+        eq(
+          officialDocumentSettings.settingsKey,
+          OFFICIAL_DOCUMENT_SETTINGS_KEY,
+        ),
+      )
       .limit(1);
 
     const row = rows[0];
@@ -140,9 +145,17 @@ export class OfficialDocumentSettingsRepository {
   }): Promise<LocationDocumentSettingsRecord | null> {
     await this.db
       .insert(locationDocumentSettings)
-      .values({ ...input.patch, locationId: input.locationId, updatedBy: input.updatedBy })
+      .values({
+        ...input.patch,
+        locationId: input.locationId,
+        updatedBy: input.updatedBy,
+      })
       .onConflictDoUpdate({
-        set: { ...input.patch, updatedAt: input.now, updatedBy: input.updatedBy },
+        set: {
+          ...input.patch,
+          updatedAt: input.now,
+          updatedBy: input.updatedBy,
+        },
         target: locationDocumentSettings.locationId,
       });
 

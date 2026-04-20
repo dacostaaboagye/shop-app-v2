@@ -29,7 +29,10 @@ export function AssignmentQuantityEditor({
         const atMax = quantity >= max;
 
         return (
-          <div className="flex items-center gap-3 px-4 py-3" key={variant.variantId}>
+          <div
+            className="flex items-center gap-3 px-4 py-3"
+            key={variant.variantId}
+          >
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium leading-snug">
                 {variant.productName}
@@ -47,7 +50,9 @@ export function AssignmentQuantityEditor({
                 aria-label="Decrease quantity"
                 className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={quantity <= 1}
-                onClick={() => onQuantityChange(variant.variantId, quantity - 1)}
+                onClick={() =>
+                  onQuantityChange(variant.variantId, quantity - 1)
+                }
                 type="button"
               >
                 <Minus className="size-3" />
@@ -59,8 +64,11 @@ export function AssignmentQuantityEditor({
                 min={1}
                 onChange={(e) => {
                   const val = parseInt(e.target.value, 10);
-                  if (!isNaN(val)) {
-                    onQuantityChange(variant.variantId, Math.min(Math.max(1, val), max));
+                  if (!Number.isNaN(val)) {
+                    onQuantityChange(
+                      variant.variantId,
+                      Math.min(Math.max(1, val), max),
+                    );
                   }
                 }}
                 type="number"
@@ -71,7 +79,10 @@ export function AssignmentQuantityEditor({
                 className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={atMax}
                 onClick={() =>
-                  onQuantityChange(variant.variantId, Math.min(quantity + 1, max))
+                  onQuantityChange(
+                    variant.variantId,
+                    Math.min(quantity + 1, max),
+                  )
                 }
                 type="button"
               >

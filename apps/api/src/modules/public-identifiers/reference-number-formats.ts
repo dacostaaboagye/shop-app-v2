@@ -41,7 +41,7 @@ export const referenceSequenceProfiles: Record<
   "portal-order": createDateProfile("portal-order", "CPO"),
   "purchase-order": createDateProfile("purchase-order", "PO"),
   "supply-request": createInvoiceProfile("supply-request", "SUP"),
-  "gtn": createInvoiceProfile("gtn", "GTN"),
+  gtn: createInvoiceProfile("gtn", "GTN"),
   "web-order": createDateProfile("web-order", "WEB"),
 };
 

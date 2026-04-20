@@ -33,14 +33,11 @@ export class PostgresPlatformEventDeliveryHealthRepository {
       .select({
         deliveredCount: countStatus("delivered"),
         failedCount: countStatus("failed"),
-        oldestFailedAt:
-          sql<Date | null>`min(${platformEvents.occurredAt}) filter (where ${platformEvents.deliveryStatus} = 'failed')`,
-        oldestPendingAt:
-          sql<Date | null>`min(${platformEvents.occurredAt}) filter (where ${platformEvents.deliveryStatus} = 'pending')`,
+        oldestFailedAt: sql<Date | null>`min(${platformEvents.occurredAt}) filter (where ${platformEvents.deliveryStatus} = 'failed')`,
+        oldestPendingAt: sql<Date | null>`min(${platformEvents.occurredAt}) filter (where ${platformEvents.deliveryStatus} = 'pending')`,
         pendingCount: countStatus("pending"),
         processingCount: countStatus("processing"),
-        stuckProcessingCount:
-          sql<number>`cast(count(*) filter (
+        stuckProcessingCount: sql<number>`cast(count(*) filter (
             where ${platformEvents.deliveryStatus} = 'processing'
             and ${platformEvents.processingStartedAt} <= ${input.staleProcessingBefore}
           ) as int)`,

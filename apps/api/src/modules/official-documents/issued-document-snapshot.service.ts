@@ -27,7 +27,9 @@ export type PersistedIssuedDocumentSnapshot = Omit<
 };
 
 type IssuedDocumentSnapshotRepository = {
-  create(input: PersistedIssuedDocumentSnapshot): Promise<PersistedIssuedDocumentSnapshot>;
+  create(
+    input: PersistedIssuedDocumentSnapshot,
+  ): Promise<PersistedIssuedDocumentSnapshot>;
   findByResource(input: {
     documentType: OfficialDocumentType;
     resourceKind: string;
@@ -39,6 +41,15 @@ const SCHEMA_VERSION = "official-document-v1";
 
 export class IssuedDocumentSnapshotService {
   constructor(private readonly repository: IssuedDocumentSnapshotRepository) {}
+
+  async findSnapshotByResource(input: {
+    documentType: OfficialDocumentType;
+    resourceKind: string;
+    resourceReference: string;
+  }): Promise<IssuedDocumentSnapshotResponse | null> {
+    const snapshot = await this.repository.findByResource(input);
+    return snapshot ? toResponse(snapshot) : null;
+  }
 
   async issueSnapshot(
     input: IssueDocumentSnapshotInput,

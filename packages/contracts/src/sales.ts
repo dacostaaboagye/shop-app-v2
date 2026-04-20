@@ -82,9 +82,15 @@ export const invoiceListResponseSchema = z.object({
 
 export type PosPaymentMethod = z.infer<typeof posPaymentMethodSchema>;
 export type PosLineItemRequest = z.infer<typeof posLineItemRequestSchema>;
-export type ProcessPosPaymentRequest = z.infer<typeof processPosPaymentRequestSchema>;
-export type ProcessPosReturnRequest = z.infer<typeof processPosReturnRequestSchema>;
-export type InvoiceLineItemResponse = z.infer<typeof invoiceLineItemResponseSchema>;
+export type ProcessPosPaymentRequest = z.infer<
+  typeof processPosPaymentRequestSchema
+>;
+export type ProcessPosReturnRequest = z.infer<
+  typeof processPosReturnRequestSchema
+>;
+export type InvoiceLineItemResponse = z.infer<
+  typeof invoiceLineItemResponseSchema
+>;
 export type InvoiceResponse = z.infer<typeof invoiceResponseSchema>;
 export type InvoiceListQuery = z.infer<typeof invoiceListQuerySchema>;
 export type InvoiceListResponse = z.infer<typeof invoiceListResponseSchema>;

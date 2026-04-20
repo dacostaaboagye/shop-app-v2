@@ -6,12 +6,12 @@ import {
   updateLocationDocumentSettingsRequestSchema,
   updateOfficialDocumentSettingsRequestSchema,
 } from "@shop/contracts";
-import { z } from "zod";
 import type { FastifyInstance } from "fastify";
-import type { RouteDefinition } from "../_core/route-contract.js";
+import { z } from "zod";
 import { AppError } from "../_core/errors/app-error.js";
-import { getAuthenticatedUserId } from "../auth/auth-route-support.js";
+import type { RouteDefinition } from "../_core/route-contract.js";
 import type { PermissionResolutionService } from "../access-control/permission-resolution.service.js";
+import { getAuthenticatedUserId } from "../auth/auth-route-support.js";
 import type { OfficialDocumentSettingsService } from "./official-document-settings.service.js";
 
 type OfficialDocumentSettingsRouteDependencies = {
@@ -98,7 +98,9 @@ export function registerOfficialDocumentSettingsRoutes(
     method: adminUpdateSettingsRoute.method,
     url: adminUpdateSettingsRoute.url,
     async handler(request) {
-      const patch = updateOfficialDocumentSettingsRequestSchema.parse(request.body);
+      const patch = updateOfficialDocumentSettingsRequestSchema.parse(
+        request.body,
+      );
       const settings = await dependencies.settingsService.updateGlobalSettings({
         now: new Date(),
         patch,
@@ -120,7 +122,8 @@ export function registerOfficialDocumentSettingsRoutes(
         permission: "settings.location_documents.manage",
         user: { userId },
       });
-      const settings = await dependencies.settingsService.getLocationSettings(locationId);
+      const settings =
+        await dependencies.settingsService.getLocationSettings(locationId);
       return locationDocumentSettingsResponseSchema.parse(settings);
     },
   });
@@ -137,13 +140,16 @@ export function registerOfficialDocumentSettingsRoutes(
         permission: "settings.location_documents.manage",
         user: { userId },
       });
-      const patch = updateLocationDocumentSettingsRequestSchema.parse(request.body);
-      const settings = await dependencies.settingsService.updateLocationSettings({
-        locationId,
-        now: new Date(),
-        patch,
-        updatedBy: userId,
-      });
+      const patch = updateLocationDocumentSettingsRequestSchema.parse(
+        request.body,
+      );
+      const settings =
+        await dependencies.settingsService.updateLocationSettings({
+          locationId,
+          now: new Date(),
+          patch,
+          updatedBy: userId,
+        });
       return locationDocumentSettingsResponseSchema.parse(settings);
     },
   });

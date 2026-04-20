@@ -75,10 +75,7 @@ describe("manager staff routes", () => {
     assert.equal(response.statusCode, 200);
     assert.equal(response.json().locationName, "Downtown Store");
     assert.equal(response.json().items[0]?.roleSlug, "worker");
-    assert.equal(
-      state.lastLocationId,
-      "4181707d-c61e-4c22-995d-335295748060",
-    );
+    assert.equal(state.lastLocationId, "4181707d-c61e-4c22-995d-335295748060");
   });
 
   it("returns 503 when manager staff services are unavailable", async () => {
@@ -97,7 +94,9 @@ describe("manager staff routes", () => {
   });
 });
 
-function createAuthorizedServer(options: Parameters<typeof createServer>[0] = {}) {
+function createAuthorizedServer(
+  options: Parameters<typeof createServer>[0] = {},
+) {
   return createServer({
     ...options,
     accessControl: {

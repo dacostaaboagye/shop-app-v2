@@ -1,5 +1,5 @@
-import { issuedDocuments } from "@shop/database";
 import type { OfficialDocumentType } from "@shop/contracts";
+import { issuedDocuments } from "@shop/database";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { PersistedIssuedDocumentSnapshot } from "./issued-document-snapshot.service.js";
 
@@ -50,7 +50,9 @@ export class PostgresIssuedDocumentRepository {
   }
 }
 
-function toSnapshot(row: typeof issuedDocuments.$inferSelect): PersistedIssuedDocumentSnapshot {
+function toSnapshot(
+  row: typeof issuedDocuments.$inferSelect,
+): PersistedIssuedDocumentSnapshot {
   return {
     contentHash: row.contentHash,
     documentReference: row.documentReference,

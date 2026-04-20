@@ -3,9 +3,9 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock,
+  type LucideIcon,
   PackageCheck,
   XCircle,
-  type LucideIcon,
 } from "lucide-react";
 
 export type WorkerRequestFilter =
@@ -137,11 +137,15 @@ function filterByStatus(
 }
 
 function isActiveStatus(status: string) {
-  return status === "pending" || status === "approved" || status === "dispatched";
+  return (
+    status === "pending" || status === "approved" || status === "dispatched"
+  );
 }
 
 function isClosedStatus(status: string) {
-  return status === "received" || status === "rejected" || status === "cancelled";
+  return (
+    status === "received" || status === "rejected" || status === "cancelled"
+  );
 }
 
 function successAccent() {

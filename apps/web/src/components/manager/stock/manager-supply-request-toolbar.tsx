@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
 import { LayoutList, Search, SquareStack, X } from "lucide-react";
+import type { ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
@@ -69,10 +69,9 @@ function StatusFilterButtons({
   onStatusFilterChange: (value: RequestFilter) => void;
 }) {
   return (
-    <div
+    <fieldset
       aria-label="Filter by status"
       className="flex items-center gap-1 overflow-x-auto rounded-lg border border-border bg-muted p-1"
-      role="group"
     >
       {FILTER_OPTIONS.map((option) => (
         <button
@@ -89,11 +88,14 @@ function StatusFilterButtons({
         >
           {option.label}
           {counts[option.value] > 0 ? (
-            <CountBadge active={statusFilter === option.value} value={counts[option.value]} />
+            <CountBadge
+              active={statusFilter === option.value}
+              value={counts[option.value]}
+            />
           ) : null}
         </button>
       ))}
-    </div>
+    </fieldset>
   );
 }
 
@@ -118,10 +120,9 @@ function ViewModeToggle({
   onViewModeChange: (value: ViewMode) => void;
 }) {
   return (
-    <div
+    <fieldset
       aria-label="Change view"
       className="flex items-center gap-1 rounded-lg border border-border bg-muted p-1"
-      role="group"
     >
       <ViewModeButton
         active={viewMode === "card"}
@@ -137,7 +138,7 @@ function ViewModeToggle({
       >
         <LayoutList className="size-4" />
       </ViewModeButton>
-    </div>
+    </fieldset>
   );
 }
 

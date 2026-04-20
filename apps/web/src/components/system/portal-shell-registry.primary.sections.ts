@@ -45,8 +45,11 @@ export const PRIMARY_SECTION_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     section: "Administration",
   },
   {
-    activeMatchers: [{ mode: "descendants", path: "/admin/settings/documents" }],
-    description: "Configure official documents, brand identity, and money defaults.",
+    activeMatchers: [
+      { mode: "descendants", path: "/admin/settings/documents" },
+    ],
+    description:
+      "Configure official documents, brand identity, and money defaults.",
     href: toRoute("/admin/settings/documents"),
     icon: Settings,
     label: "Settings",

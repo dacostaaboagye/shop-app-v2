@@ -270,6 +270,8 @@ const SYSTEM_ROLES: readonly SystemRole[] = [
       "worker.handovers.view",
       "worker.stock.view",
       "worker.transfers.view",
+      "pos.sales.process",
+      "pos.sales.view",
       "pos.sales.manage",
       "stock.assignments.manage",
       "stock.assignments.view",

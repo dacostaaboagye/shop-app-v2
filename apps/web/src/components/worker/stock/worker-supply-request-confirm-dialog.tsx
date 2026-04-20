@@ -1,8 +1,8 @@
 "use client";
 
-import type { FormEvent } from "react";
 import type { StockSupplyRequestResponse } from "@shop/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { FormEvent } from "react";
 import { useId, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,11 @@ export function ConfirmReceiptDialog({
         ...(notes.trim() ? { notes: notes.trim() } : {}),
       }),
     onError(error) {
-      toast.error(getAppErrorMessage(error, { fallbackDetail: "Failed to confirm receipt." }));
+      toast.error(
+        getAppErrorMessage(error, {
+          fallbackDetail: "Failed to confirm receipt.",
+        }),
+      );
     },
     onSuccess() {
       toast.success("Receipt confirmed. Stock updated.");
@@ -59,7 +63,9 @@ export function ConfirmReceiptDialog({
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>Confirm receipt</DialogTitle>
-          <DialogDescription>{target ? getDialogDescription(target) : null}</DialogDescription>
+          <DialogDescription>
+            {target ? getDialogDescription(target) : null}
+          </DialogDescription>
         </DialogHeader>
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
           <TransferRoute target={target} />
@@ -83,7 +89,11 @@ export function ConfirmReceiptDialog({
             </p>
           ) : null}
           <DialogFooter>
-            <Button onClick={() => onOpenChange(false)} type="button" variant="ghost">
+            <Button
+              onClick={() => onOpenChange(false)}
+              type="button"
+              variant="ghost"
+            >
               Cancel
             </Button>
             <Button
@@ -100,7 +110,11 @@ export function ConfirmReceiptDialog({
   );
 }
 
-function TransferRoute({ target }: { target: StockSupplyRequestResponse | null }) {
+function TransferRoute({
+  target,
+}: {
+  target: StockSupplyRequestResponse | null;
+}) {
   if (!target?.sourceLocationName && !target?.locationName) return null;
   return (
     <div className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
@@ -112,11 +126,18 @@ function TransferRoute({ target }: { target: StockSupplyRequestResponse | null }
   );
 }
 
-function GtnReference({ target }: { target: StockSupplyRequestResponse | null }) {
+function GtnReference({
+  target,
+}: {
+  target: StockSupplyRequestResponse | null;
+}) {
   if (!target?.gtnReference) return null;
   return (
     <div className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-      GTN: <span className="font-mono font-medium text-foreground">{target.gtnReference}</span>
+      GTN:{" "}
+      <span className="font-mono font-medium text-foreground">
+        {target.gtnReference}
+      </span>
     </div>
   );
 }

@@ -7,8 +7,6 @@ export default async function ManagerInvoicePage({
 }) {
   const { reference } = await params;
   return (
-    <ManagerInvoiceDetailPageClient
-      reference={decodeURIComponent(reference)}
-    />
+    <ManagerInvoiceDetailPageClient reference={decodeURIComponent(reference)} />
   );
 }

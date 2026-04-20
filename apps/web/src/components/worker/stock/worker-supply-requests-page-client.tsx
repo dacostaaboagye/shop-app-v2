@@ -97,7 +97,9 @@ function WorkerRequestContent({
   allItems: Parameters<typeof WorkerSupplyRequestList>[0]["allItems"];
   counts: Parameters<typeof WorkerSupplyRequestList>[0]["counts"];
   filteredItems: Parameters<typeof WorkerSupplyRequestList>[0]["filteredItems"];
-  onConfirmReceipt: Parameters<typeof WorkerSupplyRequestList>[0]["onConfirmReceipt"];
+  onConfirmReceipt: Parameters<
+    typeof WorkerSupplyRequestList
+  >[0]["onConfirmReceipt"];
   onRetry: () => void;
   onSearchChange: (value: string) => void;
   onStatusFilterChange: (value: WorkerRequestFilter) => void;

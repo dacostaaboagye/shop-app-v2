@@ -12,10 +12,10 @@ import {
 } from "@/components/ui/card";
 import {
   Empty,
+  EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-  EmptyDescription,
 } from "@/components/ui/empty";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";

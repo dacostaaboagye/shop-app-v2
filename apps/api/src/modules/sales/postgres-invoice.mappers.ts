@@ -1,5 +1,8 @@
-import { invoiceLineItems, invoices } from "@shop/database";
-import type { InvoiceLineItemRecord, InvoiceRecord } from "./sales.contracts.js";
+import type { invoiceLineItems, invoices } from "@shop/database";
+import type {
+  InvoiceLineItemRecord,
+  InvoiceRecord,
+} from "./sales.contracts.js";
 
 export function mapInvoice(row: typeof invoices.$inferSelect): InvoiceRecord {
   return {
@@ -36,7 +39,11 @@ export function mapLineItem(
     lineTotal: row.lineTotal,
     quantity: row.quantity,
     skuId: row.skuId,
-    skuSnapshot: row.skuSnapshot as { sku: string; variantName: string; productName: string },
+    skuSnapshot: row.skuSnapshot as {
+      sku: string;
+      variantName: string;
+      productName: string;
+    },
     stockMovementId: row.stockMovementId,
     taxAmount: row.taxAmount,
     taxCategory: row.taxCategory,

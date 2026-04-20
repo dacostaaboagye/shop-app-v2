@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { AppError } from "../src/modules/_core/errors/app-error.js";
-import { PlatformEventNotificationProjector } from "../src/modules/notifications/platform-event-notification-projector.js";
 import type { PlatformEventRecord } from "../src/modules/events/platform-event.types.js";
+import { PlatformEventNotificationProjector } from "../src/modules/notifications/platform-event-notification-projector.js";
 
 describe("PlatformEventNotificationProjector", () => {
   it("creates unread notifications for direct and permission audiences", async () => {
@@ -75,7 +75,9 @@ describe("PlatformEventNotificationProjector", () => {
     await assert.rejects(
       projector.project(
         makeEvent({
-          audience: [{ kind: "permission", permission: "admin.dashboard.view" }],
+          audience: [
+            { kind: "permission", permission: "admin.dashboard.view" },
+          ],
         }),
       ),
       /permission backend unavailable/,
@@ -83,7 +85,9 @@ describe("PlatformEventNotificationProjector", () => {
   });
 });
 
-function makeEvent(overrides: Partial<PlatformEventRecord> = {}): PlatformEventRecord {
+function makeEvent(
+  overrides: Partial<PlatformEventRecord> = {},
+): PlatformEventRecord {
   return {
     actor: { userSlug: "worker-a" },
     audience: [{ kind: "user", userId: "worker-a" }],

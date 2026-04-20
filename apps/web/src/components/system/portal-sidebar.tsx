@@ -86,7 +86,7 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
         block: "nearest",
       });
     }
-  }, [pathname, activeItem]);
+  });
 
   return (
     <aside className="flex h-full flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">

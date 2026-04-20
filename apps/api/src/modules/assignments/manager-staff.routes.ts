@@ -30,9 +30,10 @@ export function registerManagerStaffRoutes(
     url: managerStaffRoute.url,
     async handler(request) {
       const query = locationStaffListQuerySchema.parse(request.query);
-      const staff = await dependencies.assignmentQueryRepository.getLocationStaff(
-        query.locationId,
-      );
+      const staff =
+        await dependencies.assignmentQueryRepository.getLocationStaff(
+          query.locationId,
+        );
 
       return locationStaffListResponseSchema.parse({
         items: staff.map((member) => ({
@@ -60,7 +61,8 @@ function createUnavailableDependencies(): ManagerStaffRouteDependencies {
       async getLocationStaff() {
         throw new AppError({
           code: "internal_error",
-          detail: "Manager staff services are not configured for this environment.",
+          detail:
+            "Manager staff services are not configured for this environment.",
           statusCode: 503,
           title: "Manager staff unavailable",
         });

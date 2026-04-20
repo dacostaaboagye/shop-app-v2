@@ -67,7 +67,8 @@ export const PRIMARY_OVERVIEW_NAV_REGISTRY: readonly NavRegistryEntry[] = [
   },
   {
     activeMatchers: [{ mode: "descendants", path: "/agent/notifications" }],
-    description: "Operational updates relevant to your route and delivery work.",
+    description:
+      "Operational updates relevant to your route and delivery work.",
     href: toRoute("/agent/notifications"),
     icon: Bell,
     label: "Notifications",

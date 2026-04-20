@@ -11,10 +11,7 @@ type NotificationWriteRow = {
 export class PostgresNotificationWriteRepository {
   constructor(private readonly db: ApiDatabase) {}
 
-  async markAllRead(input: {
-    now: Date;
-    userId: string;
-  }): Promise<number> {
+  async markAllRead(input: { now: Date; userId: string }): Promise<number> {
     const rows = await this.db
       .update(userNotifications)
       .set({

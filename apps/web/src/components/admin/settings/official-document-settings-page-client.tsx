@@ -1,9 +1,10 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   fetchOfficialDocumentSettings,
@@ -11,7 +12,6 @@ import {
   updateOfficialDocumentSettings,
 } from "@/lib/react-query/official-documents";
 import { OfficialDocumentSettingsForm } from "./official-document-settings-form";
-import { toast } from "sonner";
 
 const SKELETON_KEYS = [1, 2, 3];
 

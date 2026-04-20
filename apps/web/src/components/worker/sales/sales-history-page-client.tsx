@@ -96,21 +96,26 @@ function SalesList({ response }: { response: InvoiceListResponse }) {
             invoice.paymentMethod === "mobile_money"
               ? "Mobile money"
               : invoice.paymentMethod
-                ? invoice.paymentMethod.charAt(0).toUpperCase() + invoice.paymentMethod.slice(1)
+                ? invoice.paymentMethod.charAt(0).toUpperCase() +
+                  invoice.paymentMethod.slice(1)
                 : "-";
 
           return (
             <Link
               key={invoice.reference}
               className="flex items-center justify-between gap-3 p-4 transition-colors hover:bg-accent/40"
-              href={toRoute(`/worker/sales/${encodeURIComponent(invoice.reference)}`)}
+              href={toRoute(
+                `/worker/sales/${encodeURIComponent(invoice.reference)}`,
+              )}
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
                   <Receipt className="size-4" />
                 </div>
                 <div>
-                  <p className="font-mono text-sm font-medium">{invoice.reference}</p>
+                  <p className="font-mono text-sm font-medium">
+                    {invoice.reference}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {new Date(invoice.createdAt).toLocaleString()}
                   </p>
@@ -118,12 +123,18 @@ function SalesList({ response }: { response: InvoiceListResponse }) {
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Badge
-                  variant={invoice.type === "credit_note" ? "destructive" : "secondary"}
+                  variant={
+                    invoice.type === "credit_note" ? "destructive" : "secondary"
+                  }
                 >
                   {invoice.type === "credit_note" ? "Return" : "Sale"}
                 </Badge>
-                <span className="text-xs text-muted-foreground">{paymentLabel}</span>
-                <span className="font-medium tabular-nums">{invoice.totalAmount}</span>
+                <span className="text-xs text-muted-foreground">
+                  {paymentLabel}
+                </span>
+                <span className="font-medium tabular-nums">
+                  {invoice.totalAmount}
+                </span>
               </div>
             </Link>
           );

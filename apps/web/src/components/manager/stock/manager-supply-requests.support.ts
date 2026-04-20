@@ -3,12 +3,17 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock,
-  XCircle,
   type LucideIcon,
+  XCircle,
 } from "lucide-react";
 
 export type ViewMode = "card" | "compact";
-export type RequestFilter = "all" | "pending" | "approved" | "dispatched" | "closed";
+export type RequestFilter =
+  | "all"
+  | "pending"
+  | "approved"
+  | "dispatched"
+  | "closed";
 export type SupplyRequestAction = "approve" | "reject" | "dispatch";
 
 export type ResolveTarget = {
@@ -145,7 +150,9 @@ function filterByStatus(
 }
 
 function isClosedStatus(status: string) {
-  return status === "received" || status === "rejected" || status === "cancelled";
+  return (
+    status === "received" || status === "rejected" || status === "cancelled"
+  );
 }
 
 function successAccent() {

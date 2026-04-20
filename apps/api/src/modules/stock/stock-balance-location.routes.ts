@@ -15,7 +15,11 @@ type StockBalanceLocationDeps = {
 };
 
 const workerStockBalanceRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "worker.stock.view", scope: "any_active" },
+  access: {
+    kind: "permission",
+    permission: "worker.stock.view",
+    scope: "any_active",
+  },
   method: "GET",
   url: "/api/worker/stock/balances",
 };
@@ -36,7 +40,8 @@ export function registerStockBalanceLocationRoutes(
     url: workerStockBalanceRoute.url,
     async handler(request) {
       const query = locationStockBalanceQuerySchema.parse(request.query);
-      const result = await deps.stockBalanceQueryRepo.listStockBalancesByLocationId(query);
+      const result =
+        await deps.stockBalanceQueryRepo.listStockBalancesByLocationId(query);
       return adminStockBalanceListResponseSchema.parse({
         items: result.items,
         locationName: result.locationName ?? undefined,
@@ -53,7 +58,8 @@ export function registerStockBalanceLocationRoutes(
     url: managerStockBalanceRoute.url,
     async handler(request) {
       const query = locationStockBalanceQuerySchema.parse(request.query);
-      const result = await deps.stockBalanceQueryRepo.listStockBalancesByLocationId(query);
+      const result =
+        await deps.stockBalanceQueryRepo.listStockBalancesByLocationId(query);
       return adminStockBalanceListResponseSchema.parse({
         items: result.items,
         locationName: result.locationName ?? undefined,

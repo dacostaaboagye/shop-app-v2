@@ -3,8 +3,8 @@ import { describe, it } from "node:test";
 import { AppError } from "../src/modules/_core/errors/app-error.js";
 import { AccessTokenAuthenticationService } from "../src/modules/auth/access-token-authentication.service.js";
 import { InMemoryPlatformEventBus } from "../src/modules/events/in-memory-platform-event-bus.js";
-import { canActorReceivePlatformEvent } from "../src/modules/events/platform-event-access.js";
 import type { PlatformEventRecord } from "../src/modules/events/platform-event.types.js";
+import { canActorReceivePlatformEvent } from "../src/modules/events/platform-event-access.js";
 
 const ACTOR = {
   userId: "11111111-1111-4111-8111-111111111111",
@@ -115,7 +115,9 @@ describe("platform events", () => {
     await assert.rejects(
       canActorReceivePlatformEvent(
         makePlatformEvent({
-          audience: [{ kind: "permission", permission: "admin.dashboard.view" }],
+          audience: [
+            { kind: "permission", permission: "admin.dashboard.view" },
+          ],
         }),
         ACTOR,
         {

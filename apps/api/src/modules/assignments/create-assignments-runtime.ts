@@ -16,7 +16,10 @@ type AssignmentsRuntime = {
     ownershipEventWriteService: OwnershipEventWriteService;
     ownershipHandoverService: OwnershipHandoverService;
     stockBalanceRepository: {
-      getOnHandQuantity(skuId: string, locationId: string): Promise<number | null>;
+      getOnHandQuantity(
+        skuId: string,
+        locationId: string,
+      ): Promise<number | null>;
     };
   };
 };

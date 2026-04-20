@@ -22,8 +22,7 @@ export class PostgresNotificationQueryRepository {
   async countUnread(userId: string): Promise<number> {
     const [row] = await this.db
       .select({
-        unreadCount:
-          sql<number>`cast(count(*) filter (where ${userNotifications.status} = 'unread') as int)`,
+        unreadCount: sql<number>`cast(count(*) filter (where ${userNotifications.status} = 'unread') as int)`,
       })
       .from(userNotifications)
       .where(eq(userNotifications.userId, userId));
@@ -48,7 +47,10 @@ export class PostgresNotificationQueryRepository {
         summary: platformEvents.summary,
       })
       .from(userNotifications)
-      .innerJoin(platformEvents, eq(platformEvents.id, userNotifications.eventId))
+      .innerJoin(
+        platformEvents,
+        eq(platformEvents.id, userNotifications.eventId),
+      )
       .where(eq(userNotifications.userId, input.userId))
       .orderBy(
         sql`case when ${userNotifications.status} = 'unread' then 0 else 1 end`,

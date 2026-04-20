@@ -4,7 +4,10 @@ import type {
   PlatformEventPublisher,
   PlatformEventRecord,
 } from "../events/platform-event.types.js";
-import type { GtnRow, SupplyRequestRow } from "./postgres-supply-request.repository.js";
+import type {
+  GtnRow,
+  SupplyRequestRow,
+} from "./postgres-supply-request.repository.js";
 
 export class StockSupplyEventPublisher {
   constructor(private readonly eventPublisher: PlatformEventPublisher) {}
@@ -13,48 +16,56 @@ export class StockSupplyEventPublisher {
     actor: AuthenticatedActor;
     supplyRequest: SupplyRequestRow;
   }) {
-    await this.eventPublisher.publish(createStockSupplyEvent({
-      actor: input.actor,
-      supplyRequest: input.supplyRequest,
-      summary: `${input.supplyRequest.reference} was requested.`,
-      type: "transfer.requested",
-    }));
+    await this.eventPublisher.publish(
+      createStockSupplyEvent({
+        actor: input.actor,
+        supplyRequest: input.supplyRequest,
+        summary: `${input.supplyRequest.reference} was requested.`,
+        type: "transfer.requested",
+      }),
+    );
   }
 
   async publishCancelled(input: {
     actor: AuthenticatedActor;
     supplyRequest: SupplyRequestRow;
   }) {
-    await this.eventPublisher.publish(createStockSupplyEvent({
-      actor: input.actor,
-      supplyRequest: input.supplyRequest,
-      summary: `${input.supplyRequest.reference} was cancelled.`,
-      type: "transfer.cancelled",
-    }));
+    await this.eventPublisher.publish(
+      createStockSupplyEvent({
+        actor: input.actor,
+        supplyRequest: input.supplyRequest,
+        summary: `${input.supplyRequest.reference} was cancelled.`,
+        type: "transfer.cancelled",
+      }),
+    );
   }
 
   async publishApproved(input: {
     actor: AuthenticatedActor;
     supplyRequest: SupplyRequestRow;
   }) {
-    await this.eventPublisher.publish(createStockSupplyEvent({
-      actor: input.actor,
-      supplyRequest: input.supplyRequest,
-      summary: `${input.supplyRequest.reference} was approved.`,
-      type: "transfer.approved",
-    }));
+    await this.eventPublisher.publish(
+      createStockSupplyEvent({
+        actor: input.actor,
+        supplyRequest: input.supplyRequest,
+        summary: `${input.supplyRequest.reference} was approved.`,
+        type: "transfer.approved",
+      }),
+    );
   }
 
   async publishRejected(input: {
     actor: AuthenticatedActor;
     supplyRequest: SupplyRequestRow;
   }) {
-    await this.eventPublisher.publish(createStockSupplyEvent({
-      actor: input.actor,
-      supplyRequest: input.supplyRequest,
-      summary: `${input.supplyRequest.reference} was rejected.`,
-      type: "transfer.rejected",
-    }));
+    await this.eventPublisher.publish(
+      createStockSupplyEvent({
+        actor: input.actor,
+        supplyRequest: input.supplyRequest,
+        summary: `${input.supplyRequest.reference} was rejected.`,
+        type: "transfer.rejected",
+      }),
+    );
   }
 
   async publishDispatched(input: {
@@ -62,15 +73,17 @@ export class StockSupplyEventPublisher {
     gtn: GtnRow;
     supplyRequest: SupplyRequestRow;
   }) {
-    await this.eventPublisher.publish(createStockSupplyEvent({
-      actor: input.actor,
-      payload: {
-        gtnReference: input.gtn.reference,
-      },
-      supplyRequest: input.supplyRequest,
-      summary: `${input.supplyRequest.reference} was dispatched.`,
-      type: "transfer.dispatched",
-    }));
+    await this.eventPublisher.publish(
+      createStockSupplyEvent({
+        actor: input.actor,
+        payload: {
+          gtnReference: input.gtn.reference,
+        },
+        supplyRequest: input.supplyRequest,
+        summary: `${input.supplyRequest.reference} was dispatched.`,
+        type: "transfer.dispatched",
+      }),
+    );
   }
 
   async publishReceived(input: {
@@ -78,15 +91,17 @@ export class StockSupplyEventPublisher {
     gtn: GtnRow;
     supplyRequest: SupplyRequestRow;
   }) {
-    await this.eventPublisher.publish(createStockSupplyEvent({
-      actor: input.actor,
-      payload: {
-        gtnReference: input.gtn.reference,
-      },
-      supplyRequest: input.supplyRequest,
-      summary: `${input.supplyRequest.reference} was received.`,
-      type: "transfer.received",
-    }));
+    await this.eventPublisher.publish(
+      createStockSupplyEvent({
+        actor: input.actor,
+        payload: {
+          gtnReference: input.gtn.reference,
+        },
+        supplyRequest: input.supplyRequest,
+        summary: `${input.supplyRequest.reference} was received.`,
+        type: "transfer.received",
+      }),
+    );
   }
 }
 

@@ -10,7 +10,9 @@ export class InMemoryPlatformEventBus implements PlatformEventBus {
 
   async publish(event: PlatformEventRecord): Promise<void> {
     await Promise.all(
-      Array.from(this.listeners, (listener) => Promise.resolve(listener(event))),
+      Array.from(this.listeners, (listener) =>
+        Promise.resolve(listener(event)),
+      ),
     );
   }
 

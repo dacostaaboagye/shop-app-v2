@@ -58,7 +58,9 @@ export class PostgresPlatformEventRepository {
         ...(audience.kind === "user"
           ? { userId: audience.userId }
           : {
-              ...(audience.locationId ? { locationId: audience.locationId } : {}),
+              ...(audience.locationId
+                ? { locationId: audience.locationId }
+                : {}),
               permissionKey: audience.permission,
             }),
       })),
@@ -158,10 +160,7 @@ export class PostgresPlatformEventRepository {
     });
   }
 
-  async markDelivered(input: {
-    eventId: string;
-    now: Date;
-  }): Promise<void> {
+  async markDelivered(input: { eventId: string; now: Date }): Promise<void> {
     await this.db
       .update(platformEvents)
       .set({

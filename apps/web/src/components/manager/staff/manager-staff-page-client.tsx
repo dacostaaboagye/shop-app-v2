@@ -6,7 +6,11 @@ import { ShieldCheck, UserCheck } from "lucide-react";
 import { useMemo } from "react";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
-import { PageHeader, PageShell, StatCard } from "@/components/system/page-shell";
+import {
+  PageHeader,
+  PageShell,
+  StatCard,
+} from "@/components/system/page-shell";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -34,7 +38,12 @@ export function ManagerStaffPageClient() {
   } = usePermissionLocationScope("staff.view");
   const staffQuery = useQuery({
     enabled: !!selectedLocationScope,
-    queryFn: () => fetchManagerStaff(selectedLocationScope!.locationId),
+    queryFn: () => {
+      if (!selectedLocationScope) {
+        throw new Error("A staff location is required.");
+      }
+      return fetchManagerStaff(selectedLocationScope.locationId);
+    },
     queryKey: managerStaffQueryKey(selectedLocationScope?.locationId ?? ""),
     staleTime: 30_000,
   });
@@ -106,7 +115,8 @@ export function ManagerStaffPageClient() {
           <StaffList
             items={staff}
             locationName={
-              staffQuery.data?.locationName ?? selectedLocationScope.locationName
+              staffQuery.data?.locationName ??
+              selectedLocationScope.locationName
             }
           />
         </div>
@@ -128,7 +138,8 @@ function StaffList({
         <CardHeader>
           <CardTitle>No staff assigned</CardTitle>
           <CardDescription>
-            Assign workers or managers to this location from admin access before managing stock ownership.
+            Assign workers or managers to this location from admin access before
+            managing stock ownership.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -140,7 +151,8 @@ function StaffList({
       <CardHeader>
         <CardTitle>{locationName || "Location team"}</CardTitle>
         <CardDescription>
-          Staff available for stock assignment and day-to-day supervision at this location.
+          Staff available for stock assignment and day-to-day supervision at
+          this location.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col divide-y divide-border">
@@ -154,20 +166,30 @@ function StaffList({
                 <p className="font-medium">
                   {member.firstName} {member.lastName}
                 </p>
-                <Badge variant={member.roleSlug === "manager" ? "secondary" : "outline"}>
+                <Badge
+                  variant={
+                    member.roleSlug === "manager" ? "secondary" : "outline"
+                  }
+                >
                   {member.roleName}
                 </Badge>
                 <Badge variant="outline">{member.status}</Badge>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">{member.email}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {member.email}
+              </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Assigned {new Date(member.assignedAt).toLocaleDateString("en-GB")}
+                Assigned{" "}
+                {new Date(member.assignedAt).toLocaleDateString("en-GB")}
               </p>
             </div>
             <div className="text-right text-sm">
-              <p className="font-medium tabular-nums">{member.activeAssignmentCount}</p>
+              <p className="font-medium tabular-nums">
+                {member.activeAssignmentCount}
+              </p>
               <p className="text-xs text-muted-foreground">
-                active stock assignment{member.activeAssignmentCount === 1 ? "" : "s"}
+                active stock assignment
+                {member.activeAssignmentCount === 1 ? "" : "s"}
               </p>
             </div>
           </div>

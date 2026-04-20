@@ -52,7 +52,10 @@ describe("official document settings routes", () => {
         capturedBrandName = input.patch.brand?.brandName;
         return {
           ...globalSettings(),
-          brand: { ...globalSettings().brand, brandName: capturedBrandName ?? "Shop App" },
+          brand: {
+            ...globalSettings().brand,
+            brandName: capturedBrandName ?? "Shop App",
+          },
           updatedAt: NOW.toISOString(),
           updatedByUserSlug: "admin-user",
         };
@@ -72,7 +75,8 @@ describe("official document settings routes", () => {
   });
 
   it("enforces scoped location permission for manager overrides", async () => {
-    const permissionCalls: Array<{ locationId?: string; permission: string }> = [];
+    const permissionCalls: Array<{ locationId?: string; permission: string }> =
+      [];
     const server = createSettingsServer({
       permissionCalls,
     });
@@ -92,18 +96,23 @@ describe("official document settings routes", () => {
         permission: "settings.location_documents.manage",
       },
     ]);
-    assert.equal(response.json().receiptFooter, "Thank you for visiting this branch.");
+    assert.equal(
+      response.json().receiptFooter,
+      "Thank you for visiting this branch.",
+    );
   });
 });
 
-function createSettingsServer(input: {
-  permissionCalls?: Array<{ locationId?: string; permission: string }>;
-  updateGlobalSettings?: (input: {
-    now: Date;
-    patch: UpdateOfficialDocumentSettingsRequest;
-    updatedBy: string;
-  }) => Promise<OfficialDocumentSettingsResponse>;
-} = {}) {
+function createSettingsServer(
+  input: {
+    permissionCalls?: Array<{ locationId?: string; permission: string }>;
+    updateGlobalSettings?: (input: {
+      now: Date;
+      patch: UpdateOfficialDocumentSettingsRequest;
+      updatedBy: string;
+    }) => Promise<OfficialDocumentSettingsResponse>;
+  } = {},
+) {
   return createServer({
     accessControl: {
       accessTokenAuthenticationService: {
@@ -114,7 +123,11 @@ function createSettingsServer(input: {
           return new AccessTokenAuthenticationService(
             {
               async findUserById() {
-                return { id: USER_ID, slug: "admin-user", status: "active" as const };
+                return {
+                  id: USER_ID,
+                  slug: "admin-user",
+                  status: "active" as const,
+                };
               },
             },
             "development-access-secret",
@@ -159,7 +172,8 @@ function createSettingsServer(input: {
           return documentProfile(input.locationId);
         },
         async updateGlobalSettings(args) {
-          if (input.updateGlobalSettings) return input.updateGlobalSettings(args);
+          if (input.updateGlobalSettings)
+            return input.updateGlobalSettings(args);
           return { ...globalSettings(), updatedAt: NOW.toISOString() };
         },
         async updateLocationSettings(args) {
@@ -167,7 +181,8 @@ function createSettingsServer(input: {
           return {
             ...current,
             addressLines: args.patch.addressLines ?? current.addressLines,
-            defaultPaperSize: args.patch.defaultPaperSize ?? current.defaultPaperSize,
+            defaultPaperSize:
+              args.patch.defaultPaperSize ?? current.defaultPaperSize,
             displayName: args.patch.displayName ?? current.displayName,
             documentPrefix: args.patch.documentPrefix ?? current.documentPrefix,
             email: args.patch.email ?? current.email,
@@ -255,7 +270,9 @@ function globalSettings(): OfficialDocumentSettingsResponse {
   };
 }
 
-function locationSettings(locationId: string): LocationDocumentSettingsResponse {
+function locationSettings(
+  locationId: string,
+): LocationDocumentSettingsResponse {
   return {
     addressLines: null,
     defaultPaperSize: null,

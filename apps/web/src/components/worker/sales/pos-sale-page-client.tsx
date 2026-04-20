@@ -1,19 +1,15 @@
 "use client";
 
-import type { CurrentAssignment, InvoiceResponse, PosPaymentMethod } from "@shop/contracts";
+import type {
+  CurrentAssignment,
+  InvoiceResponse,
+  PosPaymentMethod,
+} from "@shop/contracts";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ShoppingCart } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
 import { postWorkerSale } from "@/lib/react-query/pos-sales";
@@ -21,11 +17,10 @@ import {
   fetchWorkerAssignments,
   workerAssignmentsQueryKey,
 } from "@/lib/react-query/worker-assignments";
-import { CartBody, type CartItem, PosSaleCartCard } from "./pos-sale-cart-card";
-import {
-  SaleSuccessPanel,
-  VariantRow,
-} from "./pos-sale-page-sections";
+import { type CartItem, PosSaleCartCard } from "./pos-sale-cart-card";
+import { PosSaleMobileCart } from "./pos-sale-mobile-cart";
+import { VariantRow } from "./pos-sale-page-sections";
+import { SaleSuccessPanel } from "./pos-sale-success-panel";
 
 type SaleSuccess = {
   invoice: InvoiceResponse;
@@ -49,10 +44,13 @@ export function PosSalePageClient() {
   const assignmentsQuery = useQuery({
     enabled: !!selectedLocationScope,
     queryFn: async () => {
-      if (!selectedLocationScope) throw new Error("A sales location is required.");
+      if (!selectedLocationScope)
+        throw new Error("A sales location is required.");
       return fetchWorkerAssignments(selectedLocationScope.locationId);
     },
-    queryKey: workerAssignmentsQueryKey(selectedLocationScope?.locationId ?? ""),
+    queryKey: workerAssignmentsQueryKey(
+      selectedLocationScope?.locationId ?? "",
+    ),
     staleTime: 30_000,
   });
 
@@ -66,29 +64,28 @@ export function PosSalePageClient() {
     },
   });
 
-  const cartTotal = useMemo(
-    () =>
-      cart.reduce((sum, item) => {
-        const price = parseFloat(item.unitPrice);
-        return sum + (isNaN(price) ? 0 : price * item.quantity);
-      }, 0),
-    [cart],
-  );
-
   function addToCart(assignment: CurrentAssignment) {
     setCart((prev) => {
-      const existing = prev.find((item) => item.assignment.skuId === assignment.skuId);
+      const existing = prev.find(
+        (item) => item.assignment.skuId === assignment.skuId,
+      );
       if (existing) {
         return prev.map((item) =>
           item.assignment.skuId === assignment.skuId
             ? {
                 ...item,
-                quantity: Math.min(item.quantity + 1, item.assignment.availableQuantity),
+                quantity: Math.min(
+                  item.quantity + 1,
+                  item.assignment.availableQuantity,
+                ),
               }
             : item,
         );
       }
-      return [...prev, { assignment, quantity: 1, unitPrice: assignment.sellingPrice }];
+      return [
+        ...prev,
+        { assignment, quantity: 1, unitPrice: assignment.sellingPrice },
+      ];
     });
   }
 
@@ -101,7 +98,10 @@ export function PosSalePageClient() {
                 ...item,
                 quantity: Math.max(
                   0,
-                  Math.min(item.quantity + delta, item.assignment.availableQuantity),
+                  Math.min(
+                    item.quantity + delta,
+                    item.assignment.availableQuantity,
+                  ),
                 ),
               }
             : item,
@@ -209,11 +209,13 @@ export function PosSalePageClient() {
                           key={assignment.skuId}
                           assignment={assignment}
                           cartQuantity={
-                            cart.find((i) => i.assignment.skuId === assignment.skuId)
-                              ?.quantity ?? 0
+                            cart.find(
+                              (i) => i.assignment.skuId === assignment.skuId,
+                            )?.quantity ?? 0
                           }
                           inCart={cart.some(
-                            (item) => item.assignment.skuId === assignment.skuId,
+                            (item) =>
+                              item.assignment.skuId === assignment.skuId,
                           )}
                           onAdd={() => addToCart(assignment)}
                         />
@@ -228,54 +230,11 @@ export function PosSalePageClient() {
                 </div>
               </div>
 
-              {/* Mobile sticky bottom bar */}
-              <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background p-3 shadow-lg lg:hidden">
-                {cart.length === 0 ? (
-                  <p className="text-center text-sm text-muted-foreground">
-                    Tap a variant to add it to your cart
-                  </p>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <div className="flex min-w-0 flex-1 items-center gap-2">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
-                        {cart.reduce((n, i) => n + i.quantity, 0)}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium leading-none">
-                          {cart.length} item{cart.length !== 1 ? "s" : ""}
-                        </p>
-                        <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-                          Total: {cartTotal.toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                    <Button onClick={() => setCartSheetOpen(true)} size="sm">
-                      <ShoppingCart className="mr-1.5 size-3.5" />
-                      Review &amp; Pay
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              {/* Mobile cart sheet */}
-              <Sheet open={cartSheetOpen} onOpenChange={setCartSheetOpen}>
-                <SheetContent side="bottom" className="max-h-[88svh] overflow-y-auto">
-                  <SheetHeader>
-                    <SheetTitle className="flex items-center gap-2">
-                      <ShoppingCart className="size-4" />
-                      Cart
-                      {cart.length > 0 && (
-                        <span className="ml-1 rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
-                          {cart.length}
-                        </span>
-                      )}
-                    </SheetTitle>
-                  </SheetHeader>
-                  <div className="px-4 pb-8">
-                    <CartBody {...cartProps} />
-                  </div>
-                </SheetContent>
-              </Sheet>
+              <PosSaleMobileCart
+                {...cartProps}
+                onOpenChange={setCartSheetOpen}
+                open={cartSheetOpen}
+              />
             </>
           ) : selectedLocationScope && !assignmentsQuery.isPending ? (
             <div className="rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">

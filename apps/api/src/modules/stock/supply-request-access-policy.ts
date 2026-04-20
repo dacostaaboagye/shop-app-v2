@@ -1,6 +1,9 @@
 import { AppError } from "../_core/errors/app-error.js";
 import type { AuthenticatedActor } from "../auth/access-token-authentication.service.js";
-import type { GtnRow, SupplyRequestRow } from "./postgres-supply-request.repository.js";
+import type {
+  GtnRow,
+  SupplyRequestRow,
+} from "./postgres-supply-request.repository.js";
 
 type SupplyRequestPermissionService = {
   assertHasPermission(input: {
@@ -36,6 +39,17 @@ export class SupplyRequestAccessPolicy {
   }): Promise<void> {
     await this.permissionService.assertHasPermission({
       locationId: input.sourceLocationId,
+      permission: "stock.supply.manage",
+      user: input.actor,
+    });
+  }
+
+  async assertCanListRequestsForLocation(input: {
+    actor: AuthenticatedActor;
+    locationId: string;
+  }): Promise<void> {
+    await this.permissionService.assertHasPermission({
+      locationId: input.locationId,
       permission: "stock.supply.manage",
       user: input.actor,
     });
@@ -160,11 +174,14 @@ export class SupplyRequestAccessPolicy {
   }
 
   private async isAdmin(actor: AuthenticatedActor): Promise<boolean> {
-    const permissions = await this.permissionService.resolvePermissionsForAnyScope({
-      userId: actor.userId,
-    });
+    const permissions =
+      await this.permissionService.resolvePermissionsForAnyScope({
+        userId: actor.userId,
+      });
 
-    return permissions.some((permission) => permission.key === "admin.dashboard.view");
+    return permissions.some(
+      (permission) => permission.key === "admin.dashboard.view",
+    );
   }
 }
 

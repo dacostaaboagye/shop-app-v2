@@ -1,5 +1,9 @@
 import type { VariantSearchResult } from "@shop/contracts";
-import { catalogProducts, productVariants, stockBalances } from "@shop/database";
+import {
+  catalogProducts,
+  productVariants,
+  stockBalances,
+} from "@shop/database";
 import { and, asc, eq, gt, ilike, or, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 
@@ -35,7 +39,10 @@ export class PostgresVariantSearchRepository {
         .select({ count: sql<number>`count(*)::int` })
         .from(stockBalances)
         .innerJoin(productVariants, eq(stockBalances.skuId, productVariants.id))
-        .innerJoin(catalogProducts, eq(productVariants.productId, catalogProducts.id))
+        .innerJoin(
+          catalogProducts,
+          eq(productVariants.productId, catalogProducts.id),
+        )
         .where(baseCondition),
       this.db
         .select({
@@ -49,7 +56,10 @@ export class PostgresVariantSearchRepository {
         })
         .from(stockBalances)
         .innerJoin(productVariants, eq(stockBalances.skuId, productVariants.id))
-        .innerJoin(catalogProducts, eq(productVariants.productId, catalogProducts.id))
+        .innerJoin(
+          catalogProducts,
+          eq(productVariants.productId, catalogProducts.id),
+        )
         .where(baseCondition)
         .orderBy(asc(catalogProducts.name), asc(productVariants.name))
         .limit(input.pageSize)

@@ -48,10 +48,14 @@ export function LocationDocumentSettingsPageClient() {
     queryKey: officialDocumentProfileQueryKey(locationId),
   });
   const mutation = useMutation({
-    mutationFn: (payload: Parameters<typeof updateLocationDocumentSettings>[0]["payload"]) =>
-      updateLocationDocumentSettings({ locationId, payload }),
+    mutationFn: (
+      payload: Parameters<typeof updateLocationDocumentSettings>[0]["payload"],
+    ) => updateLocationDocumentSettings({ locationId, payload }),
     onSuccess(data) {
-      queryClient.setQueryData(locationDocumentSettingsQueryKey(locationId), data);
+      queryClient.setQueryData(
+        locationDocumentSettingsQueryKey(locationId),
+        data,
+      );
       void queryClient.invalidateQueries({
         queryKey: officialDocumentProfileQueryKey(locationId),
       });
@@ -112,7 +116,9 @@ function LocationSettingsContent({
   profile: Awaited<ReturnType<typeof fetchOfficialDocumentProfile>> | undefined;
   queryError: Error | null;
   queryState: "error" | "pending" | "success";
-  settings: Awaited<ReturnType<typeof fetchLocationDocumentSettings>> | undefined;
+  settings:
+    | Awaited<ReturnType<typeof fetchLocationDocumentSettings>>
+    | undefined;
 }) {
   if (!isSelected) return null;
   if (queryState === "pending") return <SettingsSkeleton />;
@@ -165,7 +171,8 @@ function EffectiveProfilePreview({
           Effective print profile
         </CardTitle>
         <CardDescription>
-          This is what receipts and shared sales documents will use for this location.
+          This is what receipts and shared sales documents will use for this
+          location.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 text-sm">
@@ -208,6 +215,7 @@ function getQueryState(
   profileState: "error" | "pending" | "success",
 ) {
   if (settingsState === "error" || profileState === "error") return "error";
-  if (settingsState === "pending" || profileState === "pending") return "pending";
+  if (settingsState === "pending" || profileState === "pending")
+    return "pending";
   return "success";
 }

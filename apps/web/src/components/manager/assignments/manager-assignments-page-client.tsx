@@ -29,7 +29,12 @@ export function ManagerAssignmentsPageClient() {
 
   const assignmentsQuery = useQuery({
     enabled: !!selectedLocationScope,
-    queryFn: () => fetchLocationAssignments(selectedLocationScope!.locationId),
+    queryFn: () => {
+      if (!selectedLocationScope) {
+        throw new Error("An assignment location is required.");
+      }
+      return fetchLocationAssignments(selectedLocationScope.locationId);
+    },
     queryKey: locationAssignmentsQueryKey(
       selectedLocationScope?.locationId ?? "",
     ),
@@ -49,7 +54,10 @@ export function ManagerAssignmentsPageClient() {
         />
         {selectedLocationScope && (
           <Link
-            className={buttonVariants({ variant: "default", className: "shrink-0" })}
+            className={buttonVariants({
+              variant: "default",
+              className: "shrink-0",
+            })}
             href={newAssignmentHref}
           >
             <Plus className="mr-1.5 size-4" />

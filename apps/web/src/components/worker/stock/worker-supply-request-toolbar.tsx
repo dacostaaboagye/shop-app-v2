@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
 import { LayoutList, Search, SquareStack, X } from "lucide-react";
+import type { ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
@@ -69,10 +69,9 @@ function FilterButtons({
   onStatusFilterChange: (value: WorkerRequestFilter) => void;
 }) {
   return (
-    <div
+    <fieldset
       aria-label="Filter by status"
       className="flex items-center gap-1 overflow-x-auto rounded-lg border border-border bg-muted p-1"
-      role="group"
     >
       {WORKER_FILTER_OPTIONS.map((option) => (
         <button
@@ -89,13 +88,20 @@ function FilterButtons({
         >
           {option.label}
           {counts[option.value] > 0 ? (
-            <span className={cn("rounded px-1 text-[10px] tabular-nums", statusFilter === option.value ? "bg-muted text-muted-foreground" : "opacity-60")}>
+            <span
+              className={cn(
+                "rounded px-1 text-[10px] tabular-nums",
+                statusFilter === option.value
+                  ? "bg-muted text-muted-foreground"
+                  : "opacity-60",
+              )}
+            >
               {counts[option.value]}
             </span>
           ) : null}
         </button>
       ))}
-    </div>
+    </fieldset>
   );
 }
 
@@ -107,10 +113,9 @@ function ViewModeToggle({
   onViewModeChange: (value: WorkerViewMode) => void;
 }) {
   return (
-    <div
+    <fieldset
       aria-label="Change view"
       className="flex items-center gap-1 rounded-lg border border-border bg-muted p-1"
-      role="group"
     >
       <ViewModeButton
         active={viewMode === "card"}
@@ -126,7 +131,7 @@ function ViewModeToggle({
       >
         <LayoutList className="size-4" />
       </ViewModeButton>
-    </div>
+    </fieldset>
   );
 }
 

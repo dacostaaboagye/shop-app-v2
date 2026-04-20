@@ -29,19 +29,13 @@ export function createPlatformEventDeliveryWorkerRuntime(
       }
 
       dependencies.deliveryLoop.start();
-      dependencies.logger?.info(
-        {},
-        "Platform event delivery worker started.",
-      );
+      dependencies.logger?.info({}, "Platform event delivery worker started.");
       return true;
     },
     async stop() {
       dependencies.deliveryLoop.stop();
       await dependencies.databasePool.end();
-      dependencies.logger?.info(
-        {},
-        "Platform event delivery worker stopped.",
-      );
+      dependencies.logger?.info({}, "Platform event delivery worker stopped.");
     },
   };
 }

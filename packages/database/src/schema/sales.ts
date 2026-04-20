@@ -13,8 +13,8 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
-import { auditColumns, publicUuidColumn } from "./common.js";
 import { productVariants } from "./catalog.js";
+import { auditColumns, publicUuidColumn } from "./common.js";
 import { users } from "./identity.js";
 import { locations } from "./locations.js";
 
@@ -63,10 +63,7 @@ export const invoices = pgTable(
     index("invoices_worker_idx").on(table.attributedWorkerId),
     index("invoices_type_location_idx").on(table.type, table.locationId),
     index("invoices_created_at_idx").on(table.createdAt),
-    check(
-      "invoices_subtotal_nonnegative",
-      sql`${table.subtotalAmount} >= 0`,
-    ),
+    check("invoices_subtotal_nonnegative", sql`${table.subtotalAmount} >= 0`),
     check("invoices_tax_nonnegative", sql`${table.taxAmount} >= 0`),
     check("invoices_total_nonnegative", sql`${table.totalAmount} >= 0`),
   ],
@@ -108,9 +105,7 @@ export const invoiceLineItems = pgTable(
     skuId: uuid("sku_id")
       .notNull()
       .references(() => productVariants.id),
-    skuSnapshot: jsonb("sku_snapshot")
-      .$type<SkuSnapshot>()
-      .notNull(),
+    skuSnapshot: jsonb("sku_snapshot").$type<SkuSnapshot>().notNull(),
     quantity: integer("quantity").notNull(),
     unitPrice: numeric("unit_price", { precision: 12, scale: 2 }).notNull(),
     taxCategory: varchar("tax_category", { length: 80 }),
@@ -123,10 +118,7 @@ export const invoiceLineItems = pgTable(
   (table) => [
     index("invoice_line_items_invoice_idx").on(table.invoiceId),
     index("invoice_line_items_sku_idx").on(table.skuId),
-    check(
-      "invoice_line_items_quantity_positive",
-      sql`${table.quantity} > 0`,
-    ),
+    check("invoice_line_items_quantity_positive", sql`${table.quantity} > 0`),
     check(
       "invoice_line_items_unit_price_nonnegative",
       sql`${table.unitPrice} >= 0`,

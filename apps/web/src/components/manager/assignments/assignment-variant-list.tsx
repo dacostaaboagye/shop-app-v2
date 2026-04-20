@@ -99,7 +99,9 @@ export function AssignmentVariantList({
                       </p>
                     </div>
                     <div className="shrink-0 text-right">
-                      <p className="text-sm tabular-nums">{variant.sellingPrice}</p>
+                      <p className="text-sm tabular-nums">
+                        {variant.sellingPrice}
+                      </p>
                       <p
                         className={cn(
                           "text-xs tabular-nums",

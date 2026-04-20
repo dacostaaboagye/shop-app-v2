@@ -5,13 +5,15 @@ import {
   DEFAULT_OFFICIAL_DOCUMENT_PROFILE,
   type OfficialDocumentProfile,
 } from "@/lib/documents/official-document-profile";
+import type { PrintableInvoiceData } from "@/lib/documents/sales-document";
 import {
   formatDocumentMoney,
   getSalesDocumentTitle,
 } from "@/lib/documents/sales-document";
-import type { PrintableInvoiceData } from "@/lib/documents/sales-document";
-
-const SEP = "- - - - - - - - - - - - - - - - - -";
+import {
+  PrintableRow as Row,
+  PrintableSeparator as Separator,
+} from "./printable-invoice-parts";
 
 function fmt(s: string): string {
   return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -46,8 +48,19 @@ export const PrintableInvoice = forwardRef<
         width: "100%",
       }}
     >
-      <header style={{ borderTop: `6px solid ${profile.primaryColor}`, paddingTop: "10px" }}>
-        <div style={{ display: "flex", gap: "8px", justifyContent: "space-between" }}>
+      <header
+        style={{
+          borderTop: `6px solid ${profile.primaryColor}`,
+          paddingTop: "10px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            gap: "8px",
+            justifyContent: "space-between",
+          }}
+        >
           <div style={{ display: "flex", gap: "8px" }}>
             <div
               style={{
@@ -66,7 +79,9 @@ export const PrintableInvoice = forwardRef<
               {profile.logoText}
             </div>
             <div>
-              <p style={{ fontWeight: "bold", margin: 0 }}>{profile.brandName}</p>
+              <p style={{ fontWeight: "bold", margin: 0 }}>
+                {profile.brandName}
+              </p>
               <p style={{ color: "dimgray", fontSize: "9px", margin: 0 }}>
                 {profile.legalName}
               </p>
@@ -105,8 +120,20 @@ export const PrintableInvoice = forwardRef<
 
       <section style={{ marginBottom: "8px" }}>
         <Row label="Ref" value={invoice.reference} bold />
-        <Row label="Date" value={date.toLocaleDateString(profile.locale, { timeZone: profile.timezone })} />
-        <Row label="Time" value={date.toLocaleTimeString(profile.locale, { hour: "2-digit", minute: "2-digit", timeZone: profile.timezone })} />
+        <Row
+          label="Date"
+          value={date.toLocaleDateString(profile.locale, {
+            timeZone: profile.timezone,
+          })}
+        />
+        <Row
+          label="Time"
+          value={date.toLocaleTimeString(profile.locale, {
+            hour: "2-digit",
+            minute: "2-digit",
+            timeZone: profile.timezone,
+          })}
+        />
         <Row label="Payment" value={paymentLabel} />
         <Row label="Currency" value={profile.currencyCode} />
         <Row label="Tax ID" value={profile.taxNumber} />
@@ -117,15 +144,34 @@ export const PrintableInvoice = forwardRef<
       <section style={{ marginBottom: "8px" }}>
         {invoice.lines.map((line) => (
           <div key={line.skuId} style={{ marginBottom: "8px" }}>
-            <p style={{ fontWeight: "bold", margin: "0 0 1px", wordBreak: "break-word" }}>
+            <p
+              style={{
+                fontWeight: "bold",
+                margin: "0 0 1px",
+                wordBreak: "break-word",
+              }}
+            >
               {line.skuSnapshot.productName}
             </p>
-            <p style={{ color: "darkslategray", fontSize: "11px", margin: "0 0 2px" }}>
+            <p
+              style={{
+                color: "darkslategray",
+                fontSize: "11px",
+                margin: "0 0 2px",
+              }}
+            >
               {line.skuSnapshot.variantName}
             </p>
-            <div style={{ display: "flex", gap: "8px", justifyContent: "space-between" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: "8px",
+                justifyContent: "space-between",
+              }}
+            >
               <span>
-                {line.quantity} &times; {formatDocumentMoney(line.unitPrice, profile)}
+                {line.quantity} &times;{" "}
+                {formatDocumentMoney(line.unitPrice, profile)}
               </span>
               <span style={{ fontWeight: "bold" }}>
                 {formatDocumentMoney(line.lineTotal, profile)}
@@ -139,18 +185,31 @@ export const PrintableInvoice = forwardRef<
 
       <section style={{ marginBottom: "8px" }}>
         {showSubtotal ? (
-          <Row label="Subtotal" value={formatDocumentMoney(invoice.subtotalAmount, profile)} />
+          <Row
+            label="Subtotal"
+            value={formatDocumentMoney(invoice.subtotalAmount, profile)}
+          />
         ) : null}
         {showTaxLine ? (
-          <Row label="Tax" value={formatDocumentMoney(invoice.taxAmount, profile)} />
+          <Row
+            label="Tax"
+            value={formatDocumentMoney(invoice.taxAmount, profile)}
+          />
         ) : null}
-        <Row label="TOTAL" value={formatDocumentMoney(invoice.totalAmount, profile)} bold large />
+        <Row
+          label="TOTAL"
+          value={formatDocumentMoney(invoice.totalAmount, profile)}
+          bold
+          large
+        />
       </section>
 
       {invoice.notes ? (
         <>
           <Separator />
-          <p style={{ fontSize: "10px", fontStyle: "italic", margin: "0 0 6px" }}>
+          <p
+            style={{ fontSize: "10px", fontStyle: "italic", margin: "0 0 6px" }}
+          >
             {invoice.notes}
           </p>
         </>
@@ -158,7 +217,9 @@ export const PrintableInvoice = forwardRef<
 
       <footer style={{ marginTop: "12px", textAlign: "center" }}>
         <Separator />
-        <p style={{ fontWeight: "bold", margin: "0 0 3px" }}>{profile.footer}</p>
+        <p style={{ fontWeight: "bold", margin: "0 0 3px" }}>
+          {profile.footer}
+        </p>
         <p style={{ color: "dimgray", fontSize: "9px", margin: "0 0 3px" }}>
           {profile.phone} &bull; {profile.email} &bull; {profile.website}
         </p>
@@ -171,39 +232,3 @@ export const PrintableInvoice = forwardRef<
 });
 
 PrintableInvoice.displayName = "PrintableInvoice";
-
-function Separator() {
-  return (
-    <p style={{ color: "dimgray", fontSize: "10px", margin: "0 0 8px", textAlign: "center" }}>
-      {SEP}
-    </p>
-  );
-}
-
-function Row({
-  label,
-  value,
-  bold,
-  large,
-}: {
-  label: string;
-  value: string;
-  bold?: boolean;
-  large?: boolean;
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        fontSize: large ? "14px" : "12px",
-        fontWeight: bold ? "bold" : "normal",
-        gap: "8px",
-        justifyContent: "space-between",
-        marginBottom: large ? "2px" : "0",
-      }}
-    >
-      <span>{label}</span>
-      <span>{value}</span>
-    </div>
-  );
-}

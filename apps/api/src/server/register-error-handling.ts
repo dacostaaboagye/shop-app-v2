@@ -29,7 +29,9 @@ export function registerErrorHandling(server: FastifyInstance) {
 
     if (error instanceof ZodError) {
       const detail = error.issues
-        .map((i) => (i.path.length ? `${i.path.join(".")}: ${i.message}` : i.message))
+        .map((i) =>
+          i.path.length ? `${i.path.join(".")}: ${i.message}` : i.message,
+        )
         .join("; ");
       const problem = toProblemDetails(
         new AppError({

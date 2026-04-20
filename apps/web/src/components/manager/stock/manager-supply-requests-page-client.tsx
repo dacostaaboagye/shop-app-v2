@@ -8,8 +8,8 @@ import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
 import {
-  fetchManagerIncomingSupplyRequests,
-  managerIncomingSupplyRequestsQueryKey,
+  fetchManagerSupplyRequests,
+  managerSupplyRequestsQueryKey,
 } from "@/lib/react-query/stock-supply";
 import { ActionDialog } from "./manager-supply-request-action-dialog";
 import { IncomingRequestList } from "./manager-supply-request-list";
@@ -24,7 +24,9 @@ import {
 const SKELETON_KEYS = [1, 2, 3, 4, 5];
 
 export function ManagerSupplyRequestsPageClient() {
-  const [resolveTarget, setResolveTarget] = useState<ResolveTarget | null>(null);
+  const [resolveTarget, setResolveTarget] = useState<ResolveTarget | null>(
+    null,
+  );
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<RequestFilter>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("card");
@@ -37,19 +39,23 @@ export function ManagerSupplyRequestsPageClient() {
   } = usePermissionLocationScope("stock.supply.manage");
 
   const query = {
+    locationId: selectedLocationScope?.locationId ?? "",
     page: 1,
     pageSize: 50,
-    sourceLocationId: selectedLocationScope?.locationId ?? "",
   };
   const requestsQuery = useQuery({
     enabled: !!selectedLocationScope,
-    queryFn: () =>
-      fetchManagerIncomingSupplyRequests({
+    queryFn: () => {
+      if (!selectedLocationScope) {
+        throw new Error("A managed location is required.");
+      }
+      return fetchManagerSupplyRequests({
+        locationId: selectedLocationScope.locationId,
         page: 1,
         pageSize: 50,
-        sourceLocationId: selectedLocationScope!.locationId,
-      }),
-    queryKey: managerIncomingSupplyRequestsQueryKey(query),
+      });
+    },
+    queryKey: managerSupplyRequestsQueryKey(query),
     staleTime: 30_000,
   });
   const allItems = requestsQuery.data?.items ?? [];
@@ -62,11 +68,11 @@ export function ManagerSupplyRequestsPageClient() {
   return (
     <PageShell>
       <PageHeader
-        description="Review and action stock supply requests directed to this location."
-        title="Incoming supply requests"
+        description="Review stock requests created for this location and action requests your location must fulfill."
+        title="Location supply requests"
       />
       <LocationScopePanel
-        description="Supply requests show for the location you manage as a source."
+        description="Managers see all supply requests for the selected location. Approval and dispatch remain limited to requests sourced from that same location."
         emptyDescription="No location is available for supply request management."
         isLoading={isLoading}
         locationScopes={accessibleLocationScopes}
@@ -79,6 +85,7 @@ export function ManagerSupplyRequestsPageClient() {
         counts={counts}
         filteredItems={filteredItems}
         isSelected={!!selectedLocationScope}
+        manageableLocationId={selectedLocationScope?.locationId ?? null}
         onAction={(action, item) => setResolveTarget({ action, item })}
         onRetry={() => void requestsQuery.refetch()}
         onSearchChange={setSearch}
@@ -110,6 +117,7 @@ function RequestContent({
   counts,
   filteredItems,
   isSelected,
+  manageableLocationId,
   onAction,
   onRetry,
   onSearchChange,
@@ -125,6 +133,7 @@ function RequestContent({
   counts: Parameters<typeof IncomingRequestList>[0]["counts"];
   filteredItems: Parameters<typeof IncomingRequestList>[0]["filteredItems"];
   isSelected: boolean;
+  manageableLocationId: string | null;
   onAction: Parameters<typeof IncomingRequestList>[0]["onAction"];
   onRetry: () => void;
   onSearchChange: (value: string) => void;
@@ -140,7 +149,7 @@ function RequestContent({
   if (queryState === "error") {
     return (
       <AppErrorBanner
-        detail="Could not load supply requests."
+        detail="Could not load supply requests for this location."
         error={queryError}
         onRetry={onRetry}
         title="Unable to load requests"
@@ -154,6 +163,7 @@ function RequestContent({
       allItems={allItems}
       counts={counts}
       filteredItems={filteredItems}
+      manageableLocationId={manageableLocationId}
       onAction={onAction}
       onSearchChange={onSearchChange}
       onStatusFilterChange={onStatusFilterChange}

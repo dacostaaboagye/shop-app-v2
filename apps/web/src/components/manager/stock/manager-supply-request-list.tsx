@@ -5,21 +5,25 @@ import { Button } from "@/components/ui/button";
 import { SupplyRequestCard } from "./manager-supply-request-card";
 import { CompactIncomingRequestList } from "./manager-supply-request-compact-list";
 import { RequestToolbar } from "./manager-supply-request-toolbar";
-import {
-  type RequestFilter,
-  type SupplyRequestAction,
-  type SupplyRequestCounts,
-  type ViewMode,
+import type {
+  RequestFilter,
+  SupplyRequestAction,
+  SupplyRequestCounts,
+  ViewMode,
 } from "./manager-supply-requests.support";
 
 type Props = {
   allItems: StockSupplyRequestResponse[];
   counts: SupplyRequestCounts;
   filteredItems: StockSupplyRequestResponse[];
+  manageableLocationId: string | null;
   search: string;
   statusFilter: RequestFilter;
   viewMode: ViewMode;
-  onAction: (action: SupplyRequestAction, item: StockSupplyRequestResponse) => void;
+  onAction: (
+    action: SupplyRequestAction,
+    item: StockSupplyRequestResponse,
+  ) => void;
   onSearchChange: (value: string) => void;
   onStatusFilterChange: (value: RequestFilter) => void;
   onViewModeChange: (value: ViewMode) => void;
@@ -29,6 +33,7 @@ export function IncomingRequestList({
   allItems,
   counts,
   filteredItems,
+  manageableLocationId,
   onAction,
   onSearchChange,
   onStatusFilterChange,
@@ -72,6 +77,7 @@ export function IncomingRequestList({
 
       <RequestResults
         filteredItems={filteredItems}
+        manageableLocationId={manageableLocationId}
         onAction={onAction}
         onClearFilters={() => {
           onSearchChange("");
@@ -85,12 +91,17 @@ export function IncomingRequestList({
 
 function RequestResults({
   filteredItems,
+  manageableLocationId,
   onAction,
   onClearFilters,
   viewMode,
 }: {
   filteredItems: StockSupplyRequestResponse[];
-  onAction: (action: SupplyRequestAction, item: StockSupplyRequestResponse) => void;
+  manageableLocationId: string | null;
+  onAction: (
+    action: SupplyRequestAction,
+    item: StockSupplyRequestResponse,
+  ) => void;
   onClearFilters: () => void;
   viewMode: ViewMode;
 }) {
@@ -110,13 +121,20 @@ function RequestResults({
   }
 
   if (viewMode === "compact") {
-    return <CompactIncomingRequestList items={filteredItems} onAction={onAction} />;
+    return (
+      <CompactIncomingRequestList
+        items={filteredItems}
+        manageableLocationId={manageableLocationId}
+        onAction={onAction}
+      />
+    );
   }
 
   return (
     <div className="flex flex-col gap-3">
       {filteredItems.map((item) => (
         <SupplyRequestCard
+          canManage={item.sourceLocationId === manageableLocationId}
           item={item}
           key={item.supplyRequestId}
           onAction={(action) => onAction(action, item)}

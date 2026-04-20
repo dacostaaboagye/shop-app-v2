@@ -4,8 +4,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, CheckCheck, Inbox } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppErrorBanner } from "@/components/system/app-error";
-import { PageHeader, PageShell, StatCard } from "@/components/system/page-shell";
-import { Badge } from "@/components/ui/badge";
+import { NotificationFeedCard } from "@/components/system/notification-feed-card";
+import {
+  PageHeader,
+  PageShell,
+  StatCard,
+} from "@/components/system/page-shell";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -18,11 +22,6 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  formatNotificationTimeLabel,
-  getNotificationActorLabel,
-  getNotificationEventLabel,
-} from "@/lib/notifications/notification-presentation";
 import {
   fetchNotifications,
   notificationsQueryKey,
@@ -39,6 +38,14 @@ type NotificationCenterPageClientProps = {
 type NotificationFilter = "all" | "read" | "unread";
 
 const PAGE_LIMIT = 50;
+const NOTIFICATION_PAGE_SKELETON_KEYS = [
+  "notification-page-skeleton-1",
+  "notification-page-skeleton-2",
+  "notification-page-skeleton-3",
+  "notification-page-skeleton-4",
+  "notification-page-skeleton-5",
+  "notification-page-skeleton-6",
+] as const;
 
 export function NotificationCenterPageClient({
   description,
@@ -149,11 +156,8 @@ export function NotificationCenterPageClient({
         <TabsContent value={filter}>
           {notificationsQuery.isPending ? (
             <div className="flex flex-col gap-3">
-              {Array.from({ length: 6 }, (_, index) => (
-                <Skeleton
-                  key={`notification-page-skeleton-${index}`}
-                  className="h-28 w-full rounded-xl"
-                />
+              {NOTIFICATION_PAGE_SKELETON_KEYS.map((key) => (
+                <Skeleton key={key} className="h-28 w-full rounded-xl" />
               ))}
             </div>
           ) : notificationsQuery.isError ? (
@@ -172,12 +176,15 @@ export function NotificationCenterPageClient({
               ) : null}
               {filteredItems.map((notification, index) => (
                 <div key={notification.notificationKey}>
-                  <NotificationCenterCard
+                  <NotificationFeedCard
                     notification={notification}
                     pending={
-                      markReadMutation.variables === notification.notificationKey &&
+                      markReadMutation.variables ===
+                        notification.notificationKey &&
                       markReadMutation.isPending
                     }
+                    showStatus
+                    variant="page"
                     {...(notification.status === "unread"
                       ? {
                           onMarkRead: () => {
@@ -212,56 +219,5 @@ export function NotificationCenterPageClient({
         </TabsContent>
       </Tabs>
     </PageShell>
-  );
-}
-
-function NotificationCenterCard({
-  notification,
-  onMarkRead,
-  pending = false,
-}: {
-  notification: Awaited<ReturnType<typeof fetchNotifications>>["items"][number];
-  onMarkRead?: () => void;
-  pending?: boolean;
-}) {
-      return (
-    <article className="rounded-2xl border border-border/70 bg-card/80 p-4 shadow-xs">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-medium">{notification.summary}</p>
-            <Badge variant={notification.status === "unread" ? "default" : "outline"}>
-              {notification.status === "unread" ? "Unread" : "Read"}
-            </Badge>
-            <Badge variant="outline">
-              {getNotificationEventLabel(notification.eventType)}
-            </Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {getNotificationActorLabel(notification)} updated{" "}
-            <span className="font-medium text-foreground">
-              {notification.resource.reference}
-            </span>
-            .
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {formatNotificationTimeLabel(notification.occurredAt)}
-          </p>
-        </div>
-
-        {onMarkRead ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={onMarkRead}
-            disabled={pending}
-          >
-            {pending ? <Spinner data-icon="inline-start" /> : null}
-            Mark read
-          </Button>
-        ) : null}
-      </div>
-    </article>
   );
 }

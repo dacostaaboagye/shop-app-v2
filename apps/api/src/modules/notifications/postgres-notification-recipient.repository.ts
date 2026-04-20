@@ -57,7 +57,10 @@ export class PostgresNotificationRecipientRepository {
           eq(users.status, "active"),
           isNull(userPermissionOverrides.removedAt),
           eq(permissions.key, input.permission),
-          locationScopeClause(userPermissionOverrides.locationId, input.locationId),
+          locationScopeClause(
+            userPermissionOverrides.locationId,
+            input.locationId,
+          ),
         ),
       );
 

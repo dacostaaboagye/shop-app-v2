@@ -3,7 +3,11 @@ import type {
   UpdateLocationDocumentSettingsRequest,
 } from "@shop/contracts";
 
-export type LocationPaperSizeValue = "inherit" | "receipt_80mm" | "a4" | "letter";
+export type LocationPaperSizeValue =
+  | "inherit"
+  | "receipt_80mm"
+  | "a4"
+  | "letter";
 
 export type LocationDocumentSettingsFormValues = {
   addressLines: string;

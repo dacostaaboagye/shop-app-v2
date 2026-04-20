@@ -1,20 +1,24 @@
 import type { SalesAttributionService } from "../inventory-ownership/sales-attribution.service.js";
 import type { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
-import {
-  InvoiceNotFoundError,
-  InvalidReturnError,
-  MixedOwnershipSaleError,
-  SaleVariantNotFoundError,
-  type CreateSaleTransactionInput,
-  type InvoiceWithLines,
-  type PosCatalogVariantRepository,
-} from "./sales.contracts.js";
 import type { PostgresInvoiceRepository } from "./postgres-invoice.repository.js";
 import type { PostgresInvoiceQueryRepository } from "./postgres-invoice-query.repository.js";
+import {
+  type CreateSaleTransactionInput,
+  InvalidReturnError,
+  InvoiceNotFoundError,
+  type InvoiceWithLines,
+  MixedOwnershipSaleError,
+  type PosCatalogVariantRepository,
+  SaleVariantNotFoundError,
+} from "./sales.contracts.js";
 
 type PosSaleServiceDeps = {
   catalogVariantRepository: PosCatalogVariantRepository;
-  invoiceRepository: Pick<PostgresInvoiceRepository, "createSaleTransaction" | "createReturnTransaction"> & Pick<PostgresInvoiceQueryRepository, "findByReference">;
+  invoiceRepository: Pick<
+    PostgresInvoiceRepository,
+    "createSaleTransaction" | "createReturnTransaction"
+  > &
+    Pick<PostgresInvoiceQueryRepository, "findByReference">;
   referenceNumberService: ReferenceNumberService;
   salesAttributionService: SalesAttributionService;
 };
@@ -42,9 +46,10 @@ export class PosSaleService {
   async processSale(input: ProcessSaleInput): Promise<InvoiceWithLines> {
     const now = input.now ?? new Date();
 
-    const variantDetails = await this.deps.catalogVariantRepository.getVariantsForSale(
-      input.lines.map((l) => l.skuId),
-    );
+    const variantDetails =
+      await this.deps.catalogVariantRepository.getVariantsForSale(
+        input.lines.map((l) => l.skuId),
+      );
 
     for (const line of input.lines) {
       if (!variantDetails.has(line.skuId)) {
@@ -66,7 +71,10 @@ export class PosSaleService {
     if (workerIds.size > 1) {
       throw new MixedOwnershipSaleError();
     }
-    const attributedWorkerId = [...workerIds][0]!;
+    const attributedWorkerId = workerIds.values().next().value;
+    if (!attributedWorkerId) {
+      throw new MixedOwnershipSaleError();
+    }
 
     const reference = await this.deps.referenceNumberService.generateReference({
       now,
@@ -74,13 +82,18 @@ export class PosSaleService {
     });
 
     const lineItems = input.lines.map((line) => {
-      const variant = variantDetails.get(line.skuId)!;
-      const customPrice = line.unitPrice !== undefined && line.unitPrice !== ""
-        ? parseFloat(line.unitPrice)
-        : NaN;
-      const unitPrice = !isNaN(customPrice) && customPrice >= 0
-        ? customPrice
-        : parseFloat(variant.sellingPrice);
+      const variant = variantDetails.get(line.skuId);
+      if (!variant) {
+        throw new SaleVariantNotFoundError(line.skuId);
+      }
+      const customPrice =
+        line.unitPrice !== undefined && line.unitPrice !== ""
+          ? parseFloat(line.unitPrice)
+          : NaN;
+      const unitPrice =
+        !Number.isNaN(customPrice) && customPrice >= 0
+          ? customPrice
+          : parseFloat(variant.sellingPrice);
       const subtotal = roundCurrency(unitPrice * line.quantity);
       const taxAmount = 0;
       const lineTotal = subtotal;
@@ -139,7 +152,9 @@ export class PosSaleService {
     }
 
     if (originalInvoice.status === "voided") {
-      throw new InvalidReturnError("Cannot return items from a voided invoice.");
+      throw new InvalidReturnError(
+        "Cannot return items from a voided invoice.",
+      );
     }
 
     const originalLineMap = new Map(
@@ -157,7 +172,11 @@ export class PosSaleService {
       if (line.quantity > originalLine.quantity) {
         throw new InvalidReturnError(
           `Cannot return more than the original quantity for SKU ${line.skuId}.`,
-          { originalQuantity: originalLine.quantity, returnQuantity: line.quantity, skuId: line.skuId },
+          {
+            originalQuantity: originalLine.quantity,
+            returnQuantity: line.quantity,
+            skuId: line.skuId,
+          },
         );
       }
     }
@@ -168,7 +187,13 @@ export class PosSaleService {
       );
 
     const lines = input.lines.map((line) => {
-      const originalLine = originalLineMap.get(line.skuId)!;
+      const originalLine = originalLineMap.get(line.skuId);
+      if (!originalLine) {
+        throw new InvalidReturnError(
+          `SKU ${line.skuId} was not on the original invoice ${input.parentReference}.`,
+          { skuId: line.skuId },
+        );
+      }
       const unitPrice = parseFloat(originalLine.unitPrice);
       const lineTotal = roundCurrency(unitPrice * line.quantity);
 

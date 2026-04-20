@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { issueAccessToken } from "../src/modules/auth/access-token.js";
 import { AppError } from "../src/modules/_core/errors/app-error.js";
+import { issueAccessToken } from "../src/modules/auth/access-token.js";
+import type { PlatformEventRecord } from "../src/modules/events/platform-event.types.js";
 import type {
   GtnRow,
   SupplyRequestRow,
 } from "../src/modules/stock/postgres-supply-request.repository.js";
-import type { PlatformEventRecord } from "../src/modules/events/platform-event.types.js";
-import { createServer } from "../src/server/create-server.js";
 import { createStockSupplyEvent } from "../src/modules/stock/stock-supply-event-publisher.js";
+import { createServer } from "../src/server/create-server.js";
 
 const NOW = new Date("2026-04-19T19:30:00.000Z");
 const UUIDS = {
@@ -73,6 +73,37 @@ describe("stock supply routes", () => {
 
     assert.equal(response.statusCode, 403);
     assert.equal(response.json().title, "Forbidden");
+  });
+
+  it("lists all requests involving a managed location", async () => {
+    let listedLocationId = "";
+    const server = createStockSupplyServer({
+      allowedLocationPermissions: {
+        "stock.supply.manage": [UUIDS.destinationA],
+      },
+      async listByLocation(input) {
+        listedLocationId = input.locationId;
+        return { items: [makeSupplyRequestRow()], total: 1 };
+      },
+      userSlug: "manager-a",
+    });
+
+    const response = await server.inject({
+      headers: {
+        authorization: bearerToken(UUIDS.actor, "manager-a"),
+      },
+      method: "GET",
+      query: {
+        locationId: UUIDS.destinationA,
+        page: "1",
+        pageSize: "25",
+      },
+      url: "/api/manager/stock/supply-requests",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(listedLocationId, UUIDS.destinationA);
+    assert.equal(response.json().total, 1);
   });
 
   it("lists eligible source locations for an in-scope worker destination", async () => {
@@ -190,10 +221,7 @@ describe("stock supply routes", () => {
           status: "cancelled",
         });
       },
-      globalPermissions: [
-        "admin.dashboard.view",
-        "stock.supply.request",
-      ],
+      globalPermissions: ["admin.dashboard.view", "stock.supply.request"],
       requestById: makeSupplyRequestRow({
         requesterId: UUIDS.otherWorker,
         status: "pending",
@@ -225,7 +253,11 @@ describe("stock supply routes", () => {
       confirmReceiptImpl: async () => {
         confirmCalled = true;
         return {
-          gtn: makeGtnRow({ receivedAt: NOW, receivedBy: UUIDS.admin, status: "received" }),
+          gtn: makeGtnRow({
+            receivedAt: NOW,
+            receivedBy: UUIDS.admin,
+            status: "received",
+          }),
           supplyRequest: makeSupplyRequestRow({
             receivedAt: NOW,
             requesterId: UUIDS.otherWorker,
@@ -300,6 +332,12 @@ function createStockSupplyServer(input: {
   }>;
   globalPermissions?: string[];
   gtnById?: GtnRow;
+  listByLocation?: (input: {
+    locationId: string;
+    page: number;
+    pageSize: number;
+    status?: string;
+  }) => Promise<{ items: SupplyRequestRow[]; total: number }>;
   publishedEvents?: PlatformEventRecord[];
   requestById?: SupplyRequestRow;
   userId?: string;
@@ -360,6 +398,11 @@ function createStockSupplyServer(input: {
         },
         async findGtnBySupplyRequest() {
           return input.gtnById ?? makeGtnRow();
+        },
+        async listByLocation(args) {
+          return input.listByLocation
+            ? input.listByLocation(args)
+            : { items: [], total: 0 };
         },
         async listByRequester() {
           return { items: [], total: 0 };
@@ -461,7 +504,8 @@ function createPermissionService(input: {
         return;
       }
 
-      const scopedLocations = input.allowedLocationPermissions[inputArgs.permission] ?? [];
+      const scopedLocations =
+        input.allowedLocationPermissions[inputArgs.permission] ?? [];
 
       if (!inputArgs.locationId) {
         if (scopedLocations.length > 0) {
@@ -479,7 +523,10 @@ function createPermissionService(input: {
       });
     },
     async resolvePermissionsForAnyScope() {
-      return input.globalPermissions.map((key) => ({ key, source: "role" as const }));
+      return input.globalPermissions.map((key) => ({
+        key,
+        source: "role" as const,
+      }));
     },
   };
 }
@@ -525,9 +572,7 @@ function makeSupplyRequestRowBase(): SupplyRequestRow {
   };
 }
 
-function makeGtnRow(
-  overrides: Partial<GtnRow> = {},
-): GtnRow {
+function makeGtnRow(overrides: Partial<GtnRow> = {}): GtnRow {
   return {
     ...makeGtnRowBase(),
     ...overrides,
