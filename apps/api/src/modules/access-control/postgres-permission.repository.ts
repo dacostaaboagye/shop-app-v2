@@ -27,6 +27,18 @@ export class PostgresPermissionRepository
 {
   constructor(private readonly db: ApiDatabase) {}
 
+  async getAllActiveLocationScopes(): Promise<ActiveLocationScopeRow[]> {
+    return this.db
+      .select({
+        locationId: locations.id,
+        locationName: locations.name,
+        locationSlug: locations.slug,
+      })
+      .from(locations)
+      .where(eq(locations.status, "active"))
+      .orderBy(locations.name, locations.slug);
+  }
+
   async getPermissionAssignments(
     userId: string,
   ): Promise<PermissionAssignmentRow[]> {

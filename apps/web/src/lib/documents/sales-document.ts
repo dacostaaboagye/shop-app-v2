@@ -1,3 +1,4 @@
+import { formatMoney } from "@/lib/money/format-money";
 import {
   downloadDocumentFile,
   type ShareResult,
@@ -51,10 +52,7 @@ export function formatDocumentMoney(
   value: string,
   profile: OfficialDocumentProfile = DEFAULT_OFFICIAL_DOCUMENT_PROFILE,
 ): string {
-  const trimmed = value.trim();
-  if (!trimmed) return `${profile.currencyCode} ${formatZero(profile)}`;
-  if (/([A-Z]{3}|[$€£₵])/.test(trimmed)) return trimmed;
-  return `${profile.currencyCode} ${trimmed}`;
+  return formatMoney(value, profile);
 }
 
 export function getSalesDocumentFilename(
@@ -211,10 +209,6 @@ function toLineRowHtml(
     <td class="num">${escapeHtml(formatDocumentMoney(line.unitPrice, profile))}</td>
     <td class="num"><strong>${escapeHtml(formatDocumentMoney(line.lineTotal, profile))}</strong></td>
   </tr>`;
-}
-
-function formatZero(profile: OfficialDocumentProfile): string {
-  return (0).toFixed(profile.currencyScale);
 }
 
 function formatLabel(value: string): string {

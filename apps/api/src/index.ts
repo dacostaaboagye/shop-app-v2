@@ -13,6 +13,7 @@ import { NotificationWriteService } from "./modules/notifications/notification-w
 import { PostgresNotificationQueryRepository } from "./modules/notifications/postgres-notification-query.repository.js";
 import { PostgresNotificationWriteRepository } from "./modules/notifications/postgres-notification-write.repository.js";
 import { createOfficialDocumentSettingsRuntime } from "./modules/official-documents/create-official-document-settings-runtime.js";
+import { GtnIssuedDocumentSnapshotService } from "./modules/official-documents/gtn-issued-document-snapshot.service.js";
 import { SalesIssuedDocumentSnapshotService } from "./modules/official-documents/sales-issued-document-snapshot.service.js";
 import { createSalesRuntime } from "./modules/sales/create-sales-runtime.js";
 import { createStockRuntime } from "./modules/stock/create-stock-runtime.js";
@@ -56,6 +57,13 @@ const salesDocumentSnapshotService = new SalesIssuedDocumentSnapshotService({
   snapshotService:
     officialDocumentRuntime.officialDocuments.issuedDocumentSnapshotService,
 });
+const gtnDocumentSnapshotService = new GtnIssuedDocumentSnapshotService({
+  permissionService: authRuntime.accessControl.permissionService,
+  settingsService: officialDocumentRuntime.officialDocuments.settingsService,
+  snapshotService:
+    officialDocumentRuntime.officialDocuments.issuedDocumentSnapshotService,
+  supplyRequestRepository: stockRuntime.stock.supplyRequestRepository,
+});
 const server = createServer({
   accessControl: authRuntime.accessControl,
   adminAccess: adminDirectoryRuntime.adminDirectory,
@@ -84,6 +92,7 @@ const server = createServer({
     notificationWriteService,
   },
   issuedDocuments: {
+    gtnDocumentSnapshotService,
     salesDocumentSnapshotService,
   },
   officialDocuments: {

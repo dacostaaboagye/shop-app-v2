@@ -58,6 +58,25 @@ describe("issued document routes", () => {
       { actorUserId: USER_ID, reference: "INV/2026/000001" },
     ]);
   });
+
+  it("downloads the official GTN PDF from the issued snapshot", async () => {
+    const calls: Array<{ actorUserId: string; reference: string }> = [];
+    const server = createIssuedDocumentServer(calls);
+
+    const response = await server.inject({
+      headers: { authorization: bearerToken() },
+      method: "GET",
+      url: "/api/documents/gtns/GTN-00001/download",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.headers["content-type"], "application/pdf");
+    assert.equal(
+      response.headers["content-disposition"],
+      'attachment; filename="GTN-00001.pdf"',
+    );
+    assert.deepEqual(calls, [{ actorUserId: USER_ID, reference: "GTN-00001" }]);
+  });
 });
 
 function createIssuedDocumentServer(
@@ -90,6 +109,20 @@ function createIssuedDocumentServer(
       },
     },
     issuedDocuments: {
+      gtnDocumentSnapshotService: {
+        async getPdfDownload(input) {
+          calls.push(input);
+          return {
+            body: Buffer.from("%PDF gtn"),
+            contentType: "application/pdf",
+            filename: "GTN-00001.pdf",
+          };
+        },
+        async getOrIssueSnapshot(input) {
+          calls.push(input);
+          return { ...snapshot(), documentReference: input.reference };
+        },
+      },
       salesDocumentSnapshotService: {
         async getPdfDownload(input) {
           calls.push(input);

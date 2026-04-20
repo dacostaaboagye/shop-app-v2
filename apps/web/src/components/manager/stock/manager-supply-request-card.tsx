@@ -1,5 +1,6 @@
 import type { StockSupplyRequestResponse } from "@shop/contracts";
 import { ArrowRight, ClipboardList } from "lucide-react";
+import { GtnDocumentActions } from "@/components/stock/gtn-document-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -93,6 +94,10 @@ export function SupplyRequestCard({
             value={item.approvedQuantity?.toString() ?? "-"}
           />
         </dl>
+
+        {item.gtnReference ? (
+          <GtnDocumentActions reference={item.gtnReference} />
+        ) : null}
 
         <RequestNotes item={item} />
 

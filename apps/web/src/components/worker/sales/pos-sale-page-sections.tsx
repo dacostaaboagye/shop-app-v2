@@ -3,16 +3,24 @@
 import type { CurrentAssignment } from "@shop/contracts";
 import { Minus, Package, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  formatMoney,
+  type MoneyProfile,
+  toNumericAmount,
+} from "@/lib/money/format-money";
+import { cn } from "@/lib/utils";
 
 export function VariantRow({
   assignment,
   cartQuantity,
   inCart,
+  moneyProfile,
   onAdd,
 }: {
   assignment: CurrentAssignment;
   cartQuantity: number;
   inCart: boolean;
+  moneyProfile: MoneyProfile;
   onAdd: () => void;
 }) {
   const unavailable = assignment.availableQuantity <= 0;
@@ -25,7 +33,7 @@ export function VariantRow({
       type="button"
     >
       <div className="flex min-w-0 items-center gap-3">
-        <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+        <div className="relative flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
           <Package className="size-4" />
           {inCart && (
             <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
@@ -44,14 +52,15 @@ export function VariantRow({
       </div>
       <div className="flex shrink-0 flex-col items-end gap-0.5">
         <p className="text-sm font-semibold tabular-nums">
-          {assignment.sellingPrice}
+          {formatMoney(assignment.sellingPrice, moneyProfile)}
         </p>
         <p
-          className={`text-xs tabular-nums ${
+          className={cn(
+            "text-xs tabular-nums",
             assignment.availableQuantity === 0
               ? "text-destructive"
-              : "text-muted-foreground"
-          }`}
+              : "text-muted-foreground",
+          )}
         >
           {assignment.availableQuantity} avail.
         </p>
@@ -62,17 +71,19 @@ export function VariantRow({
 
 export function CartRow({
   item,
+  moneyProfile,
   onPriceChange,
   onRemove,
   onUpdate,
 }: {
   item: { assignment: CurrentAssignment; quantity: number; unitPrice: string };
+  moneyProfile: MoneyProfile;
   onPriceChange: (price: string) => void;
   onRemove: () => void;
   onUpdate: (delta: number) => void;
 }) {
-  const price = parseFloat(item.unitPrice);
-  const lineTotal = Number.isNaN(price) ? 0 : price * item.quantity;
+  const price = toNumericAmount(item.unitPrice);
+  const lineTotal = price == null ? 0 : price * item.quantity;
   const isCustomPrice = item.unitPrice !== item.assignment.sellingPrice;
 
   return (
@@ -127,11 +138,12 @@ export function CartRow({
           <span className="text-xs text-muted-foreground">@</span>
           <input
             aria-label="Unit price"
-            className={`h-9 w-24 rounded-md border bg-background px-2 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-primary ${
+            className={cn(
+              "h-9 w-24 rounded-md border bg-background px-2 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-primary",
               isCustomPrice
                 ? "border-warning text-warning-foreground"
-                : "border-border text-foreground"
-            }`}
+                : "border-border text-foreground",
+            )}
             min="0"
             onChange={(e) => onPriceChange(e.target.value)}
             step="0.01"
@@ -152,7 +164,7 @@ export function CartRow({
 
         {/* Line total */}
         <p className="text-sm font-semibold tabular-nums">
-          {lineTotal.toFixed(2)}
+          {formatMoney(lineTotal, moneyProfile)}
         </p>
       </div>
     </div>

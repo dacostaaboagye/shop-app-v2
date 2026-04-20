@@ -6,9 +6,14 @@ import type { FastifyInstance } from "fastify";
 import { AppError } from "../_core/errors/app-error.js";
 import type { RouteDefinition } from "../_core/route-contract.js";
 import { getAuthenticatedUserId } from "../auth/auth-route-support.js";
+import type { GtnIssuedDocumentSnapshotService } from "./gtn-issued-document-snapshot.service.js";
 import type { SalesIssuedDocumentSnapshotService } from "./sales-issued-document-snapshot.service.js";
 
 type IssuedDocumentRouteDependencies = {
+  gtnDocumentSnapshotService: Pick<
+    GtnIssuedDocumentSnapshotService,
+    "getOrIssueSnapshot" | "getPdfDownload"
+  >;
   salesDocumentSnapshotService: Pick<
     SalesIssuedDocumentSnapshotService,
     "getOrIssueSnapshot" | "getPdfDownload"
@@ -27,6 +32,18 @@ const downloadSalesDocumentRoute: RouteDefinition = {
   url: "/api/documents/sales/:reference/download",
 };
 
+const getGtnSnapshotRoute: RouteDefinition = {
+  access: { kind: "authenticated" },
+  method: "GET",
+  url: "/api/documents/gtns/:reference/snapshot",
+};
+
+const downloadGtnDocumentRoute: RouteDefinition = {
+  access: { kind: "authenticated" },
+  method: "GET",
+  url: "/api/documents/gtns/:reference/download",
+};
+
 export function registerIssuedDocumentRoutes(
   server: FastifyInstance,
   dependencies: IssuedDocumentRouteDependencies = createUnavailableDependencies(),
@@ -41,6 +58,23 @@ export function registerIssuedDocumentRoutes(
       );
       const snapshot =
         await dependencies.salesDocumentSnapshotService.getOrIssueSnapshot({
+          actorUserId: getAuthenticatedUserId(request),
+          reference,
+        });
+      return issuedDocumentSnapshotResponseSchema.parse(snapshot);
+    },
+  });
+
+  server.route({
+    config: { access: getGtnSnapshotRoute.access },
+    method: getGtnSnapshotRoute.method,
+    url: getGtnSnapshotRoute.url,
+    async handler(request) {
+      const { reference } = issuedSalesDocumentSnapshotParamsSchema.parse(
+        request.params,
+      );
+      const snapshot =
+        await dependencies.gtnDocumentSnapshotService.getOrIssueSnapshot({
           actorUserId: getAuthenticatedUserId(request),
           reference,
         });
@@ -71,29 +105,61 @@ export function registerIssuedDocumentRoutes(
         .send(file.body);
     },
   });
+
+  server.route({
+    config: { access: downloadGtnDocumentRoute.access },
+    method: downloadGtnDocumentRoute.method,
+    url: downloadGtnDocumentRoute.url,
+    async handler(request, reply) {
+      const { reference } = issuedSalesDocumentSnapshotParamsSchema.parse(
+        request.params,
+      );
+      const file = await dependencies.gtnDocumentSnapshotService.getPdfDownload(
+        {
+          actorUserId: getAuthenticatedUserId(request),
+          reference,
+        },
+      );
+
+      return reply
+        .header(
+          "Content-Disposition",
+          contentDispositionAttachment(file.filename),
+        )
+        .header("Content-Type", file.contentType)
+        .send(file.body);
+    },
+  });
 }
 
 function createUnavailableDependencies(): IssuedDocumentRouteDependencies {
   return {
-    salesDocumentSnapshotService: {
+    gtnDocumentSnapshotService: {
       async getPdfDownload() {
-        throw new AppError({
-          code: "internal_error",
-          detail: "Issued document services are not configured.",
-          statusCode: 503,
-          title: "Issued documents unavailable",
-        });
+        throw unavailableIssuedDocumentsError();
       },
       async getOrIssueSnapshot() {
-        throw new AppError({
-          code: "internal_error",
-          detail: "Issued document services are not configured.",
-          statusCode: 503,
-          title: "Issued documents unavailable",
-        });
+        throw unavailableIssuedDocumentsError();
+      },
+    },
+    salesDocumentSnapshotService: {
+      async getPdfDownload() {
+        throw unavailableIssuedDocumentsError();
+      },
+      async getOrIssueSnapshot() {
+        throw unavailableIssuedDocumentsError();
       },
     },
   };
+}
+
+function unavailableIssuedDocumentsError(): AppError {
+  return new AppError({
+    code: "internal_error",
+    detail: "Issued document services are not configured.",
+    statusCode: 503,
+    title: "Issued documents unavailable",
+  });
 }
 
 function contentDispositionAttachment(filename: string): string {

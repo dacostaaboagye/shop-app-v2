@@ -8,6 +8,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { formatMoney, toNumericAmount } from "@/lib/money/format-money";
 import { CartBody, type CartBodyProps } from "./pos-sale-cart-card";
 
 type PosSaleMobileCartProps = CartBodyProps & {
@@ -23,8 +24,8 @@ export function PosSaleMobileCart({
 }: PosSaleMobileCartProps) {
   const itemCount = cart.reduce((count, item) => count + item.quantity, 0);
   const total = cart.reduce((sum, item) => {
-    const price = parseFloat(item.unitPrice);
-    return sum + (Number.isNaN(price) ? 0 : price * item.quantity);
+    const price = toNumericAmount(item.unitPrice);
+    return sum + (price == null ? 0 : price * item.quantity);
   }, 0);
 
   return (
@@ -45,7 +46,7 @@ export function PosSaleMobileCart({
                   {cart.length} item{cart.length !== 1 ? "s" : ""}
                 </p>
                 <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-                  Total: {total.toFixed(2)}
+                  Total: {formatMoney(total, cartProps.moneyProfile)}
                 </p>
               </div>
             </div>

@@ -4,9 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useRef } from "react";
 import { useReactToPrint } from "react-to-print";
 import { PrintableInvoice } from "@/components/sales/printable-invoice";
+import { DocumentErrors } from "@/components/sales/sales-document-errors";
 import { SalesDocumentPdfPreview } from "@/components/sales/sales-document-pdf-preview";
 import {
-  DocumentErrors,
   InvoiceLineItems,
   OfficialDocumentPanel,
   SalesSummary,
@@ -73,9 +73,10 @@ export function SalesDocumentWorkspace({
         />
         <SalesSummary
           invoice={documentInvoice}
+          profile={profile}
           showWorkerAttribution={showWorkerAttribution}
         />
-        <InvoiceLineItems invoice={documentInvoice} />
+        <InvoiceLineItems invoice={documentInvoice} profile={profile} />
       </div>
 
       <SalesDocumentPdfPreview

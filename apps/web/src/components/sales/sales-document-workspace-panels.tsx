@@ -1,12 +1,11 @@
 "use client";
-
 import type { ReactNode } from "react";
 import { SalesDocumentActions } from "@/components/sales/sales-document-actions";
-import { AppErrorBanner } from "@/components/system/app-error";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import type { OfficialDocumentProfile } from "@/lib/documents/official-document-profile";
 import type { PrintableInvoiceData } from "@/lib/documents/sales-document";
+import { formatMoney } from "@/lib/money/format-money";
 import { fetchSalesDocumentDownloadFile } from "@/lib/react-query/official-documents";
 
 export function OfficialDocumentPanel({
@@ -80,9 +79,11 @@ export function OfficialDocumentPanel({
 
 export function SalesSummary({
   invoice,
+  profile,
   showWorkerAttribution,
 }: {
   invoice: PrintableInvoiceData;
+  profile: OfficialDocumentProfile;
   showWorkerAttribution: boolean;
 }) {
   return (
@@ -95,8 +96,16 @@ export function SalesSummary({
           label="Payment"
           value={formatPaymentMethod(invoice.paymentMethod)}
         />
-        <SummaryItem label="Subtotal" value={invoice.subtotalAmount} mono />
-        <SummaryItem label="Total" value={invoice.totalAmount} prominent />
+        <SummaryItem
+          label="Subtotal"
+          value={formatMoney(invoice.subtotalAmount, profile)}
+          mono
+        />
+        <SummaryItem
+          label="Total"
+          value={formatMoney(invoice.totalAmount, profile)}
+          prominent
+        />
         {showWorkerAttribution && invoice.attributedWorkerId ? (
           <WorkerAttribution invoice={invoice} />
         ) : null}
@@ -113,8 +122,10 @@ export function SalesSummary({
 
 export function InvoiceLineItems({
   invoice,
+  profile,
 }: {
   invoice: PrintableInvoiceData;
+  profile: OfficialDocumentProfile;
 }) {
   return (
     <Card>
@@ -133,52 +144,23 @@ export function InvoiceLineItems({
                   {line.skuSnapshot.variantName} &middot; {line.skuSnapshot.sku}
                 </p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  {line.unitPrice} &times; {line.quantity}
+                  {formatMoney(line.unitPrice, profile)} &times; {line.quantity}
                 </p>
               </div>
               <p className="shrink-0 font-semibold tabular-nums">
-                {line.lineTotal}
+                {formatMoney(line.lineTotal, profile)}
               </p>
             </div>
           ))}
         </div>
         <div className="flex items-center justify-between border-t border-border bg-muted/30 px-5 py-3">
           <span className="text-sm font-medium">Total</span>
-          <span className="font-bold tabular-nums">{invoice.totalAmount}</span>
+          <span className="font-bold tabular-nums">
+            {formatMoney(invoice.totalAmount, profile)}
+          </span>
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-export function DocumentErrors({
-  hasInvalidSnapshot,
-  onRetry,
-  snapshotError,
-  snapshotIsError,
-}: {
-  hasInvalidSnapshot: boolean;
-  onRetry: () => void;
-  snapshotError: unknown;
-  snapshotIsError: boolean;
-}) {
-  return (
-    <>
-      {snapshotIsError ? (
-        <AppErrorBanner
-          detail="Official document actions are unavailable until the issued snapshot can be loaded."
-          error={snapshotError}
-          onRetry={onRetry}
-          title="Official document unavailable"
-        />
-      ) : null}
-      {hasInvalidSnapshot ? (
-        <AppErrorBanner
-          detail="This issued document snapshot could not be read safely. Regenerate support action is required before printing or sharing."
-          title="Official document snapshot is invalid"
-        />
-      ) : null}
-    </>
   );
 }
 

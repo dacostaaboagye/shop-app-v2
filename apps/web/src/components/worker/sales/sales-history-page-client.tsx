@@ -10,6 +10,12 @@ import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
+import { DEFAULT_OFFICIAL_DOCUMENT_PROFILE } from "@/lib/documents/official-document-profile";
+import { formatMoney, type MoneyProfile } from "@/lib/money/format-money";
+import {
+  fetchOfficialDocumentProfile,
+  officialDocumentProfileQueryKey,
+} from "@/lib/react-query/official-documents";
 import {
   fetchWorkerSales,
   workerSalesQueryKey,
@@ -37,6 +43,15 @@ export function SalesHistoryPageClient() {
     queryFn: () => fetchWorkerSales(query),
     queryKey: workerSalesQueryKey(query),
     staleTime: 30_000,
+  });
+  const profileQuery = useQuery({
+    enabled: !!selectedLocationScope,
+    queryFn: () =>
+      fetchOfficialDocumentProfile(selectedLocationScope?.locationId),
+    queryKey: officialDocumentProfileQueryKey(
+      selectedLocationScope?.locationId,
+    ),
+    staleTime: 5 * 60_000,
   });
 
   return (
@@ -70,13 +85,22 @@ export function SalesHistoryPageClient() {
           title="Unable to load sales"
         />
       ) : salesQuery.data ? (
-        <SalesList response={salesQuery.data} />
+        <SalesList
+          moneyProfile={profileQuery.data ?? DEFAULT_OFFICIAL_DOCUMENT_PROFILE}
+          response={salesQuery.data}
+        />
       ) : null}
     </PageShell>
   );
 }
 
-function SalesList({ response }: { response: InvoiceListResponse }) {
+function SalesList({
+  moneyProfile,
+  response,
+}: {
+  moneyProfile: MoneyProfile;
+  response: InvoiceListResponse;
+}) {
   if (response.items.length === 0) {
     return (
       <div className="rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
@@ -133,7 +157,7 @@ function SalesList({ response }: { response: InvoiceListResponse }) {
                   {paymentLabel}
                 </span>
                 <span className="font-medium tabular-nums">
-                  {invoice.totalAmount}
+                  {formatMoney(invoice.totalAmount, moneyProfile)}
                 </span>
               </div>
             </Link>

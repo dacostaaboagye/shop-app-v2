@@ -14,6 +14,16 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
+import { DEFAULT_OFFICIAL_DOCUMENT_PROFILE } from "@/lib/documents/official-document-profile";
+import {
+  formatMoney,
+  type MoneyProfile,
+  toNumericAmount,
+} from "@/lib/money/format-money";
+import {
+  fetchOfficialDocumentProfile,
+  officialDocumentProfileQueryKey,
+} from "@/lib/react-query/official-documents";
 import {
   fetchManagerSales,
   managerSalesQueryKey,
@@ -42,13 +52,23 @@ export function ManagerSalesPageClient() {
     queryKey: managerSalesQueryKey(query),
     staleTime: 30_000,
   });
+  const profileQuery = useQuery({
+    enabled: !!selectedLocationScope,
+    queryFn: () =>
+      fetchOfficialDocumentProfile(selectedLocationScope?.locationId),
+    queryKey: officialDocumentProfileQueryKey(
+      selectedLocationScope?.locationId,
+    ),
+    staleTime: 5 * 60_000,
+  });
 
   const items = salesQuery.data?.items ?? [];
   const posItems = items.filter((i) => i.type === "pos");
   const totalRevenue = posItems.reduce(
-    (sum, i) => sum + parseFloat(i.totalAmount),
+    (sum, i) => sum + (toNumericAmount(i.totalAmount) ?? 0),
     0,
   );
+  const moneyProfile = profileQuery.data ?? DEFAULT_OFFICIAL_DOCUMENT_PROFILE;
 
   return (
     <PageShell>
@@ -96,17 +116,23 @@ export function ManagerSalesPageClient() {
             <StatCard
               icon={BarChart3}
               label="Total revenue"
-              value={totalRevenue.toFixed(2)}
+              value={formatMoney(totalRevenue, moneyProfile)}
             />
           </div>
-          <SalesList response={salesQuery.data} />
+          <SalesList moneyProfile={moneyProfile} response={salesQuery.data} />
         </>
       ) : null}
     </PageShell>
   );
 }
 
-function SalesList({ response }: { response: InvoiceListResponse }) {
+function SalesList({
+  moneyProfile,
+  response,
+}: {
+  moneyProfile: MoneyProfile;
+  response: InvoiceListResponse;
+}) {
   if (response.items.length === 0) {
     return (
       <div className="rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
@@ -163,7 +189,7 @@ function SalesList({ response }: { response: InvoiceListResponse }) {
                   {paymentLabel}
                 </span>
                 <span className="font-medium tabular-nums">
-                  {invoice.totalAmount}
+                  {formatMoney(invoice.totalAmount, moneyProfile)}
                 </span>
               </div>
             </Link>

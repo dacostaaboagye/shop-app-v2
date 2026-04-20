@@ -2,11 +2,17 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Bell, Menu, UserCircle2 } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useMemo } from "react";
+import { useAuthorization } from "@/components/providers/authorization-provider";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
+import { getPermissionLocationScopes } from "@/lib/authorization/location-scopes";
 import {
   fetchNotifications,
   notificationsQueryKey,
 } from "@/lib/react-query/notifications";
+import { toRoute } from "@/lib/routes";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
 import { getActiveItem } from "./portal-shell-config";
 
@@ -25,6 +31,9 @@ export function AppTopbar({
 }: AppTopbarProps) {
   const user = useAuthSessionStore((state) => state.user);
   const activeItem = getActiveItem(pathname);
+  const locationSelector = useTopbarLocationSelector(
+    activeItem?.requiredPermission ?? null,
+  );
   const notificationsQuery = useQuery({
     enabled: !!user,
     queryFn: () => fetchNotifications(12),
@@ -55,6 +64,7 @@ export function AppTopbar({
         </div>
 
         <div className="flex items-center gap-2">
+          <TopbarLocationSelector {...locationSelector} />
           <Button
             type="button"
             size="icon-sm"
@@ -86,4 +96,77 @@ export function AppTopbar({
       </div>
     </header>
   );
+}
+
+function TopbarLocationSelector({
+  onLocationChange,
+  scopes,
+  selectedLocationSlug,
+}: {
+  onLocationChange: (locationSlug: string) => void;
+  scopes: ReturnType<typeof useTopbarLocationSelector>["scopes"];
+  selectedLocationSlug: string;
+}) {
+  if (scopes.length === 0) return null;
+
+  if (scopes.length === 1) {
+    return (
+      <div className="hidden max-w-52 truncate rounded-md border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground md:block">
+        Acting at{" "}
+        <span className="font-medium text-foreground">
+          {scopes[0]?.locationName}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="hidden min-w-44 max-w-56 md:block">
+      <Select
+        aria-label="Select acting location"
+        className="h-9 bg-card text-xs"
+        onChange={(event) => onLocationChange(event.target.value)}
+        value={selectedLocationSlug}
+      >
+        {scopes.map((scope) => (
+          <option key={scope.locationId} value={scope.locationSlug}>
+            {scope.locationName}
+          </option>
+        ))}
+      </Select>
+    </div>
+  );
+}
+
+function useTopbarLocationSelector(permission: string | null) {
+  const currentPathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { locationScopes } = useAuthorization();
+  const scopes = useMemo(
+    () =>
+      permission ? getPermissionLocationScopes(locationScopes, permission) : [],
+    [locationScopes, permission],
+  );
+  const selectedLocationSlug =
+    searchParams.get("location")?.trim() || scopes[0]?.locationSlug || "";
+
+  function onLocationChange(locationSlug: string) {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    if (locationSlug) {
+      nextParams.set("location", locationSlug);
+    } else {
+      nextParams.delete("location");
+    }
+
+    const query = nextParams.toString();
+    router.replace(
+      toRoute(query ? `${currentPathname}?${query}` : currentPathname),
+      {
+        scroll: false,
+      },
+    );
+  }
+
+  return { onLocationChange, scopes, selectedLocationSlug };
 }

@@ -11,7 +11,6 @@ export type {
   GtnRow,
   SupplyRequestRow,
 } from "./postgres-supply-request-mappers.js";
-
 export class PostgresSupplyRequestRepository {
   constructor(private readonly db: ApiDatabase) {}
 
@@ -198,6 +197,14 @@ export class PostgresSupplyRequestRepository {
   async findGtnById(id: string) {
     const gtn = await this.db.query.goodsTransferNotes.findFirst({
       where: (table, { eq }) => eq(table.id, id),
+      with: gtnRelations,
+    });
+    return gtn ? toGtnRow(gtn) : null;
+  }
+
+  async findGtnByReference(reference: string) {
+    const gtn = await this.db.query.goodsTransferNotes.findFirst({
+      where: (table, { eq }) => eq(table.reference, reference),
       with: gtnRelations,
     });
     return gtn ? toGtnRow(gtn) : null;

@@ -21,6 +21,7 @@ type PermissionAssignmentRecord = {
 };
 
 export interface PermissionResolutionRepository {
+  getAllActiveLocationScopes(): Promise<ActiveLocationScope[]>;
   getPermissionAssignments(
     userId: string,
   ): Promise<PermissionAssignmentRecord[]>;
@@ -106,10 +107,12 @@ export class PermissionResolutionService {
       ActiveLocationScope & { permissions: EffectivePermission[] }
     >;
   }> {
-    const [assignments, locationScopes] = await Promise.all([
-      this.repository.getPermissionAssignments(input.userId),
-      this.repository.getActiveLocationScopes(input.userId),
-    ]);
+    const [assignments, assignedLocationScopes, allLocationScopes] =
+      await Promise.all([
+        this.repository.getPermissionAssignments(input.userId),
+        this.repository.getActiveLocationScopes(input.userId),
+        this.repository.getAllActiveLocationScopes(),
+      ]);
 
     const uniqueLocationIds = Array.from(
       new Set(
@@ -129,6 +132,16 @@ export class PermissionResolutionService {
       }
     }
 
+    const globalPermissions = resolveEffectivePermissions(
+      assignments,
+      undefined,
+    );
+    const locationScopes = mergeOperatingLocationScopes(
+      assignedLocationScopes,
+      allLocationScopes,
+      globalPermissions,
+    );
+
     return {
       anyActivePermissions: Array.from(anyActiveMap.values()).sort((a, b) =>
         a.key.localeCompare(b.key),
@@ -139,6 +152,25 @@ export class PermissionResolutionService {
       })),
     };
   }
+}
+
+function mergeOperatingLocationScopes(
+  assignedLocationScopes: readonly ActiveLocationScope[],
+  allLocationScopes: readonly ActiveLocationScope[],
+  globalPermissions: readonly EffectivePermission[],
+): ActiveLocationScope[] {
+  if (globalPermissions.length === 0) return [...assignedLocationScopes];
+
+  const scopesById = new Map<string, ActiveLocationScope>();
+  for (const scope of [...assignedLocationScopes, ...allLocationScopes]) {
+    scopesById.set(scope.locationId, scope);
+  }
+
+  return Array.from(scopesById.values()).sort(
+    (a, b) =>
+      a.locationName.localeCompare(b.locationName) ||
+      a.locationSlug.localeCompare(b.locationSlug),
+  );
 }
 
 function resolveEffectivePermissions(

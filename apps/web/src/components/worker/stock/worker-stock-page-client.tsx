@@ -9,10 +9,17 @@ import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
+import { DEFAULT_OFFICIAL_DOCUMENT_PROFILE } from "@/lib/documents/official-document-profile";
+import { formatMoney } from "@/lib/money/format-money";
+import {
+  fetchOfficialDocumentProfile,
+  officialDocumentProfileQueryKey,
+} from "@/lib/react-query/official-documents";
 import {
   fetchWorkerAssignments,
   workerAssignmentsQueryKey,
 } from "@/lib/react-query/worker-assignments";
+import { cn } from "@/lib/utils";
 
 const SKELETON_KEYS = [1, 2, 3, 4, 5, 6, 7, 8];
 
@@ -40,6 +47,16 @@ export function WorkerStockPageClient() {
   });
 
   const items = stockQuery.data?.items ?? [];
+  const profileQuery = useQuery({
+    enabled: !!selectedLocationScope,
+    queryFn: () =>
+      fetchOfficialDocumentProfile(selectedLocationScope?.locationId),
+    queryKey: officialDocumentProfileQueryKey(
+      selectedLocationScope?.locationId,
+    ),
+    staleTime: 5 * 60_000,
+  });
+  const moneyProfile = profileQuery.data ?? DEFAULT_OFFICIAL_DOCUMENT_PROFILE;
 
   return (
     <PageShell>
@@ -79,6 +96,7 @@ export function WorkerStockPageClient() {
           locationName={
             stockQuery.data?.locationName || selectedLocationScope.locationName
           }
+          moneyProfile={moneyProfile}
         />
       ) : null}
     </PageShell>
@@ -88,9 +106,11 @@ export function WorkerStockPageClient() {
 function StockList({
   items,
   locationName,
+  moneyProfile,
 }: {
   items: CurrentAssignment[];
   locationName: string | undefined;
+  moneyProfile: Parameters<typeof formatMoney>[1];
 }) {
   if (items.length === 0) {
     return (
@@ -111,21 +131,27 @@ function StockList({
       ) : null}
       <div className="divide-y divide-border rounded-md border border-border bg-card">
         {items.map((item) => (
-          <StockRow key={item.skuId} item={item} />
+          <StockRow key={item.skuId} item={item} moneyProfile={moneyProfile} />
         ))}
       </div>
     </div>
   );
 }
 
-function StockRow({ item }: { item: CurrentAssignment }) {
+function StockRow({
+  item,
+  moneyProfile,
+}: {
+  item: CurrentAssignment;
+  moneyProfile: Parameters<typeof formatMoney>[1];
+}) {
   const available = item.availableQuantity;
   const isLow = available > 0 && available <= 3;
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 p-4">
       <div className="flex items-start gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
           <Package className="size-4" />
         </div>
         <div className="min-w-0">
@@ -141,7 +167,9 @@ function StockRow({ item }: { item: CurrentAssignment }) {
       <div className="flex items-center gap-3 text-sm">
         <div className="text-right">
           <p className="text-xs text-muted-foreground">Price</p>
-          <p className="font-medium tabular-nums">{item.sellingPrice}</p>
+          <p className="font-medium tabular-nums">
+            {formatMoney(item.sellingPrice, moneyProfile)}
+          </p>
         </div>
         <div className="text-right">
           <p className="text-xs text-muted-foreground">Assigned</p>
@@ -150,7 +178,14 @@ function StockRow({ item }: { item: CurrentAssignment }) {
         <div className="text-right">
           <p className="text-xs text-muted-foreground">Available</p>
           <p
-            className={`font-medium tabular-nums ${available === 0 ? "text-destructive" : isLow ? "text-warning" : "text-foreground"}`}
+            className={cn(
+              "font-medium tabular-nums",
+              available === 0
+                ? "text-destructive"
+                : isLow
+                  ? "text-warning"
+                  : "text-foreground",
+            )}
           >
             {available}
           </p>

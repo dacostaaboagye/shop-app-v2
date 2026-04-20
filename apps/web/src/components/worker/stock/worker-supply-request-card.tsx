@@ -4,6 +4,7 @@ import type { StockSupplyRequestResponse } from "@shop/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, ClipboardList, PackageCheck } from "lucide-react";
 import { toast } from "sonner";
+import { GtnDocumentActions } from "@/components/stock/gtn-document-actions";
 import { Button } from "@/components/ui/button";
 import { getAppErrorMessage } from "@/lib/errors/app-error";
 import {
@@ -82,6 +83,9 @@ export function WorkerSupplyRequestCard({
         </div>
 
         <RequestRoute item={item} />
+        {item.gtnReference ? (
+          <GtnDocumentActions reference={item.gtnReference} />
+        ) : null}
         <RequestQuantities item={item} />
         {item.resolutionNotes ? (
           <p className="rounded-lg bg-muted/40 px-3 py-2 text-xs italic leading-relaxed text-muted-foreground">

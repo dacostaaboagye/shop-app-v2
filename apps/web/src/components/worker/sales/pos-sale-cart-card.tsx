@@ -6,6 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  formatMoney,
+  type MoneyProfile,
+  toNumericAmount,
+} from "@/lib/money/format-money";
 import { CartRow, CartTitle, CartTitleBadge } from "./pos-sale-page-sections";
 
 export type CartItem = {
@@ -18,6 +23,7 @@ export type CartBodyProps = {
   cart: CartItem[];
   error: unknown;
   isPending: boolean;
+  moneyProfile: MoneyProfile;
   notes: string;
   onConfirm: () => void;
   onNotesChange: (value: string) => void;
@@ -39,6 +45,7 @@ export function CartBody({
   cart,
   error,
   isPending,
+  moneyProfile,
   notes,
   onConfirm,
   onNotesChange,
@@ -49,8 +56,8 @@ export function CartBody({
   paymentMethod,
 }: CartBodyProps) {
   const total = cart.reduce((sum, item) => {
-    const price = parseFloat(item.unitPrice);
-    return sum + (Number.isNaN(price) ? 0 : price * item.quantity);
+    const price = toNumericAmount(item.unitPrice);
+    return sum + (price == null ? 0 : price * item.quantity);
   }, 0);
 
   if (cart.length === 0) {
@@ -68,6 +75,7 @@ export function CartBody({
           <CartRow
             key={item.assignment.skuId}
             item={item}
+            moneyProfile={moneyProfile}
             onPriceChange={(price) =>
               onPriceChange(item.assignment.skuId, price)
             }
@@ -79,7 +87,9 @@ export function CartBody({
 
       <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2.5 text-sm">
         <span className="text-muted-foreground">Total</span>
-        <span className="font-semibold tabular-nums">{total.toFixed(2)}</span>
+        <span className="font-semibold tabular-nums">
+          {formatMoney(total, moneyProfile)}
+        </span>
       </div>
 
       <Separator />

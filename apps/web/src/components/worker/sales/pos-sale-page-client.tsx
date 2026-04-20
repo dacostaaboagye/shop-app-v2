@@ -7,19 +7,21 @@ import type {
 } from "@shop/contracts";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { AppErrorBanner } from "@/components/system/app-error";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
+import { DEFAULT_OFFICIAL_DOCUMENT_PROFILE } from "@/lib/documents/official-document-profile";
+import {
+  fetchOfficialDocumentProfile,
+  officialDocumentProfileQueryKey,
+} from "@/lib/react-query/official-documents";
 import { postWorkerSale } from "@/lib/react-query/pos-sales";
 import {
   fetchWorkerAssignments,
   workerAssignmentsQueryKey,
 } from "@/lib/react-query/worker-assignments";
-import { type CartItem, PosSaleCartCard } from "./pos-sale-cart-card";
-import { PosSaleMobileCart } from "./pos-sale-mobile-cart";
-import { VariantRow } from "./pos-sale-page-sections";
+import { PosSaleAssignmentWorkspace } from "./pos-sale-assignment-workspace";
+import type { CartItem } from "./pos-sale-cart-card";
 import { SaleSuccessPanel } from "./pos-sale-success-panel";
 
 type SaleSuccess = {
@@ -44,8 +46,9 @@ export function PosSalePageClient() {
   const assignmentsQuery = useQuery({
     enabled: !!selectedLocationScope,
     queryFn: async () => {
-      if (!selectedLocationScope)
+      if (!selectedLocationScope) {
         throw new Error("A sales location is required.");
+      }
       return fetchWorkerAssignments(selectedLocationScope.locationId);
     },
     queryKey: workerAssignmentsQueryKey(
@@ -53,6 +56,16 @@ export function PosSalePageClient() {
     ),
     staleTime: 30_000,
   });
+  const profileQuery = useQuery({
+    enabled: !!selectedLocationScope,
+    queryFn: () =>
+      fetchOfficialDocumentProfile(selectedLocationScope?.locationId),
+    queryKey: officialDocumentProfileQueryKey(
+      selectedLocationScope?.locationId,
+    ),
+    staleTime: 5 * 60_000,
+  });
+  const moneyProfile = profileQuery.data ?? DEFAULT_OFFICIAL_DOCUMENT_PROFILE;
 
   const saleMutation = useMutation({
     mutationFn: postWorkerSale,
@@ -140,6 +153,7 @@ export function PosSalePageClient() {
     cart,
     error: saleMutation.error,
     isPending: saleMutation.isPending,
+    moneyProfile,
     notes,
     onConfirm: handleConfirm,
     onNotesChange: setNotes,
@@ -149,8 +163,6 @@ export function PosSalePageClient() {
     onUpdate: updateQty,
     paymentMethod,
   };
-
-  const assignments = assignmentsQuery.data?.items ?? [];
 
   return (
     <PageShell>
@@ -162,6 +174,7 @@ export function PosSalePageClient() {
       {success ? (
         <SaleSuccessPanel
           invoice={success.invoice}
+          moneyProfile={moneyProfile}
           onNewSale={() => setSuccess(null)}
         />
       ) : (
@@ -179,68 +192,20 @@ export function PosSalePageClient() {
             selectedLocationSlug={selectedLocationSlug}
             title="Sales location"
           />
-
-          {assignmentsQuery.isPending && selectedLocationScope ? (
-            <div className="flex flex-col gap-2">
-              {[1, 2, 3].map((key) => (
-                <Skeleton key={key} className="h-14 w-full" />
-              ))}
-            </div>
-          ) : assignmentsQuery.isError ? (
-            <AppErrorBanner
-              detail="Could not load your assigned variants."
-              error={assignmentsQuery.error}
-              onRetry={() => void assignmentsQuery.refetch()}
-              title="Unable to load variants"
-            />
-          ) : selectedLocationScope && assignments.length > 0 ? (
-            <>
-              {/* Layout: single column on mobile, two columns on desktop */}
-              <div className="pb-24 lg:pb-0">
-                <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
-                  {/* Variant list */}
-                  <div className="flex flex-col gap-3">
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Your assigned variants
-                    </p>
-                    <div className="divide-y divide-border rounded-md border border-border bg-card">
-                      {assignments.map((assignment) => (
-                        <VariantRow
-                          key={assignment.skuId}
-                          assignment={assignment}
-                          cartQuantity={
-                            cart.find(
-                              (i) => i.assignment.skuId === assignment.skuId,
-                            )?.quantity ?? 0
-                          }
-                          inCart={cart.some(
-                            (item) =>
-                              item.assignment.skuId === assignment.skuId,
-                          )}
-                          onAdd={() => addToCart(assignment)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Desktop cart — hidden on mobile */}
-                  <div className="hidden lg:block">
-                    <PosSaleCartCard {...cartProps} />
-                  </div>
-                </div>
-              </div>
-
-              <PosSaleMobileCart
-                {...cartProps}
-                onOpenChange={setCartSheetOpen}
-                open={cartSheetOpen}
-              />
-            </>
-          ) : selectedLocationScope && !assignmentsQuery.isPending ? (
-            <div className="rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-              No variants are currently assigned to you at this location.
-            </div>
-          ) : null}
+          <PosSaleAssignmentWorkspace
+            assignments={assignmentsQuery.data?.items ?? []}
+            cart={cart}
+            cartProps={cartProps}
+            cartSheetOpen={cartSheetOpen}
+            error={assignmentsQuery.error}
+            isError={assignmentsQuery.isError}
+            isPending={assignmentsQuery.isPending}
+            moneyProfile={moneyProfile}
+            onAddToCart={addToCart}
+            onRetry={() => void assignmentsQuery.refetch()}
+            selectedLocationScope={selectedLocationScope}
+            setCartSheetOpen={setCartSheetOpen}
+          />
         </>
       )}
     </PageShell>

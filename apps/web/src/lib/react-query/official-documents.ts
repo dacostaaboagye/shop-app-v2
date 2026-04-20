@@ -19,6 +19,8 @@ export const salesDocumentSnapshotQueryKey = (reference: string) =>
   ["official-documents", "sales-snapshot", reference] as const;
 export const salesDocumentDownloadFileQueryKey = (reference: string) =>
   ["official-documents", "sales-download-file", reference] as const;
+export const gtnDocumentDownloadFileQueryKey = (reference: string) =>
+  ["official-documents", "gtn-download-file", reference] as const;
 export const locationDocumentSettingsQueryKey = (locationId: string) =>
   ["official-documents", "location-settings", locationId] as const;
 
@@ -57,6 +59,18 @@ export async function fetchSalesDocumentDownloadFile(reference: string) {
     {
       auth: "required",
       fallbackFilename: `${safeReference || "sales-document"}.pdf`,
+    },
+  );
+}
+
+export async function fetchGtnDocumentDownloadFile(reference: string) {
+  const safeReference = reference.replace(/[^a-zA-Z0-9_-]+/g, "-");
+  return fetchFile(
+    `/api/documents/gtns/${encodeURIComponent(reference)}/download`,
+    undefined,
+    {
+      auth: "required",
+      fallbackFilename: `${safeReference || "goods-transfer-note"}.pdf`,
     },
   );
 }

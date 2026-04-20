@@ -120,6 +120,46 @@ describe("PermissionResolutionService", () => {
     );
   });
 
+  it("expands global permissions across all active operating locations", async () => {
+    const service = createService(
+      [
+        {
+          effect: null,
+          key: "stock.view",
+          locationId: null,
+          source: "role",
+        },
+      ],
+      {
+        allLocationScopes: [
+          {
+            locationId: "loc_airport",
+            locationName: "Airport Store",
+            locationSlug: "airport-store",
+          },
+          {
+            locationId: "loc_downtown",
+            locationName: "Downtown Store",
+            locationSlug: "downtown-store",
+          },
+        ],
+      },
+    );
+
+    const result = await service.resolveAllPermissions({ userId: "usr_admin" });
+
+    assert.deepEqual(
+      result.locationScopes.map((scope) => ({
+        locationId: scope.locationId,
+        permissions: scope.permissions.map((permission) => permission.key),
+      })),
+      [
+        { locationId: "loc_airport", permissions: ["stock.view"] },
+        { locationId: "loc_downtown", permissions: ["stock.view"] },
+      ],
+    );
+  });
+
   it("throws forbidden when the requested permission is missing", async () => {
     const service = createService([]);
 
@@ -146,10 +186,25 @@ function createService(
     locationId: string | null;
     source: "override" | "role";
   }>,
+  options: {
+    activeLocationScopes?: Array<{
+      locationId: string;
+      locationName: string;
+      locationSlug: string;
+    }>;
+    allLocationScopes?: Array<{
+      locationId: string;
+      locationName: string;
+      locationSlug: string;
+    }>;
+  } = {},
 ) {
   return new PermissionResolutionService({
+    async getAllActiveLocationScopes() {
+      return options.allLocationScopes ?? [];
+    },
     async getActiveLocationScopes() {
-      return [];
+      return options.activeLocationScopes ?? [];
     },
     async getPermissionAssignments() {
       return assignments;
