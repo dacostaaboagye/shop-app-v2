@@ -120,6 +120,41 @@
       "when": 1745172800000,
       "tag": "0016_goods_transfer_notes",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1776629773791,
+      "tag": "0017_dazzling_giant_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1776643642530,
+      "tag": "0018_daffy_captain_cross",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1776665157799,
+      "tag": "0019_overrated_lockjaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1776668400000,
+      "tag": "0020_official_document_footer_default",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1776668762633,
+      "tag": "0021_curvy_midnight",
+      "breakpoints": true
     }
   ]
 }

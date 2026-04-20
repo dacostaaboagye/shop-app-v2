@@ -72,10 +72,10 @@ export function NewAssignmentPageClient() {
   const toggleVariant = useCallback((variant: VariantSearchResult) => {
     setSelectedVariants((prev) => {
       const next = new Map(prev);
-      if (next.has(variant.id)) {
-        next.delete(variant.id);
+      if (next.has(variant.variantId)) {
+        next.delete(variant.variantId);
       } else {
-        next.set(variant.id, { quantity: 1, variant });
+        next.set(variant.variantId, { quantity: 1, variant });
       }
       return next;
     });
@@ -123,7 +123,7 @@ export function NewAssignmentPageClient() {
     assignMutation.mutate({
       items: quantityEntries.map(({ variant, quantity }) => ({
         quantity,
-        skuId: variant.id,
+        skuId: variant.variantId,
       })),
       locationId: selectedLocationScope.locationId,
       workerId: selectedWorker.userId,

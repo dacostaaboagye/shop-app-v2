@@ -1,8 +1,10 @@
 import {
+  Bell,
   Boxes,
   ClipboardList,
   MapPin,
   PackageSearch,
+  Settings,
   ShieldCheck,
   ShoppingCart,
   Store,
@@ -14,6 +16,16 @@ import { toRoute } from "@/lib/routes";
 import type { NavRegistryEntry } from "./portal-shell-config.types";
 
 export const PRIMARY_SECTION_NAV_REGISTRY: readonly NavRegistryEntry[] = [
+  {
+    activeMatchers: [{ mode: "descendants", path: "/admin/notifications" }],
+    description: "Operational events and alerts across the platform.",
+    href: toRoute("/admin/notifications"),
+    icon: Bell,
+    label: "Notifications",
+    requiredPermission: "admin.dashboard.view",
+    section: "Overview",
+    sidebar: false,
+  },
   {
     activeMatchers: [{ mode: "descendants", path: "/admin/users" }],
     description: "Manage users, assignments, and access state.",
@@ -30,6 +42,15 @@ export const PRIMARY_SECTION_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     icon: MapPin,
     label: "Locations",
     requiredPermission: "locations.view",
+    section: "Administration",
+  },
+  {
+    activeMatchers: [{ mode: "descendants", path: "/admin/settings/documents" }],
+    description: "Configure official documents, brand identity, and money defaults.",
+    href: toRoute("/admin/settings/documents"),
+    icon: Settings,
+    label: "Settings",
+    requiredPermission: "settings.documents.view",
     section: "Administration",
   },
   {

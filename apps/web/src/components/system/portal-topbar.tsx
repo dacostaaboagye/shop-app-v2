@@ -1,9 +1,14 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Bell, Menu, UserCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  fetchNotifications,
+  notificationsQueryKey,
+} from "@/lib/react-query/notifications";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
-import { getActiveItem, getShellNotifications } from "./portal-shell-config";
+import { getActiveItem } from "./portal-shell-config";
 
 type AppTopbarProps = {
   onAccountOpen: () => void;
@@ -20,7 +25,12 @@ export function AppTopbar({
 }: AppTopbarProps) {
   const user = useAuthSessionStore((state) => state.user);
   const activeItem = getActiveItem(pathname);
-  const notificationCount = getShellNotifications().length;
+  const notificationsQuery = useQuery({
+    enabled: !!user,
+    queryFn: () => fetchNotifications(12),
+    queryKey: notificationsQueryKey(12),
+  });
+  const notificationCount = notificationsQuery.data?.unreadCount ?? 0;
 
   return (
     <header className="sticky top-0 z-30 border-b border-border/70 bg-background/92 backdrop-blur">
@@ -55,7 +65,7 @@ export function AppTopbar({
             <Bell className="size-4" />
             {notificationCount ? (
               <span className="absolute -right-1 -top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.65rem] font-semibold text-primary-foreground">
-                {notificationCount}
+                {notificationCount > 9 ? "9+" : notificationCount}
               </span>
             ) : null}
             <span className="sr-only">Open notifications</span>

@@ -1,5 +1,5 @@
-import { stockSupplyRequests, users, locations } from "@shop/database";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { goodsTransferNotes, stockSupplyRequests } from "@shop/database";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 
 export type SupplyRequestRow = {
@@ -98,7 +98,9 @@ export class PostgresSupplyRequestRepository {
     const row = await this.db.query.stockSupplyRequests.findFirst({
       where: (t, { eq }) => eq(t.id, id),
       with: {
-        requester: { columns: { firstName: true, lastName: true, email: true } },
+        requester: {
+          columns: { firstName: true, lastName: true, email: true },
+        },
         location: { columns: { name: true } },
         sourceLocation: { columns: { name: true } },
       },
@@ -145,38 +147,37 @@ export class PostgresSupplyRequestRepository {
       .from(stockSupplyRequests)
       .where(and(...conditions));
 
-    const rows = await this.db
-      .select({
-        id: stockSupplyRequests.id,
-        reference: stockSupplyRequests.reference,
-        requesterId: stockSupplyRequests.requesterId,
-        locationId: stockSupplyRequests.locationId,
-        sourceLocationId: stockSupplyRequests.sourceLocationId,
-        skuId: stockSupplyRequests.skuId,
-        skuSnapshot: stockSupplyRequests.skuSnapshot,
-        requestedQuantity: stockSupplyRequests.requestedQuantity,
-        approvedQuantity: stockSupplyRequests.approvedQuantity,
-        status: stockSupplyRequests.status,
-        notes: stockSupplyRequests.notes,
-        resolutionNotes: stockSupplyRequests.resolutionNotes,
-        resolvedBy: stockSupplyRequests.resolvedBy,
-        resolvedAt: stockSupplyRequests.resolvedAt,
-        dispatchedBy: stockSupplyRequests.dispatchedBy,
-        dispatchedAt: stockSupplyRequests.dispatchedAt,
-        receivedAt: stockSupplyRequests.receivedAt,
-        createdAt: stockSupplyRequests.createdAt,
-        locationName: locations.name,
-      })
-      .from(stockSupplyRequests)
-      .leftJoin(locations, eq(stockSupplyRequests.locationId, locations.id))
-      .where(and(...conditions))
-      .orderBy(desc(stockSupplyRequests.createdAt))
-      .limit(input.pageSize)
-      .offset((input.page - 1) * input.pageSize);
+    const rows = await this.db.query.stockSupplyRequests.findMany({
+      limit: input.pageSize,
+      offset: (input.page - 1) * input.pageSize,
+      orderBy: (table, { desc }) => [desc(table.createdAt)],
+      where: input.status
+        ? and(
+            eq(stockSupplyRequests.requesterId, input.requesterId),
+            eq(stockSupplyRequests.status, input.status),
+          )
+        : eq(stockSupplyRequests.requesterId, input.requesterId),
+      with: {
+        location: { columns: { name: true } },
+        sourceLocation: { columns: { name: true } },
+      },
+    });
+
+    const gtnReferenceBySupplyRequestId = await loadGtnReferenceMap(
+      this.db,
+      rows.map((row) => row.id),
+    );
 
     return {
       items: rows.map((r) =>
-        toRow(r, null, null, r.locationName ?? null, null, null),
+        toRow(
+          r,
+          null,
+          null,
+          r.location?.name ?? null,
+          r.sourceLocation?.name ?? null,
+          gtnReferenceBySupplyRequestId.get(r.id) ?? null,
+        ),
       ),
       total: countRows[0]?.count ?? 0,
     };
@@ -200,44 +201,43 @@ export class PostgresSupplyRequestRepository {
       .from(stockSupplyRequests)
       .where(and(...conditions));
 
-    const rows = await this.db
-      .select({
-        id: stockSupplyRequests.id,
-        reference: stockSupplyRequests.reference,
-        requesterId: stockSupplyRequests.requesterId,
-        locationId: stockSupplyRequests.locationId,
-        sourceLocationId: stockSupplyRequests.sourceLocationId,
-        skuId: stockSupplyRequests.skuId,
-        skuSnapshot: stockSupplyRequests.skuSnapshot,
-        requestedQuantity: stockSupplyRequests.requestedQuantity,
-        approvedQuantity: stockSupplyRequests.approvedQuantity,
-        status: stockSupplyRequests.status,
-        notes: stockSupplyRequests.notes,
-        resolutionNotes: stockSupplyRequests.resolutionNotes,
-        resolvedBy: stockSupplyRequests.resolvedBy,
-        resolvedAt: stockSupplyRequests.resolvedAt,
-        dispatchedBy: stockSupplyRequests.dispatchedBy,
-        dispatchedAt: stockSupplyRequests.dispatchedAt,
-        receivedAt: stockSupplyRequests.receivedAt,
-        createdAt: stockSupplyRequests.createdAt,
-        requesterFirstName: users.firstName,
-        requesterLastName: users.lastName,
-        requesterEmail: users.email,
-      })
-      .from(stockSupplyRequests)
-      .leftJoin(users, eq(stockSupplyRequests.requesterId, users.id))
-      .where(and(...conditions))
-      .orderBy(desc(stockSupplyRequests.createdAt))
-      .limit(input.pageSize)
-      .offset((input.page - 1) * input.pageSize);
+    const rows = await this.db.query.stockSupplyRequests.findMany({
+      limit: input.pageSize,
+      offset: (input.page - 1) * input.pageSize,
+      orderBy: (table, { desc }) => [desc(table.createdAt)],
+      where: input.status
+        ? and(
+            eq(stockSupplyRequests.sourceLocationId, input.sourceLocationId),
+            eq(stockSupplyRequests.status, input.status),
+          )
+        : eq(stockSupplyRequests.sourceLocationId, input.sourceLocationId),
+      with: {
+        requester: {
+          columns: { firstName: true, lastName: true, email: true },
+        },
+        location: { columns: { name: true } },
+        sourceLocation: { columns: { name: true } },
+      },
+    });
+
+    const gtnReferenceBySupplyRequestId = await loadGtnReferenceMap(
+      this.db,
+      rows.map((row) => row.id),
+    );
 
     return {
       items: rows.map((r) => {
-        const requesterName =
-          r.requesterFirstName && r.requesterLastName
-            ? `${r.requesterFirstName} ${r.requesterLastName}`.trim()
-            : null;
-        return toRow(r, requesterName, r.requesterEmail ?? null, null, null, null);
+        const requesterName = r.requester
+          ? `${r.requester.firstName} ${r.requester.lastName}`.trim() || null
+          : null;
+        return toRow(
+          r,
+          requesterName,
+          r.requester?.email ?? null,
+          r.location?.name ?? null,
+          r.sourceLocation?.name ?? null,
+          gtnReferenceBySupplyRequestId.get(r.id) ?? null,
+        );
       }),
       total: countRows[0]?.count ?? 0,
     };
@@ -317,7 +317,27 @@ export class PostgresSupplyRequestRepository {
     return row ? toRow(row, null, null, null, null, null) : null;
   }
 
-  async findGtnBySupplyRequest(supplyRequestId: string): Promise<GtnRow | null> {
+  async cancelById(input: {
+    id: string;
+    now: Date;
+  }): Promise<SupplyRequestRow | null> {
+    const [row] = await this.db
+      .update(stockSupplyRequests)
+      .set({ status: "cancelled", updatedAt: input.now })
+      .where(
+        and(
+          eq(stockSupplyRequests.id, input.id),
+          sql`${stockSupplyRequests.status} IN ('pending', 'approved')`,
+        ),
+      )
+      .returning();
+
+    return row ? toRow(row, null, null, null, null, null) : null;
+  }
+
+  async findGtnBySupplyRequest(
+    supplyRequestId: string,
+  ): Promise<GtnRow | null> {
     const gtn = await this.db.query.goodsTransferNotes.findFirst({
       where: (t, { eq }) => eq(t.supplyRequestId, supplyRequestId),
       with: {
@@ -450,4 +470,23 @@ function toGtnRow(gtn: {
     notes: gtn.notes,
     createdAt: gtn.createdAt,
   };
+}
+
+async function loadGtnReferenceMap(
+  db: ApiDatabase,
+  supplyRequestIds: string[],
+): Promise<Map<string, string>> {
+  if (supplyRequestIds.length === 0) {
+    return new Map();
+  }
+
+  const rows = await db
+    .select({
+      reference: goodsTransferNotes.reference,
+      supplyRequestId: goodsTransferNotes.supplyRequestId,
+    })
+    .from(goodsTransferNotes)
+    .where(inArray(goodsTransferNotes.supplyRequestId, supplyRequestIds));
+
+  return new Map(rows.map((row) => [row.supplyRequestId, row.reference]));
 }

@@ -42,8 +42,8 @@ export const confirmReceiptSchema = z.object({
 });
 
 export const stockSupplyRequestResponseSchema = z.object({
-  id: z.string().uuid(),
   reference: z.string(),
+  supplyRequestId: z.string().uuid(),
 
   requesterId: z.string().uuid(),
   requesterName: z.string().nullable(),
@@ -96,8 +96,21 @@ export const stockSupplyRequestListQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(25),
 });
 
+export const supplyRequestSourceListQuerySchema = z.object({
+  destinationLocationId: z.string().uuid(),
+});
+
+export const supplyRequestSourceOptionSchema = z.object({
+  locationId: z.string().uuid(),
+  locationName: z.string().min(1).max(160),
+});
+
+export const supplyRequestSourceListResponseSchema = z.object({
+  items: z.array(supplyRequestSourceOptionSchema),
+});
+
 export const gtnResponseSchema = z.object({
-  id: z.string().uuid(),
+  gtnId: z.string().uuid(),
   reference: z.string(),
   supplyRequestId: z.string().uuid(),
   supplyRequestReference: z.string(),
@@ -133,4 +146,6 @@ export type ConfirmReceipt = z.infer<typeof confirmReceiptSchema>;
 export type StockSupplyRequestResponse = z.infer<typeof stockSupplyRequestResponseSchema>;
 export type StockSupplyRequestListResponse = z.infer<typeof stockSupplyRequestListResponseSchema>;
 export type StockSupplyRequestListQuery = z.infer<typeof stockSupplyRequestListQuerySchema>;
+export type SupplyRequestSourceListQuery = z.infer<typeof supplyRequestSourceListQuerySchema>;
+export type SupplyRequestSourceListResponse = z.infer<typeof supplyRequestSourceListResponseSchema>;
 export type GtnResponse = z.infer<typeof gtnResponseSchema>;

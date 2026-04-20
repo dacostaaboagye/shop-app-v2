@@ -1,0 +1,127 @@
+import type { StockSupplyRequestResponse } from "@shop/contracts";
+import { ClipboardList } from "lucide-react";
+import { AppEmptyState } from "@/components/system/app-empty-state";
+import { Button } from "@/components/ui/button";
+import { SupplyRequestCard } from "./manager-supply-request-card";
+import { CompactIncomingRequestList } from "./manager-supply-request-compact-list";
+import { RequestToolbar } from "./manager-supply-request-toolbar";
+import {
+  type RequestFilter,
+  type SupplyRequestAction,
+  type SupplyRequestCounts,
+  type ViewMode,
+} from "./manager-supply-requests.support";
+
+type Props = {
+  allItems: StockSupplyRequestResponse[];
+  counts: SupplyRequestCounts;
+  filteredItems: StockSupplyRequestResponse[];
+  search: string;
+  statusFilter: RequestFilter;
+  viewMode: ViewMode;
+  onAction: (action: SupplyRequestAction, item: StockSupplyRequestResponse) => void;
+  onSearchChange: (value: string) => void;
+  onStatusFilterChange: (value: RequestFilter) => void;
+  onViewModeChange: (value: ViewMode) => void;
+};
+
+export function IncomingRequestList({
+  allItems,
+  counts,
+  filteredItems,
+  onAction,
+  onSearchChange,
+  onStatusFilterChange,
+  onViewModeChange,
+  search,
+  statusFilter,
+  viewMode,
+}: Props) {
+  if (allItems.length === 0) {
+    return (
+      <AppEmptyState
+        description="No supply requests have been directed to this location yet."
+        icon={ClipboardList}
+        kind="no-data"
+        title="No incoming requests"
+      />
+    );
+  }
+
+  const hasActiveFilter = statusFilter !== "all" || search.trim() !== "";
+
+  return (
+    <div className="flex flex-col gap-4">
+      <RequestToolbar
+        counts={counts}
+        onSearchChange={onSearchChange}
+        onStatusFilterChange={onStatusFilterChange}
+        onViewModeChange={onViewModeChange}
+        search={search}
+        statusFilter={statusFilter}
+        viewMode={viewMode}
+      />
+
+      {hasActiveFilter ? (
+        <p className="text-xs text-muted-foreground">
+          {filteredItems.length === 0
+            ? "No requests match your filters."
+            : `Showing ${filteredItems.length} of ${allItems.length}`}
+        </p>
+      ) : null}
+
+      <RequestResults
+        filteredItems={filteredItems}
+        onAction={onAction}
+        onClearFilters={() => {
+          onSearchChange("");
+          onStatusFilterChange("all");
+        }}
+        viewMode={viewMode}
+      />
+    </div>
+  );
+}
+
+function RequestResults({
+  filteredItems,
+  onAction,
+  onClearFilters,
+  viewMode,
+}: {
+  filteredItems: StockSupplyRequestResponse[];
+  onAction: (action: SupplyRequestAction, item: StockSupplyRequestResponse) => void;
+  onClearFilters: () => void;
+  viewMode: ViewMode;
+}) {
+  if (filteredItems.length === 0) {
+    return (
+      <AppEmptyState
+        action={
+          <Button onClick={onClearFilters} size="sm" variant="outline">
+            Clear filters
+          </Button>
+        }
+        description="Try a different search term or status filter."
+        kind="no-results"
+        title="No matching requests"
+      />
+    );
+  }
+
+  if (viewMode === "compact") {
+    return <CompactIncomingRequestList items={filteredItems} onAction={onAction} />;
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {filteredItems.map((item) => (
+        <SupplyRequestCard
+          item={item}
+          key={item.supplyRequestId}
+          onAction={(action) => onAction(action, item)}
+        />
+      ))}
+    </div>
+  );
+}

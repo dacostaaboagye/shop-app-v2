@@ -115,6 +115,18 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
     description: "View the admin supplier management surface.",
   },
   {
+    key: "settings.documents.view",
+    description: "View official document, brand, and money settings.",
+  },
+  {
+    key: "settings.documents.manage",
+    description: "Manage official document, brand, and money settings.",
+  },
+  {
+    key: "settings.location_documents.manage",
+    description: "Manage allowed document overrides for assigned locations.",
+  },
+  {
     key: "stock.view",
     description: "View location stock levels and availability.",
   },
@@ -222,9 +234,13 @@ const SYSTEM_ROLES: readonly SystemRole[] = [
       "orders.view",
       "deliveries.view",
       "suppliers.view",
+      "settings.documents.view",
+      "settings.documents.manage",
+      "settings.location_documents.manage",
       "stock.view",
       "transfers.view",
       "staff.view",
+      "settings.location_documents.manage",
       "worker.assignments.view",
       "worker.handovers.view",
       "worker.stock.view",

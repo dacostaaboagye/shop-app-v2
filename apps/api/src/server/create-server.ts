@@ -17,6 +17,10 @@ import { registerCatalogAdminWriteRoutes } from "../modules/catalog/catalog-admi
 import { registerCatalogBrandRoutes } from "../modules/catalog/catalog-brand.routes.js";
 import { registerCatalogMediaRoutes } from "../modules/catalog/catalog-media.routes.js";
 import { registerCatalogManagerQueryRoutes } from "../modules/catalog/catalog-manager-query.routes.js";
+import { registerPlatformEventAdminRoutes } from "../modules/events/platform-event-admin.routes.js";
+import { registerPlatformEventRoutes } from "../modules/events/platform-events.routes.js";
+import { registerNotificationRoutes } from "../modules/notifications/notification.routes.js";
+import { registerOfficialDocumentSettingsRoutes } from "../modules/official-documents/official-document-settings.routes.js";
 import { registerManagerStaffRoutes } from "../modules/assignments/manager-staff.routes.js";
 import { registerStockAssignmentRoutes } from "../modules/assignments/stock-assignment.routes.js";
 import { registerPosSaleRoutes } from "../modules/sales/pos-sale.routes.js";
@@ -39,6 +43,10 @@ type CreateServerOptions = {
   catalogManagerQuery?: Parameters<typeof registerCatalogManagerQueryRoutes>[1];
   catalogBrands?: Parameters<typeof registerCatalogBrandRoutes>[1];
   catalogMedia?: Parameters<typeof registerCatalogMediaRoutes>[1];
+  events?: Parameters<typeof registerPlatformEventRoutes>[1];
+  eventsAdmin?: Parameters<typeof registerPlatformEventAdminRoutes>[1];
+  notifications?: Parameters<typeof registerNotificationRoutes>[1];
+  officialDocuments?: Parameters<typeof registerOfficialDocumentSettingsRoutes>[1];
   catalogProductOptions?: Parameters<
     typeof registerCatalogProductOptionsRoutes
   >[1];
@@ -94,6 +102,10 @@ export function createServer(options: CreateServerOptions = {}) {
   registerCatalogAdminQueryRoutes(server, options.catalogQuery);
   registerCatalogAdminWriteRoutes(server, options.catalogWrite);
   registerCatalogProductOptionsRoutes(server, options.catalogProductOptions);
+  registerPlatformEventRoutes(server, options.events);
+  registerPlatformEventAdminRoutes(server, options.eventsAdmin);
+  registerNotificationRoutes(server, options.notifications);
+  registerOfficialDocumentSettingsRoutes(server, options.officialDocuments);
   registerStockRoutes(server, options.stock);
   registerStockBalanceRoutes(server, options.stockBalance);
   registerStockBalanceLocationRoutes(server, options.stockBalanceLocation);

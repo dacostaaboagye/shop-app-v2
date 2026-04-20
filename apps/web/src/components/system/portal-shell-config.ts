@@ -78,10 +78,6 @@ export function isPortalItemActive(item: PortalNavItem, pathname: string) {
   return getItemMatchScore(item, pathname) >= 0;
 }
 
-export function getShellNotifications() {
-  return SHELL_META.notifications;
-}
-
 export function canAccessPortalItem(
   item: Pick<PortalNavItem, "requiredPermission">,
   ability: Pick<PermissionAbility, "can">,

@@ -8,13 +8,13 @@ export const variantSearchQuerySchema = z.object({
 });
 
 export const variantSearchResultSchema = z.object({
-  id: z.string().uuid(),
   name: z.string(),
   onHandQuantity: z.number().int().min(0),
   productName: z.string(),
   productSlug: z.string(),
   sellingPrice: z.string(),
   sku: z.string(),
+  variantId: z.string().uuid(),
 });
 
 export const variantSearchResponseSchema = z.object({

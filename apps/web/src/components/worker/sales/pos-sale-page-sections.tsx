@@ -138,7 +138,7 @@ export function CartRow({
             aria-label="Unit price"
             className={`h-9 w-24 rounded-md border bg-background px-2 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-primary ${
               isCustomPrice
-                ? "border-amber-400 text-amber-700"
+                ? "border-warning text-warning-foreground"
                 : "border-border text-foreground"
             }`}
             min="0"

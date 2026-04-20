@@ -1,9 +1,11 @@
 import {
   ArrowLeftRight,
   BarChart3,
+  Bell,
   Boxes,
   ClipboardList,
   Package,
+  Settings,
   Receipt,
   Route as RouteIcon,
   ShoppingCart,
@@ -14,6 +16,16 @@ import { toRoute } from "@/lib/routes";
 import type { NavRegistryEntry, ShellMeta } from "./portal-shell-config.types";
 
 export const SECONDARY_NAV_REGISTRY: readonly NavRegistryEntry[] = [
+  {
+    activeMatchers: [{ mode: "descendants", path: "/manager/notifications" }],
+    description: "Operational updates for the locations you manage.",
+    href: toRoute("/manager/notifications"),
+    icon: Bell,
+    label: "Notifications",
+    requiredPermission: "manager.dashboard.view",
+    section: "Overview",
+    sidebar: false,
+  },
   {
     activeMatchers: [{ mode: "descendants", path: "/manager/stock" }],
     description: "Current stock levels and availability at this location.",
@@ -40,6 +52,25 @@ export const SECONDARY_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     label: "Staff",
     requiredPermission: "staff.view",
     section: "People",
+  },
+  {
+    activeMatchers: [{ mode: "descendants", path: "/manager/settings/documents" }],
+    description: "Configure official printed details for managed locations.",
+    href: toRoute("/manager/settings/documents"),
+    icon: Settings,
+    label: "Location documents",
+    requiredPermission: "settings.location_documents.manage",
+    section: "Operations",
+  },
+  {
+    activeMatchers: [{ mode: "descendants", path: "/worker/notifications" }],
+    description: "Operational updates affecting your day-to-day work.",
+    href: toRoute("/worker/notifications"),
+    icon: Bell,
+    label: "Notifications",
+    requiredPermission: "worker.dashboard.view",
+    section: "My work",
+    sidebar: false,
   },
   {
     activeMatchers: [{ mode: "descendants", path: "/worker/stock" }],
@@ -149,30 +180,4 @@ export const SHELL_META: ShellMeta = {
   emptyNotificationCopy:
     "Events, alerts, and updates relevant to your role will appear here.",
   heading: "Shop operations",
-  notifications: [
-    {
-      body: "Managers and workers with invalid assignments will surface here once user management ships.",
-      id: "admin-access-audit",
-      timeLabel: "Queued for E-01-06",
-      title: "Access review feed",
-    },
-    {
-      body: "Low-stock and reservation pressure summaries will be grouped by location in the shared bell tray.",
-      id: "admin-stock-watch",
-      timeLabel: "Queued for E-01-09",
-      title: "Operations watchlist",
-    },
-    {
-      body: "Pending transfers, low-stock thresholds, and team activity will consolidate into this feed.",
-      id: "manager-ops-feed",
-      timeLabel: "Queued for E-02-02",
-      title: "Location events",
-    },
-    {
-      body: "Assignment changes and handover requests will feed into this tray once task workflows ship.",
-      id: "worker-task-feed",
-      timeLabel: "Queued for worker task backlog",
-      title: "Task updates",
-    },
-  ],
 };

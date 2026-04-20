@@ -9,9 +9,12 @@
     "db:seed-admin": "tsx --env-file ../../.env.local scripts/seed-admin.ts",
     "db:seed-catalog": "tsx --env-file ../../.env.local scripts/seed-catalog.ts",
     "dev": "tsx watch --env-file ../../.env.local src/index.ts",
+    "dev:events": "tsx watch --env-file ../../.env.local src/workers/platform-event-delivery-worker.ts",
+    "events:worker": "tsx --env-file ../../.env.local src/workers/platform-event-delivery-worker.ts",
     "lint": "biome check src test",
     "predev": "pnpm --filter @shop/contracts build",
     "pretest": "pnpm --filter @shop/contracts build",
+    "start:events": "node dist/src/workers/platform-event-delivery-worker.js",
     "test": "tsx --test test/**/*.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

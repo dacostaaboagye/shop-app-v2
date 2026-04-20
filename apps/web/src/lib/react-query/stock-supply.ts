@@ -5,6 +5,7 @@ import type {
   DispatchStockSupplyRequest,
   GtnResponse,
   RejectStockSupplyRequest,
+  SupplyRequestSourceListResponse,
   StockSupplyRequestListResponse,
   StockSupplyRequestResponse,
   SupplyRequestStatus,
@@ -28,11 +29,15 @@ export const managerIncomingSupplyRequestsQueryKey = (
 
 export const gtnQueryKey = (id: string) => ["gtn", id] as const;
 
-export const locationsQueryKey = () => ["locations"] as const;
+export const supplyRequestSourcesQueryKey = (destinationLocationId: string) =>
+  ["supply-request-sources", destinationLocationId] as const;
 
-export async function fetchLocations(): Promise<{ items: { id: string; name: string }[] }> {
-  return fetchJson<{ items: { id: string; name: string }[] }>(
-    "/api/locations",
+export async function fetchSupplyRequestSources(
+  destinationLocationId: string,
+): Promise<SupplyRequestSourceListResponse> {
+  const params = new URLSearchParams({ destinationLocationId });
+  return fetchJson<SupplyRequestSourceListResponse>(
+    `/api/worker/stock/supply-request-sources?${params.toString()}`,
     undefined,
     { auth: "required" },
   );

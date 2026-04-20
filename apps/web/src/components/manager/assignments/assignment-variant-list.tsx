@@ -75,9 +75,9 @@ export function AssignmentVariantList({
         ) : (
           <ul className="max-h-80 divide-y divide-border overflow-y-auto">
             {items.map((variant) => {
-              const isChecked = selectedIds.has(variant.id);
+              const isChecked = selectedIds.has(variant.variantId);
               return (
-                <li key={variant.id}>
+                <li key={variant.variantId}>
                   <label
                     className={cn(
                       "flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-accent/40",
@@ -104,7 +104,7 @@ export function AssignmentVariantList({
                         className={cn(
                           "text-xs tabular-nums",
                           variant.onHandQuantity <= 5
-                            ? "text-amber-600"
+                            ? "text-warning-foreground"
                             : "text-muted-foreground",
                         )}
                       >

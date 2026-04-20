@@ -13,6 +13,10 @@ export type ApiEnv = {
   googleClientId?: string;
   googleClientSecret?: string;
   nodeEnv: NodeEnv;
+  platformEventDeliveryBatchSize: number;
+  platformEventDeliveryEnabled: boolean;
+  platformEventDeliveryPollIntervalMs: number;
+  platformEventDeliveryProcessingLeaseMs: number;
   r2AccountId?: string;
   r2AccessKeyId?: string;
   r2Bucket?: string;
@@ -54,6 +58,14 @@ export function getApiEnv(): ApiEnv {
     ...(googleClientSecret ? { googleClientSecret } : {}),
     ...(googleCallbackUrl ? { googleCallbackUrl } : {}),
     nodeEnv,
+    platformEventDeliveryBatchSize:
+      readNumberEnv("PLATFORM_EVENT_DELIVERY_BATCH_SIZE") ?? 20,
+    platformEventDeliveryEnabled:
+      readBooleanEnv("PLATFORM_EVENT_DELIVERY_ENABLED") ?? true,
+    platformEventDeliveryPollIntervalMs:
+      readNumberEnv("PLATFORM_EVENT_DELIVERY_POLL_INTERVAL_MS") ?? 2_000,
+    platformEventDeliveryProcessingLeaseMs:
+      readNumberEnv("PLATFORM_EVENT_DELIVERY_PROCESSING_LEASE_MS") ?? 60_000,
     ...(r2AccountId ? { r2AccountId } : {}),
     ...(r2AccessKeyId ? { r2AccessKeyId } : {}),
     ...(r2SecretAccessKey ? { r2SecretAccessKey } : {}),

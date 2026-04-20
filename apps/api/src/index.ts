@@ -6,6 +6,13 @@ import { createAssignmentsRuntime } from "./modules/assignments/create-assignmen
 import { createAuthRuntime } from "./modules/auth/create-auth-runtime.js";
 import { createCatalogRuntime } from "./modules/catalog/create-catalog-runtime.js";
 import { PostgresVariantSearchRepository } from "./modules/catalog/postgres-variant-search.repository.js";
+import { createPlatformEventRuntime } from "./modules/events/create-platform-event-runtime.js";
+import { InMemoryPlatformEventBus } from "./modules/events/in-memory-platform-event-bus.js";
+import { NotificationQueryService } from "./modules/notifications/notification-query.service.js";
+import { NotificationWriteService } from "./modules/notifications/notification-write.service.js";
+import { PostgresNotificationQueryRepository } from "./modules/notifications/postgres-notification-query.repository.js";
+import { PostgresNotificationWriteRepository } from "./modules/notifications/postgres-notification-write.repository.js";
+import { createOfficialDocumentSettingsRuntime } from "./modules/official-documents/create-official-document-settings-runtime.js";
 import { createSalesRuntime } from "./modules/sales/create-sales-runtime.js";
 import { createStockRuntime } from "./modules/stock/create-stock-runtime.js";
 import { createServer } from "./server/create-server.js";
@@ -18,12 +25,28 @@ if (!env.databaseUrl) {
 
 const databaseRuntime = createDatabaseRuntime(env.databaseUrl);
 const storage = createR2StorageService(env);
+const eventBus = new InMemoryPlatformEventBus();
 const adminDirectoryRuntime = createAdminDirectoryRuntime(databaseRuntime);
 const authRuntime = createAuthRuntime(databaseRuntime, env);
 const catalogRuntime = createCatalogRuntime(databaseRuntime, storage);
-const stockRuntime = createStockRuntime(databaseRuntime);
 const salesRuntime = createSalesRuntime(databaseRuntime);
 const assignmentsRuntime = createAssignmentsRuntime(databaseRuntime);
+const platformEventRuntime = createPlatformEventRuntime({
+  databaseRuntime,
+  env,
+  livePublisher: eventBus,
+  permissionService: authRuntime.accessControl.permissionService,
+});
+const stockRuntime = createStockRuntime(databaseRuntime, {
+  platformEventPublisher: platformEventRuntime.platformEventPublisher,
+});
+const notificationQueryService = new NotificationQueryService(
+  new PostgresNotificationQueryRepository(databaseRuntime.db),
+);
+const notificationWriteService = new NotificationWriteService(
+  new PostgresNotificationWriteRepository(databaseRuntime.db),
+);
+const officialDocumentRuntime = createOfficialDocumentSettingsRuntime(databaseRuntime);
 const server = createServer({
   accessControl: authRuntime.accessControl,
   adminAccess: adminDirectoryRuntime.adminDirectory,
@@ -37,6 +60,22 @@ const server = createServer({
   },
   catalogBrands: catalogRuntime.catalog,
   catalogMedia: catalogRuntime.catalog,
+  events: {
+    eventSubscriber: eventBus,
+    permissionService: authRuntime.accessControl.permissionService,
+  },
+  eventsAdmin: {
+    deliveryHealthService:
+      platformEventRuntime.platformEventDeliveryHealthService,
+  },
+  notifications: {
+    notificationQueryService,
+    notificationWriteService,
+  },
+  officialDocuments: {
+    permissionService: authRuntime.accessControl.permissionService,
+    settingsService: officialDocumentRuntime.officialDocuments.settingsService,
+  },
   catalogProductOptions: {
     optionsRepo: catalogRuntime.catalog.productOptionsRepo,
   },
@@ -53,17 +92,25 @@ const server = createServer({
   stockCount: stockRuntime.stock,
   stockSupply: {
     locationRepository: stockRuntime.stock.locationRepository,
+    permissionService: authRuntime.accessControl.permissionService,
     referenceNumberService: stockRuntime.stock.referenceNumberService,
     supplyRequestRepository: stockRuntime.stock.supplyRequestRepository,
     supplyService: stockRuntime.stock.supplyService,
     variantSnapshotRepository: stockRuntime.stock.variantSnapshotRepository,
   },
 });
+server.addHook("onClose", async () => {
+  platformEventRuntime.platformEventDeliveryLoop.stop();
+});
 
 try {
+  if (env.platformEventDeliveryEnabled) {
+    platformEventRuntime.platformEventDeliveryLoop.start();
+  }
   await server.listen({ host: env.apiHost, port: env.apiPort });
   server.log.info(`API listening on http://${env.apiHost}:${env.apiPort}`);
 } catch (error) {
+  platformEventRuntime.platformEventDeliveryLoop.stop();
   server.log.error(error);
   process.exit(1);
 }

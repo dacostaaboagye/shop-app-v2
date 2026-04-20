@@ -29,14 +29,14 @@ export function AssignmentQuantityEditor({
         const atMax = quantity >= max;
 
         return (
-          <div className="flex items-center gap-3 px-4 py-3" key={variant.id}>
+          <div className="flex items-center gap-3 px-4 py-3" key={variant.variantId}>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium leading-snug">
                 {variant.productName}
               </p>
               <p className="truncate text-xs text-muted-foreground">
                 {variant.name} &middot; {variant.sku} &middot;{" "}
-                <span className={cn(atMax ? "text-amber-600" : "")}>
+                <span className={cn(atMax ? "text-warning-foreground" : "")}>
                   {max} available
                 </span>
               </p>
@@ -47,7 +47,7 @@ export function AssignmentQuantityEditor({
                 aria-label="Decrease quantity"
                 className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={quantity <= 1}
-                onClick={() => onQuantityChange(variant.id, quantity - 1)}
+                onClick={() => onQuantityChange(variant.variantId, quantity - 1)}
                 type="button"
               >
                 <Minus className="size-3" />
@@ -60,7 +60,7 @@ export function AssignmentQuantityEditor({
                 onChange={(e) => {
                   const val = parseInt(e.target.value, 10);
                   if (!isNaN(val)) {
-                    onQuantityChange(variant.id, Math.min(Math.max(1, val), max));
+                    onQuantityChange(variant.variantId, Math.min(Math.max(1, val), max));
                   }
                 }}
                 type="number"
@@ -71,7 +71,7 @@ export function AssignmentQuantityEditor({
                 className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={atMax}
                 onClick={() =>
-                  onQuantityChange(variant.id, Math.min(quantity + 1, max))
+                  onQuantityChange(variant.variantId, Math.min(quantity + 1, max))
                 }
                 type="button"
               >
@@ -82,7 +82,7 @@ export function AssignmentQuantityEditor({
             <button
               aria-label={`Remove ${variant.name}`}
               className="ml-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-              onClick={() => onRemove(variant.id)}
+              onClick={() => onRemove(variant.variantId)}
               type="button"
             >
               <X className="size-3.5" />

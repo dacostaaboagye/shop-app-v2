@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
 import { useInterfacePreferencesStore } from "@/store/use-interface-preferences-store";
 import {
+  getActiveItem,
   getShellConfig,
   getVisibleNavSections,
   isPortalItemActive,
@@ -45,6 +46,8 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
   const navigateProps = onNavigate ? { onClick: onNavigate } : {};
 
   const activeLinkRef = React.useRef<HTMLAnchorElement>(null);
+
+  const activeItem = React.useMemo(() => getActiveItem(pathname), [pathname]);
 
   // Default to expanding sections that contain the active item
   const activeSectionTitles = React.useMemo(() => {
@@ -75,12 +78,23 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
 
   const expandedValue = sidebarExpandedSections ?? activeSectionTitles;
 
+  // Auto-scroll active item into view
+  React.useEffect(() => {
+    if (activeLinkRef.current) {
+      activeLinkRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }
+  }, [pathname, activeItem]);
+
   return (
     <aside className="flex h-full flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
       <div className="border-b border-sidebar-border px-4 py-4">
         <Link
           href={toRoute("/")}
           {...navigateProps}
+          scroll={false}
           className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-sidebar-accent"
         >
           <div className="flex size-10 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
@@ -136,7 +150,7 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
                     <AccordionContent>
                       <div className="mt-1 flex flex-col gap-0.5 pt-1 pl-2">
                         {section.items.map((item) => {
-                          const active = isPortalItemActive(item, pathname);
+                          const active = activeItem?.href === item.href;
                           const Icon = item.icon;
 
                           return (
@@ -145,6 +159,7 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
                               href={item.href}
                               ref={active ? activeLinkRef : undefined}
                               {...navigateProps}
+                              scroll={false}
                               className={cn(
                                 "group/link relative flex items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 transition-all duration-200",
                                 active

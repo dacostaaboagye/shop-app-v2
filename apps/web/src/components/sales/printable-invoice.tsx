@@ -1,32 +1,15 @@
 "use client";
 
 import { forwardRef } from "react";
-
-export type PrintableInvoiceLine = {
-  skuId: string;
-  skuSnapshot: { sku: string; variantName: string; productName: string };
-  quantity: number;
-  unitPrice: string;
-  taxAmount: string;
-  lineTotal: string;
-};
-
-export type PrintableInvoiceData = {
-  reference: string;
-  type: string;
-  status: string;
-  paymentMethod: string | null;
-  subtotalAmount: string;
-  taxAmount: string;
-  totalAmount: string;
-  confirmedAt: string | null;
-  createdAt: string;
-  notes: string | null;
-  attributedWorkerId?: string | null;
-  attributedWorkerName?: string | null;
-  attributedWorkerEmail?: string | null;
-  lines: PrintableInvoiceLine[];
-};
+import {
+  DEFAULT_OFFICIAL_DOCUMENT_PROFILE,
+  type OfficialDocumentProfile,
+} from "@/lib/documents/official-document-profile";
+import {
+  formatDocumentMoney,
+  getSalesDocumentTitle,
+} from "@/lib/documents/sales-document";
+import type { PrintableInvoiceData } from "@/lib/documents/sales-document";
 
 const SEP = "- - - - - - - - - - - - - - - - - -";
 
@@ -36,19 +19,15 @@ function fmt(s: string): string {
 
 export const PrintableInvoice = forwardRef<
   HTMLDivElement,
-  { invoice: PrintableInvoiceData }
->(({ invoice }, ref) => {
-  const date = invoice.confirmedAt
-    ? new Date(invoice.confirmedAt)
-    : new Date(invoice.createdAt);
-
+  { invoice: PrintableInvoiceData; profile?: OfficialDocumentProfile }
+>(({ invoice, profile = DEFAULT_OFFICIAL_DOCUMENT_PROFILE }, ref) => {
+  const date = new Date(invoice.confirmedAt ?? invoice.createdAt);
   const paymentLabel =
     invoice.paymentMethod === "mobile_money"
       ? "Mobile Money"
       : invoice.paymentMethod
         ? fmt(invoice.paymentMethod)
-        : "—";
-
+        : "Not recorded";
   const isCredit = invoice.type === "credit_note";
   const showTaxLine = parseFloat(invoice.taxAmount) > 0;
   const showSubtotal =
@@ -58,128 +37,148 @@ export const PrintableInvoice = forwardRef<
     <div
       ref={ref}
       style={{
-        fontFamily: "'Courier New', Courier, monospace",
+        backgroundColor: "white",
+        color: "black",
+        fontFamily: "'Source Sans 3', 'Segoe UI', sans-serif",
         fontSize: "12px",
         lineHeight: "1.55",
-        width: "100%",
         padding: "8px 14px 16px",
-        color: "#000",
-        backgroundColor: "#fff",
+        width: "100%",
       }}
     >
-      {/* Header */}
-      <div style={{ textAlign: "center", marginBottom: "10px" }}>
+      <header style={{ borderTop: `6px solid ${profile.primaryColor}`, paddingTop: "10px" }}>
+        <div style={{ display: "flex", gap: "8px", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <div
+              style={{
+                alignItems: "center",
+                backgroundColor: profile.primaryColor,
+                color: "white",
+                display: "flex",
+                fontSize: "13px",
+                fontWeight: "bold",
+                height: "36px",
+                justifyContent: "center",
+                letterSpacing: "1px",
+                width: "36px",
+              }}
+            >
+              {profile.logoText}
+            </div>
+            <div>
+              <p style={{ fontWeight: "bold", margin: 0 }}>{profile.brandName}</p>
+              <p style={{ color: "dimgray", fontSize: "9px", margin: 0 }}>
+                {profile.legalName}
+              </p>
+            </div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <p style={{ fontWeight: "bold", margin: 0 }}>
+              {getSalesDocumentTitle(invoice)}
+            </p>
+            <p style={{ color: "dimgray", fontSize: "9px", margin: 0 }}>
+              {invoice.status.toUpperCase()}
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <div style={{ margin: "12px 0 10px", textAlign: "center" }}>
         <p
           style={{
-            fontSize: "20px",
+            fontSize: "18px",
             fontWeight: "bold",
-            letterSpacing: "4px",
+            letterSpacing: "3px",
             margin: "0 0 2px",
           }}
         >
-          RECEIPT
+          OFFICIAL DOCUMENT
         </p>
-        {isCredit && (
+        {isCredit ? (
           <p style={{ fontSize: "11px", fontWeight: "bold", margin: 0 }}>
             *** CREDIT / RETURN ***
           </p>
-        )}
+        ) : null}
       </div>
 
-      <p style={{ textAlign: "center", fontSize: "10px", color: "#555", margin: "0 0 8px" }}>
-        {SEP}
-      </p>
+      <Separator />
 
-      {/* Invoice meta */}
-      <div style={{ marginBottom: "8px" }}>
+      <section style={{ marginBottom: "8px" }}>
         <Row label="Ref" value={invoice.reference} bold />
-        <Row
-          label="Date"
-          value={date.toLocaleDateString(undefined, {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          })}
-        />
-        <Row
-          label="Time"
-          value={date.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        />
+        <Row label="Date" value={date.toLocaleDateString(profile.locale, { timeZone: profile.timezone })} />
+        <Row label="Time" value={date.toLocaleTimeString(profile.locale, { hour: "2-digit", minute: "2-digit", timeZone: profile.timezone })} />
         <Row label="Payment" value={paymentLabel} />
-      </div>
+        <Row label="Currency" value={profile.currencyCode} />
+        <Row label="Tax ID" value={profile.taxNumber} />
+      </section>
 
-      <p style={{ textAlign: "center", fontSize: "10px", color: "#555", margin: "0 0 8px" }}>
-        {SEP}
-      </p>
+      <Separator />
 
-      {/* Line items */}
-      <div style={{ marginBottom: "8px" }}>
+      <section style={{ marginBottom: "8px" }}>
         {invoice.lines.map((line) => (
           <div key={line.skuId} style={{ marginBottom: "8px" }}>
             <p style={{ fontWeight: "bold", margin: "0 0 1px", wordBreak: "break-word" }}>
               {line.skuSnapshot.productName}
             </p>
-            <p style={{ margin: "0 0 2px", fontSize: "11px", color: "#444" }}>
+            <p style={{ color: "darkslategray", fontSize: "11px", margin: "0 0 2px" }}>
               {line.skuSnapshot.variantName}
             </p>
-            <div
-              style={{ display: "flex", justifyContent: "space-between", gap: "8px" }}
-            >
+            <div style={{ display: "flex", gap: "8px", justifyContent: "space-between" }}>
               <span>
-                {line.quantity} &times; {line.unitPrice}
+                {line.quantity} &times; {formatDocumentMoney(line.unitPrice, profile)}
               </span>
-              <span style={{ fontWeight: "bold" }}>{line.lineTotal}</span>
+              <span style={{ fontWeight: "bold" }}>
+                {formatDocumentMoney(line.lineTotal, profile)}
+              </span>
             </div>
           </div>
         ))}
-      </div>
+      </section>
 
-      <p style={{ textAlign: "center", fontSize: "10px", color: "#555", margin: "0 0 8px" }}>
-        {SEP}
-      </p>
+      <Separator />
 
-      {/* Totals */}
-      <div style={{ marginBottom: "8px" }}>
-        {showSubtotal && <Row label="Subtotal" value={invoice.subtotalAmount} />}
-        {showTaxLine && <Row label="Tax" value={invoice.taxAmount} />}
-        <Row
-          label="TOTAL"
-          value={invoice.totalAmount}
-          bold
-          large
-        />
-      </div>
+      <section style={{ marginBottom: "8px" }}>
+        {showSubtotal ? (
+          <Row label="Subtotal" value={formatDocumentMoney(invoice.subtotalAmount, profile)} />
+        ) : null}
+        {showTaxLine ? (
+          <Row label="Tax" value={formatDocumentMoney(invoice.taxAmount, profile)} />
+        ) : null}
+        <Row label="TOTAL" value={formatDocumentMoney(invoice.totalAmount, profile)} bold large />
+      </section>
 
-      {/* Notes */}
       {invoice.notes ? (
         <>
-          <p style={{ textAlign: "center", fontSize: "10px", color: "#555", margin: "0 0 6px" }}>
-            {SEP}
-          </p>
+          <Separator />
           <p style={{ fontSize: "10px", fontStyle: "italic", margin: "0 0 6px" }}>
             {invoice.notes}
           </p>
         </>
       ) : null}
 
-      {/* Footer */}
-      <p style={{ textAlign: "center", fontSize: "10px", color: "#555", margin: "12px 0 6px" }}>
-        {SEP}
-      </p>
-      <div style={{ textAlign: "center" }}>
-        <p style={{ fontWeight: "bold", margin: "0 0 3px" }}>Thank you!</p>
-        <p style={{ fontSize: "9px", color: "#777", margin: 0 }}>
+      <footer style={{ marginTop: "12px", textAlign: "center" }}>
+        <Separator />
+        <p style={{ fontWeight: "bold", margin: "0 0 3px" }}>{profile.footer}</p>
+        <p style={{ color: "dimgray", fontSize: "9px", margin: "0 0 3px" }}>
+          {profile.phone} &bull; {profile.email} &bull; {profile.website}
+        </p>
+        <p style={{ color: "gray", fontSize: "9px", margin: 0 }}>
           {invoice.reference} &bull; {invoice.status.toUpperCase()}
         </p>
-      </div>
+      </footer>
     </div>
   );
 });
 
 PrintableInvoice.displayName = "PrintableInvoice";
+
+function Separator() {
+  return (
+    <p style={{ color: "dimgray", fontSize: "10px", margin: "0 0 8px", textAlign: "center" }}>
+      {SEP}
+    </p>
+  );
+}
 
 function Row({
   label,
@@ -196,10 +195,10 @@ function Row({
     <div
       style={{
         display: "flex",
-        justifyContent: "space-between",
-        gap: "8px",
-        fontWeight: bold ? "bold" : "normal",
         fontSize: large ? "14px" : "12px",
+        fontWeight: bold ? "bold" : "normal",
+        gap: "8px",
+        justifyContent: "space-between",
         marginBottom: large ? "2px" : "0",
       }}
     >

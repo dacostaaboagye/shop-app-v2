@@ -1,4 +1,5 @@
 import {
+  Bell,
   Building2,
   ClipboardList,
   ShieldCheck,
@@ -46,6 +47,16 @@ export const PRIMARY_OVERVIEW_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     section: "Overview",
   },
   {
+    activeMatchers: [{ mode: "descendants", path: "/supplier/notifications" }],
+    description: "Operational updates relevant to your supplier account.",
+    href: toRoute("/supplier/notifications"),
+    icon: Bell,
+    label: "Notifications",
+    requiredPermission: "supplier.dashboard.view",
+    section: "Overview",
+    sidebar: false,
+  },
+  {
     activeMatchers: [{ mode: "exact", path: "/agent" }],
     description: "Deliveries assigned to you for today.",
     href: toRoute("/agent"),
@@ -53,5 +64,15 @@ export const PRIMARY_OVERVIEW_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     label: "Delivery dashboard",
     requiredPermission: "agent.dashboard.view",
     section: "Overview",
+  },
+  {
+    activeMatchers: [{ mode: "descendants", path: "/agent/notifications" }],
+    description: "Operational updates relevant to your route and delivery work.",
+    href: toRoute("/agent/notifications"),
+    icon: Bell,
+    label: "Notifications",
+    requiredPermission: "agent.dashboard.view",
+    section: "Overview",
+    sidebar: false,
   },
 ];

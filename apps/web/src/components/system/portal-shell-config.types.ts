@@ -22,17 +22,9 @@ export type PortalNavSection = {
   title: string;
 };
 
-export type PortalNotification = {
-  body: string;
-  id: string;
-  timeLabel: string;
-  title: string;
-};
-
 export type ShellMeta = {
   emptyNotificationCopy: string;
   heading: string;
-  notifications: PortalNotification[];
 };
 
 export type NavRegistryEntry = {

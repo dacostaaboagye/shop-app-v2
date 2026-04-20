@@ -35,6 +35,7 @@ type ViewMode = "card" | "compact";
 
 type SupplyTarget = {
   locationId: string;
+  locationName: string;
   productName: string;
   sku: string;
   skuId: string;
@@ -230,7 +231,7 @@ function AssignmentList({
           </Badge>
         ) : null}
         {counts.low_stock > 0 ? (
-          <span className="inline-flex items-center gap-1 rounded-md border border-amber-300/60 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
+          <span className="inline-flex items-center gap-1 rounded-md border border-warning/40 bg-warning/20 px-2 py-0.5 text-xs font-medium text-warning-foreground">
             {counts.low_stock} low
           </span>
         ) : null}
@@ -374,6 +375,7 @@ function AssignmentList({
               onRequestSupply={() =>
                 onRequestSupply({
                   locationId,
+                  locationName: locationName ?? "Assigned location",
                   productName: item.productName,
                   sku: item.sku,
                   skuId: item.skuId,
@@ -387,6 +389,7 @@ function AssignmentList({
         <CompactAssignmentList
           items={filteredItems}
           locationId={locationId}
+          locationName={locationName ?? "Assigned location"}
           onRequestSupply={onRequestSupply}
         />
       )}
@@ -414,7 +417,7 @@ function AssignmentCard({
     <article
       className={cn(
         "relative overflow-hidden rounded-xl border bg-card shadow-sm",
-        isOut ? "border-destructive/30" : isLow ? "border-amber-300/60" : "border-border",
+        isOut ? "border-destructive/30" : isLow ? "border-warning/40" : "border-border",
       )}
     >
       {/* Status accent bar */}
@@ -422,7 +425,7 @@ function AssignmentCard({
         aria-hidden
         className={cn(
           "absolute left-0 top-0 h-full w-1",
-          isOut ? "bg-destructive" : isLow ? "bg-amber-400" : "bg-emerald-400",
+          isOut ? "bg-destructive" : isLow ? "bg-warning" : "bg-success",
         )}
       />
 
@@ -436,7 +439,7 @@ function AssignmentCard({
               isOut
                 ? "bg-destructive/10 text-destructive"
                 : isLow
-                  ? "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400"
+                  ? "bg-warning/20 text-warning-foreground"
                   : "bg-primary/10 text-primary",
             )}
           >
@@ -455,8 +458,8 @@ function AssignmentCard({
               isOut
                 ? "bg-destructive/10 text-destructive"
                 : isLow
-                  ? "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
-                  : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400",
+                  ? "bg-warning/20 text-warning-foreground"
+                  : "bg-success/10 text-success",
             )}
           >
             {isOut ? "Out of stock" : isLow ? "Low stock" : "In stock"}
@@ -470,18 +473,18 @@ function AssignmentCard({
             <dd className="mt-1 truncate font-semibold tabular-nums text-sm">{item.sellingPrice}</dd>
           </div>
           <div className="px-2 py-2.5 text-center sm:px-3">
-            <dt className="text-xs text-muted-foreground">Assigned</dt>
-            <dd className="mt-1 font-semibold tabular-nums text-sm">{item.quantity}</dd>
+            <dt className="text-xs text-muted-foreground">On Hand</dt>
+            <dd className="mt-1 font-semibold tabular-nums text-sm">{item.onHandQuantity.toLocaleString()}</dd>
           </div>
           <div className="px-2 py-2.5 text-center sm:px-3">
             <dt className="text-xs text-muted-foreground">Available</dt>
             <dd
               className={cn(
                 "mt-1 font-semibold tabular-nums text-sm",
-                isOut ? "text-destructive" : isLow ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400",
+                isOut ? "text-destructive" : isLow ? "text-warning-foreground" : "text-success",
               )}
             >
-              {available}
+              {available.toLocaleString()}
             </dd>
           </div>
         </dl>
@@ -510,10 +513,12 @@ function AssignmentCard({
 function CompactAssignmentList({
   items,
   locationId,
+  locationName,
   onRequestSupply,
 }: {
   items: CurrentAssignment[];
   locationId: string;
+  locationName: string;
   onRequestSupply: (target: SupplyTarget) => void;
 }) {
   return (
@@ -537,7 +542,7 @@ function CompactAssignmentList({
               aria-hidden
               className={cn(
                 "absolute left-0 top-0 h-full w-0.5",
-                isOut ? "bg-destructive" : isLow ? "bg-amber-400" : "bg-emerald-400",
+                isOut ? "bg-destructive" : isLow ? "bg-warning" : "bg-success",
               )}
             />
 
@@ -555,18 +560,18 @@ function CompactAssignmentList({
                 <p className="text-xs font-semibold tabular-nums">{item.sellingPrice}</p>
               </div>
               <div>
-                <p className="text-[10px] text-muted-foreground">Assigned</p>
-                <p className="text-xs font-semibold tabular-nums">{item.quantity}</p>
+                <p className="text-[10px] text-muted-foreground">On Hand</p>
+                <p className="text-xs font-semibold tabular-nums">{item.onHandQuantity.toLocaleString()}</p>
               </div>
               <div>
                 <p className="text-[10px] text-muted-foreground">Available</p>
                 <p
                   className={cn(
                     "text-xs font-semibold tabular-nums",
-                    isOut ? "text-destructive" : isLow ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400",
+                    isOut ? "text-destructive" : isLow ? "text-warning-foreground" : "text-success",
                   )}
                 >
-                  {available}
+                  {available.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -579,11 +584,11 @@ function CompactAssignmentList({
                   isOut
                     ? "bg-destructive/10 text-destructive"
                     : isLow
-                      ? "bg-amber-50 text-amber-700 dark:bg-amber-950/30"
-                      : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30",
+                      ? "bg-warning/20 text-warning-foreground"
+                      : "bg-success/10 text-success",
                 )}
               >
-                {available}
+                {available.toLocaleString()}
               </span>
             </div>
 
@@ -597,6 +602,7 @@ function CompactAssignmentList({
               onClick={() =>
                 onRequestSupply({
                   locationId,
+                  locationName,
                   productName: item.productName,
                   sku: item.sku,
                   skuId: item.skuId,

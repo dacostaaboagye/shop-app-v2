@@ -39,13 +39,13 @@ export class PostgresVariantSearchRepository {
         .where(baseCondition),
       this.db
         .select({
-          id: productVariants.id,
           name: productVariants.name,
           onHandQuantity: stockBalances.onHandQuantity,
           productName: catalogProducts.name,
           productSlug: catalogProducts.slug,
           sellingPrice: productVariants.sellingPrice,
           sku: productVariants.sku,
+          variantId: productVariants.id,
         })
         .from(stockBalances)
         .innerJoin(productVariants, eq(stockBalances.skuId, productVariants.id))

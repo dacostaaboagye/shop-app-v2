@@ -10,6 +10,14 @@ import { AdminStockCountRepository } from "./postgres-admin-stock-count.reposito
 import { PostgresStockBalanceQueryRepository } from "./postgres-stock-balance-query.repository.js";
 import { PostgresSupplyRequestRepository } from "./postgres-supply-request.repository.js";
 import { StockSupplyService } from "./stock-supply.service.js";
+import type { PlatformEventPipelinePublisher } from "../events/platform-event-pipeline.publisher.js";
+
+type CreateStockRuntimeOptions = {
+  platformEventPublisher?: Pick<
+    PlatformEventPipelinePublisher,
+    "appendWithinTransaction" | "notifyAppendCommitted"
+  >;
+};
 
 type StockRuntime = {
   stock: {
@@ -33,13 +41,18 @@ type StockRuntime = {
 
 export function createStockRuntime(
   databaseRuntime: DatabaseRuntime,
+  options: CreateStockRuntimeOptions = {},
 ): StockRuntime {
   const referenceNumberService = new ReferenceNumberService(
     new PostgresReferenceNumberRepository(databaseRuntime.db),
   );
 
   const supplyRequestRepository = new PostgresSupplyRequestRepository(databaseRuntime.db);
-  const supplyService = new StockSupplyService(databaseRuntime.db, referenceNumberService);
+  const supplyService = new StockSupplyService(
+    databaseRuntime.db,
+    referenceNumberService,
+    options.platformEventPublisher,
+  );
 
   return {
     stock: {

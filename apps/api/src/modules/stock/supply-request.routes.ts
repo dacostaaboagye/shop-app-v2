@@ -5,6 +5,8 @@ import {
   dispatchStockSupplyRequestSchema,
   gtnResponseSchema,
   rejectStockSupplyRequestSchema,
+  supplyRequestSourceListQuerySchema,
+  supplyRequestSourceListResponseSchema,
   stockSupplyRequestListQuerySchema,
   stockSupplyRequestListResponseSchema,
   stockSupplyRequestResponseSchema,
@@ -13,32 +15,44 @@ import type { FastifyInstance } from "fastify";
 import { AppError } from "../_core/errors/app-error.js";
 import type { RouteDefinition } from "../_core/route-contract.js";
 import { getAuthenticatedUserId } from "../auth/auth-route-support.js";
+import type { AuthenticatedActor } from "../auth/access-token-authentication.service.js";
+import type { PermissionResolutionService } from "../access-control/permission-resolution.service.js";
 import type { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
 import type {
   GtnRow,
   PostgresSupplyRequestRepository,
   SupplyRequestRow,
 } from "./postgres-supply-request.repository.js";
+import { SupplyRequestAccessPolicy } from "./supply-request-access-policy.js";
 import type { StockSupplyService } from "./stock-supply.service.js";
 
 type StockSupplyRouteDependencies = {
   locationRepository: {
     listActiveLocations(): Promise<{ id: string; name: string }[]>;
   };
+  permissionService: Pick<
+    PermissionResolutionService,
+    "assertHasPermission" | "resolvePermissionsForAnyScope"
+  >;
   referenceNumberService: Pick<ReferenceNumberService, "generateReference">;
   supplyRequestRepository: Pick<
     PostgresSupplyRequestRepository,
-    | "approve"
-    | "cancel"
-    | "create"
     | "findGtnById"
     | "findGtnBySupplyRequest"
     | "findById"
     | "listByRequester"
     | "listBySourceLocation"
+  >;
+  supplyService: Pick<
+    StockSupplyService,
+    | "approve"
+    | "cancel"
+    | "cancelById"
+    | "confirmReceipt"
+    | "createRequest"
+    | "dispatch"
     | "reject"
   >;
-  supplyService: Pick<StockSupplyService, "dispatch" | "confirmReceipt">;
   variantSnapshotRepository: {
     getVariantSnapshot(
       skuId: string,
@@ -110,16 +124,20 @@ const getGtnRoute: RouteDefinition = {
 };
 
 // List active locations (used by workers to pick source location when creating a request)
-const listLocationsRoute: RouteDefinition = {
+const workerSourceLocationsRoute: RouteDefinition = {
   access: { kind: "permission", permission: "stock.supply.request", scope: "any_active" },
   method: "GET",
-  url: "/api/locations",
+  url: "/api/worker/stock/supply-request-sources",
 };
 
 export function registerStockSupplyRoutes(
   server: FastifyInstance,
   dependencies: StockSupplyRouteDependencies = createUnavailableDependencies(),
 ) {
+  const accessPolicy = new SupplyRequestAccessPolicy(
+    dependencies.permissionService,
+  );
+
   // Worker: create supply request
   server.route({
     config: { access: workerCreateRoute.access },
@@ -127,6 +145,7 @@ export function registerStockSupplyRoutes(
     url: workerCreateRoute.url,
     async handler(request) {
       const userId = getAuthenticatedUserId(request);
+      const actor = getAuthenticatedActor(request);
       const body = createStockSupplyRequestSchema.parse(request.body);
 
       if (body.sourceLocationId === body.locationId) {
@@ -137,6 +156,11 @@ export function registerStockSupplyRoutes(
           title: "Invalid locations",
         });
       }
+
+      await accessPolicy.assertCanCreateRequest({
+        actor,
+        destinationLocationId: body.locationId,
+      });
 
       const snapshot = await dependencies.variantSnapshotRepository.getVariantSnapshot(
         body.skuId,
@@ -154,7 +178,8 @@ export function registerStockSupplyRoutes(
         sequenceKey: "supply-request",
       });
 
-      const row = await dependencies.supplyRequestRepository.create({
+      const row = await dependencies.supplyService.createRequest({
+        actor,
         locationId: body.locationId,
         notes: body.notes ?? null,
         reference,
@@ -199,12 +224,34 @@ export function registerStockSupplyRoutes(
     url: workerCancelRoute.url,
     async handler(request) {
       const userId = getAuthenticatedUserId(request);
+      const actor = getAuthenticatedActor(request);
       const { id } = request.params as { id: string };
-      const row = await dependencies.supplyRequestRepository.cancel({
-        id,
-        now: new Date(),
-        requesterId: userId,
+      const existingRequest = await dependencies.supplyRequestRepository.findById(id);
+      if (!existingRequest) {
+        throw new AppError({
+          code: "not_found",
+          detail: "Request not found or cannot be cancelled at this stage.",
+          statusCode: 404,
+          title: "Cannot cancel",
+        });
+      }
+      await accessPolicy.assertCanCancelRequest({
+        actor,
+        supplyRequest: existingRequest,
       });
+      const row =
+        existingRequest.requesterId === userId
+          ? await dependencies.supplyService.cancel({
+              actor,
+              id,
+              now: new Date(),
+              requesterId: userId,
+            })
+          : await dependencies.supplyService.cancelById({
+              actor,
+              id,
+              now: new Date(),
+            });
       if (!row) {
         throw new AppError({
           code: "not_found",
@@ -224,9 +271,24 @@ export function registerStockSupplyRoutes(
     url: workerConfirmReceiptRoute.url,
     async handler(request) {
       const userId = getAuthenticatedUserId(request);
+      const actor = getAuthenticatedActor(request);
       const { id } = request.params as { id: string };
       const body = confirmReceiptSchema.parse(request.body);
+      const existingRequest = await dependencies.supplyRequestRepository.findById(id);
+      if (!existingRequest) {
+        throw new AppError({
+          code: "not_found",
+          detail: "Supply request not found or goods have not been dispatched yet.",
+          statusCode: 404,
+          title: "Cannot confirm receipt",
+        });
+      }
+      await accessPolicy.assertCanConfirmReceipt({
+        actor,
+        supplyRequest: existingRequest,
+      });
       const { supplyRequest } = await dependencies.supplyService.confirmReceipt({
+        actor,
         notes: body.notes ?? null,
         now: new Date(),
         receivedBy: userId,
@@ -242,6 +304,7 @@ export function registerStockSupplyRoutes(
     method: managerIncomingRoute.method,
     url: managerIncomingRoute.url,
     async handler(request) {
+      const actor = getAuthenticatedActor(request);
       const query = stockSupplyRequestListQuerySchema.parse(request.query);
       if (!query.sourceLocationId) {
         throw new AppError({
@@ -251,6 +314,10 @@ export function registerStockSupplyRoutes(
           title: "Missing sourceLocationId",
         });
       }
+      await accessPolicy.assertCanListIncomingForSource({
+        actor,
+        sourceLocationId: query.sourceLocationId,
+      });
       const result = await dependencies.supplyRequestRepository.listBySourceLocation({
         sourceLocationId: query.sourceLocationId,
         page: query.page,
@@ -273,9 +340,24 @@ export function registerStockSupplyRoutes(
     url: managerApproveRoute.url,
     async handler(request) {
       const userId = getAuthenticatedUserId(request);
+      const actor = getAuthenticatedActor(request);
       const { id } = request.params as { id: string };
       const body = approveStockSupplyRequestSchema.parse(request.body);
-      const row = await dependencies.supplyRequestRepository.approve({
+      const existingRequest = await dependencies.supplyRequestRepository.findById(id);
+      if (!existingRequest) {
+        throw new AppError({
+          code: "not_found",
+          detail: "Request not found or is not in a pending state.",
+          statusCode: 404,
+          title: "Cannot approve",
+        });
+      }
+      await accessPolicy.assertCanManageRequest({
+        actor,
+        supplyRequest: existingRequest,
+      });
+      const row = await dependencies.supplyService.approve({
+        actor,
         id,
         approvedQuantity: body.approvedQuantity,
         now: new Date(),
@@ -301,9 +383,24 @@ export function registerStockSupplyRoutes(
     url: managerRejectRoute.url,
     async handler(request) {
       const userId = getAuthenticatedUserId(request);
+      const actor = getAuthenticatedActor(request);
       const { id } = request.params as { id: string };
       const body = rejectStockSupplyRequestSchema.parse(request.body);
-      const row = await dependencies.supplyRequestRepository.reject({
+      const existingRequest = await dependencies.supplyRequestRepository.findById(id);
+      if (!existingRequest) {
+        throw new AppError({
+          code: "not_found",
+          detail: "Request not found or is not in a pending state.",
+          statusCode: 404,
+          title: "Cannot reject",
+        });
+      }
+      await accessPolicy.assertCanManageRequest({
+        actor,
+        supplyRequest: existingRequest,
+      });
+      const row = await dependencies.supplyService.reject({
+        actor,
         id,
         now: new Date(),
         resolutionNotes: body.resolutionNotes ?? null,
@@ -328,9 +425,24 @@ export function registerStockSupplyRoutes(
     url: managerDispatchRoute.url,
     async handler(request) {
       const userId = getAuthenticatedUserId(request);
+      const actor = getAuthenticatedActor(request);
       const { id } = request.params as { id: string };
       const body = dispatchStockSupplyRequestSchema.parse(request.body);
+      const existingRequest = await dependencies.supplyRequestRepository.findById(id);
+      if (!existingRequest) {
+        throw new AppError({
+          code: "not_found",
+          detail: "Supply request not found or is not in an approved state.",
+          statusCode: 404,
+          title: "Cannot dispatch",
+        });
+      }
+      await accessPolicy.assertCanManageRequest({
+        actor,
+        supplyRequest: existingRequest,
+      });
       const { supplyRequest, gtn } = await dependencies.supplyService.dispatch({
+        actor,
         dispatchedBy: userId,
         notes: body.notes ?? null,
         now: new Date(),
@@ -351,6 +463,7 @@ export function registerStockSupplyRoutes(
     method: getGtnRoute.method,
     url: getGtnRoute.url,
     async handler(request) {
+      const actor = getAuthenticatedActor(request);
       const { id } = request.params as { id: string };
       const gtn = await dependencies.supplyRequestRepository.findGtnById(id);
       if (!gtn) {
@@ -361,26 +474,55 @@ export function registerStockSupplyRoutes(
           title: "GTN not found",
         });
       }
+      const relatedRequest = await dependencies.supplyRequestRepository.findById(
+        gtn.supplyRequestId,
+      );
+      if (!relatedRequest) {
+        throw new AppError({
+          code: "not_found",
+          detail: `Supply request ${gtn.supplyRequestId} not found for this GTN.`,
+          statusCode: 404,
+          title: "Supply request not found",
+        });
+      }
+      await accessPolicy.assertCanViewGtn({
+        actor,
+        gtn,
+        supplyRequest: relatedRequest,
+      });
       return gtnResponseSchema.parse(toGtnResponse(gtn));
     },
   });
 
-  // List active locations for source location picker
+  // List eligible source locations for a destination location
   server.route({
-    config: { access: listLocationsRoute.access },
-    method: listLocationsRoute.method,
-    url: listLocationsRoute.url,
-    async handler() {
+    config: { access: workerSourceLocationsRoute.access },
+    method: workerSourceLocationsRoute.method,
+    url: workerSourceLocationsRoute.url,
+    async handler(request) {
+      const actor = getAuthenticatedActor(request);
+      const query = supplyRequestSourceListQuerySchema.parse(request.query);
+      await accessPolicy.assertCanCreateRequest({
+        actor,
+        destinationLocationId: query.destinationLocationId,
+      });
       const items = await dependencies.locationRepository.listActiveLocations();
-      return { items };
+      return supplyRequestSourceListResponseSchema.parse({
+        items: items
+          .filter((location) => location.id !== query.destinationLocationId)
+          .map((location) => ({
+            locationId: location.id,
+            locationName: location.name,
+          })),
+      });
     },
   });
 }
 
 function toRequestResponse(row: SupplyRequestRow) {
   return {
-    id: row.id,
     reference: row.reference,
+    supplyRequestId: row.id,
     requesterId: row.requesterId,
     requesterName: row.requesterName,
     requesterEmail: row.requesterEmail,
@@ -407,7 +549,7 @@ function toRequestResponse(row: SupplyRequestRow) {
 
 function toGtnResponse(gtn: GtnRow) {
   return {
-    id: gtn.id,
+    gtnId: gtn.id,
     reference: gtn.reference,
     supplyRequestId: gtn.supplyRequestId,
     supplyRequestReference: gtn.supplyRequestReference,
@@ -444,28 +586,52 @@ function createUnavailableDependencies(): StockSupplyRouteDependencies {
     locationRepository: {
       async listActiveLocations() { return unavailable(); },
     },
+    permissionService: {
+      async assertHasPermission() {
+        return unavailable();
+      },
+      async resolvePermissionsForAnyScope() {
+        return unavailable();
+      },
+    },
     referenceNumberService: {
       async generateReference() {
         return unavailable();
       },
     },
     supplyRequestRepository: {
-      async approve() { return unavailable(); },
-      async cancel() { return unavailable(); },
-      async create() { return unavailable(); },
       async findGtnById() { return unavailable(); },
       async findGtnBySupplyRequest() { return unavailable(); },
       async findById() { return unavailable(); },
       async listByRequester() { return unavailable(); },
       async listBySourceLocation() { return unavailable(); },
-      async reject() { return unavailable(); },
     },
     supplyService: {
-      async dispatch() { return unavailable(); },
+      async approve() { return unavailable(); },
+      async cancel() { return unavailable(); },
+      async cancelById() { return unavailable(); },
       async confirmReceipt() { return unavailable(); },
+      async createRequest() { return unavailable(); },
+      async dispatch() { return unavailable(); },
+      async reject() { return unavailable(); },
     },
     variantSnapshotRepository: {
       async getVariantSnapshot() { return unavailable(); },
     },
   };
+}
+
+function getAuthenticatedActor(request: {
+  auth?: AuthenticatedActor;
+}): AuthenticatedActor {
+  if (request.auth) {
+    return request.auth;
+  }
+
+  throw new AppError({
+    code: "internal_error",
+    detail: "Authenticated actor context is unavailable for this route.",
+    statusCode: 500,
+    title: "Authorization unavailable",
+  });
 }

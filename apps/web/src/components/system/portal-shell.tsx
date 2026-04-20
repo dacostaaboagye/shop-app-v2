@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { EmailVerificationGate } from "@/components/auth/email-verification-gate";
+import { NotificationLiveProvider } from "@/components/providers/notification-live-provider";
 import {
   Sheet,
   SheetContent,
@@ -32,6 +33,7 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="min-h-svh">
+      <NotificationLiveProvider />
       <div className="fixed inset-y-0 left-0 z-20 hidden w-72 lg:block">
         <AppSidebar onAccountOpen={() => setAccountOpen(true)} />
       </div>
