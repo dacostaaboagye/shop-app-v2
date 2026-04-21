@@ -1,4 +1,49 @@
+import Image from "next/image";
+import type { OfficialDocumentProfile } from "@/lib/documents/official-document-profile";
+
 const SEP = "- - - - - - - - - - - - - - - - - -";
+
+export function PrintableBrandMark({
+  profile,
+}: {
+  profile: OfficialDocumentProfile;
+}) {
+  if (profile.logoImageUrl) {
+    return (
+      <Image
+        alt={`${profile.brandName} logo`}
+        height={36}
+        src={profile.logoImageUrl}
+        style={{
+          height: "36px",
+          objectFit: "cover",
+          width: "36px",
+        }}
+        unoptimized
+        width={36}
+      />
+    );
+  }
+
+  return (
+    <div
+      style={{
+        alignItems: "center",
+        backgroundColor: profile.primaryColor,
+        color: "white",
+        display: "flex",
+        fontSize: "13px",
+        fontWeight: "bold",
+        height: "36px",
+        justifyContent: "center",
+        letterSpacing: "1px",
+        width: "36px",
+      }}
+    >
+      {profile.logoText}
+    </div>
+  );
+}
 
 export function PrintableSeparator() {
   return (

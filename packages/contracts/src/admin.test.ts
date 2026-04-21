@@ -3,6 +3,9 @@ import { describe, it } from "node:test";
 import {
   adminLocationListQuerySchema,
   adminLocationListResponseSchema,
+  adminLocationStaffListResponseSchema,
+  adminStaffListQuerySchema,
+  adminStaffListResponseSchema,
   adminUserListQuerySchema,
   adminUserListResponseSchema,
 } from "./admin.js";
@@ -60,6 +63,49 @@ describe("admin contracts", () => {
     assert.equal(parsed.items[0]?.roles[1]?.slug, "regional_ops");
   });
 
+  it("accepts a valid admin staff list query", () => {
+    const parsed = adminStaffListQuerySchema.parse({
+      locationSlug: "ablekuma-warehouse",
+      pageSize: "20",
+      role: "manager",
+      status: "active",
+    });
+
+    assert.equal(parsed.locationSlug, "ablekuma-warehouse");
+    assert.equal(parsed.pageSize, 20);
+    assert.equal(parsed.role, "manager");
+  });
+
+  it("accepts a valid admin staff list response", () => {
+    const parsed = adminStaffListResponseSchema.parse({
+      items: [
+        {
+          assignedLocations: [
+            {
+              name: "Ablekuma Warehouse",
+              slug: "ablekuma-warehouse",
+            },
+          ],
+          createdAt: "2026-04-09T10:00:00.000Z",
+          email: "manager@example.com",
+          firstName: "Warehouse",
+          lastLoginAt: null,
+          lastName: "Manager",
+          preferredPortal: "manager",
+          requiresPasswordChange: false,
+          roles: [{ name: "Manager", slug: "manager" }],
+          slug: "warehouse-manager",
+          status: "active",
+        },
+      ],
+      page: 1,
+      pageSize: 10,
+      totalCount: 1,
+    });
+
+    assert.equal(parsed.items[0]?.roles[0]?.slug, "manager");
+  });
+
   it("accepts a valid admin location list query", () => {
     const parsed = adminLocationListQuerySchema.parse({
       dir: "desc",
@@ -94,5 +140,27 @@ describe("admin contracts", () => {
     });
 
     assert.equal(parsed.items[0]?.zoneCount, 4);
+  });
+
+  it("accepts a valid admin location staff response", () => {
+    const parsed = adminLocationStaffListResponseSchema.parse({
+      items: [
+        {
+          activeAssignmentCount: 3,
+          assignedAt: "2026-04-19T10:00:00.000Z",
+          email: "worker@example.com",
+          firstName: "Ama",
+          lastName: "Mensah",
+          roleName: "Worker",
+          roleSlug: "worker",
+          status: "active",
+          userSlug: "ama-mensah",
+        },
+      ],
+      locationName: "Downtown Store",
+      locationSlug: "downtown-store",
+    });
+
+    assert.equal(parsed.items[0]?.activeAssignmentCount, 3);
   });
 });

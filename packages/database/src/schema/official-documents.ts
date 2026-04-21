@@ -61,6 +61,7 @@ export type LocationOverridePolicy = {
 
 export type IssuedDocumentProfileSnapshot = {
   brandName: string;
+  logoImageUrl: string | null;
   logoText: string;
   primaryColor: string;
   accentColor: string;

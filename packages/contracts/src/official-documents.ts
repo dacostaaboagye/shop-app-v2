@@ -35,6 +35,11 @@ export const documentBrandSettingsSchema = z.object({
   accentColor: z.string().trim().min(1).max(80),
 });
 
+export const documentBrandSettingsResponseSchema =
+  documentBrandSettingsSchema.extend({
+    logoImageUrl: z.url().max(1000).nullable().default(null),
+  });
+
 export const documentBusinessSettingsSchema = z.object({
   legalName: z.string().trim().min(1).max(200),
   registrationNumber: z.string().trim().min(1).max(120),
@@ -83,7 +88,7 @@ export const locationOverridePolicySchema = z.object({
 export const officialDocumentTypeSchema = z.enum(officialDocumentTypeValues);
 
 export const officialDocumentSettingsResponseSchema = z.object({
-  brand: documentBrandSettingsSchema,
+  brand: documentBrandSettingsResponseSchema,
   business: documentBusinessSettingsSchema,
   currency: moneySettingsSchema,
   documents: documentDefaultsSchema,
@@ -139,6 +144,7 @@ export const officialDocumentProfileResponseSchema = z.object({
   locale: z.string(),
   locationId: z.string().uuid().nullable(),
   locationName: z.string().nullable(),
+  logoImageUrl: z.url().max(1000).nullable().default(null),
   logoText: z.string(),
   paperSize: z.enum(["receipt_80mm", "a4", "letter"]),
   phone: z.string(),

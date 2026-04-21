@@ -54,10 +54,21 @@ export async function fetchStockBalances(
   query: AdminStockBalanceListQuery,
 ): Promise<AdminStockBalanceListResponse> {
   const params = new URLSearchParams({
-    locationSlug: query.locationSlug,
     page: String(query.page),
     pageSize: String(query.pageSize),
   });
+
+  if (query.brandSlug) {
+    params.set("brandSlug", query.brandSlug);
+  }
+
+  if (query.categorySlug) {
+    params.set("categorySlug", query.categorySlug);
+  }
+
+  if (query.locationSlug) {
+    params.set("locationSlug", query.locationSlug);
+  }
 
   if (query.q) {
     params.set("q", query.q);
@@ -79,8 +90,10 @@ export async function fetchAdminReservations(
 ): Promise<AdminReservationListResponse> {
   const params = new URLSearchParams({
     limit: String(query.limit),
-    locationSlug: query.locationSlug,
   });
+  if (query.brandSlug) params.set("brandSlug", query.brandSlug);
+  if (query.categorySlug) params.set("categorySlug", query.categorySlug);
+  if (query.locationSlug) params.set("locationSlug", query.locationSlug);
   if (query.q) params.set("q", query.q);
   return fetchJson<AdminReservationListResponse>(
     `/api/admin/stock/reservations/active?${params.toString()}`,

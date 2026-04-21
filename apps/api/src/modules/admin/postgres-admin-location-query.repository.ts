@@ -1,5 +1,6 @@
 import type {
   AdminLocationListQuery,
+  AdminLocationStaffSummary,
   AdminLocationStatus,
   AdminLocationType,
   AdminLocationZoneSummary,
@@ -15,6 +16,7 @@ import {
 import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { AdminLocationQueryRepository } from "./admin-location-query.service.js";
+import { listAdminLocationStaff } from "./postgres-admin-location-staff-query.js";
 
 export class PostgresAdminLocationQueryRepository
   implements AdminLocationQueryRepository
@@ -153,6 +155,14 @@ export class PostgresAdminLocationQueryRepository
       })),
       totalCount: totalCountResult[0]?.count ?? 0,
     };
+  }
+
+  async listLocationStaff(locationSlug: string): Promise<{
+    items: AdminLocationStaffSummary[];
+    locationName: string | null;
+    locationSlug: string;
+  }> {
+    return listAdminLocationStaff(this.db, locationSlug);
   }
 
   async listLocationZones(

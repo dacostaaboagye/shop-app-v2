@@ -13,6 +13,7 @@ test("official document settings contracts accept production settings", () => {
     brand: {
       accentColor: "hsl(28 72% 48%)",
       brandName: "Shop App",
+      logoImageUrl: null,
       logoText: "SA",
       primaryColor: "hsl(174 52% 23%)",
     },
@@ -72,6 +73,7 @@ test("official document profile contract accepts resolved printable branding", (
     locale: "en-GH",
     locationId: "22222222-2222-4222-8222-222222222222",
     locationName: "Airport Branch",
+    logoImageUrl: null,
     logoText: "SA",
     paperSize: "receipt_80mm",
     phone: "+233 00 000 0000",
@@ -107,6 +109,7 @@ test("issued document snapshot contract accepts immutable document evidence", ()
       locale: "en-GH",
       locationId: "22222222-2222-4222-8222-222222222222",
       locationName: "Airport Branch",
+      logoImageUrl: null,
       logoText: "SA",
       paperSize: "receipt_80mm",
       phone: "+233 00 000 0000",

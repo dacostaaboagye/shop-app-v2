@@ -2,12 +2,14 @@
 
 import type { AdminStockBalanceSummary } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
+import { Search, X } from "lucide-react";
 import { useState } from "react";
 import { buildStockBalanceColumns } from "@/components/admin/stock/stock-balance-columns";
 import { AppDataTable } from "@/components/data-table/app-data-table";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
@@ -45,6 +47,16 @@ export function ManagerStockPageClient() {
   });
 
   const columns = buildStockBalanceColumns(null);
+  const stockItems = stockQuery.data?.items ?? [];
+  const totals = stockItems.reduce(
+    (acc, item) => ({
+      available: acc.available + item.availableQuantity,
+      inTransit: acc.inTransit + item.inTransitQuantity,
+      onHand: acc.onHand + item.onHandQuantity,
+      reserved: acc.reserved + item.reservedQuantity,
+    }),
+    { available: 0, inTransit: 0, onHand: 0, reserved: 0 },
+  );
 
   function handleSearch(event: React.FormEvent) {
     event.preventDefault();
@@ -54,7 +66,7 @@ export function ManagerStockPageClient() {
   return (
     <PageShell>
       <PageHeader
-        description="On-hand, reserved, and available quantities at your managed location."
+        description="On-hand, reserved, available, and in-transit quantities at your managed location."
         title="Stock levels"
       />
 
@@ -73,42 +85,45 @@ export function ManagerStockPageClient() {
       />
 
       {selectedLocationScope ? (
-        <form className="flex items-center gap-2" onSubmit={handleSearch}>
+        <form
+          className="flex flex-wrap items-center gap-2"
+          onSubmit={handleSearch}
+        >
           <Input
             className="max-w-xs"
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by product or SKU…"
+            placeholder="Search by product or SKU"
             value={search}
           />
-          <button
-            className="rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent/40"
-            type="submit"
-          >
+          <Button size="sm" type="submit">
+            <Search className="size-3.5" />
             Search
-          </button>
+          </Button>
           {activeSearch ? (
-            <button
-              className="text-sm text-muted-foreground hover:text-foreground"
+            <Button
               onClick={() => {
                 setSearch("");
                 setActiveSearch("");
               }}
+              size="sm"
               type="button"
+              variant="outline"
             >
+              <X className="size-3.5" />
               Clear
-            </button>
+            </Button>
           ) : null}
         </form>
       ) : null}
 
       {stockQuery.data ? (
-        <p className="text-sm tabular-nums text-muted-foreground">
-          {stockQuery.data.totalCount} SKU
-          {stockQuery.data.totalCount !== 1 ? "s" : ""}
-          {stockQuery.data.locationName
-            ? ` at ${stockQuery.data.locationName}`
-            : ""}
-        </p>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+          <StockMetric label="SKUs" value={stockQuery.data.totalCount} />
+          <StockMetric label="On hand" value={totals.onHand} />
+          <StockMetric label="Reserved" value={totals.reserved} />
+          <StockMetric label="Available" value={totals.available} />
+          <StockMetric label="In transit" value={totals.inTransit} />
+        </div>
       ) : null}
 
       {stockQuery.isPending && selectedLocationScope ? (
@@ -127,11 +142,11 @@ export function ManagerStockPageClient() {
       ) : (
         <AppDataTable
           columns={columns}
-          data={stockQuery.data?.items ?? []}
+          data={stockItems}
           density="compact"
           emptyDescription={
             selectedLocationScope
-              ? "No stock entered yet at this location."
+              ? "No stock entered or in transit yet at this location."
               : "Select a location above to load stock data."
           }
           emptyTitle="No stock data"
@@ -139,5 +154,14 @@ export function ManagerStockPageClient() {
         />
       )}
     </PageShell>
+  );
+}
+
+function StockMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-md border border-border bg-card px-3 py-2">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-lg font-semibold tabular-nums">{value}</p>
+    </div>
   );
 }

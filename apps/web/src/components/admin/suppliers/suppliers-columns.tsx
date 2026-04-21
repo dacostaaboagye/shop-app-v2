@@ -2,7 +2,8 @@
 
 import type { AdminUserSummary } from "@shop/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { PreviewImage } from "@/components/system/preview-image";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   formatAdminDate,
@@ -19,17 +20,23 @@ export const supplierColumns: ColumnDef<AdminUserSummary>[] = [
       const user = row.original;
       return (
         <div className="flex items-center gap-3">
-          <Avatar>
-            {user.primaryImageUrl ? (
-              <AvatarImage
-                alt={formatDisplayName(user.firstName, user.lastName)}
-                src={user.primaryImageUrl}
-              />
-            ) : null}
-            <AvatarFallback>
-              {getInitials(user.firstName, user.lastName)}
-            </AvatarFallback>
-          </Avatar>
+          {user.primaryImageUrl ? (
+            <PreviewImage
+              alt={formatDisplayName(user.firstName, user.lastName)}
+              className="size-10 rounded-full"
+              height={40}
+              imageClassName="rounded-full"
+              previewTitle={formatDisplayName(user.firstName, user.lastName)}
+              src={user.primaryImageUrl}
+              width={40}
+            />
+          ) : (
+            <Avatar>
+              <AvatarFallback>
+                {getInitials(user.firstName, user.lastName)}
+              </AvatarFallback>
+            </Avatar>
+          )}
           <div className="min-w-0">
             <p className="font-medium leading-none">
               {formatDisplayName(user.firstName, user.lastName)}

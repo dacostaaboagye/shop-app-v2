@@ -7,6 +7,7 @@ export type NotificationListRow = {
   eventType: string;
   notificationKey: string;
   occurredAt: Date;
+  payload: Record<string, string | number | boolean | null>;
   readAt: Date | null;
   resource: {
     kind: string;
@@ -40,6 +41,7 @@ export class PostgresNotificationQueryRepository {
         eventType: platformEvents.type,
         notificationKey: userNotifications.id,
         occurredAt: platformEvents.occurredAt,
+        payload: platformEvents.payload,
         readAt: userNotifications.readAt,
         resourceKind: platformEvents.resourceKind,
         resourceReference: platformEvents.resourceReference,
@@ -64,6 +66,7 @@ export class PostgresNotificationQueryRepository {
       eventType: row.eventType,
       notificationKey: row.notificationKey,
       occurredAt: row.occurredAt,
+      payload: toNotificationPayload(row.payload),
       readAt: row.readAt,
       resource: {
         kind: row.resourceKind,
@@ -73,4 +76,26 @@ export class PostgresNotificationQueryRepository {
       summary: row.summary,
     }));
   }
+}
+
+function toNotificationPayload(
+  payload: Record<string, unknown>,
+): Record<string, string | number | boolean | null> {
+  return Object.fromEntries(
+    Object.entries(payload).filter(
+      (entry): entry is [string, string | number | boolean | null] =>
+        isNotificationPayloadValue(entry[1]),
+    ),
+  );
+}
+
+function isNotificationPayloadValue(
+  value: unknown,
+): value is string | number | boolean | null {
+  return (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  );
 }

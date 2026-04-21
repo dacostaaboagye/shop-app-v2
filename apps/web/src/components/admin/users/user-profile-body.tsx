@@ -10,7 +10,8 @@ import {
   StatCard,
 } from "@/components/system/page-shell";
 import { PermissionGate } from "@/components/system/permission-gate";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { PreviewImage } from "@/components/system/preview-image";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -122,14 +123,23 @@ export function UserProfileBody({
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
             <div className="flex items-center gap-4">
-              <Avatar className="size-12">
-                {user.primaryImageUrl ? (
-                  <AvatarImage alt={displayName} src={user.primaryImageUrl} />
-                ) : null}
-                <AvatarFallback className="text-base">
-                  {getInitials(user.firstName, user.lastName)}
-                </AvatarFallback>
-              </Avatar>
+              {user.primaryImageUrl ? (
+                <PreviewImage
+                  alt={displayName}
+                  className="size-12 rounded-full"
+                  height={48}
+                  imageClassName="rounded-full"
+                  previewTitle={displayName}
+                  src={user.primaryImageUrl}
+                  width={48}
+                />
+              ) : (
+                <Avatar className="size-12">
+                  <AvatarFallback className="text-base">
+                    {getInitials(user.firstName, user.lastName)}
+                  </AvatarFallback>
+                </Avatar>
+              )}
               <div className="min-w-0">
                 <p className="font-semibold leading-tight">{displayName}</p>
                 <p className="font-mono text-sm text-muted-foreground">

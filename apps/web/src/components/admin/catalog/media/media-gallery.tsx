@@ -1,6 +1,6 @@
 import type { AdminMediaRecord } from "@shop/contracts";
 import { Star, Trash2 } from "lucide-react";
-import Image from "next/image";
+import { PreviewImage } from "@/components/system/preview-image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -35,12 +35,13 @@ export function MediaGallery({
         <div className="flex flex-col gap-1" key={item.assignmentId}>
           <div className="relative aspect-square overflow-hidden rounded-md border border-border/60 bg-muted">
             {item.mediaType === "image" ? (
-              <Image
+              <PreviewImage
                 alt={item.altText ?? item.entitySlug}
-                className="object-cover"
                 fill
+                imageClassName="rounded-md"
+                previewTitle={item.altText ?? item.entitySlug}
+                sizes="(min-width: 768px) 25vw, 50vw"
                 src={item.publicUrl}
-                unoptimized
               />
             ) : (
               <video

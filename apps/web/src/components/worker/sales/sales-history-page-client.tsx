@@ -4,6 +4,11 @@ import type { InvoiceListResponse } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { Receipt } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import {
+  type SalesDocumentTypeFilter,
+  SalesListFilters,
+} from "@/components/sales/sales-list-filters";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
@@ -25,6 +30,10 @@ import { toRoute } from "@/lib/routes";
 const SKELETON_KEYS = [1, 2, 3, 4, 5];
 
 export function SalesHistoryPageClient() {
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [documentType, setDocumentType] =
+    useState<SalesDocumentTypeFilter>("all");
   const {
     accessibleLocationScopes,
     isLoading,
@@ -34,6 +43,9 @@ export function SalesHistoryPageClient() {
   } = usePermissionLocationScope("pos.sales.view");
 
   const query = {
+    ...(dateFrom ? { dateFrom } : {}),
+    ...(dateTo ? { dateTo } : {}),
+    documentType,
     locationId: selectedLocationScope?.locationId ?? "",
     page: 1,
     pageSize: 25,
@@ -69,6 +81,20 @@ export function SalesHistoryPageClient() {
         onLocationChange={setSelectedLocationSlug}
         selectedLocationSlug={selectedLocationSlug}
         title="Sales location"
+      />
+
+      <SalesListFilters
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        documentType={documentType}
+        onClear={() => {
+          setDateFrom("");
+          setDateTo("");
+          setDocumentType("all");
+        }}
+        onDateFromChange={setDateFrom}
+        onDateToChange={setDateTo}
+        onDocumentTypeChange={setDocumentType}
       />
 
       {salesQuery.isPending && selectedLocationScope ? (
@@ -112,7 +138,7 @@ function SalesList({
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm text-muted-foreground">
-        {response.total} sale{response.total !== 1 ? "s" : ""} found
+        {response.total} record{response.total !== 1 ? "s" : ""} found
       </p>
       <div className="divide-y divide-border rounded-md border border-border bg-card">
         {response.items.map((invoice) => {

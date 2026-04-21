@@ -1,16 +1,20 @@
 "use client";
 
 import type { CurrentAssignment } from "@shop/contracts";
-import { Package, ShoppingCart } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
+import { ProductThumbnail } from "@/components/system/product-thumbnail";
 import { Button } from "@/components/ui/button";
+import { formatMoney, type MoneyProfile } from "@/lib/money/format-money";
 import { cn } from "@/lib/utils";
 import { getStockStatus } from "./worker-assignments-support";
 
 export function AssignmentCard({
   item,
+  moneyProfile,
   onRequestSupply,
 }: {
   item: CurrentAssignment;
+  moneyProfile: MoneyProfile;
   onRequestSupply: () => void;
 }) {
   const status = getStockStatus(item.availableQuantity);
@@ -37,7 +41,12 @@ export function AssignmentCard({
       />
       <div className="flex flex-col gap-4 pb-4 pl-5 pr-4 pt-4">
         <AssignmentHeader item={item} isLow={isLow} isOut={isOut} />
-        <AssignmentStats item={item} isLow={isLow} isOut={isOut} />
+        <AssignmentStats
+          item={item}
+          isLow={isLow}
+          isOut={isOut}
+          moneyProfile={moneyProfile}
+        />
         <Button
           aria-label={`Request supply for ${item.productName} - ${item.variantName}`}
           className="w-full gap-2"
@@ -65,19 +74,16 @@ function AssignmentHeader({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div
-        aria-hidden
+      <ProductThumbnail
         className={cn(
-          "flex size-10 shrink-0 items-center justify-center rounded-lg sm:size-11",
-          isOut
-            ? "bg-destructive/10 text-destructive"
-            : isLow
-              ? "bg-warning/20 text-warning-foreground"
-              : "bg-primary/10 text-primary",
+          "size-10 shrink-0 sm:size-11",
+          isOut && "ring-destructive/30",
+          isLow && "ring-warning/40",
         )}
-      >
-        <Package className="size-5" />
-      </div>
+        imageUrl={item.primaryImageUrl}
+        productName={item.productName}
+        variantName={item.variantName}
+      />
       <div className="min-w-0 flex-1">
         <p className="font-semibold leading-snug">{item.productName}</p>
         <p className="mt-0.5 text-sm text-muted-foreground">
@@ -100,14 +106,19 @@ function AssignmentStats({
   isLow,
   isOut,
   item,
+  moneyProfile,
 }: {
   isLow: boolean;
   isOut: boolean;
   item: CurrentAssignment;
+  moneyProfile: MoneyProfile;
 }) {
   return (
     <dl className="grid grid-cols-3 divide-x divide-border overflow-hidden rounded-lg border border-border bg-muted/30">
-      <StatCell label="Price" value={item.sellingPrice} />
+      <StatCell
+        label="Price"
+        value={formatMoney(item.sellingPrice, moneyProfile)}
+      />
       <StatCell label="On Hand" value={item.onHandQuantity.toLocaleString()} />
       <StatCell
         label="Available"

@@ -1,12 +1,24 @@
 import type {
   LocationDocumentSettingsResponse,
   OfficialDocumentProfileResponse,
-  OfficialDocumentSettingsResponse,
   UpdateLocationDocumentSettingsRequest,
   UpdateOfficialDocumentSettingsRequest,
 } from "@shop/contracts";
+import type {
+  DocumentBrandSettings,
+  DocumentBusinessSettings,
+  DocumentDefaults,
+  LocationOverridePolicy,
+  MoneySettings,
+} from "@shop/database";
 
-export type OfficialDocumentSettings = OfficialDocumentSettingsResponse;
+export type OfficialDocumentSettings = {
+  brand: DocumentBrandSettings;
+  business: DocumentBusinessSettings;
+  currency: MoneySettings;
+  documents: DocumentDefaults;
+  locationOverridePolicy: LocationOverridePolicy;
+};
 export type OfficialDocumentProfile = OfficialDocumentProfileResponse;
 export type OfficialDocumentSettingsPatch =
   UpdateOfficialDocumentSettingsRequest;

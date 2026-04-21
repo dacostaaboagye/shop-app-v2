@@ -6,6 +6,7 @@ import {
 } from "@shop/database";
 import { and, asc, eq, gt, ilike, or, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
+import { listPrimaryImageUrls } from "./catalog-primary-image.loader.js";
 
 export class PostgresVariantSearchRepository {
   constructor(private readonly db: ApiDatabase) {}
@@ -66,8 +67,17 @@ export class PostgresVariantSearchRepository {
         .offset((input.page - 1) * input.pageSize),
     ]);
 
+    const primaryImageUrls = await listPrimaryImageUrls(
+      this.db,
+      "product",
+      rows.map((row) => row.productSlug),
+    );
+
     return {
-      items: rows,
+      items: rows.map((row) => ({
+        ...row,
+        primaryImageUrl: primaryImageUrls.get(row.productSlug) ?? null,
+      })),
       total: countResult[0]?.count ?? 0,
     };
   }

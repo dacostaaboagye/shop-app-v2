@@ -49,9 +49,9 @@ export const SECONDARY_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     description: "Workers and managers assigned to this location.",
     href: toRoute("/manager/staff"),
     icon: Users,
-    label: "Staff",
+    label: "Staff performance",
     requiredPermission: "staff.view",
-    section: "People",
+    section: "Operations",
   },
   {
     activeMatchers: [

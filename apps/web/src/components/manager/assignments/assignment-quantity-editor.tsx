@@ -2,6 +2,7 @@
 
 import type { VariantSearchResult } from "@shop/contracts";
 import { Minus, Plus, X } from "lucide-react";
+import { ProductThumbnail } from "@/components/system/product-thumbnail";
 import { cn } from "@/lib/utils";
 
 export type SelectedVariantEntry = {
@@ -33,6 +34,12 @@ export function AssignmentQuantityEditor({
             className="flex items-center gap-3 px-4 py-3"
             key={variant.variantId}
           >
+            <ProductThumbnail
+              className="size-10 shrink-0"
+              imageUrl={variant.primaryImageUrl}
+              productName={variant.productName}
+              variantName={variant.name}
+            />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium leading-snug">
                 {variant.productName}

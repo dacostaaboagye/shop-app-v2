@@ -11,11 +11,19 @@ export const notificationResourceSchema = z.object({
   reference: z.string().min(1).max(120),
 });
 
+export const notificationPayloadValueSchema = z.union([
+  z.string(),
+  z.number(),
+  z.boolean(),
+  z.null(),
+]);
+
 export const notificationListItemSchema = z.object({
   actorUserSlug: z.string().min(1).max(120),
   eventType: z.string().min(1).max(120),
   notificationKey: z.string().uuid(),
   occurredAt: z.iso.datetime(),
+  payload: z.record(z.string(), notificationPayloadValueSchema).default({}),
   readAt: z.iso.datetime().nullable(),
   resource: notificationResourceSchema,
   status: notificationStatusSchema,

@@ -16,6 +16,7 @@ export const DEFAULT_OFFICIAL_DOCUMENT_PROFILE: OfficialDocumentProfile = {
   locale: "en-GH",
   locationId: null,
   locationName: null,
+  logoImageUrl: null,
   logoText: "SA",
   paperSize: "receipt_80mm",
   phone: "+233 00 000 0000",

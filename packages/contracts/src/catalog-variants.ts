@@ -10,6 +10,7 @@ export const variantSearchQuerySchema = z.object({
 export const variantSearchResultSchema = z.object({
   name: z.string(),
   onHandQuantity: z.number().int().min(0),
+  primaryImageUrl: z.string().nullable().optional(),
   productName: z.string(),
   productSlug: z.string(),
   sellingPrice: z.string(),

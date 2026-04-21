@@ -5,7 +5,7 @@
   "scripts": {
     "build": "next build",
     "check": "pnpm lint && pnpm typecheck",
-    "dev": "pnpm --filter @shop/contracts build && next dev",
+    "dev": "next dev",
     "lint": "biome check src",
     "prebuild": "pnpm --filter @shop/contracts build",
     "pretest": "pnpm --filter @shop/contracts build",

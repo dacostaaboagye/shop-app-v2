@@ -20,6 +20,12 @@ export const adminUserListQuerySchema = z.object({
   status: z.enum(["all", "active", "suspended", "deactivated"]).default("all"),
 });
 
+export const adminStaffRoleFilterSchema = z.enum(["all", "manager", "worker"]);
+
+export const adminStaffListQuerySchema = adminUserListQuerySchema.extend({
+  role: adminStaffRoleFilterSchema.default("all"),
+});
+
 export const adminAssignedLocationSchema = z.object({
   name: z.string().min(1).max(160),
   slug: z.string().min(1).max(120),
@@ -42,6 +48,13 @@ export const adminUserSummarySchema = z.object({
 
 export const adminUserListResponseSchema = z.object({
   availableRoles: z.array(adminRoleOptionSchema).default([]),
+  items: z.array(adminUserSummarySchema),
+  page: z.number().int().min(1),
+  pageSize: z.number().int().min(1),
+  totalCount: z.number().int().min(0),
+});
+
+export const adminStaffListResponseSchema = z.object({
   items: z.array(adminUserSummarySchema),
   page: z.number().int().min(1),
   pageSize: z.number().int().min(1),
@@ -81,6 +94,24 @@ export const adminLocationListResponseSchema = z.object({
   totalCount: z.number().int().min(0),
 });
 
+export const adminLocationStaffSummarySchema = z.object({
+  activeAssignmentCount: z.number().int().min(0),
+  assignedAt: z.iso.datetime(),
+  email: z.email(),
+  firstName: z.string().min(1).max(120),
+  lastName: z.string().min(1).max(120),
+  roleName: z.string().min(1).max(120),
+  roleSlug: z.enum(["manager", "worker"]),
+  status: authUserStatusSchema,
+  userSlug: z.string().min(1).max(120),
+});
+
+export const adminLocationStaffListResponseSchema = z.object({
+  items: z.array(adminLocationStaffSummarySchema),
+  locationName: z.string().min(1).max(160),
+  locationSlug: z.string().min(1).max(120),
+});
+
 export type AdminAssignedLocation = z.infer<typeof adminAssignedLocationSchema>;
 export type AdminLocationListQuery = z.infer<
   typeof adminLocationListQuerySchema
@@ -90,9 +121,20 @@ export type AdminLocationListResponse = z.infer<
 >;
 export type AdminLocationStatus = z.infer<typeof adminLocationStatusSchema>;
 export type AdminLocationSummary = z.infer<typeof adminLocationSummarySchema>;
+export type AdminLocationStaffListResponse = z.infer<
+  typeof adminLocationStaffListResponseSchema
+>;
+export type AdminLocationStaffSummary = z.infer<
+  typeof adminLocationStaffSummarySchema
+>;
 export type AdminLocationType = z.infer<typeof adminLocationTypeSchema>;
 export type AdminRoleOption = z.infer<typeof adminRoleOptionSchema>;
 export type AdminSortDirection = z.infer<typeof adminSortDirectionSchema>;
+export type AdminStaffListQuery = z.infer<typeof adminStaffListQuerySchema>;
+export type AdminStaffListResponse = z.infer<
+  typeof adminStaffListResponseSchema
+>;
+export type AdminStaffRoleFilter = z.infer<typeof adminStaffRoleFilterSchema>;
 export type AdminUserListQuery = z.infer<typeof adminUserListQuerySchema>;
 export type AdminUserListResponse = z.infer<typeof adminUserListResponseSchema>;
 export type AdminUserSummary = z.infer<typeof adminUserSummarySchema>;

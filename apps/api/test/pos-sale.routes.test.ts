@@ -78,10 +78,16 @@ describe("POS sale routes", () => {
 
   it("requires manager sales permission for the requested location", async () => {
     const permissionCalls: PermissionCall[] = [];
-    let listedLocationId: string | null = null;
+    let listedQuery: null | {
+      documentType?: "credit_note" | "invoice";
+      locationId: string;
+    } = null;
     const server = createSalesServer({
       async listByLocation(input) {
-        listedLocationId = input.locationId;
+        listedQuery = {
+          ...(input.documentType ? { documentType: input.documentType } : {}),
+          locationId: input.locationId,
+        };
         return { items: [invoice()], total: 1 };
       },
       permissionCalls,
@@ -90,11 +96,14 @@ describe("POS sale routes", () => {
     const response = await server.inject({
       headers: { authorization: bearerToken() },
       method: "GET",
-      url: `/api/manager/sales?locationId=${LOCATION_ID}`,
+      url: `/api/manager/sales?documentType=credit_note&locationId=${LOCATION_ID}`,
     });
 
     assert.equal(response.statusCode, 200);
-    assert.equal(listedLocationId, LOCATION_ID);
+    assert.deepEqual(listedQuery, {
+      documentType: "credit_note",
+      locationId: LOCATION_ID,
+    });
     assert.ok(
       permissionCalls.some(
         (call) =>
@@ -115,6 +124,7 @@ function createSalesServer(input: {
   forbiddenPermissions?: string[];
   invoice?: InvoiceWithLines;
   listByLocation?: (input: {
+    documentType?: "credit_note" | "invoice";
     locationId: string;
     page: number;
     pageSize: number;

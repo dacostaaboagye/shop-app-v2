@@ -43,9 +43,14 @@ function registerWorkerListRoute(
       return workerAssignmentListResponseSchema.parse({
         items: assignments.map((assignment) => ({
           availableQuantity: assignment.availableQuantity,
+          brandName: assignment.brandName,
+          brandSlug: assignment.brandSlug,
+          categoryName: assignment.categoryName,
+          categorySlug: assignment.categorySlug,
           effectiveFrom: assignment.effectiveFrom.toISOString(),
           locationId: assignment.locationId,
           onHandQuantity: assignment.onHandQuantity,
+          primaryImageUrl: assignment.primaryImageUrl,
           productName: assignment.productName,
           productSlug: assignment.productSlug,
           quantity: assignment.quantity,

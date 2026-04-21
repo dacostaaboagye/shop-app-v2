@@ -35,6 +35,7 @@ export class PostgresInvoiceQueryRepository {
   async listByLocation(input: {
     dateFrom?: Date;
     dateTo?: Date;
+    documentType?: "credit_note" | "invoice";
     locationId: string;
     page: number;
     pageSize: number;
@@ -43,6 +44,9 @@ export class PostgresInvoiceQueryRepository {
     const conditions = [eq(invoices.locationId, input.locationId)];
     if (input.workerId) {
       conditions.push(eq(invoices.attributedWorkerId, input.workerId));
+    }
+    if (input.documentType) {
+      conditions.push(eq(invoices.type, mapDocumentType(input.documentType)));
     }
     if (input.dateFrom) {
       conditions.push(gte(invoices.createdAt, input.dateFrom));
@@ -71,6 +75,7 @@ export class PostgresInvoiceQueryRepository {
   async listByWorker(input: {
     dateFrom?: Date;
     dateTo?: Date;
+    documentType?: "credit_note" | "invoice";
     locationId: string;
     page: number;
     pageSize: number;
@@ -85,6 +90,9 @@ export class PostgresInvoiceQueryRepository {
     ];
     if (input.dateFrom) {
       conditions.push(gte(invoices.createdAt, input.dateFrom));
+    }
+    if (input.documentType) {
+      conditions.push(eq(invoices.type, mapDocumentType(input.documentType)));
     }
     if (input.dateTo) {
       conditions.push(lte(invoices.createdAt, input.dateTo));
@@ -106,4 +114,8 @@ export class PostgresInvoiceQueryRepository {
 
     return { items: rows.map(mapInvoice), total: count };
   }
+}
+
+function mapDocumentType(documentType: "credit_note" | "invoice") {
+  return documentType === "invoice" ? "pos" : "credit_note";
 }

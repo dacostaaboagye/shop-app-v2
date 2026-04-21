@@ -1,8 +1,7 @@
 "use client";
 
-import type { LocationStaffSummary } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
-import { ShieldCheck, UserCheck } from "lucide-react";
+import { BarChart3, ShieldCheck, UserCheck } from "lucide-react";
 import { useMemo } from "react";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
@@ -11,20 +10,19 @@ import {
   PageShell,
   StatCard,
 } from "@/components/system/page-shell";
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
+import { DEFAULT_OFFICIAL_DOCUMENT_PROFILE } from "@/lib/documents/official-document-profile";
+import { formatMoney, toNumericAmount } from "@/lib/money/format-money";
 import {
   fetchManagerStaff,
   managerStaffQueryKey,
 } from "@/lib/react-query/manager-staff";
+import {
+  fetchOfficialDocumentProfile,
+  officialDocumentProfileQueryKey,
+} from "@/lib/react-query/official-documents";
+import { ManagerStaffList } from "./manager-staff-list";
 
 const STAFF_SKELETON_KEYS = ["staff-1", "staff-2", "staff-3"] as const;
 
@@ -56,6 +54,24 @@ export function ManagerStaffPageClient() {
     () => staff.filter((member) => member.roleSlug === "manager").length,
     [staff],
   );
+  const profileQuery = useQuery({
+    enabled: !!selectedLocationScope,
+    queryFn: () =>
+      fetchOfficialDocumentProfile(selectedLocationScope?.locationId),
+    queryKey: officialDocumentProfileQueryKey(
+      selectedLocationScope?.locationId,
+    ),
+    staleTime: 5 * 60_000,
+  });
+  const moneyProfile = profileQuery.data ?? DEFAULT_OFFICIAL_DOCUMENT_PROFILE;
+  const netWorkerSales = useMemo(
+    () =>
+      staff.reduce(
+        (sum, member) => sum + (toNumericAmount(member.netSalesAmount) ?? 0),
+        0,
+      ),
+    [staff],
+  );
 
   return (
     <PageShell>
@@ -76,7 +92,7 @@ export function ManagerStaffPageClient() {
 
       {staffQuery.isPending && selectedLocationScope ? (
         <div className="flex flex-col gap-3">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {STAFF_SKELETON_KEYS.map((key) => (
               <Skeleton key={key} className="h-24 w-full" />
             ))}
@@ -92,7 +108,7 @@ export function ManagerStaffPageClient() {
         />
       ) : selectedLocationScope ? (
         <div className="flex flex-col gap-6">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               description="Workers assigned to this location."
               icon={UserCheck}
@@ -111,90 +127,23 @@ export function ManagerStaffPageClient() {
               label="Total staff"
               value={staff.length}
             />
+            <StatCard
+              description="Confirmed sales minus returns by assigned staff."
+              icon={BarChart3}
+              label="Net staff sales"
+              value={formatMoney(netWorkerSales, moneyProfile)}
+            />
           </div>
-          <StaffList
+          <ManagerStaffList
             items={staff}
             locationName={
               staffQuery.data?.locationName ??
               selectedLocationScope.locationName
             }
+            moneyProfile={moneyProfile}
           />
         </div>
       ) : null}
     </PageShell>
-  );
-}
-
-function StaffList({
-  items,
-  locationName,
-}: {
-  items: readonly LocationStaffSummary[];
-  locationName: string;
-}) {
-  if (items.length === 0) {
-    return (
-      <Card className="border-dashed">
-        <CardHeader>
-          <CardTitle>No staff assigned</CardTitle>
-          <CardDescription>
-            Assign workers or managers to this location from admin access before
-            managing stock ownership.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{locationName || "Location team"}</CardTitle>
-        <CardDescription>
-          Staff available for stock assignment and day-to-day supervision at
-          this location.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col divide-y divide-border">
-        {items.map((member) => (
-          <div
-            key={`${member.userId}:${member.roleSlug}`}
-            className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
-          >
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="font-medium">
-                  {member.firstName} {member.lastName}
-                </p>
-                <Badge
-                  variant={
-                    member.roleSlug === "manager" ? "secondary" : "outline"
-                  }
-                >
-                  {member.roleName}
-                </Badge>
-                <Badge variant="outline">{member.status}</Badge>
-              </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {member.email}
-              </p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Assigned{" "}
-                {new Date(member.assignedAt).toLocaleDateString("en-GB")}
-              </p>
-            </div>
-            <div className="text-right text-sm">
-              <p className="font-medium tabular-nums">
-                {member.activeAssignmentCount}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                active stock assignment
-                {member.activeAssignmentCount === 1 ? "" : "s"}
-              </p>
-            </div>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
   );
 }

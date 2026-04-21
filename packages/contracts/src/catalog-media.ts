@@ -5,6 +5,7 @@ export const catalogMediaEntityTypeSchema = z.enum([
   "category",
   "location",
   "product",
+  "system",
   "user",
   "variant",
 ]);
@@ -23,6 +24,11 @@ export const ALLOWED_MEDIA_MIMES = [
 
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 export const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+
+export const APPLICATION_BRAND_MEDIA_ENTITY = {
+  entitySlug: "application-brand",
+  entityType: "system",
+} as const;
 
 // Represents one catalog_media_assignments row joined with its media_assets row.
 export const adminMediaRecordSchema = z.object({

@@ -52,6 +52,25 @@ describe("portal-shell-config", () => {
     assert.equal(adminSection, undefined);
   });
 
+  it("shows settings as a section with configuration subpages", () => {
+    const sections = getVisibleNavSections(
+      createPermissionAbility(["settings.documents.view"]),
+    );
+    const settingsSection = sections.find((s) => s.title === "Settings");
+
+    assert.deepEqual(
+      settingsSection?.items.map((item) => item.label),
+      [
+        "Overview",
+        "Brand",
+        "Business",
+        "Money",
+        "Documents",
+        "Location overrides",
+      ],
+    );
+  });
+
   it("shows both Overview entries for a user with admin + worker dashboard permissions", () => {
     const sections = getVisibleNavSections(
       createPermissionAbility([

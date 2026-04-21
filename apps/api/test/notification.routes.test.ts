@@ -23,6 +23,10 @@ describe("notification routes", () => {
     assert.equal(response.statusCode, 200);
     assert.equal(response.json().unreadCount, 2);
     assert.equal(response.json().items[0]?.resource.reference, "SUP-0001");
+    assert.equal(
+      response.json().items[0]?.payload.destinationLocationName,
+      "Ablekuma Warehouse",
+    );
   });
 
   it("marks an owned notification as read", async () => {
@@ -142,6 +146,12 @@ function createNotificationServer(input?: {
                 eventType: "transfer.dispatched",
                 notificationKey: "22222222-2222-4222-8222-222222222222",
                 occurredAt: NOW.toISOString(),
+                payload: {
+                  approvedQuantity: 4,
+                  destinationLocationName: "Ablekuma Warehouse",
+                  gtnReference: "GTN-0001",
+                  sourceLocationName: "Main Warehouse",
+                },
                 readAt: null,
                 resource: {
                   kind: "stock_transfer_request",

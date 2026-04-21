@@ -12,6 +12,7 @@ export type AdminStockCountRequest = {
 
 export type AdminStockCountSummary = {
   availableQuantity: number;
+  inTransitQuantity: number;
   locationName: string;
   locationSlug: string;
   onHandQuantity: number;
@@ -131,6 +132,7 @@ export class AdminStockCountRepository {
 
       return {
         availableQuantity: onHandQuantity - reserved,
+        inTransitQuantity: 0,
         locationName: location.name,
         locationSlug,
         onHandQuantity,

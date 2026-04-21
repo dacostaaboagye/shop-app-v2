@@ -2,10 +2,13 @@
 
 import type { AdminProductSummary } from "@shop/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ImageOff, MoreVertical, Pencil, Trash2 } from "lucide-react";
-import Image from "next/image";
+import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import {
+  ImagePreviewPlaceholder,
+  PreviewImage,
+} from "@/components/system/preview-image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,18 +31,17 @@ export const productTableColumns: Array<
     size: 56,
     cell: ({ row }) =>
       row.original.primaryImageUrl ? (
-        <Image
+        <PreviewImage
           alt={row.original.name}
-          className="rounded object-cover"
+          className="size-10"
           height={40}
+          imageClassName="rounded-md"
+          previewTitle={row.original.name}
           src={row.original.primaryImageUrl}
-          unoptimized
           width={40}
         />
       ) : (
-        <div className="flex size-10 items-center justify-center rounded bg-muted">
-          <ImageOff className="size-4 text-muted-foreground" />
-        </div>
+        <ImagePreviewPlaceholder className="size-10" />
       ),
   },
   {

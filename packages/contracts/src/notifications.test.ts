@@ -22,6 +22,12 @@ describe("notifications contracts", () => {
           eventType: "transfer.dispatched",
           notificationKey: "11111111-1111-4111-8111-111111111111",
           occurredAt: "2026-04-19T23:00:00.000Z",
+          payload: {
+            approvedQuantity: 4,
+            destinationLocationName: "Ablekuma Warehouse",
+            gtnReference: "GTN-0001",
+            sourceLocationName: "Main Warehouse",
+          },
           readAt: null,
           resource: {
             kind: "stock_transfer_request",
@@ -35,6 +41,7 @@ describe("notifications contracts", () => {
     });
 
     assert.equal(parsed.items[0]?.resource.reference, "SUP-0001");
+    assert.equal(parsed.items[0]?.payload.gtnReference, "GTN-0001");
     assert.equal(parsed.unreadCount, 3);
   });
 

@@ -1,5 +1,6 @@
 import type {
   AdminLocationListQuery,
+  AdminLocationStaffSummary,
   AdminLocationSummary,
   AdminLocationZoneSummary,
 } from "@shop/contracts";
@@ -9,6 +10,11 @@ export type AdminLocationQueryRepository = {
   listLocations(input: AdminLocationListQuery): Promise<{
     items: AdminLocationSummary[];
     totalCount: number;
+  }>;
+  listLocationStaff(locationSlug: string): Promise<{
+    items: AdminLocationStaffSummary[];
+    locationName: string | null;
+    locationSlug: string;
   }>;
   listLocationZones(locationSlug: string): Promise<AdminLocationZoneSummary[]>;
 };
@@ -22,6 +28,10 @@ export class AdminLocationQueryService {
 
   async listLocations(input: AdminLocationListQuery) {
     return this.repository.listLocations(input);
+  }
+
+  async listLocationStaff(locationSlug: string) {
+    return this.repository.listLocationStaff(locationSlug);
   }
 
   async listLocationZones(locationSlug: string) {

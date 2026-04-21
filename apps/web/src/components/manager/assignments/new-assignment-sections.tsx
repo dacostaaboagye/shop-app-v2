@@ -8,6 +8,7 @@ import { AppErrorBanner } from "@/components/system/app-error";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { MoneyProfile } from "@/lib/money/format-money";
 import {
   AssignmentQuantityEditor,
   type SelectedVariantEntry,
@@ -66,11 +67,13 @@ export function AssignmentWorkerStep({
 
 export function AssignmentVariantStep({
   locationId,
+  moneyProfile,
   onToggle,
   selectedIds,
   variantCount,
 }: {
   locationId: string;
+  moneyProfile: MoneyProfile;
   onToggle: (variant: VariantSearchResult) => void;
   selectedIds: Set<string>;
   variantCount: number;
@@ -86,6 +89,7 @@ export function AssignmentVariantStep({
       </div>
       <AssignmentVariantList
         locationId={locationId}
+        moneyProfile={moneyProfile}
         onToggle={onToggle}
         selectedIds={selectedIds}
       />

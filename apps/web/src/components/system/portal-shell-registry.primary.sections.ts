@@ -4,7 +4,6 @@ import {
   ClipboardList,
   MapPin,
   PackageSearch,
-  Settings,
   ShieldCheck,
   ShoppingCart,
   Store,
@@ -14,6 +13,7 @@ import {
 } from "lucide-react";
 import { toRoute } from "@/lib/routes";
 import type { NavRegistryEntry } from "./portal-shell-config.types";
+import { PRIMARY_SETTINGS_NAV_REGISTRY } from "./portal-shell-registry.primary.settings";
 
 export const PRIMARY_SECTION_NAV_REGISTRY: readonly NavRegistryEntry[] = [
   {
@@ -36,6 +36,15 @@ export const PRIMARY_SECTION_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     section: "Administration",
   },
   {
+    activeMatchers: [{ mode: "descendants", path: "/admin/staff" }],
+    description: "Review managers and workers across locations.",
+    href: toRoute("/admin/staff"),
+    icon: UserCheck,
+    label: "Staff",
+    requiredPermission: "users.view",
+    section: "Administration",
+  },
+  {
     activeMatchers: [{ mode: "descendants", path: "/admin/locations" }],
     description: "Create and maintain stores and warehouses.",
     href: toRoute("/admin/locations"),
@@ -44,18 +53,7 @@ export const PRIMARY_SECTION_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     requiredPermission: "locations.view",
     section: "Administration",
   },
-  {
-    activeMatchers: [
-      { mode: "descendants", path: "/admin/settings/documents" },
-    ],
-    description:
-      "Configure official documents, brand identity, and money defaults.",
-    href: toRoute("/admin/settings/documents"),
-    icon: Settings,
-    label: "Settings",
-    requiredPermission: "settings.documents.view",
-    section: "Administration",
-  },
+  ...PRIMARY_SETTINGS_NAV_REGISTRY,
   {
     activeMatchers: [{ mode: "exact", path: "/admin/locations/new" }],
     description: "Create a new store or warehouse.",

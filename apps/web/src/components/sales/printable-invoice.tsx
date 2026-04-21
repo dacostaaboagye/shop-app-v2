@@ -11,6 +11,7 @@ import {
   getSalesDocumentTitle,
 } from "@/lib/documents/sales-document";
 import {
+  PrintableBrandMark,
   PrintableRow as Row,
   PrintableSeparator as Separator,
 } from "./printable-invoice-parts";
@@ -18,10 +19,12 @@ import {
 function fmt(s: string): string {
   return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
-
 export const PrintableInvoice = forwardRef<
   HTMLDivElement,
-  { invoice: PrintableInvoiceData; profile?: OfficialDocumentProfile }
+  {
+    invoice: PrintableInvoiceData;
+    profile?: OfficialDocumentProfile;
+  }
 >(({ invoice, profile = DEFAULT_OFFICIAL_DOCUMENT_PROFILE }, ref) => {
   const date = new Date(invoice.confirmedAt ?? invoice.createdAt);
   const paymentLabel =
@@ -62,22 +65,7 @@ export const PrintableInvoice = forwardRef<
           }}
         >
           <div style={{ display: "flex", gap: "8px" }}>
-            <div
-              style={{
-                alignItems: "center",
-                backgroundColor: profile.primaryColor,
-                color: "white",
-                display: "flex",
-                fontSize: "13px",
-                fontWeight: "bold",
-                height: "36px",
-                justifyContent: "center",
-                letterSpacing: "1px",
-                width: "36px",
-              }}
-            >
-              {profile.logoText}
-            </div>
+            <PrintableBrandMark profile={profile} />
             <div>
               <p style={{ fontWeight: "bold", margin: 0 }}>
                 {profile.brandName}

@@ -2,17 +2,13 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Bell, Menu, UserCircle2 } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useMemo } from "react";
-import { useAuthorization } from "@/components/providers/authorization-provider";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
-import { getPermissionLocationScopes } from "@/lib/authorization/location-scopes";
+import { useActiveLocationScope } from "@/lib/authorization/use-active-location-scope";
 import {
   fetchNotifications,
   notificationsQueryKey,
 } from "@/lib/react-query/notifications";
-import { toRoute } from "@/lib/routes";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
 import { getActiveItem } from "./portal-shell-config";
 
@@ -139,34 +135,11 @@ function TopbarLocationSelector({
 }
 
 function useTopbarLocationSelector(permission: string | null) {
-  const currentPathname = usePathname();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { locationScopes } = useAuthorization();
-  const scopes = useMemo(
-    () =>
-      permission ? getPermissionLocationScopes(locationScopes, permission) : [],
-    [locationScopes, permission],
-  );
-  const selectedLocationSlug =
-    searchParams.get("location")?.trim() || scopes[0]?.locationSlug || "";
-
-  function onLocationChange(locationSlug: string) {
-    const nextParams = new URLSearchParams(searchParams.toString());
-    if (locationSlug) {
-      nextParams.set("location", locationSlug);
-    } else {
-      nextParams.delete("location");
-    }
-
-    const query = nextParams.toString();
-    router.replace(
-      toRoute(query ? `${currentPathname}?${query}` : currentPathname),
-      {
-        scroll: false,
-      },
-    );
-  }
+  const {
+    accessibleLocationScopes: scopes,
+    selectedLocationSlug,
+    setSelectedLocationSlug: onLocationChange,
+  } = useActiveLocationScope(permission);
 
   return { onLocationChange, scopes, selectedLocationSlug };
 }

@@ -11,7 +11,18 @@ export function resolveSelectedLocationScope(
   scopes: readonly AuthLocationPermissionScope[],
   locationSlug: string | null,
 ): AuthLocationPermissionScope | null {
-  if (locationSlug) {
+  return resolvePreferredLocationScope(scopes, [locationSlug]);
+}
+
+export function resolvePreferredLocationScope(
+  scopes: readonly AuthLocationPermissionScope[],
+  locationSlugs: readonly (string | null | undefined)[],
+): AuthLocationPermissionScope | null {
+  for (const locationSlug of locationSlugs) {
+    if (!locationSlug) {
+      continue;
+    }
+
     const selectedScope = scopes.find(
       (scope) => scope.locationSlug === locationSlug,
     );
@@ -22,4 +33,15 @@ export function resolveSelectedLocationScope(
   }
 
   return scopes[0] ?? null;
+}
+
+export function resolveActiveLocationScope(input: {
+  activeLocationSlug: string | null;
+  scopes: readonly AuthLocationPermissionScope[];
+  urlLocationSlug: string | null;
+}): AuthLocationPermissionScope | null {
+  return resolvePreferredLocationScope(input.scopes, [
+    input.activeLocationSlug,
+    input.urlLocationSlug,
+  ]);
 }

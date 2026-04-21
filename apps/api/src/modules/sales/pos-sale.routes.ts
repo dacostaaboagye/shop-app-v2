@@ -84,6 +84,9 @@ export function registerPosSaleRoutes(
       const result = await dependencies.invoiceRepository.listByWorker({
         ...(query.dateFrom ? { dateFrom: new Date(query.dateFrom) } : {}),
         ...(query.dateTo ? { dateTo: new Date(query.dateTo) } : {}),
+        ...(query.documentType !== "all"
+          ? { documentType: query.documentType }
+          : {}),
         locationId: query.locationId,
         page: query.page,
         pageSize: query.pageSize,
@@ -162,6 +165,9 @@ export function registerPosSaleRoutes(
       const result = await dependencies.invoiceRepository.listByLocation({
         ...(query.dateFrom ? { dateFrom: new Date(query.dateFrom) } : {}),
         ...(query.dateTo ? { dateTo: new Date(query.dateTo) } : {}),
+        ...(query.documentType !== "all"
+          ? { documentType: query.documentType }
+          : {}),
         locationId: query.locationId,
         page: query.page,
         pageSize: query.pageSize,

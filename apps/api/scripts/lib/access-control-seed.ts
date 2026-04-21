@@ -201,7 +201,7 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
   },
 ] as const;
 
-const SYSTEM_ROLES: readonly SystemRole[] = [
+export const SYSTEM_ROLES: readonly SystemRole[] = [
   {
     slug: "basic_user",
     name: "Basic User",
@@ -277,6 +277,7 @@ const SYSTEM_ROLES: readonly SystemRole[] = [
       "stock.assignments.view",
       "stock.assignments.own.view",
       "stock.handovers.manage",
+      "stock.supply.request",
       "stock.supply.manage",
     ],
   },

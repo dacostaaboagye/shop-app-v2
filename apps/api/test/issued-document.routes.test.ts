@@ -178,6 +178,7 @@ function snapshot(): IssuedDocumentSnapshotResponse {
       locale: "en-GH",
       locationId: LOCATION_ID,
       locationName: "Airport Branch",
+      logoImageUrl: null,
       logoText: "SA",
       paperSize: "receipt_80mm",
       phone: "+233 00 000 0000",

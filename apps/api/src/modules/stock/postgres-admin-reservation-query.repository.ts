@@ -3,6 +3,8 @@ import type {
   AdminReservationSummary,
 } from "@shop/contracts";
 import {
+  catalogBrands,
+  catalogCategories,
   catalogProducts,
   locations,
   productVariants,
@@ -24,13 +26,13 @@ export class PostgresAdminReservationQueryRepository
   constructor(private readonly db: ApiDatabase) {}
 
   async listReservations(input: AdminReservationListQuery) {
-    const { locationSlug, limit, q } = input;
+    const { brandSlug, categorySlug, locationSlug, limit, q } = input;
     const hasQuery = q.trim().length > 0;
     const pattern = `%${q.trim()}%`;
 
     const filter = and(
       eq(stockReservations.status, "active"),
-      eq(locations.slug, locationSlug),
+      locationSlug ? eq(locations.slug, locationSlug) : undefined,
       hasQuery
         ? or(
             ilike(productVariants.sku, pattern),
@@ -38,6 +40,8 @@ export class PostgresAdminReservationQueryRepository
             ilike(productVariants.name, pattern),
           )
         : undefined,
+      brandSlug ? eq(catalogBrands.slug, brandSlug) : undefined,
+      categorySlug ? eq(catalogCategories.slug, categorySlug) : undefined,
     );
 
     const rows = await this.db
@@ -67,6 +71,11 @@ export class PostgresAdminReservationQueryRepository
         catalogProducts,
         eq(catalogProducts.id, productVariants.productId),
       )
+      .leftJoin(catalogBrands, eq(catalogBrands.id, catalogProducts.brandId))
+      .leftJoin(
+        catalogCategories,
+        eq(catalogCategories.id, catalogProducts.categoryId),
+      )
       .innerJoin(locations, eq(locations.id, stockReservations.locationId))
       .where(filter)
       .orderBy(
@@ -79,11 +88,17 @@ export class PostgresAdminReservationQueryRepository
       items: rows.map((row) => ({
         ...row,
         status: "active" as const,
-        createdAt: row.createdAt.toISOString(),
-        expiresAt: row.expiresAt?.toISOString() ?? null,
-        updatedAt: row.updatedAt.toISOString(),
+        createdAt: toIsoTimestamp(row.createdAt),
+        expiresAt: row.expiresAt ? toIsoTimestamp(row.expiresAt) : null,
+        updatedAt: toIsoTimestamp(row.updatedAt),
       })),
-      locationName: rows[0]?.locationName ?? null,
+      locationName: locationSlug ? (rows[0]?.locationName ?? null) : null,
     };
   }
+}
+
+function toIsoTimestamp(value: Date | string): string {
+  return value instanceof Date
+    ? value.toISOString()
+    : new Date(value).toISOString();
 }

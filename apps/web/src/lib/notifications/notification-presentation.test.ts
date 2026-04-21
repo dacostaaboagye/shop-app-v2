@@ -4,6 +4,7 @@ import {
   formatNotificationTimeLabel,
   getNotificationActorLabel,
   getNotificationEventLabel,
+  getNotificationPresentation,
 } from "./notification-presentation";
 
 describe("notification presentation helpers", () => {
@@ -32,6 +33,7 @@ describe("notification presentation helpers", () => {
         eventType: "transfer.approved",
         notificationKey: "11111111-1111-4111-8111-111111111111",
         occurredAt: "2026-04-20T00:00:00.000Z",
+        payload: {},
         readAt: null,
         resource: {
           kind: "stock_transfer_request",
@@ -40,7 +42,35 @@ describe("notification presentation helpers", () => {
         status: "unread",
         summary: "SUP-0001 was approved.",
       }),
-      "By manager-a",
+      "By Manager A",
+    );
+  });
+
+  it("builds descriptive transfer notification copy", () => {
+    const presentation = getNotificationPresentation({
+      actorUserSlug: "warehouse-manager",
+      eventType: "transfer.dispatched",
+      notificationKey: "11111111-1111-4111-8111-111111111111",
+      occurredAt: "2026-04-20T00:00:00.000Z",
+      payload: {
+        approvedQuantity: 4,
+        destinationLocationName: "Ablekuma Warehouse",
+        gtnReference: "GTN-0001",
+        sourceLocationName: "Main Warehouse",
+      },
+      readAt: null,
+      resource: {
+        kind: "stock_transfer_request",
+        reference: "SUP-0001",
+      },
+      status: "unread",
+      summary: "SUP-0001 was dispatched.",
+    });
+
+    assert.equal(presentation.title, "Supply request SUP-0001 is in transit");
+    assert.equal(
+      presentation.detail,
+      "By Warehouse Manager dispatched 4 units from Main Warehouse to Ablekuma Warehouse under GTN GTN-0001.",
     );
   });
 });

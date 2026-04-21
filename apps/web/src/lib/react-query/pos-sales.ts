@@ -9,6 +9,7 @@ import { fetchJson } from "@/lib/react-query/fetch-json";
 export type InvoiceListQuery = {
   dateFrom?: string;
   dateTo?: string;
+  documentType?: "all" | "credit_note" | "invoice";
   locationId: string;
   page?: number;
   pageSize?: number;
@@ -34,6 +35,9 @@ export async function fetchWorkerSales(
   });
   if (query.dateFrom) params.set("dateFrom", query.dateFrom);
   if (query.dateTo) params.set("dateTo", query.dateTo);
+  if (query.documentType && query.documentType !== "all") {
+    params.set("documentType", query.documentType);
+  }
 
   return fetchJson<InvoiceListResponse>(
     `/api/worker/sales?${params.toString()}`,
@@ -52,6 +56,9 @@ export async function fetchManagerSales(
   });
   if (query.dateFrom) params.set("dateFrom", query.dateFrom);
   if (query.dateTo) params.set("dateTo", query.dateTo);
+  if (query.documentType && query.documentType !== "all") {
+    params.set("documentType", query.documentType);
+  }
   if (query.workerId) params.set("workerId", query.workerId);
 
   return fetchJson<InvoiceListResponse>(

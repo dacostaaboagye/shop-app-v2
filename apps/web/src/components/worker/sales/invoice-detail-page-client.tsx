@@ -8,11 +8,17 @@ import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DEFAULT_OFFICIAL_DOCUMENT_PROFILE } from "@/lib/documents/official-document-profile";
+import {
+  fetchOfficialDocumentProfile,
+  officialDocumentProfileQueryKey,
+} from "@/lib/react-query/official-documents";
 import {
   fetchWorkerInvoice,
   invoiceQueryKey,
 } from "@/lib/react-query/pos-sales";
 import { toRoute } from "@/lib/routes";
+import { PosSaleReturnDialog } from "./pos-sale-return-dialog";
 
 export function WorkerInvoiceDetailPageClient({
   reference,
@@ -24,6 +30,13 @@ export function WorkerInvoiceDetailPageClient({
     queryKey: invoiceQueryKey(reference),
     staleTime: 60_000,
   });
+  const profileQuery = useQuery({
+    enabled: Boolean(invoiceQuery.data?.locationId),
+    queryFn: () => fetchOfficialDocumentProfile(invoiceQuery.data?.locationId),
+    queryKey: officialDocumentProfileQueryKey(invoiceQuery.data?.locationId),
+    staleTime: 5 * 60_000,
+  });
+  const moneyProfile = profileQuery.data ?? DEFAULT_OFFICIAL_DOCUMENT_PROFILE;
 
   return (
     <PageShell>
@@ -46,7 +59,15 @@ export function WorkerInvoiceDetailPageClient({
       ) : invoiceQuery.data ? (
         <SalesDocumentWorkspace
           invoice={invoiceQuery.data}
-          secondaryAction={<NewSaleLink />}
+          secondaryAction={
+            <>
+              <PosSaleReturnDialog
+                invoice={invoiceQuery.data}
+                moneyProfile={moneyProfile}
+              />
+              <NewSaleLink />
+            </>
+          }
         />
       ) : null}
     </PageShell>

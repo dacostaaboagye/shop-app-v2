@@ -8,7 +8,9 @@ import { AppError } from "../_core/errors/app-error.js";
 import type { OfficialDocumentSettingsRepository } from "./official-document-settings.repository.js";
 import type {
   LocationDocumentSettingsPatch,
+  OfficialDocumentSettings,
   OfficialDocumentSettingsPatch,
+  OfficialDocumentSettingsRecord,
 } from "./official-document-settings.types.js";
 
 type GlobalSettingsResponse = z.infer<
@@ -19,13 +21,21 @@ type LocationSettingsResponse = z.infer<
 >;
 type ProfileResponse = z.infer<typeof officialDocumentProfileResponseSchema>;
 
+export type OfficialDocumentBrandLogoResolver = {
+  getLogoImageUrl: () => Promise<string | null>;
+};
+
 export class OfficialDocumentSettingsService {
   constructor(
     private readonly repository: OfficialDocumentSettingsRepository,
+    private readonly brandLogoResolver: OfficialDocumentBrandLogoResolver | null = null,
   ) {}
 
   async getGlobalSettings(): Promise<GlobalSettingsResponse> {
-    return serializeGlobal(await this.repository.getGlobalSettings());
+    return serializeGlobal(
+      await this.repository.getGlobalSettings(),
+      await this.resolveLogoImageUrl(),
+    );
   }
 
   async updateGlobalSettings(input: {
@@ -34,7 +44,7 @@ export class OfficialDocumentSettingsService {
     now: Date;
   }): Promise<GlobalSettingsResponse> {
     const current = await this.repository.getGlobalSettings();
-    const settings = {
+    const settings: OfficialDocumentSettings = {
       brand: mergeDefined(current.brand, input.patch.brand),
       business: mergeDefined(current.business, input.patch.business),
       currency: mergeDefined(current.currency, input.patch.currency),
@@ -43,15 +53,13 @@ export class OfficialDocumentSettingsService {
         current.locationOverridePolicy,
         input.patch.locationOverridePolicy,
       ),
-      updatedAt: current.updatedAt?.toISOString() ?? null,
-      updatedByUserSlug: current.updatedByUserSlug,
     };
     const saved = await this.repository.saveGlobalSettings({
       now: input.now,
       settings,
       updatedBy: input.updatedBy,
     });
-    return serializeGlobal(saved);
+    return serializeGlobal(saved, await this.resolveLogoImageUrl());
   }
 
   async getLocationSettings(
@@ -75,6 +83,7 @@ export class OfficialDocumentSettingsService {
     }
 
     const policy = global.locationOverridePolicy;
+    const logoImageUrl = await this.resolveLogoImageUrl();
     return {
       accentColor: global.brand.accentColor,
       addressLines:
@@ -103,6 +112,7 @@ export class OfficialDocumentSettingsService {
         policy.allowLocationDisplayName && location?.displayName
           ? location.displayName
           : (location?.locationName ?? null),
+      logoImageUrl,
       logoText: global.brand.logoText,
       paperSize:
         policy.allowLocationPaperSize && location?.defaultPaperSize
@@ -130,6 +140,10 @@ export class OfficialDocumentSettingsService {
     if (!saved) throw locationNotFoundError(input.locationId);
     return serializeLocation(saved);
   }
+
+  private resolveLogoImageUrl() {
+    return this.brandLogoResolver?.getLogoImageUrl() ?? Promise.resolve(null);
+  }
 }
 
 type LoosePatch<T> = { [K in keyof T]?: T[K] | undefined };
@@ -149,17 +163,12 @@ function mergeDefined<T extends Record<string, unknown>>(
   return next;
 }
 
-function serializeGlobal(input: {
-  brand: GlobalSettingsResponse["brand"];
-  business: GlobalSettingsResponse["business"];
-  currency: GlobalSettingsResponse["currency"];
-  documents: GlobalSettingsResponse["documents"];
-  locationOverridePolicy: GlobalSettingsResponse["locationOverridePolicy"];
-  updatedAt: Date | null;
-  updatedByUserSlug: string | null;
-}): GlobalSettingsResponse {
+function serializeGlobal(
+  input: OfficialDocumentSettingsRecord,
+  logoImageUrl: string | null,
+): GlobalSettingsResponse {
   return {
-    brand: input.brand,
+    brand: { ...input.brand, logoImageUrl },
     business: input.business,
     currency: input.currency,
     documents: input.documents,

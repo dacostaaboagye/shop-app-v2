@@ -1,7 +1,10 @@
 "use client";
 
+import { APPLICATION_BRAND_MEDIA_ENTITY } from "@shop/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { MediaPanel } from "@/components/admin/catalog/media/media-panel";
+import { useAuthorization } from "@/components/providers/authorization-provider";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { Badge } from "@/components/ui/badge";
@@ -11,12 +14,29 @@ import {
   officialDocumentSettingsQueryKey,
   updateOfficialDocumentSettings,
 } from "@/lib/react-query/official-documents";
-import { OfficialDocumentSettingsForm } from "./official-document-settings-form";
+import {
+  OfficialDocumentSettingsForm,
+  type OfficialDocumentSettingsSection,
+} from "./official-document-settings-form";
 
 const SKELETON_KEYS = [1, 2, 3];
 
-export function OfficialDocumentSettingsPageClient() {
+type PageConfig = {
+  description: string;
+  section: OfficialDocumentSettingsSection;
+  title: string;
+};
+
+export function OfficialDocumentSettingsPageClient({
+  description,
+  section,
+  title,
+}: PageConfig) {
   const queryClient = useQueryClient();
+  const { can, canAny } = useAuthorization();
+  const canManageSettings = can("settings.documents.manage");
+  const canManageMedia = can("catalog.media.manage");
+  const canViewMedia = canAny(["catalog.view", "catalog.media.manage"]);
   const settingsQuery = useQuery({
     queryFn: fetchOfficialDocumentSettings,
     queryKey: officialDocumentSettingsQueryKey,
@@ -25,6 +45,9 @@ export function OfficialDocumentSettingsPageClient() {
     mutationFn: updateOfficialDocumentSettings,
     onSuccess(data) {
       queryClient.setQueryData(officialDocumentSettingsQueryKey, data);
+      void queryClient.invalidateQueries({
+        queryKey: ["official-documents", "profile"],
+      });
       toast.success("Official document settings saved.");
     },
   });
@@ -33,8 +56,8 @@ export function OfficialDocumentSettingsPageClient() {
     <PageShell>
       <PageHeader
         actions={<Badge variant="secondary">Production configuration</Badge>}
-        description="Configure official document identity, money defaults, and receipt behavior for the platform."
-        title="Official documents"
+        description={description}
+        title={title}
       />
 
       {settingsQuery.isPending ? (
@@ -61,11 +84,20 @@ export function OfficialDocumentSettingsPageClient() {
             />
           ) : null}
           <OfficialDocumentSettingsForm
-            key={settingsQuery.data.updatedAt ?? "defaults"}
+            canManage={canManageSettings}
+            key={`${section}-${settingsQuery.data.updatedAt ?? "defaults"}`}
             isSaving={mutation.isPending}
             onSubmit={(payload) => mutation.mutate(payload)}
+            section={section}
             settings={settingsQuery.data}
           />
+          {section === "brand" && canViewMedia ? (
+            <MediaPanel
+              canManage={canManageMedia}
+              entitySlug={APPLICATION_BRAND_MEDIA_ENTITY.entitySlug}
+              entityType={APPLICATION_BRAND_MEDIA_ENTITY.entityType}
+            />
+          ) : null}
         </>
       )}
     </PageShell>

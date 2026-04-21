@@ -8,6 +8,11 @@ import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SupplyRequestDialog } from "@/components/worker/stock/supply-request-dialog";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
+import { DEFAULT_OFFICIAL_DOCUMENT_PROFILE } from "@/lib/documents/official-document-profile";
+import {
+  fetchOfficialDocumentProfile,
+  officialDocumentProfileQueryKey,
+} from "@/lib/react-query/official-documents";
 import {
   fetchWorkerAssignments,
   workerAssignmentsQueryKey,
@@ -50,6 +55,16 @@ export function WorkerAssignmentsPageClient() {
     ),
     staleTime: 30_000,
   });
+  const profileQuery = useQuery({
+    enabled: !!selectedLocationScope,
+    queryFn: () =>
+      fetchOfficialDocumentProfile(selectedLocationScope?.locationId),
+    queryKey: officialDocumentProfileQueryKey(
+      selectedLocationScope?.locationId,
+    ),
+    staleTime: 5 * 60_000,
+  });
+  const moneyProfile = profileQuery.data ?? DEFAULT_OFFICIAL_DOCUMENT_PROFILE;
 
   const allItems = assignmentsQuery.data?.items ?? [];
   const filteredItems = useMemo(
@@ -98,6 +113,7 @@ export function WorkerAssignmentsPageClient() {
             assignmentsQuery.data?.locationName ??
             selectedLocationScope.locationName
           }
+          moneyProfile={moneyProfile}
           onRequestSupply={setSupplyTarget}
           onSearchChange={setSearch}
           onStockFilterChange={setStockFilter}

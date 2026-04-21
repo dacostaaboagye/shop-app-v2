@@ -113,6 +113,7 @@ const server = createServer({
   stockAssignments: assignmentsRuntime.assignments,
   stockBalance: stockRuntime.stock,
   stockBalanceLocation: {
+    permissionService: authRuntime.accessControl.permissionService,
     stockBalanceQueryRepo: stockRuntime.stock.stockBalanceQueryRepo,
   },
   stockCount: stockRuntime.stock,

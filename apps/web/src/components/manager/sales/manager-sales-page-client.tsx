@@ -4,6 +4,11 @@ import type { InvoiceListResponse } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { BarChart3, Receipt } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import {
+  type SalesDocumentTypeFilter,
+  SalesListFilters,
+} from "@/components/sales/sales-list-filters";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import {
@@ -33,6 +38,10 @@ import { toRoute } from "@/lib/routes";
 const SKELETON_KEYS = [1, 2, 3, 4, 5];
 
 export function ManagerSalesPageClient() {
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [documentType, setDocumentType] =
+    useState<SalesDocumentTypeFilter>("all");
   const {
     accessibleLocationScopes,
     isLoading,
@@ -42,6 +51,9 @@ export function ManagerSalesPageClient() {
   } = usePermissionLocationScope("pos.sales.manage");
 
   const query = {
+    ...(dateFrom ? { dateFrom } : {}),
+    ...(dateTo ? { dateTo } : {}),
+    documentType,
     locationId: selectedLocationScope?.locationId ?? "",
     page: 1,
     pageSize: 50,
@@ -85,6 +97,20 @@ export function ManagerSalesPageClient() {
         onLocationChange={setSelectedLocationSlug}
         selectedLocationSlug={selectedLocationSlug}
         title="Sales location"
+      />
+
+      <SalesListFilters
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        documentType={documentType}
+        onClear={() => {
+          setDateFrom("");
+          setDateTo("");
+          setDocumentType("all");
+        }}
+        onDateFromChange={setDateFrom}
+        onDateToChange={setDateTo}
+        onDocumentTypeChange={setDocumentType}
       />
 
       {salesQuery.isPending && selectedLocationScope ? (

@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
   formatNotificationTimeLabel,
-  getNotificationActorLabel,
   getNotificationEventLabel,
+  getNotificationPresentation,
 } from "@/lib/notifications/notification-presentation";
 import type { fetchNotifications } from "@/lib/react-query/notifications";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,7 @@ export function NotificationFeedCard({
   variant?: "dialog" | "page";
 }) {
   const isPage = variant === "page";
+  const presentation = getNotificationPresentation(notification);
 
   return (
     <article
@@ -41,7 +42,7 @@ export function NotificationFeedCard({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-medium">{notification.summary}</p>
+            <p className="text-sm font-medium">{presentation.title}</p>
             {showStatus ? (
               <Badge
                 variant={
@@ -67,12 +68,7 @@ export function NotificationFeedCard({
                 : "text-xs text-muted-foreground"
             }
           >
-            {getNotificationActorLabel(notification)}
-            {isPage ? " updated " : " • "}
-            <span className={isPage ? "font-medium text-foreground" : ""}>
-              {notification.resource.reference}
-            </span>
-            {isPage ? "." : ""}
+            {presentation.detail}
           </p>
           {isPage ? (
             <p className="text-xs text-muted-foreground">

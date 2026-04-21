@@ -15,7 +15,7 @@ type ManagerStaffRouteDependencies = {
 };
 
 const managerStaffRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "staff.view", scope: "any_active" },
+  access: { kind: "permission", permission: "staff.view", scope: "contextual" },
   method: "GET",
   url: "/api/manager/staff",
 };
@@ -38,12 +38,18 @@ export function registerManagerStaffRoutes(
       return locationStaffListResponseSchema.parse({
         items: staff.map((member) => ({
           activeAssignmentCount: member.activeAssignmentCount,
-          assignedAt: member.assignedAt.toISOString(),
+          assignedAt: toIsoTimestamp(member.assignedAt),
           email: member.email,
           firstName: member.firstName,
           lastName: member.lastName,
+          lastSaleAt: toIsoTimestamp(member.lastSaleAt),
+          netSalesAmount: member.netSalesAmount,
           roleName: member.roleName,
           roleSlug: member.roleSlug,
+          returnsCount: member.returnsCount,
+          returnsTotalAmount: member.returnsTotalAmount,
+          salesCount: member.salesCount,
+          salesTotalAmount: member.salesTotalAmount,
           status: member.status,
           userId: member.userId,
           userSlug: member.userSlug,
@@ -69,4 +75,13 @@ function createUnavailableDependencies(): ManagerStaffRouteDependencies {
       },
     },
   };
+}
+
+function toIsoTimestamp(value: Date | string): string;
+function toIsoTimestamp(value: Date | string | null): string | null;
+function toIsoTimestamp(value: Date | string | null): string | null {
+  if (!value) return null;
+  return value instanceof Date
+    ? value.toISOString()
+    : new Date(value).toISOString();
 }

@@ -2,7 +2,9 @@
 
 import type { CurrentAssignment } from "@shop/contracts";
 import { ShoppingCart } from "lucide-react";
+import { ProductThumbnail } from "@/components/system/product-thumbnail";
 import { Button } from "@/components/ui/button";
+import { formatMoney, type MoneyProfile } from "@/lib/money/format-money";
 import { cn } from "@/lib/utils";
 import {
   getStockStatus,
@@ -13,11 +15,13 @@ export function CompactAssignmentList({
   items,
   locationId,
   locationName,
+  moneyProfile,
   onRequestSupply,
 }: {
   items: CurrentAssignment[];
   locationId: string;
   locationName: string;
+  moneyProfile: MoneyProfile;
   onRequestSupply: (target: SupplyTarget) => void;
 }) {
   return (
@@ -28,6 +32,7 @@ export function CompactAssignmentList({
           key={item.skuId}
           locationId={locationId}
           locationName={locationName}
+          moneyProfile={moneyProfile}
           onRequestSupply={onRequestSupply}
           showDivider={index !== items.length - 1}
         />
@@ -40,12 +45,14 @@ function CompactAssignmentRow({
   item,
   locationId,
   locationName,
+  moneyProfile,
   onRequestSupply,
   showDivider,
 }: {
   item: CurrentAssignment;
   locationId: string;
   locationName: string;
+  moneyProfile: MoneyProfile;
   onRequestSupply: (target: SupplyTarget) => void;
   showDivider: boolean;
 }) {
@@ -67,7 +74,13 @@ function CompactAssignmentRow({
           isOut ? "bg-destructive" : isLow ? "bg-warning" : "bg-success",
         )}
       />
-      <div className="min-w-0 flex-1 pl-1">
+      <ProductThumbnail
+        className="size-10 shrink-0"
+        imageUrl={item.primaryImageUrl}
+        productName={item.productName}
+        variantName={item.variantName}
+      />
+      <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium leading-tight">
           {item.productName}
         </p>
@@ -79,7 +92,10 @@ function CompactAssignmentRow({
         </p>
       </div>
       <div className="hidden items-center gap-4 text-right sm:flex">
-        <InlineStat label="Price" value={item.sellingPrice} />
+        <InlineStat
+          label="Price"
+          value={formatMoney(item.sellingPrice, moneyProfile)}
+        />
         <InlineStat
           label="On Hand"
           value={item.onHandQuantity.toLocaleString()}

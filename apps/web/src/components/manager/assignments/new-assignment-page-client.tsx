@@ -7,15 +7,18 @@ import type {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
-import { AppErrorBanner } from "@/components/system/app-error";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Button } from "@/components/ui/button";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
+import { DEFAULT_OFFICIAL_DOCUMENT_PROFILE } from "@/lib/documents/official-document-profile";
 import {
   fetchManagerStaff,
   managerStaffQueryKey,
 } from "@/lib/react-query/manager-staff";
+import {
+  fetchOfficialDocumentProfile,
+  officialDocumentProfileQueryKey,
+} from "@/lib/react-query/official-documents";
 import {
   locationAssignmentsQueryKey,
   postBatchAssignVariants,
@@ -24,6 +27,7 @@ import { toRoute } from "@/lib/routes";
 import type { SelectedVariantEntry } from "./assignment-quantity-editor";
 import {
   AssignmentQuantityStep,
+  AssignmentSubmitPanel,
   AssignmentVariantStep,
   AssignmentWorkerStep,
 } from "./new-assignment-sections";
@@ -57,6 +61,16 @@ export function NewAssignmentPageClient() {
     queryKey: managerStaffQueryKey(selectedLocationScope?.locationId ?? ""),
     staleTime: 60_000,
   });
+  const profileQuery = useQuery({
+    enabled: !!selectedLocationScope,
+    queryFn: () =>
+      fetchOfficialDocumentProfile(selectedLocationScope?.locationId),
+    queryKey: officialDocumentProfileQueryKey(
+      selectedLocationScope?.locationId,
+    ),
+    staleTime: 5 * 60_000,
+  });
+  const moneyProfile = profileQuery.data ?? DEFAULT_OFFICIAL_DOCUMENT_PROFILE;
 
   const activeWorkers = useMemo(
     () => (staffQuery.data?.items ?? []).filter((m) => m.status === "active"),
@@ -184,6 +198,7 @@ export function NewAssignmentPageClient() {
 
           <AssignmentVariantStep
             locationId={selectedLocationScope.locationId}
+            moneyProfile={moneyProfile}
             onToggle={toggleVariant}
             selectedIds={selectedIds}
             variantCount={variantCount}
@@ -196,41 +211,15 @@ export function NewAssignmentPageClient() {
             variantCount={variantCount}
           />
 
-          {/* Submit */}
-          <div className="flex flex-col gap-3 border-t border-border pt-4">
-            {assignMutation.isError && (
-              <AppErrorBanner
-                detail={
-                  assignMutation.error instanceof Error
-                    ? assignMutation.error.message
-                    : "Assignment failed. Check that the selected variants are not already assigned to this worker."
-                }
-                error={assignMutation.error}
-                onRetry={handleSubmit}
-                title="Assignment failed"
-              />
-            )}
-            <div className="flex items-center justify-between gap-4">
-              <p className="text-sm text-muted-foreground">
-                {selectedWorker && variantCount > 0
-                  ? `Assigning ${variantCount} variant${variantCount !== 1 ? "s" : ""} to ${selectedWorker.firstName} ${selectedWorker.lastName}`
-                  : selectedWorker
-                    ? "Select at least one variant to continue."
-                    : "Select a worker and variants to continue."}
-              </p>
-              <Button
-                disabled={!canSubmit}
-                onClick={handleSubmit}
-                type="button"
-              >
-                {assignMutation.isPending
-                  ? "Assigning…"
-                  : selectedWorker
-                    ? `Assign to ${selectedWorker.firstName}`
-                    : "Assign"}
-              </Button>
-            </div>
-          </div>
+          <AssignmentSubmitPanel
+            canSubmit={canSubmit}
+            error={assignMutation.error}
+            isError={assignMutation.isError}
+            isPending={assignMutation.isPending}
+            onSubmit={handleSubmit}
+            selectedWorker={selectedWorker}
+            variantCount={variantCount}
+          />
         </div>
       )}
     </PageShell>

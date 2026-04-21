@@ -26,6 +26,7 @@ import { MediaPanel } from "../catalog/media/media-panel";
 import { LocationDetailMapCard } from "./location-detail-map-card";
 import { LocationDetailSummaryCard } from "./location-detail-summary-card";
 import { LocationEditForm } from "./location-edit-form";
+import { LocationStaffPanel } from "./location-staff-panel";
 import { LocationZonesPanel } from "./location-zones-panel";
 
 export function LocationDetailView({
@@ -128,6 +129,7 @@ export function LocationDetailView({
         <Tabs className="flex flex-col gap-6" defaultValue="details">
           <TabsList className="w-fit">
             <TabsTrigger value="details">Details & Map</TabsTrigger>
+            <TabsTrigger value="staff">Staff</TabsTrigger>
             <TabsTrigger value="zones">Storage Zones</TabsTrigger>
             <TabsTrigger value="media">Media</TabsTrigger>
           </TabsList>
@@ -142,6 +144,10 @@ export function LocationDetailView({
                 longitude={location.longitude}
               />
             ) : null}
+          </TabsContent>
+
+          <TabsContent className="mt-0" value="staff">
+            <LocationStaffPanel locationSlug={location.slug} />
           </TabsContent>
 
           <TabsContent className="mt-0" value="zones">

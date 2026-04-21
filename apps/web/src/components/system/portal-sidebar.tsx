@@ -1,6 +1,5 @@
 "use client";
 
-import { LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";
@@ -12,7 +11,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { toRoute } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
 import { useInterfacePreferencesStore } from "@/store/use-interface-preferences-store";
@@ -22,6 +20,7 @@ import {
   getVisibleNavSections,
   isPortalItemActive,
 } from "./portal-shell-config";
+import { PortalSidebarBrand } from "./portal-sidebar-brand";
 
 type AppSidebarProps = {
   onAccountOpen: () => void;
@@ -90,24 +89,7 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
 
   return (
     <aside className="flex h-full flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-      <div className="border-b border-sidebar-border px-4 py-4">
-        <Link
-          href={toRoute("/")}
-          {...navigateProps}
-          scroll={false}
-          className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-sidebar-accent"
-        >
-          <div className="flex size-10 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-            <LayoutGrid className="size-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.16em] text-sidebar-foreground/60">
-              Shop
-            </p>
-            <p className="truncate text-sm font-semibold">{config.heading}</p>
-          </div>
-        </Link>
-      </div>
+      <PortalSidebarBrand heading={config.heading} onNavigate={onNavigate} />
 
       <nav
         className="flex-1 overflow-y-auto px-3 py-4 scrollbar-thin scrollbar-thumb-sidebar-border"

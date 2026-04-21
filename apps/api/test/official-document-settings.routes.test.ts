@@ -212,6 +212,7 @@ function documentProfile(locationId?: string): OfficialDocumentProfileResponse {
     locale: "en-GH",
     locationId: location?.locationId ?? null,
     locationName: location?.locationName ?? null,
+    logoImageUrl: null,
     logoText: "SA",
     paperSize: "receipt_80mm",
     phone: "+233 00 000 0000",
@@ -228,6 +229,7 @@ function globalSettings(): OfficialDocumentSettingsResponse {
     brand: {
       accentColor: "hsl(28 72% 48%)",
       brandName: "Shop App",
+      logoImageUrl: null,
       logoText: "SA",
       primaryColor: "hsl(174 52% 23%)",
     },

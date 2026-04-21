@@ -26,6 +26,7 @@ import {
 import { formatMoney, type MoneyProfile } from "@/lib/money/format-money";
 import { fetchSalesDocumentDownloadFile } from "@/lib/react-query/official-documents";
 import { toRoute } from "@/lib/routes";
+import { PosSaleReturnDialog } from "./pos-sale-return-dialog";
 
 export function SaleSuccessPanel({
   invoice,
@@ -132,6 +133,7 @@ export function SaleSuccessPanel({
         </div>
       </CardContent>
       <CardFooter className="flex flex-wrap gap-2">
+        <PosSaleReturnDialog invoice={invoice} moneyProfile={moneyProfile} />
         <Link
           className={buttonVariants({
             className: "flex-1",

@@ -3,6 +3,8 @@ import { describe, it } from "node:test";
 import type { AuthLocationPermissionScope } from "@shop/contracts";
 import {
   getPermissionLocationScopes,
+  resolveActiveLocationScope,
+  resolvePreferredLocationScope,
   resolveSelectedLocationScope,
 } from "./location-scopes";
 
@@ -41,5 +43,35 @@ describe("location-scopes helpers", () => {
     );
 
     assert.deepEqual(selectedScope, LOCATION_SCOPES[1]);
+  });
+
+  it("uses the first accessible preferred location candidate", () => {
+    const selectedScope = resolvePreferredLocationScope(LOCATION_SCOPES, [
+      "missing-store",
+      "airport-store",
+      "downtown-store",
+    ]);
+
+    assert.deepEqual(selectedScope, LOCATION_SCOPES[1]);
+  });
+
+  it("uses the active store location before a stale url location", () => {
+    const selectedScope = resolveActiveLocationScope({
+      activeLocationSlug: "airport-store",
+      scopes: LOCATION_SCOPES,
+      urlLocationSlug: "downtown-store",
+    });
+
+    assert.deepEqual(selectedScope, LOCATION_SCOPES[1]);
+  });
+
+  it("uses the url location when the active store location is unavailable", () => {
+    const selectedScope = resolveActiveLocationScope({
+      activeLocationSlug: "missing-store",
+      scopes: LOCATION_SCOPES,
+      urlLocationSlug: "downtown-store",
+    });
+
+    assert.deepEqual(selectedScope, LOCATION_SCOPES[0]);
   });
 });

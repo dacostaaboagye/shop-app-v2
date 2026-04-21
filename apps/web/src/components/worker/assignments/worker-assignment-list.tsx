@@ -5,6 +5,7 @@ import { AlertCircle, Package } from "lucide-react";
 import { AppEmptyState } from "@/components/system/app-empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import type { MoneyProfile } from "@/lib/money/format-money";
 import { AssignmentCard } from "./worker-assignment-cards";
 import { AssignmentToolbar } from "./worker-assignment-toolbar";
 import type {
@@ -20,6 +21,7 @@ type AssignmentListProps = {
   filteredItems: CurrentAssignment[];
   locationId: string;
   locationName: string | undefined;
+  moneyProfile: MoneyProfile;
   onRequestSupply: (target: SupplyTarget) => void;
   onSearchChange: (value: string) => void;
   onStockFilterChange: (value: StockFilter) => void;
@@ -35,6 +37,7 @@ export function AssignmentList({
   filteredItems,
   locationId,
   locationName,
+  moneyProfile,
   onRequestSupply,
   onSearchChange,
   onStockFilterChange,
@@ -84,6 +87,7 @@ export function AssignmentList({
         hasActiveFilter={hasActiveFilter}
         locationId={locationId}
         locationName={locationName}
+        moneyProfile={moneyProfile}
         onRequestSupply={onRequestSupply}
         onSearchChange={onSearchChange}
         onStockFilterChange={onStockFilterChange}
@@ -129,6 +133,7 @@ function AssignmentResults({
   hasActiveFilter,
   locationId,
   locationName,
+  moneyProfile,
   onRequestSupply,
   onSearchChange,
   onStockFilterChange,
@@ -138,6 +143,7 @@ function AssignmentResults({
   hasActiveFilter: boolean;
   locationId: string;
   locationName: string | undefined;
+  moneyProfile: MoneyProfile;
   onRequestSupply: (target: SupplyTarget) => void;
   onSearchChange: (value: string) => void;
   onStockFilterChange: (value: StockFilter) => void;
@@ -173,6 +179,7 @@ function AssignmentResults({
         items={filteredItems}
         locationId={locationId}
         locationName={locationName ?? "Assigned location"}
+        moneyProfile={moneyProfile}
         onRequestSupply={onRequestSupply}
       />
     );
@@ -184,6 +191,7 @@ function AssignmentResults({
         <AssignmentCard
           item={item}
           key={item.skuId}
+          moneyProfile={moneyProfile}
           onRequestSupply={() =>
             onRequestSupply({
               locationId,

@@ -7,6 +7,12 @@ export const posPaymentMethodSchema = z.enum([
   "transfer",
 ]);
 
+export const invoiceDocumentTypeFilterSchema = z.enum([
+  "all",
+  "invoice",
+  "credit_note",
+]);
+
 export const posLineItemRequestSchema = z.object({
   quantity: z.number().int().min(1),
   skuId: z.string().uuid(),
@@ -67,6 +73,7 @@ export const processPosReturnRequestSchema = z.object({
 export const invoiceListQuerySchema = z.object({
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
+  documentType: invoiceDocumentTypeFilterSchema.default("all"),
   locationId: z.string().uuid().optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(25),
@@ -81,6 +88,9 @@ export const invoiceListResponseSchema = z.object({
 });
 
 export type PosPaymentMethod = z.infer<typeof posPaymentMethodSchema>;
+export type InvoiceDocumentTypeFilter = z.infer<
+  typeof invoiceDocumentTypeFilterSchema
+>;
 export type PosLineItemRequest = z.infer<typeof posLineItemRequestSchema>;
 export type ProcessPosPaymentRequest = z.infer<
   typeof processPosPaymentRequestSchema

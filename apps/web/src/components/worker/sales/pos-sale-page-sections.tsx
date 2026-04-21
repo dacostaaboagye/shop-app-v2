@@ -1,7 +1,8 @@
 "use client";
 
 import type { CurrentAssignment } from "@shop/contracts";
-import { Minus, Package, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import { ProductThumbnail } from "@/components/system/product-thumbnail";
 import { Badge } from "@/components/ui/badge";
 import {
   formatMoney,
@@ -26,21 +27,32 @@ export function VariantRow({
   const unavailable = assignment.availableQuantity <= 0;
 
   return (
-    <button
-      className="flex w-full items-center justify-between gap-3 p-4 text-left transition-colors hover:bg-accent/40 active:bg-accent/60 disabled:cursor-not-allowed disabled:opacity-60"
-      disabled={unavailable}
-      onClick={onAdd}
-      type="button"
+    <div
+      aria-disabled={unavailable}
+      className={cn(
+        "flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-accent/40",
+        unavailable && "cursor-not-allowed opacity-60",
+      )}
     >
-      <div className="flex min-w-0 items-center gap-3">
-        <div className="relative flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-          <Package className="size-4" />
-          {inCart && (
-            <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
-              {cartQuantity}
-            </span>
-          )}
-        </div>
+      <div className="relative size-10 shrink-0">
+        <ProductThumbnail
+          className="size-10"
+          imageUrl={assignment.primaryImageUrl}
+          productName={assignment.productName}
+          variantName={assignment.variantName}
+        />
+        {inCart && (
+          <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+            {cartQuantity}
+          </span>
+        )}
+      </div>
+      <button
+        className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left disabled:cursor-not-allowed"
+        disabled={unavailable}
+        onClick={onAdd}
+        type="button"
+      >
         <div className="min-w-0">
           <p className="truncate text-sm font-medium leading-snug">
             {assignment.productName}
@@ -49,23 +61,23 @@ export function VariantRow({
             {assignment.variantName} &middot; {assignment.sku}
           </p>
         </div>
-      </div>
-      <div className="flex shrink-0 flex-col items-end gap-0.5">
-        <p className="text-sm font-semibold tabular-nums">
-          {formatMoney(assignment.sellingPrice, moneyProfile)}
-        </p>
-        <p
-          className={cn(
-            "text-xs tabular-nums",
-            assignment.availableQuantity === 0
-              ? "text-destructive"
-              : "text-muted-foreground",
-          )}
-        >
-          {assignment.availableQuantity} avail.
-        </p>
-      </div>
-    </button>
+        <div className="flex shrink-0 flex-col items-end gap-0.5">
+          <p className="text-sm font-semibold tabular-nums">
+            {formatMoney(assignment.sellingPrice, moneyProfile)}
+          </p>
+          <p
+            className={cn(
+              "text-xs tabular-nums",
+              assignment.availableQuantity === 0
+                ? "text-destructive"
+                : "text-muted-foreground",
+            )}
+          >
+            {assignment.availableQuantity} avail.
+          </p>
+        </div>
+      </button>
+    </div>
   );
 }
 
@@ -89,13 +101,21 @@ export function CartRow({
   return (
     <div className="flex flex-col gap-2 rounded-md border border-border p-3">
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium leading-snug">
-            {item.assignment.productName}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {item.assignment.variantName}
-          </p>
+        <div className="flex min-w-0 flex-1 items-start gap-2">
+          <ProductThumbnail
+            className="size-10 shrink-0"
+            imageUrl={item.assignment.primaryImageUrl}
+            productName={item.assignment.productName}
+            variantName={item.assignment.variantName}
+          />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium leading-snug">
+              {item.assignment.productName}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {item.assignment.variantName}
+            </p>
+          </div>
         </div>
         <button
           aria-label="Remove from cart"

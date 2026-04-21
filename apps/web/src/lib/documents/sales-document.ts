@@ -71,6 +71,7 @@ export function buildSalesDocumentHtml(
     timeZone: profile.timezone,
   });
   const title = getSalesDocumentTitle(invoice);
+  const logoMarkup = getBrandLogoMarkup(profile);
   const lineRows = invoice.lines
     .map((line) => toLineRowHtml(line, profile))
     .join("");
@@ -94,6 +95,7 @@ export function buildSalesDocumentHtml(
     .header, .meta, .total-row, .footer-grid { display: flex; justify-content: space-between; gap: 24px; }
     .brand { display: flex; gap: 14px; align-items: flex-start; }
     .mark { display: grid; place-items: center; width: 58px; height: 58px; background: ${profile.primaryColor}; color: white; font-weight: 800; letter-spacing: 0.08em; }
+    .brand-logo { width: 58px; height: 58px; object-fit: cover; }
     h1, h2, p { margin: 0; }
     h1 { font-size: 26px; letter-spacing: 0.08em; text-transform: uppercase; }
     h2 { font-size: 15px; margin-bottom: 8px; color: ${profile.primaryColor}; }
@@ -124,7 +126,7 @@ export function buildSalesDocumentHtml(
     <div class="content">
       <header class="header">
         <div class="brand">
-          <div class="mark">${escapeHtml(profile.logoText)}</div>
+          ${logoMarkup}
           <div>
             <h1>${escapeHtml(profile.brandName)}</h1>
             <p class="muted">${escapeHtml(profile.legalName)}</p>
@@ -165,6 +167,14 @@ export function buildSalesDocumentHtml(
   </main>
 </body>
 </html>`;
+}
+
+function getBrandLogoMarkup(profile: OfficialDocumentProfile): string {
+  if (profile.logoImageUrl) {
+    return `<img class="brand-logo" alt="${escapeHtml(profile.brandName)} logo" src="${escapeHtml(profile.logoImageUrl)}">`;
+  }
+
+  return `<div class="mark">${escapeHtml(profile.logoText)}</div>`;
 }
 
 export function downloadSalesDocument(

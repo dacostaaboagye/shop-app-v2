@@ -24,6 +24,7 @@ export class NotificationQueryService {
         eventType: item.eventType,
         notificationKey: item.notificationKey,
         occurredAt: item.occurredAt.toISOString(),
+        payload: item.payload,
         readAt: item.readAt?.toISOString() ?? null,
         resource: item.resource,
         status: item.status,

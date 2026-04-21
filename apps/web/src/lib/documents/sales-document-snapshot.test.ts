@@ -39,6 +39,7 @@ const snapshot: IssuedDocumentSnapshotResponse = {
     locale: "en-GH",
     locationId: "22222222-2222-4222-8222-222222222222",
     locationName: "Airport Branch",
+    logoImageUrl: null,
     logoText: "SA",
     paperSize: "receipt_80mm",
     phone: "+233 00 000 0000",

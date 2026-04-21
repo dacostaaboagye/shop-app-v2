@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { PreviewImage } from "./preview-image";
 
 type PageShellProps = {
   children: ReactNode;
@@ -135,11 +136,14 @@ export function PageHeader({
       ) : null}
       <div className="flex min-w-0 items-center gap-4">
         {image ? (
-          // biome-ignore lint/performance/noImgElement: This header renders arbitrary media URLs from storage backends that are not constrained to Next image domains.
-          <img
-            alt=""
-            className="h-14 w-14 shrink-0 rounded-xl object-cover ring-1 ring-border/50"
+          <PreviewImage
+            alt={`${title} image`}
+            className="size-14 shrink-0 rounded-xl"
+            height={56}
+            imageClassName="rounded-xl"
+            previewTitle={title}
             src={image}
+            width={56}
           />
         ) : avatar ? (
           avatar

@@ -2,10 +2,10 @@
 
 import type { CurrentAssignment } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
-import { Package } from "lucide-react";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
+import { ProductThumbnail } from "@/components/system/product-thumbnail";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
@@ -151,9 +151,12 @@ function StockRow({
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 p-4">
       <div className="flex items-start gap-3">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-          <Package className="size-4" />
-        </div>
+        <ProductThumbnail
+          className="size-10 shrink-0"
+          imageUrl={item.primaryImageUrl}
+          productName={item.productName}
+          variantName={item.variantName}
+        />
         <div className="min-w-0">
           <p className="font-medium leading-none">{item.productName}</p>
           <p className="mt-1 text-sm text-muted-foreground">

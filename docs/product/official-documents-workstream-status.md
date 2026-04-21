@@ -30,8 +30,9 @@ Implemented:
   profiles by location before printing, downloading, or sharing.
 - Manager location document settings screen for scoped branch overrides, with
   inherited-field behavior and effective print profile preview.
-- Admin and manager document settings are grouped into tabs so future settings
-  categories can be added without turning the page into one long form.
+- Admin document settings are split into settings subpages for brand, business,
+  money, document defaults, and location override policy, matching the Catalog
+  and Access navigation model instead of growing one large form.
 - Currency and timezone inputs are controlled selects backed by shared supported
   value lists.
 - Official document contracts now reject unsupported currency codes and IANA

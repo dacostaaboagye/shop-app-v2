@@ -4,9 +4,14 @@ import type {
   AuthLocationPermissionScope,
   CurrentAssignment,
 } from "@shop/contracts";
+import { useMemo, useState } from "react";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { MoneyProfile } from "@/lib/money/format-money";
+import {
+  PosSaleAssignmentFilters,
+  type PosSaleFilterOption,
+} from "./pos-sale-assignment-filters";
 import {
   type CartBodyProps,
   type CartItem,
@@ -44,6 +49,35 @@ export function PosSaleAssignmentWorkspace({
   selectedLocationScope,
   setCartSheetOpen,
 }: Props) {
+  const [search, setSearch] = useState("");
+  const [brandSlug, setBrandSlug] = useState("");
+  const [categorySlug, setCategorySlug] = useState("");
+  const brandOptions = useMemo(
+    () => getFilterOptions(assignments, "brandSlug", "brandName"),
+    [assignments],
+  );
+  const categoryOptions = useMemo(
+    () => getFilterOptions(assignments, "categorySlug", "categoryName"),
+    [assignments],
+  );
+  const filteredAssignments = useMemo(
+    () =>
+      assignments.filter((assignment) => {
+        const query = search.trim().toLowerCase();
+        const matchesSearch =
+          !query ||
+          assignment.productName.toLowerCase().includes(query) ||
+          assignment.variantName.toLowerCase().includes(query) ||
+          assignment.sku.toLowerCase().includes(query);
+        const matchesBrand = !brandSlug || assignment.brandSlug === brandSlug;
+        const matchesCategory =
+          !categorySlug || assignment.categorySlug === categorySlug;
+
+        return matchesSearch && matchesBrand && matchesCategory;
+      }),
+    [assignments, brandSlug, categorySlug, search],
+  );
+
   if (isPending && selectedLocationScope) {
     return (
       <div className="flex flex-col gap-2">
@@ -83,23 +117,44 @@ export function PosSaleAssignmentWorkspace({
             <p className="text-sm font-medium text-muted-foreground">
               Your assigned variants
             </p>
+            <PosSaleAssignmentFilters
+              brandOptions={brandOptions}
+              brandSlug={brandSlug}
+              categoryOptions={categoryOptions}
+              categorySlug={categorySlug}
+              onBrandChange={setBrandSlug}
+              onCategoryChange={setCategorySlug}
+              onClear={() => {
+                setSearch("");
+                setBrandSlug("");
+                setCategorySlug("");
+              }}
+              onSearchChange={setSearch}
+              search={search}
+            />
             <div className="divide-y divide-border rounded-md border border-border bg-card">
-              {assignments.map((assignment) => (
-                <VariantRow
-                  key={assignment.skuId}
-                  assignment={assignment}
-                  cartQuantity={
-                    cart.find(
+              {filteredAssignments.length > 0 ? (
+                filteredAssignments.map((assignment) => (
+                  <VariantRow
+                    key={assignment.skuId}
+                    assignment={assignment}
+                    cartQuantity={
+                      cart.find(
+                        (item) => item.assignment.skuId === assignment.skuId,
+                      )?.quantity ?? 0
+                    }
+                    inCart={cart.some(
                       (item) => item.assignment.skuId === assignment.skuId,
-                    )?.quantity ?? 0
-                  }
-                  inCart={cart.some(
-                    (item) => item.assignment.skuId === assignment.skuId,
-                  )}
-                  moneyProfile={moneyProfile}
-                  onAdd={() => onAddToCart(assignment)}
-                />
-              ))}
+                    )}
+                    moneyProfile={moneyProfile}
+                    onAdd={() => onAddToCart(assignment)}
+                  />
+                ))
+              ) : (
+                <div className="p-8 text-center text-sm text-muted-foreground">
+                  No assigned variants match the current filters.
+                </div>
+              )}
             </div>
           </div>
           <div className="hidden lg:block">
@@ -114,5 +169,23 @@ export function PosSaleAssignmentWorkspace({
         open={cartSheetOpen}
       />
     </>
+  );
+}
+
+function getFilterOptions(
+  assignments: readonly CurrentAssignment[],
+  valueKey: "brandSlug" | "categorySlug",
+  labelKey: "brandName" | "categoryName",
+): PosSaleFilterOption[] {
+  const options = new Map<string, string>();
+
+  for (const assignment of assignments) {
+    const value = assignment[valueKey];
+    if (!value) continue;
+    options.set(value, assignment[labelKey] ?? value);
+  }
+
+  return Array.from(options, ([value, label]) => ({ label, value })).sort(
+    (left, right) => left.label.localeCompare(right.label),
   );
 }
