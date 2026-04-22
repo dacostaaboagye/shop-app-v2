@@ -17,6 +17,7 @@ export function ContactsPanel(props: {
   contacts: AdminSupplierDetail["contacts"];
   isPending: boolean;
   onAddContact: (input: AdminCreateSupplierContactRequest) => void;
+  onRemoveContact: (contactReference: string) => void;
 }) {
   const [contact, setContact] = useState({
     email: "",
@@ -99,6 +100,7 @@ export function ContactsPanel(props: {
             <ContactRow
               contact={item}
               key={`${item.firstName}-${item.lastName}-${item.email ?? item.phone ?? "contact"}`}
+              onRemove={props.onRemoveContact}
             />
           ))
         )}
@@ -109,8 +111,10 @@ export function ContactsPanel(props: {
 
 function ContactRow({
   contact,
+  onRemove,
 }: {
   contact: AdminSupplierDetail["contacts"][number];
+  onRemove: (contactReference: string) => void;
 }) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-md border border-border p-3">
@@ -128,6 +132,16 @@ function ContactRow({
       <div className="flex gap-2">
         {contact.isPrimary ? <Badge>Primary</Badge> : null}
         {contact.userSlug ? <Badge variant="secondary">Portal</Badge> : null}
+        {!contact.isPrimary ? (
+          <Button
+            onClick={() => onRemove(contact.contactReference)}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            Remove
+          </Button>
+        ) : null}
       </div>
     </div>
   );

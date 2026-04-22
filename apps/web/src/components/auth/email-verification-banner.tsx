@@ -22,39 +22,50 @@ export function EmailVerificationBanner() {
   if (dismissed) return null;
 
   return (
-    <Alert variant="warning" className="rounded-none border-x-0 border-t-0">
-      <MailCheck className="h-4 w-4" />
-      <AlertDescription className="flex items-center justify-between gap-4">
-        <span>
-          {sent
-            ? "Verification email sent — check your inbox."
-            : "Please verify your email address to access all features."}
-        </span>
-        <div className="flex items-center gap-2 shrink-0">
-          {!sent && (
-            <Button
-              disabled={resendMutation.isPending}
-              onClick={() => void resendMutation.mutateAsync()}
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs"
-            >
-              {resendMutation.isPending ? (
-                <Spinner data-icon="inline-start" />
-              ) : null}
-              Resend email
-            </Button>
-          )}
-          <button
-            aria-label="Dismiss"
-            className="rounded p-0.5 hover:bg-accent"
-            onClick={() => setDismissed(true)}
-            type="button"
-          >
-            <X className="h-4 w-4" />
-          </button>
+    <div className="fixed bottom-6 right-6 z-[100] animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="rounded-2xl border border-warning/20 bg-white p-4 shadow-2xl shadow-warning/20 backdrop-blur-xl">
+        <div className="flex items-start gap-4">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
+            <MailCheck className="size-5" />
+          </div>
+          <div className="flex flex-col gap-3 pt-0.5">
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-slate-900">
+                Email Verification
+              </p>
+              <p className="max-w-[240px] text-xs font-medium leading-relaxed text-slate-500">
+                {sent
+                  ? "Verification email sent — check your inbox."
+                  : "Please verify your email address to access all features."}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {!sent && (
+                <Button
+                  disabled={resendMutation.isPending}
+                  onClick={() => void resendMutation.mutateAsync()}
+                  size="sm"
+                  variant="warning"
+                  className="h-8 rounded-lg px-3 text-[10px] font-bold uppercase tracking-wider"
+                >
+                  {resendMutation.isPending ? (
+                    <Spinner data-icon="inline-start" />
+                  ) : null}
+                  Resend
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 rounded-lg px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-900"
+                onClick={() => setDismissed(true)}
+              >
+                Dismiss
+              </Button>
+            </div>
+          </div>
         </div>
-      </AlertDescription>
-    </Alert>
+      </div>
+    </div>
   );
 }

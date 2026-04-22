@@ -88,29 +88,33 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
   });
 
   return (
-    <aside className="flex h-full flex-col border-r border-sidebar-border bg-sidebar/95 text-sidebar-foreground shadow-sm">
+    <aside className="flex h-full flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
       <PortalSidebarBrand heading={config.heading} onNavigate={onNavigate} />
 
+      <div className="px-8">
+        <div className="h-px w-full bg-sidebar-border/60" />
+      </div>
+
       <nav
-        className="flex-1 overflow-y-auto px-3 py-4 scrollbar-thin scrollbar-thumb-sidebar-border"
+        className="flex-1 overflow-y-auto px-4 py-6 scrollbar-none"
         aria-label="Main navigation"
       >
         {isLoading ? (
-          <div className="flex flex-col gap-3 px-3">
+          <div className="flex flex-col gap-3">
             {SIDEBAR_SKELETON_KEYS.map((key) => (
               <div
                 key={key}
-                className="h-9 rounded-lg border border-sidebar-border/70 bg-sidebar-accent/45"
+                className="h-10 rounded-xl bg-sidebar-accent/50"
               />
             ))}
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-8">
             <Accordion
               multiple
               value={expandedValue}
               onValueChange={setSidebarExpandedSections}
-              className="flex flex-col gap-2"
+              className="flex flex-col gap-8"
             >
               {navSections.map((section) => {
                 const sectionActive = section.items.some((item) =>
@@ -118,19 +122,19 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
                 );
 
                 return (
-                  <AccordionItem key={section.title} value={section.title}>
+                  <AccordionItem key={section.title} value={section.title} className="border-none">
                     <AccordionTrigger
                       className={cn(
-                        "group/trigger relative rounded-lg px-3 py-2 text-xs font-bold uppercase transition-all hover:bg-sidebar-accent/40 hover:no-underline",
+                        "group/trigger relative rounded-xl px-2 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:bg-sidebar-accent/50 hover:no-underline",
                         sectionActive
                           ? "text-sidebar-primary"
-                          : "text-sidebar-foreground/75 hover:text-sidebar-foreground data-open:text-sidebar-foreground",
+                          : "text-sidebar-foreground/40 hover:text-sidebar-foreground data-open:text-sidebar-foreground/80",
                       )}
                     >
                       {section.title}
                     </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="mt-1 flex flex-col gap-1 pt-1 pl-2">
+                    <AccordionContent className="pb-0">
+                      <div className="mt-2 flex flex-col gap-1">
                         {section.items.map((item) => {
                           const active = activeItem?.href === item.href;
                           const Icon = item.icon;
@@ -143,28 +147,16 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
                               {...navigateProps}
                               scroll={false}
                               className={cn(
-                                "group/link relative flex items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 transition-colors duration-200",
+                                "group/link flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200",
                                 active
-                                  ? "border-sidebar-primary/20 bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                                  : "text-sidebar-foreground/65 hover:bg-sidebar-accent/30 hover:text-sidebar-foreground",
+                                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/20"
+                                  : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground",
                               )}
                             >
-                              {active && (
-                                <div className="absolute top-1/2 -left-1.5 h-6 w-1 -translate-y-1/2 rounded-full bg-sidebar-primary" />
-                              )}
-                              <div
-                                className={cn(
-                                  "flex size-7 shrink-0 items-center justify-center rounded-md transition-colors duration-200",
-                                  active
-                                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-                                    : "bg-sidebar-accent/70 text-sidebar-foreground/60 group-hover/link:bg-sidebar-accent group-hover/link:text-sidebar-foreground",
-                                )}
-                              >
-                                <Icon className="size-3.5" />
-                              </div>
-                              <p className="text-sm font-medium">
+                              <Icon className={cn("size-4 shrink-0 transition-transform duration-300 group-hover/link:scale-110", active ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/40 group-hover/link:text-sidebar-foreground")} />
+                              <span className="text-sm font-semibold tracking-tight">
                                 {item.label}
-                              </p>
+                              </span>
                             </Link>
                           );
                         })}
@@ -174,29 +166,29 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
                 );
               })}
             </Accordion>
-            {navSections.length === 0 ? (
-              <div className="rounded-lg border border-sidebar-border/80 bg-sidebar-accent/45 px-3 py-4 text-sm text-sidebar-foreground/68">
-                No pages are visible for the current permission set yet.
-              </div>
-            ) : null}
           </div>
         )}
       </nav>
 
-      <div className="border-t border-sidebar-border p-3">
+      <div className="p-4">
         <button
           type="button"
           onClick={onAccountOpen}
-          className="flex w-full items-center gap-3 rounded-lg border border-sidebar-border/80 bg-sidebar-accent/60 px-3 py-3 text-left transition-colors hover:bg-sidebar-accent"
+          className="group flex w-full items-center gap-3 rounded-2xl border border-sidebar-border/60 bg-sidebar-accent/30 p-2 text-left transition-all hover:bg-sidebar-accent hover:shadow-md active:scale-[0.98]"
         >
-          <Avatar size="lg">
-            <AvatarFallback>{getUserInitials(user)}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-sidebar-foreground">
+          <div className="relative">
+            <Avatar size="lg" className="rounded-xl ring-2 ring-transparent transition-all group-hover:ring-sidebar-primary/20">
+              <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground font-bold">
+                {getUserInitials(user)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-sidebar bg-emerald-500" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-bold text-sidebar-foreground">
               {user ? `${user.firstName} ${user.lastName}` : "Account"}
             </p>
-            <p className="truncate text-xs text-sidebar-foreground/65">
+            <p className="truncate text-[10px] font-medium text-sidebar-foreground/40">
               {user?.email ?? "Signed-out session"}
             </p>
           </div>

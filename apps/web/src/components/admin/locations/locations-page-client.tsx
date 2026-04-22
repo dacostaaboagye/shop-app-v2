@@ -19,6 +19,7 @@ import {
   fetchAdminLocations,
 } from "@/lib/react-query/admin-directory";
 import { toRoute } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 import {
   getPageCount,
   readEnumParam,
@@ -123,7 +124,7 @@ export function LocationsPageClient() {
         actions={
           <PermissionGate permission="locations.create">
             <Link
-              className={buttonVariants({ size: "sm" })}
+              className={cn(buttonVariants({ size: "sm" }), "h-10 rounded-xl px-5 font-bold shadow-lg shadow-primary/20")}
               href={toRoute("/admin/locations/new")}
             >
               New location
@@ -133,100 +134,108 @@ export function LocationsPageClient() {
         description="Backend-backed location directory with URL-synced filters and server pagination."
         title="Locations"
       />
-      <LocationsPageToolbar
-        draftSearch={draftSearch}
-        hasFilters={hasFilters}
-        onClear={() =>
-          replaceLocationQuery(router, pathname, searchParams, {
-            page: null,
-            q: null,
-            status: null,
-            type: null,
-          })
-        }
-        onSearchChange={setDraftSearch}
-        onStatusChange={(value) =>
-          replaceLocationQuery(router, pathname, searchParams, {
-            page: null,
-            status: value === "all" ? null : value,
-          })
-        }
-        onTypeChange={(value) =>
-          replaceLocationQuery(router, pathname, searchParams, {
-            page: null,
-            type: value === "all" ? null : value,
-          })
-        }
-        status={status}
-        totalCount={locationsQuery.data?.totalCount ?? 0}
-        type={type}
-      />
 
-      {locationsQuery.isPending && !locationsQuery.data ? (
-        <div className="flex flex-col gap-2">
-          {LOCATION_SKELETON_KEYS.map((key) => (
-            <Skeleton key={key} className="h-11 w-full" />
-          ))}
+      <div className="flex flex-col gap-6">
+        <LocationsPageToolbar
+          draftSearch={draftSearch}
+          hasFilters={hasFilters}
+          onClear={() =>
+            replaceLocationQuery(router, pathname, searchParams, {
+              page: null,
+              q: null,
+              status: null,
+              type: null,
+            })
+          }
+          onSearchChange={setDraftSearch}
+          onStatusChange={(value) =>
+            replaceLocationQuery(router, pathname, searchParams, {
+              page: null,
+              status: value === "all" ? null : value,
+            })
+          }
+          onTypeChange={(value) =>
+            replaceLocationQuery(router, pathname, searchParams, {
+              page: null,
+              type: value === "all" ? null : value,
+            })
+          }
+          status={status}
+          totalCount={locationsQuery.data?.totalCount ?? 0}
+          type={type}
+        />
+
+        {/* Sovereign Table Surface */}
+        <div className="overflow-hidden rounded-2xl bg-white shadow-xl shadow-black/[0.03] border border-slate-200/50">
+          {locationsQuery.isPending && !locationsQuery.data ? (
+            <div className="flex flex-col gap-1 p-4">
+              {LOCATION_SKELETON_KEYS.map((key) => (
+                <Skeleton key={key} className="h-12 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : (
+            <>
+              {locationsQuery.isError ? (
+                <div className="p-8">
+                  <AppErrorBanner
+                    detail={getLocationsErrorMessage(locationsQuery.error)}
+                    error={locationsQuery.error}
+                    onRetry={() => {
+                      void locationsQuery.refetch();
+                    }}
+                    title="Unable to load locations"
+                  />
+                </div>
+              ) : null}
+              <AppDataTable
+                columns={locationTableColumns}
+                data={locationsQuery.data?.items ?? []}
+                density="compact"
+                emptyDescription={
+                  hasFilters
+                    ? "Try adjusting the current filters or search term."
+                    : "No locations were returned from the current backend dataset."
+                }
+                emptyTitle={
+                  hasFilters ? "No locations match" : "No locations available"
+                }
+                emptyState={{
+                  kind: hasFilters ? "no-results" : "no-data",
+                }}
+                getRowId={(row) => row.slug}
+                onRowClick={(row: { slug: string }) =>
+                  router.push(
+                    toRoute(`/admin/locations/${encodeURIComponent(row.slug)}`),
+                  )
+                }
+                onSortingChange={(nextSorting) =>
+                  replaceLocationQuery(router, pathname, searchParams, {
+                    dir: nextSorting?.direction ?? null,
+                    page: null,
+                    sort: nextSorting?.columnId ?? null,
+                  })
+                }
+                pagination={{
+                  onPageChange: (nextPage) =>
+                    replaceLocationQuery(router, pathname, searchParams, {
+                      page: nextPage === 1 ? null : nextPage,
+                    }),
+                  onPageSizeChange: (nextPageSize) =>
+                    replaceLocationQuery(router, pathname, searchParams, {
+                      page: null,
+                      pageSize: nextPageSize === 10 ? null : nextPageSize,
+                    }),
+                  page: safePage,
+                  pageSize,
+                  pageSizeOptions: LOCATION_PAGE_SIZE_OPTIONS,
+                  totalCount: locationsQuery.data?.totalCount ?? 0,
+                }}
+                sorting={sorting}
+              />
+            </>
+          )}
         </div>
-      ) : (
-        <>
-          {locationsQuery.isError ? (
-            <AppErrorBanner
-              detail={getLocationsErrorMessage(locationsQuery.error)}
-              error={locationsQuery.error}
-              onRetry={() => {
-                void locationsQuery.refetch();
-              }}
-              title="Unable to load locations"
-            />
-          ) : null}
-          <AppDataTable
-            columns={locationTableColumns}
-            data={locationsQuery.data?.items ?? []}
-            density="compact"
-            emptyDescription={
-              hasFilters
-                ? "Try adjusting the current filters or search term."
-                : "No locations were returned from the current backend dataset."
-            }
-            emptyTitle={
-              hasFilters ? "No locations match" : "No locations available"
-            }
-            emptyState={{
-              kind: hasFilters ? "no-results" : "no-data",
-            }}
-            getRowId={(row) => row.slug}
-            onRowClick={(row: { slug: string }) =>
-              router.push(
-                toRoute(`/admin/locations/${encodeURIComponent(row.slug)}`),
-              )
-            }
-            onSortingChange={(nextSorting) =>
-              replaceLocationQuery(router, pathname, searchParams, {
-                dir: nextSorting?.direction ?? null,
-                page: null,
-                sort: nextSorting?.columnId ?? null,
-              })
-            }
-            pagination={{
-              onPageChange: (nextPage) =>
-                replaceLocationQuery(router, pathname, searchParams, {
-                  page: nextPage === 1 ? null : nextPage,
-                }),
-              onPageSizeChange: (nextPageSize) =>
-                replaceLocationQuery(router, pathname, searchParams, {
-                  page: null,
-                  pageSize: nextPageSize === 10 ? null : nextPageSize,
-                }),
-              page: safePage,
-              pageSize,
-              pageSizeOptions: LOCATION_PAGE_SIZE_OPTIONS,
-              totalCount: locationsQuery.data?.totalCount ?? 0,
-            }}
-            sorting={sorting}
-          />
-        </>
-      )}
+      </div>
     </PageShell>
   );
 }

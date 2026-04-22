@@ -11,14 +11,13 @@ import { AppEmptyState } from "@/components/system/app-empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { NumberField, SelectField, TextField } from "./supplier-form-controls";
 
 export function ProductsPanel(props: {
   isPending: boolean;
   onLinkProduct: (input: AdminLinkSupplierProductRequest) => void;
+  onUnlinkProduct: (productSlug: string) => void;
   products: AdminProductSummary[];
   supplierProducts: AdminSupplierDetail["products"];
 }) {
@@ -38,20 +37,17 @@ export function ProductsPanel(props: {
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="grid gap-3 md:grid-cols-3">
-          <Select
-            onChange={(event) =>
-              setForm((v) => ({ ...v, productSlug: event.target.value }))
-            }
+          <SelectField
+            label="Product"
+            onChange={(productSlug) => setForm((v) => ({ ...v, productSlug }))}
+            options={props.products.map((product) => ({
+              label: product.name,
+              value: product.slug,
+            }))}
+            placeholder="Select product"
             value={form.productSlug}
-          >
-            <option value="">Select product</option>
-            {props.products.map((product) => (
-              <option key={product.slug} value={product.slug}>
-                {product.name}
-              </option>
-            ))}
-          </Select>
-          <NumberInput
+          />
+          <NumberField
             label="Lead time days"
             min={0}
             onChange={(leadTimeDays) =>
@@ -59,7 +55,7 @@ export function ProductsPanel(props: {
             }
             value={form.leadTimeDays}
           />
-          <NumberInput
+          <NumberField
             label="MOQ"
             min={1}
             onChange={(minimumOrderQuantity) =>
@@ -67,14 +63,14 @@ export function ProductsPanel(props: {
             }
             value={form.minimumOrderQuantity}
           />
-          <TextInput
+          <TextField
             label="Supplier product code"
             onChange={(supplierProductCode) =>
               setForm((v) => ({ ...v, supplierProductCode }))
             }
             value={form.supplierProductCode}
           />
-          <TextInput
+          <TextField
             label="Last cost"
             onChange={(lastCostPrice) =>
               setForm((v) => ({ ...v, lastCostPrice }))
@@ -124,7 +120,11 @@ export function ProductsPanel(props: {
         ) : (
           <div className="divide-y divide-border rounded-md border border-border">
             {props.supplierProducts.map((product) => (
-              <SupplierProductRow key={product.productSlug} product={product} />
+              <SupplierProductRow
+                key={product.productSlug}
+                onRemove={props.onUnlinkProduct}
+                product={product}
+              />
             ))}
           </div>
         )}
@@ -134,8 +134,10 @@ export function ProductsPanel(props: {
 }
 
 function SupplierProductRow({
+  onRemove,
   product,
 }: {
+  onRemove: (productSlug: string) => void;
   product: AdminSupplierDetail["products"][number];
 }) {
   return (
@@ -149,41 +151,14 @@ function SupplierProductRow({
         </p>
       </div>
       <Badge variant="outline">MOQ {product.minimumOrderQuantity}</Badge>
-    </div>
-  );
-}
-
-function TextInput(props: {
-  label: string;
-  onChange: (value: string) => void;
-  value: string;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <Label>{props.label}</Label>
-      <Input
-        onChange={(event) => props.onChange(event.target.value)}
-        value={props.value}
-      />
-    </div>
-  );
-}
-
-function NumberInput(props: {
-  label: string;
-  min: number;
-  onChange: (value: number) => void;
-  value: number;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <Label>{props.label}</Label>
-      <Input
-        min={props.min}
-        onChange={(event) => props.onChange(Number(event.target.value))}
-        type="number"
-        value={props.value}
-      />
+      <Button
+        onClick={() => onRemove(product.productSlug)}
+        size="sm"
+        type="button"
+        variant="outline"
+      >
+        Remove
+      </Button>
     </div>
   );
 }

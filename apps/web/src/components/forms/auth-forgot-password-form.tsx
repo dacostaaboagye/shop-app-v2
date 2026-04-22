@@ -108,7 +108,7 @@ export function AuthForgotPasswordForm() {
       >
         {({ canSubmit, isSubmitting }) => (
           <Button
-            className="w-full"
+            className="w-full rounded-xl shadow-lg shadow-primary/20"
             disabled={!canSubmit || isSubmitting}
             size="lg"
             type="submit"

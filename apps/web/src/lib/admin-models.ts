@@ -17,10 +17,10 @@ export type ManagedLocationStatus = "active" | "inactive";
 export type ManagedLocationType = "store" | "warehouse";
 
 const BADGE_CLASS_NAMES = {
-  emphasis: "border-primary/30 bg-primary/10 text-primary",
-  muted: "border-border bg-muted/40 text-muted-foreground",
-  secondary: "border-border bg-secondary text-secondary-foreground",
-  danger: "border-destructive/30 bg-destructive/10 text-destructive",
+  emphasis: "bg-primary/10 text-primary border-0",
+  muted: "bg-muted/40 text-muted-foreground border-0",
+  secondary: "bg-secondary text-secondary-foreground border-0",
+  danger: "bg-destructive/10 text-destructive border-0",
 } as const;
 
 export type ManagedUserRecord = {

@@ -1,5 +1,6 @@
 import type {
   AdminCreateSupplierContactRequest,
+  AdminCreateSupplierInquiryRequest,
   AdminCreateSupplierProcurementOrderRequest,
   AdminCreateSupplierRequest,
   AdminLinkSupplierProductRequest,
@@ -12,6 +13,7 @@ import type {
   AdminSupplierListResponse,
   AdminSupplierProcurementReceiveRequest,
   AdminSupplierProcurementTransitionRequest,
+  AdminUpdateSupplierInquiryRequest,
   AdminUpdateSupplierRequest,
   AdminUserListQuery,
   AdminUserListResponse,
@@ -105,6 +107,17 @@ export async function addAdminSupplierContact(
   );
 }
 
+export async function removeAdminSupplierContact(
+  slug: string,
+  contactReference: string,
+): Promise<{ success: boolean }> {
+  return fetchJson<{ success: boolean }>(
+    `/api/admin/suppliers/${encodeURIComponent(slug)}/contacts/${encodeURIComponent(contactReference)}`,
+    { method: "DELETE" },
+    { auth: "required" },
+  );
+}
+
 export async function linkAdminSupplierProduct(
   slug: string,
   input: AdminLinkSupplierProductRequest,
@@ -123,6 +136,29 @@ export async function unlinkAdminSupplierProduct(
   return fetchJson<{ success: boolean }>(
     `/api/admin/suppliers/${encodeURIComponent(slug)}/products/${encodeURIComponent(productSlug)}`,
     { method: "DELETE" },
+    { auth: "required" },
+  );
+}
+
+export async function createAdminSupplierInquiry(
+  slug: string,
+  input: AdminCreateSupplierInquiryRequest,
+): Promise<AdminSupplierDetail> {
+  return fetchJson<AdminSupplierDetail>(
+    `/api/admin/suppliers/${encodeURIComponent(slug)}/inquiries`,
+    { body: JSON.stringify(input), headers: jsonHeaders(), method: "POST" },
+    { auth: "required" },
+  );
+}
+
+export async function updateAdminSupplierInquiry(
+  slug: string,
+  reference: string,
+  input: AdminUpdateSupplierInquiryRequest,
+): Promise<AdminSupplierDetail> {
+  return fetchJson<AdminSupplierDetail>(
+    `/api/admin/suppliers/${encodeURIComponent(slug)}/inquiries/${encodeURIComponent(reference)}`,
+    { body: JSON.stringify(input), headers: jsonHeaders(), method: "PATCH" },
     { auth: "required" },
   );
 }
@@ -171,6 +207,12 @@ export async function fetchAdminLocations(
     undefined,
     { auth: "required" },
   );
+}
+
+export async function fetchSupplierPortalProfile(): Promise<AdminSupplierDetail> {
+  return fetchJson<AdminSupplierDetail>("/api/supplier/profile", undefined, {
+    auth: "required",
+  });
 }
 
 function buildSearchParams(

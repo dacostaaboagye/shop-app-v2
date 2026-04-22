@@ -135,7 +135,7 @@ export function AuthResetPasswordForm({
       >
         {({ canSubmit, isSubmitting }) => (
           <Button
-            className="w-full"
+            className="w-full rounded-xl shadow-lg shadow-primary/20"
             disabled={!canSubmit || isSubmitting}
             size="lg"
             type="submit"
@@ -148,7 +148,7 @@ export function AuthResetPasswordForm({
             ) : (
               <>
                 Set new password
-                <KeyRound data-icon="inline-end" />
+                <KeyRound className="ml-2 h-4 w-4" />
               </>
             )}
           </Button>

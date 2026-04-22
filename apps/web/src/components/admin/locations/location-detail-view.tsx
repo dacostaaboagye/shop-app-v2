@@ -134,15 +134,17 @@ export function LocationDetailView({
           </TabsList>
 
           <TabsContent className="mt-0 flex flex-col gap-6" value="details">
-            <LocationDetailSummaryCard location={location} />
+            <div className="grid gap-6 xl:grid-cols-[1fr_0.6fr]">
+              <LocationDetailSummaryCard location={location} />
 
-            {hasCoordinates ? (
-              <LocationDetailMapCard
-                address={location.address}
-                latitude={location.latitude}
-                longitude={location.longitude}
-              />
-            ) : null}
+              {hasCoordinates ? (
+                <LocationDetailMapCard
+                  address={location.address}
+                  latitude={location.latitude}
+                  longitude={location.longitude}
+                />
+              ) : null}
+            </div>
           </TabsContent>
 
           <TabsContent className="mt-0" value="staff">

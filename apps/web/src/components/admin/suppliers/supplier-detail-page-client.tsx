@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Building2, Package, ReceiptText, UsersRound } from "lucide-react";
 import { AppErrorBanner } from "@/components/system/app-error";
 import {
@@ -15,26 +15,22 @@ import {
   fetchAdminProducts,
 } from "@/lib/react-query/admin-catalog-products";
 import {
-  addAdminSupplierContact,
   adminSupplierQueryKey,
   fetchAdminSupplier,
-  linkAdminSupplierProduct,
-  transitionAdminSupplierProcurementOrder,
-  updateAdminSupplier,
 } from "@/lib/react-query/admin-directory";
 import { toRoute } from "@/lib/routes";
-import { toast } from "@/lib/toast";
 import { ContactsPanel } from "./supplier-contact-product-panels";
 import {
-  ProcurementPanel,
   TransactionsPanel,
   toSupplierFormValues,
 } from "./supplier-detail-sections";
-import { SupplierForm, type SupplierFormValues } from "./supplier-form";
+import { SupplierForm } from "./supplier-form";
+import { SupplierInquiryPanel } from "./supplier-inquiry-panel";
+import { ProcurementPanel } from "./supplier-procurement-panel";
 import { ProductsPanel } from "./supplier-product-panel";
+import { useSupplierDetailActions } from "./use-supplier-detail-actions";
 
 export function SupplierDetailPageClient({ slug }: { slug: string }) {
-  const queryClient = useQueryClient();
   const supplierQuery = useQuery({
     queryFn: () => fetchAdminSupplier(slug),
     queryKey: adminSupplierQueryKey(slug),
@@ -63,55 +59,9 @@ export function SupplierDetailPageClient({ slug }: { slug: string }) {
     }),
     staleTime: 60_000,
   });
-  const updateMutation = useMutation({
-    mutationFn: (values: SupplierFormValues) =>
-      updateAdminSupplier(slug, {
-        email: values.email || null,
-        legalName: values.legalName || null,
-        name: values.name,
-        notes: values.notes || null,
-        paymentTermsDays: values.paymentTermsDays,
-        phone: values.phone || null,
-        status: values.status,
-        taxId: values.taxId || null,
-        website: values.website || null,
-      }),
-    onSuccess: (supplier) => {
-      queryClient.setQueryData(adminSupplierQueryKey(slug), supplier);
-      void queryClient.invalidateQueries({ queryKey: ["admin", "suppliers"] });
-      toast.success("Supplier updated");
-    },
-  });
-  const contactMutation = useMutation({
-    mutationFn: (input: Parameters<typeof addAdminSupplierContact>[1]) =>
-      addAdminSupplierContact(slug, input),
-    onSuccess: (supplier) => {
-      queryClient.setQueryData(adminSupplierQueryKey(slug), supplier);
-      toast.success("Supplier contact added");
-    },
-  });
-  const productMutation = useMutation({
-    mutationFn: (input: Parameters<typeof linkAdminSupplierProduct>[1]) =>
-      linkAdminSupplierProduct(slug, input),
-    onSuccess: (supplier) => {
-      queryClient.setQueryData(adminSupplierQueryKey(slug), supplier);
-      toast.success("Product linked");
-    },
-  });
-  const procurementActionMutation = useMutation({
-    mutationFn: (input: {
-      action: "approve" | "cancel" | "close" | "order" | "submit";
-      reference: string;
-    }) =>
-      transitionAdminSupplierProcurementOrder(
-        slug,
-        input.reference,
-        input.action,
-      ),
-    onSuccess: (supplier) => {
-      queryClient.setQueryData(adminSupplierQueryKey(slug), supplier);
-      toast.success("Supplier order updated");
-    },
+  const actions = useSupplierDetailActions({
+    refetchSupplier: () => void supplierQuery.refetch(),
+    slug,
   });
 
   if (supplierQuery.isPending) {
@@ -177,6 +127,7 @@ export function SupplierDetailPageClient({ slug }: { slug: string }) {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="contacts">Contacts</TabsTrigger>
           <TabsTrigger value="products">Products</TabsTrigger>
+          <TabsTrigger value="inquiries">Inquiries</TabsTrigger>
           <TabsTrigger value="procurement">Supply</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
         </TabsList>
@@ -188,9 +139,9 @@ export function SupplierDetailPageClient({ slug }: { slug: string }) {
             <CardContent>
               <SupplierForm
                 defaultValues={toSupplierFormValues(supplier)}
-                error={updateMutation.error}
-                isPending={updateMutation.isPending}
-                onSubmit={(values) => updateMutation.mutate(values)}
+                error={actions.updateMutation.error}
+                isPending={actions.updateMutation.isPending}
+                onSubmit={(values) => actions.updateMutation.mutate(values)}
                 submitLabel="Save changes"
               />
             </CardContent>
@@ -199,24 +150,52 @@ export function SupplierDetailPageClient({ slug }: { slug: string }) {
         <TabsContent className="pt-3" value="contacts">
           <ContactsPanel
             contacts={supplier.contacts}
-            isPending={contactMutation.isPending}
-            onAddContact={(input) => contactMutation.mutate(input)}
+            isPending={
+              actions.contactMutation.isPending ||
+              actions.removeContactMutation.isPending
+            }
+            onAddContact={(input) => actions.contactMutation.mutate(input)}
+            onRemoveContact={(contactReference) =>
+              actions.removeContactMutation.mutate(contactReference)
+            }
           />
         </TabsContent>
         <TabsContent className="pt-3" value="products">
           <ProductsPanel
-            isPending={productMutation.isPending}
-            onLinkProduct={(input) => productMutation.mutate(input)}
+            isPending={actions.productMutation.isPending}
+            onLinkProduct={(input) => actions.productMutation.mutate(input)}
+            onUnlinkProduct={(productSlug) =>
+              actions.unlinkProductMutation.mutate(productSlug)
+            }
             products={productsQuery.data?.items ?? []}
             supplierProducts={supplier.products}
+          />
+        </TabsContent>
+        <TabsContent className="pt-3" value="inquiries">
+          <SupplierInquiryPanel
+            inquiries={supplier.inquiries}
+            isPending={actions.inquiryMutation.isPending}
+            onCreateInquiry={(input) => actions.inquiryMutation.mutate(input)}
+            onUpdateInquiry={(reference, status) =>
+              actions.inquiryStatusMutation.mutate({ reference, status })
+            }
+            products={productsQuery.data?.items ?? []}
+            supplierSlug={supplier.slug}
           />
         </TabsContent>
         <TabsContent className="pt-3" value="procurement">
           <ProcurementPanel
             onAction={(reference, action) =>
-              procurementActionMutation.mutate({ action, reference })
+              actions.procurementActionMutation.mutate({ action, reference })
+            }
+            onCreateOrder={(input) =>
+              actions.procurementCreateMutation.mutate(input)
+            }
+            onReceive={(reference, lines) =>
+              actions.procurementReceiveMutation.mutate({ lines, reference })
             }
             orders={supplier.procurementOrders}
+            supplierProducts={supplier.products}
           />
         </TabsContent>
         <TabsContent className="pt-3" value="transactions">

@@ -1,4 +1,10 @@
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   currencyOptions,
   timeZoneOptions,
@@ -12,16 +18,17 @@ type SelectProps = {
 
 export function CurrencySelect({ id, onChange, value }: SelectProps) {
   return (
-    <Select
-      id={id}
-      onChange={(event) => onChange(event.target.value)}
-      value={value}
-    >
-      {currencyOptions.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
+    <Select onValueChange={onChange} value={value}>
+      <SelectTrigger className="w-full">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {currencyOptions.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
     </Select>
   );
 }
@@ -33,17 +40,33 @@ export function TimeZoneSelect({
   value,
 }: SelectProps & { allowInherit?: boolean }) {
   return (
-    <Select
-      id={id}
-      onChange={(event) => onChange(event.target.value)}
-      value={value}
-    >
-      {allowInherit ? <option value="">Inherit</option> : null}
-      {timeZoneOptions.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
+    <Select onValueChange={onChange} value={value}>
+      <SelectTrigger className="w-full">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {allowInherit ? <SelectItem value="inherit">Inherit</SelectItem> : null}
+        {timeZoneOptions.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+export function PaperSizeSelect({ id, onChange, value }: SelectProps) {
+  return (
+    <Select onValueChange={onChange} value={value}>
+      <SelectTrigger className="w-full">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="receipt_80mm">80mm receipt</SelectItem>
+        <SelectItem value="a4">A4 document</SelectItem>
+        <SelectItem value="letter">Letter document</SelectItem>
+      </SelectContent>
     </Select>
   );
 }

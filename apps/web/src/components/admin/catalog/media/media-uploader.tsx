@@ -3,6 +3,7 @@
 import {
   ALLOWED_MEDIA_MIMES,
   type CatalogMediaEntityType,
+  MAX_DOCUMENT_BYTES,
   MAX_IMAGE_BYTES,
   MAX_VIDEO_BYTES,
 } from "@shop/contracts";
@@ -41,11 +42,16 @@ export function MediaUploader({
       return;
     }
 
+    const isDocument = file.type === "application/pdf";
     const isVideo = file.type.startsWith("video/");
-    const maxBytes = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
+    const maxBytes = isVideo
+      ? MAX_VIDEO_BYTES
+      : isDocument
+        ? MAX_DOCUMENT_BYTES
+        : MAX_IMAGE_BYTES;
     if (file.size > maxBytes) {
       toast.error(
-        `File exceeds the ${isVideo ? "100 MB video" : "10 MB image"} limit.`,
+        `File exceeds the ${isVideo ? "100 MB video" : isDocument ? "25 MB document" : "10 MB image"} limit.`,
       );
       return;
     }

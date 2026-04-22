@@ -1,5 +1,5 @@
 import type { AdminMediaRecord } from "@shop/contracts";
-import { Star, Trash2 } from "lucide-react";
+import { FileText, Star, Trash2 } from "lucide-react";
 import { PreviewImage } from "@/components/system/preview-image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,12 +43,24 @@ export function MediaGallery({
                 sizes="(min-width: 768px) 25vw, 50vw"
                 src={item.publicUrl}
               />
-            ) : (
+            ) : item.mediaType === "video" ? (
               <video
                 className="size-full object-cover"
                 muted
                 src={item.publicUrl}
               />
+            ) : (
+              <a
+                className="flex size-full flex-col items-center justify-center gap-2 p-3 text-center text-sm"
+                href={item.publicUrl}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <FileText />
+                <span className="line-clamp-2">
+                  {item.altText ?? "Document"}
+                </span>
+              </a>
             )}
             {item.isPrimary ? (
               <Badge

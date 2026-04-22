@@ -58,14 +58,17 @@ export function AuthWorkspace({ mode = "login" }: AuthWorkspaceProps) {
   const content = anonymousCopy[mode];
 
   return (
-    <Card className="border border-border bg-card shadow-none">
-      <CardHeader className="pb-2">
-        <CardTitle className="font-sans text-lg font-semibold">
+    <div className="overflow-hidden rounded-[2.5rem] border border-border/40 bg-card/60 p-10 backdrop-blur-xl shadow-2xl shadow-black/5">
+      <div className="mb-10 flex flex-col items-center gap-2 text-center">
+        <h2 className="font-heading text-3xl font-bold tracking-tight text-foreground">
           {content.title}
-        </CardTitle>
-        <CardDescription>{content.description}</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-5">
+        </h2>
+        <p className="text-base text-muted-foreground">
+          {content.description}
+        </p>
+      </div>
+      
+      <div className="flex flex-col gap-6">
         {sessionNotice ? (
           <AppBanner
             description={sessionNotice}
@@ -77,16 +80,16 @@ export function AuthWorkspace({ mode = "login" }: AuthWorkspaceProps) {
 
         {mode === "login" ? <AuthLoginForm /> : <AuthRegisterForm />}
 
-        <p className="text-sm text-muted-foreground">
+        <div className="mt-4 flex items-center justify-center gap-2 border-t border-border/20 pt-8 text-sm font-medium text-muted-foreground">
           {content.linkPrompt}{" "}
           <Link
-            className={buttonVariants({ size: "sm", variant: "link" })}
+            className="font-bold text-primary transition-colors hover:text-primary/80"
             href={content.alternateHref}
           >
             {content.alternateLabel}
           </Link>
-        </p>
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+    </div>
   );
 }

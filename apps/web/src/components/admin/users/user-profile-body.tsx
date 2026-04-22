@@ -114,7 +114,7 @@ export function UserProfileBody({
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_0.6fr]">
-        <Card className="border-border/70 bg-card shadow-none">
+        <Card className="h-full border-border/70 bg-card shadow-none">
           <CardHeader>
             <CardTitle>Identity</CardTitle>
             <CardDescription>

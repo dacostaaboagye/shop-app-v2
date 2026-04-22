@@ -38,7 +38,7 @@ export function OfficialDocumentTemplatePreview({
 
   return (
     <section
-      className="overflow-hidden rounded-lg border border-border bg-card shadow-sm"
+      className="h-fit overflow-hidden rounded-lg border border-border bg-card shadow-sm"
       style={style}
     >
       <Tabs defaultValue="sales_receipt">
@@ -176,7 +176,7 @@ function DocumentHero({
   );
 
   return (
-    <div className="relative min-h-56 overflow-hidden border-b border-border bg-background px-6 py-8 sm:px-8">
+    <div className="relative min-h-48 overflow-hidden border-b border-border bg-background px-6 py-8 sm:px-8">
       <div
         className="absolute inset-y-0 left-0 w-[58%]"
         style={{

@@ -3,7 +3,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { Bell, Menu, UserCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useActiveLocationScope } from "@/lib/authorization/use-active-location-scope";
 import {
   fetchNotifications,
@@ -40,56 +46,56 @@ export function AppTopbar({
   const notificationCount = notificationsQuery.data?.unreadCount ?? 0;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border/70 bg-card/90 shadow-sm backdrop-blur">
+    <header className="sticky top-0 z-30 bg-transparent transition-all">
       <div className="mx-auto flex min-h-16 w-full max-w-[96rem] items-center justify-between gap-4 px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <Button
             type="button"
             size="icon-sm"
-            variant="outline"
+            variant="ghost"
             onClick={onMenuOpen}
-            className="lg:hidden"
+            className="lg:hidden rounded-lg text-slate-900 hover:bg-slate-200/50"
           >
             <Menu className="size-4" />
             <span className="sr-only">Open navigation</span>
           </Button>
-
-          <div className="min-w-0">
-            <h1 className="truncate text-base font-semibold sm:text-lg">
-              {activeItem?.label ?? "Dashboard"}
-            </h1>
-          </div>
+          
+          {/* Title removed to avoid redundancy with PageHeader */}
         </div>
 
         <div className="flex items-center gap-2">
           <TopbarLocationSelector {...locationSelector} />
-          <Button
-            type="button"
-            size="icon-sm"
-            variant="outline"
-            className="relative"
-            onClick={onNotificationsOpen}
-          >
-            <Bell className="size-4" />
-            {notificationCount ? (
-              <span className="absolute -right-1 -top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.65rem] font-semibold text-primary-foreground">
-                {notificationCount > 9 ? "9+" : notificationCount}
-              </span>
-            ) : null}
-            <span className="sr-only">Open notifications</span>
-          </Button>
+          
+          <div className="flex items-center gap-1.5 rounded-2xl bg-slate-900/5 p-1 backdrop-blur-md ring-1 ring-slate-900/5">
+            <Button
+              type="button"
+              size="icon-sm"
+              variant="ghost"
+              className="relative rounded-lg text-slate-600 hover:bg-white/50 hover:text-slate-900"
+              onClick={onNotificationsOpen}
+            >
+              <Bell className="size-4" />
+              {notificationCount ? (
+                <span className="absolute -right-1 -top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.65rem] font-semibold text-primary-foreground ring-2 ring-slate-50">
+                  {notificationCount > 9 ? "9+" : notificationCount}
+                </span>
+              ) : null}
+              <span className="sr-only">Open notifications</span>
+            </Button>
 
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={onAccountOpen}
-          >
-            <UserCircle2 className="size-3.5" />
-            <span className="hidden sm:inline">
-              {user ? `${user.firstName} ${user.lastName}` : "Account"}
-            </span>
-          </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="rounded-lg text-slate-600 hover:bg-white/50 hover:text-slate-900 gap-2"
+              onClick={onAccountOpen}
+            >
+              <UserCircle2 className="size-3.5" />
+              <span className="hidden sm:inline">
+                {user ? `${user.firstName} ${user.lastName}` : "Account"}
+              </span>
+            </Button>
+          </div>
         </div>
       </div>
     </header>
@@ -120,17 +126,17 @@ function TopbarLocationSelector({
 
   return (
     <div className="hidden min-w-44 max-w-56 md:block">
-      <Select
-        aria-label="Select acting location"
-        className="h-9 bg-background/70 text-xs shadow-xs"
-        onChange={(event) => onLocationChange(event.target.value)}
-        value={selectedLocationSlug}
-      >
-        {scopes.map((scope) => (
-          <option key={scope.locationId} value={scope.locationSlug}>
-            {scope.locationName}
-          </option>
-        ))}
+      <Select onValueChange={onLocationChange} value={selectedLocationSlug}>
+        <SelectTrigger className="h-9 bg-background/70 text-xs shadow-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {scopes.map((scope) => (
+            <SelectItem key={scope.locationId} value={scope.locationSlug}>
+              {scope.locationName}
+            </SelectItem>
+          ))}
+        </SelectContent>
       </Select>
     </div>
   );

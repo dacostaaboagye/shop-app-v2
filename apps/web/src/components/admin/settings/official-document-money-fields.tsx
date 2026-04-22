@@ -2,7 +2,13 @@ import { AppFormField } from "@/components/forms/app-form-field";
 import { CurrencySelect } from "@/components/settings/document-setting-selects";
 import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { OfficialDocumentSettingsFormApi } from "./official-document-identity-fields";
 import type { OfficialDocumentSettingsFormValues } from "./official-document-settings-form.support";
 
@@ -56,19 +62,22 @@ export function OfficialDocumentMoneyFields({
         {(field) => (
           <AppFormField inputId={field.name} label="Rounding mode">
             <Select
-              id={field.name}
-              onChange={(event) =>
+              onValueChange={(value) =>
                 field.handleChange(
-                  event.target
-                    .value as OfficialDocumentSettingsFormValues["roundingMode"],
+                  value as OfficialDocumentSettingsFormValues["roundingMode"],
                 )
               }
               value={field.state.value}
             >
-              <option value="half_up">Half up</option>
-              <option value="half_even">Half even</option>
-              <option value="floor">Floor</option>
-              <option value="ceiling">Ceiling</option>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="half_up">Half up</SelectItem>
+                <SelectItem value="half_even">Half even</SelectItem>
+                <SelectItem value="floor">Floor</SelectItem>
+                <SelectItem value="ceiling">Ceiling</SelectItem>
+              </SelectContent>
             </Select>
           </AppFormField>
         )}

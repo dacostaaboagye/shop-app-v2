@@ -29,12 +29,12 @@ export function PortalSidebarBrand({
   const navigateProps = onNavigate ? { onClick: onNavigate } : {};
 
   return (
-    <div className="border-b border-sidebar-border px-4 py-4">
+    <div className="px-6 py-8">
       <Link
         href={toRoute("/")}
         {...navigateProps}
         scroll={false}
-        className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-sidebar-accent"
+        className="group flex flex-col gap-4"
       >
         <BrandMark
           accentColor={brandProfile.accentColor}
@@ -42,14 +42,14 @@ export function PortalSidebarBrand({
           logoText={brandProfile.logoText}
           primaryColor={brandProfile.primaryColor}
         />
-        <div className="min-w-0">
-          <p className="text-xs uppercase tracking-[0.16em] text-sidebar-foreground/60">
-            {brandProfile.logoText}
-          </p>
-          <p className="truncate text-sm font-semibold">
-            {brandProfile.brandName}
-          </p>
-          <p className="truncate text-xs text-sidebar-foreground/60">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <span className="font-heading text-xl font-bold tracking-tight text-foreground">
+              {brandProfile.brandName}
+            </span>
+            <div className="size-1 rounded-full bg-primary" />
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/50">
             {heading}
           </p>
         </div>
@@ -72,10 +72,10 @@ function BrandMark({
   return (
     <div
       aria-hidden
-      className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-sidebar-primary text-sidebar-primary-foreground"
+      className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-primary/20 transition-transform group-hover:scale-105 active:scale-95"
       style={{
         backgroundColor: primaryColor,
-        boxShadow: `inset 0 -3px 0 ${accentColor}`,
+        borderBottom: `4px solid ${accentColor}`,
       }}
     >
       {logoImageUrl ? (

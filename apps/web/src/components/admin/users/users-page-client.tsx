@@ -14,7 +14,13 @@ import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   adminUsersQueryKey,
@@ -108,142 +114,167 @@ export function UsersPageClient({
   return (
     <PageShell>
       <PageHeader description={description} title={title} />
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative min-w-56 flex-1">
-          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="h-9 pl-9"
-            onChange={(event) => setDraftSearch(event.target.value)}
-            placeholder="Search name or email"
-            value={draftSearch}
-          />
-        </div>
-        <Select
-          aria-label="Filter by role"
-          className="h-9"
-          onChange={(event) =>
-            replaceUserQuery(router, pathname, searchParams, {
-              page: null,
-              role: event.target.value || null,
-            })
-          }
-          value={role}
-        >
-          <option value="">All roles</option>
-          {usersQuery.data?.availableRoles.map((roleOption) => (
-            <option key={roleOption.slug} value={roleOption.slug}>
-              {roleOption.name}
-            </option>
-          ))}
-        </Select>
-        <Select
-          aria-label="Filter by status"
-          className="h-9"
-          onChange={(event) =>
-            replaceUserQuery(router, pathname, searchParams, {
-              page: null,
-              status: event.target.value === "all" ? null : event.target.value,
-            })
-          }
-          value={status}
-        >
-          <option value="all">All status</option>
-          <option value="active">Active</option>
-          <option value="suspended">Suspended</option>
-          <option value="deactivated">Deactivated</option>
-        </Select>
-        {hasFilters ? (
-          <Button
-            onClick={() =>
-              replaceUserQuery(router, pathname, searchParams, {
-                locationSlug: null,
-                page: null,
-                q: null,
-                role: null,
-                status: null,
-              })
-            }
-            size="sm"
-            type="button"
-            variant="ghost"
-          >
-            <X data-icon="inline-start" />
-            Clear
-          </Button>
-        ) : null}
-        <span className="ml-auto text-sm tabular-nums text-muted-foreground">
-          {usersQuery.data?.totalCount ?? 0} total
-        </span>
-      </div>
-
-      {usersQuery.isPending && !usersQuery.data ? (
-        <div className="flex flex-col gap-2">
-          {USER_TABLE_SKELETON_KEYS.map((key) => (
-            <Skeleton key={key} className="h-11 w-full" />
-          ))}
-        </div>
-      ) : (
-        <>
-          {usersQuery.isError ? (
-            <AppErrorBanner
-              detail={getUsersErrorMessage(usersQuery.error)}
-              error={usersQuery.error}
-              onRetry={() => {
-                void usersQuery.refetch();
-              }}
-              title="Unable to load users"
+      
+      {/* Sovereign Control Surface */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-white p-4 shadow-xl shadow-black/[0.02] border border-slate-200/50">
+          <div className="relative min-w-[320px] flex-1">
+            <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              className="h-10 border-0 bg-slate-50 pl-10 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-primary/20 transition-all rounded-xl"
+              onChange={(event) => setDraftSearch(event.target.value)}
+              placeholder="Search name, email, or role..."
+              value={draftSearch}
             />
-          ) : null}
-          <AppDataTable
-            columns={userTableColumns}
-            data={usersQuery.data?.items ?? []}
-            density="compact"
-            emptyDescription={
-              hasFilters
-                ? "Try adjusting the current URL filters or search term."
-                : "No users were returned from the current backend dataset."
-            }
-            emptyTitle={hasFilters ? "No users match" : "No users available"}
-            emptyState={{
-              kind: hasFilters ? "no-results" : "no-data",
-            }}
-            getRowId={(row) => row.slug}
-            {...(userDetailBasePath
-              ? {
-                  onRowClick: (row: { slug: string }) =>
-                    router.push(
-                      toRoute(
-                        `${userDetailBasePath}/${encodeURIComponent(row.slug)}` as Route,
-                      ),
-                    ),
-                }
-              : {})}
-            onSortingChange={(nextSorting) =>
-              replaceUserQuery(router, pathname, searchParams, {
-                dir: nextSorting?.direction ?? null,
-                page: null,
-                sort: nextSorting?.columnId ?? null,
-              })
-            }
-            pagination={{
-              onPageChange: (nextPage) =>
-                replaceUserQuery(router, pathname, searchParams, {
-                  page: nextPage === 1 ? null : nextPage,
-                }),
-              onPageSizeChange: (nextPageSize) =>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Select
+              onValueChange={(value) =>
                 replaceUserQuery(router, pathname, searchParams, {
                   page: null,
-                  pageSize: nextPageSize === 10 ? null : nextPageSize,
-                }),
-              page: safePage,
-              pageSize,
-              pageSizeOptions: USER_PAGE_SIZE_OPTIONS,
-              totalCount: usersQuery.data?.totalCount ?? 0,
-            }}
-            sorting={sorting}
-          />
-        </>
-      )}
+                  role: value === "all" ? null : value,
+                })
+              }
+              value={role || "all"}
+            >
+              <SelectTrigger className="min-w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All roles</SelectItem>
+                {usersQuery.data?.availableRoles.map((roleOption) => (
+                  <SelectItem key={roleOption.slug} value={roleOption.slug}>
+                    {roleOption.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              onValueChange={(value) =>
+                replaceUserQuery(router, pathname, searchParams, {
+                  page: null,
+                  status: value === "all" ? null : value,
+                })
+              }
+              value={status || "all"}
+            >
+              <SelectTrigger className="min-w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="suspended">Suspended</SelectItem>
+                <SelectItem value="deactivated">Deactivated</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {hasFilters ? (
+            <Button
+              onClick={() =>
+                replaceUserQuery(router, pathname, searchParams, {
+                  locationSlug: null,
+                  page: null,
+                  q: null,
+                  role: null,
+                  status: null,
+                })
+              }
+              size="sm"
+              type="button"
+              variant="ghost"
+              className="h-10 rounded-xl px-4 text-slate-400 hover:text-slate-900 hover:bg-slate-50"
+            >
+              <X className="mr-2 size-4" />
+              Clear filters
+            </Button>
+          ) : null}
+          
+          <div className="ml-auto flex items-center gap-3 pr-2">
+            <div className="h-4 w-px bg-slate-200" />
+            <span className="text-[0.65rem] font-bold uppercase tracking-wider text-slate-400 tabular-nums">
+              {usersQuery.data?.totalCount ?? 0} total
+            </span>
+          </div>
+        </div>
+
+        {/* Sovereign Table Surface */}
+        <div className="overflow-hidden rounded-2xl bg-white shadow-xl shadow-black/[0.03] border border-slate-200/50">
+          {usersQuery.isPending && !usersQuery.data ? (
+            <div className="flex flex-col gap-1 p-4">
+              {USER_TABLE_SKELETON_KEYS.map((key) => (
+                <Skeleton key={key} className="h-12 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : (
+            <>
+              {usersQuery.isError ? (
+                <div className="p-8">
+                  <AppErrorBanner
+                    detail={getUsersErrorMessage(usersQuery.error)}
+                    error={usersQuery.error}
+                    onRetry={() => {
+                      void usersQuery.refetch();
+                    }}
+                    title="Unable to load users"
+                  />
+                </div>
+              ) : null}
+              <AppDataTable
+                columns={userTableColumns}
+                data={usersQuery.data?.items ?? []}
+                density="compact"
+                emptyDescription={
+                  hasFilters
+                    ? "Try adjusting the current URL filters or search term."
+                    : "No users were returned from the current backend dataset."
+                }
+                emptyTitle={hasFilters ? "No users match" : "No users available"}
+                emptyState={{
+                  kind: hasFilters ? "no-results" : "no-data",
+                }}
+                getRowId={(row) => row.slug}
+                {...(userDetailBasePath
+                  ? {
+                      onRowClick: (row: { slug: string }) =>
+                        router.push(
+                          toRoute(
+                            `${userDetailBasePath}/${encodeURIComponent(row.slug)}` as Route,
+                          ),
+                        ),
+                    }
+                  : {})}
+                onSortingChange={(nextSorting) =>
+                  replaceUserQuery(router, pathname, searchParams, {
+                    dir: nextSorting?.direction ?? null,
+                    page: null,
+                    sort: nextSorting?.columnId ?? null,
+                  })
+                }
+                pagination={{
+                  onPageChange: (nextPage) =>
+                    replaceUserQuery(router, pathname, searchParams, {
+                      page: nextPage === 1 ? null : nextPage,
+                    }),
+                  onPageSizeChange: (nextPageSize) =>
+                    replaceUserQuery(router, pathname, searchParams, {
+                      page: null,
+                      pageSize: nextPageSize === 10 ? null : nextPageSize,
+                    }),
+                  page: safePage,
+                  pageSize,
+                  pageSizeOptions: USER_PAGE_SIZE_OPTIONS,
+                  totalCount: usersQuery.data?.totalCount ?? 0,
+                }}
+                sorting={sorting}
+              />
+            </>
+          )}
+        </div>
+      </div>
     </PageShell>
   );
 }

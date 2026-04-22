@@ -1,11 +1,12 @@
 import { AppFormField } from "@/components/forms/app-form-field";
-import { TimeZoneSelect } from "@/components/settings/document-setting-selects";
+import {
+  PaperSizeSelect,
+  TimeZoneSelect,
+} from "@/components/settings/document-setting-selects";
 import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { OfficialDocumentSettingsFormApi } from "./official-document-identity-fields";
-import type { OfficialDocumentSettingsFormValues } from "./official-document-settings-form.support";
 
 export function OfficialDocumentDocumentFields({
   form,
@@ -17,20 +18,11 @@ export function OfficialDocumentDocumentFields({
       <form.Field name="defaultPaperSize">
         {(field) => (
           <AppFormField inputId={field.name} label="Default paper size">
-            <Select
+            <PaperSizeSelect
               id={field.name}
-              onChange={(event) =>
-                field.handleChange(
-                  event.target
-                    .value as OfficialDocumentSettingsFormValues["defaultPaperSize"],
-                )
-              }
+              onChange={field.handleChange}
               value={field.state.value}
-            >
-              <option value="receipt_80mm">80mm receipt</option>
-              <option value="a4">A4 document</option>
-              <option value="letter">Letter document</option>
-            </Select>
+            />
           </AppFormField>
         )}
       </form.Field>

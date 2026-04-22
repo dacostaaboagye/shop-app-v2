@@ -24,7 +24,7 @@ export function LocationDetailMapCard({
   longitude,
 }: Pick<AdminLocationSummary, "address" | "latitude" | "longitude">) {
   return (
-    <Card className="border-border/70 bg-card shadow-none">
+    <Card className="h-full border-border/70 bg-card shadow-none">
       <CardHeader>
         <CardTitle>Map</CardTitle>
         <CardDescription>Pin location on the map.</CardDescription>

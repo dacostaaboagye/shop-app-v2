@@ -54,10 +54,10 @@ export function AuthRegisterForm() {
   return (
     <div className="flex flex-col gap-4">
       <AuthGoogleOAuthButton />
-      <div className="relative flex items-center gap-2">
-        <div className="flex-1 border-t border-border" />
-        <span className="text-xs text-muted-foreground">or</span>
-        <div className="flex-1 border-t border-border" />
+      <div className="relative flex items-center gap-4 py-2">
+        <div className="flex-1 border-t border-border/60" />
+        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">or</span>
+        <div className="flex-1 border-t border-border/60" />
       </div>
 
       <form
@@ -215,7 +215,7 @@ export function AuthRegisterForm() {
         >
           {({ canSubmit, isSubmitting }) => (
             <Button
-              className="w-full"
+              className="w-full rounded-xl shadow-lg shadow-primary/20"
               disabled={!canSubmit || isSubmitting}
               size="lg"
               type="submit"
@@ -228,7 +228,7 @@ export function AuthRegisterForm() {
               ) : (
                 <>
                   Create account
-                  <UserRoundPlus data-icon="inline-end" />
+                  <UserRoundPlus className="ml-2 h-4 w-4" />
                 </>
               )}
             </Button>

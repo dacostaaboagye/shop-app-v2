@@ -127,107 +127,115 @@ export function AdminStaffPageClient() {
         description="Managers and workers across every location with server-side role, status, and location filters."
         title="Staff"
       />
-      <AdminStaffFilters
-        draftSearch={draftSearch}
-        hasFilters={hasFilters}
-        locationSlug={locationSlug}
-        locations={locationsQuery.data?.items ?? []}
-        onClear={() =>
-          replaceUserQuery(router, pathname, searchParams, {
-            locationSlug: null,
-            page: null,
-            q: null,
-            role: null,
-            status: null,
-          })
-        }
-        onLocationChange={(nextLocationSlug) =>
-          replaceUserQuery(router, pathname, searchParams, {
-            locationSlug: nextLocationSlug || null,
-            page: null,
-          })
-        }
-        onRoleChange={(nextRole) =>
-          replaceUserQuery(router, pathname, searchParams, {
-            page: null,
-            role: nextRole === "all" ? null : nextRole,
-          })
-        }
-        onSearchChange={setDraftSearch}
-        onStatusChange={(nextStatus) =>
-          replaceUserQuery(router, pathname, searchParams, {
-            page: null,
-            status: nextStatus === "all" ? null : nextStatus,
-          })
-        }
-        role={role}
-        status={status}
-        totalCount={staffQuery.data?.totalCount ?? 0}
-      />
+      
+      <div className="flex flex-col gap-6">
+        <AdminStaffFilters
+          draftSearch={draftSearch}
+          hasFilters={hasFilters}
+          locationSlug={locationSlug}
+          locations={locationsQuery.data?.items ?? []}
+          onClear={() =>
+            replaceUserQuery(router, pathname, searchParams, {
+              locationSlug: null,
+              page: null,
+              q: null,
+              role: null,
+              status: null,
+            })
+          }
+          onLocationChange={(nextLocationSlug) =>
+            replaceUserQuery(router, pathname, searchParams, {
+              locationSlug: nextLocationSlug || null,
+              page: null,
+            })
+          }
+          onRoleChange={(nextRole) =>
+            replaceUserQuery(router, pathname, searchParams, {
+              page: null,
+              role: nextRole === "all" ? null : nextRole,
+            })
+          }
+          onSearchChange={setDraftSearch}
+          onStatusChange={(nextStatus) =>
+            replaceUserQuery(router, pathname, searchParams, {
+              page: null,
+              status: nextStatus === "all" ? null : nextStatus,
+            })
+          }
+          role={role}
+          status={status}
+          totalCount={staffQuery.data?.totalCount ?? 0}
+        />
 
-      {staffQuery.isPending && !staffQuery.data ? (
-        <div className="flex flex-col gap-2">
-          {USER_TABLE_SKELETON_KEYS.map((key) => (
-            <Skeleton key={key} className="h-11 w-full" />
-          ))}
+        {/* Sovereign Table Surface */}
+        <div className="overflow-hidden rounded-2xl bg-white shadow-xl shadow-black/[0.03] border border-slate-200/50">
+          {staffQuery.isPending && !staffQuery.data ? (
+            <div className="flex flex-col gap-1 p-4">
+              {USER_TABLE_SKELETON_KEYS.map((key) => (
+                <Skeleton key={key} className="h-12 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : (
+            <>
+              {staffQuery.isError ? (
+                <div className="p-8">
+                  <AppErrorBanner
+                    detail={getUsersErrorMessage(staffQuery.error)}
+                    error={staffQuery.error}
+                    onRetry={() => {
+                      void staffQuery.refetch();
+                    }}
+                    title="Unable to load staff"
+                  />
+                </div>
+              ) : null}
+              <AppDataTable
+                columns={userTableColumns}
+                data={staffQuery.data?.items ?? []}
+                density="compact"
+                emptyDescription={
+                  hasFilters
+                    ? "Try adjusting the staff filters or search term."
+                    : "No manager or worker accounts were returned."
+                }
+                emptyTitle={hasFilters ? "No staff match" : "No staff available"}
+                emptyState={{ kind: hasFilters ? "no-results" : "no-data" }}
+                getRowId={(row) => row.slug}
+                onRowClick={(row: { slug: string }) =>
+                  router.push(
+                    toRoute(
+                      `/admin/users/${encodeURIComponent(row.slug)}` as Route,
+                    ),
+                  )
+                }
+                onSortingChange={(nextSorting) =>
+                  replaceUserQuery(router, pathname, searchParams, {
+                    dir: nextSorting?.direction ?? null,
+                    page: null,
+                    sort: nextSorting?.columnId ?? null,
+                  })
+                }
+                pagination={{
+                  onPageChange: (nextPage) =>
+                    replaceUserQuery(router, pathname, searchParams, {
+                      page: nextPage === 1 ? null : nextPage,
+                    }),
+                  onPageSizeChange: (nextPageSize) =>
+                    replaceUserQuery(router, pathname, searchParams, {
+                      page: null,
+                      pageSize: nextPageSize === 10 ? null : nextPageSize,
+                    }),
+                  page: safePage,
+                  pageSize,
+                  pageSizeOptions: USER_PAGE_SIZE_OPTIONS,
+                  totalCount: staffQuery.data?.totalCount ?? 0,
+                }}
+                sorting={sorting}
+              />
+            </>
+          )}
         </div>
-      ) : (
-        <>
-          {staffQuery.isError ? (
-            <AppErrorBanner
-              detail={getUsersErrorMessage(staffQuery.error)}
-              error={staffQuery.error}
-              onRetry={() => {
-                void staffQuery.refetch();
-              }}
-              title="Unable to load staff"
-            />
-          ) : null}
-          <AppDataTable
-            columns={userTableColumns}
-            data={staffQuery.data?.items ?? []}
-            density="compact"
-            emptyDescription={
-              hasFilters
-                ? "Try adjusting the staff filters or search term."
-                : "No manager or worker accounts were returned."
-            }
-            emptyTitle={hasFilters ? "No staff match" : "No staff available"}
-            emptyState={{ kind: hasFilters ? "no-results" : "no-data" }}
-            getRowId={(row) => row.slug}
-            onRowClick={(row: { slug: string }) =>
-              router.push(
-                toRoute(
-                  `/admin/users/${encodeURIComponent(row.slug)}` as Route,
-                ),
-              )
-            }
-            onSortingChange={(nextSorting) =>
-              replaceUserQuery(router, pathname, searchParams, {
-                dir: nextSorting?.direction ?? null,
-                page: null,
-                sort: nextSorting?.columnId ?? null,
-              })
-            }
-            pagination={{
-              onPageChange: (nextPage) =>
-                replaceUserQuery(router, pathname, searchParams, {
-                  page: nextPage === 1 ? null : nextPage,
-                }),
-              onPageSizeChange: (nextPageSize) =>
-                replaceUserQuery(router, pathname, searchParams, {
-                  page: null,
-                  pageSize: nextPageSize === 10 ? null : nextPageSize,
-                }),
-              page: safePage,
-              pageSize,
-              pageSizeOptions: USER_PAGE_SIZE_OPTIONS,
-              totalCount: staffQuery.data?.totalCount ?? 0,
-            }}
-            sorting={sorting}
-          />
-        </>
-      )}
+      </div>
     </PageShell>
   );
 }

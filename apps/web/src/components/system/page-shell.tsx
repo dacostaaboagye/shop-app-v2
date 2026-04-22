@@ -39,8 +39,10 @@ type InsightCardProps = {
 
 export function PageShell({ children, className }: PageShellProps) {
   return (
-    <main className={cn("page-shell flex flex-col gap-6", className)}>
-      {children}
+    <main className={cn("px-4 py-4 sm:px-6 lg:px-8", className)}>
+      <div className="mx-auto max-w-[96rem] flex flex-col gap-6">
+        {children}
+      </div>
     </main>
   );
 }
@@ -54,29 +56,34 @@ export function HeroPanel({
   aside,
 }: HeroPanelProps) {
   return (
-    <section className="hero-grid">
-      <Card className="hero-panel border-none py-0">
-        <CardContent className="flex flex-col gap-6 px-6 py-7 sm:px-8 sm:py-9">
-          <div className="eyebrow-block">
-            <p className="editorial-kicker">{eyebrow}</p>
-            <h1 className="max-w-4xl text-5xl leading-none font-medium sm:text-6xl lg:text-7xl">
+    <section className="grid gap-6 lg:grid-cols-[1fr,400px]">
+      <div className="flex flex-col justify-center">
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <p className="font-heading text-[10px] font-black uppercase tracking-[0.4em] text-primary">
+              {eyebrow}
+            </p>
+            <h1 className="font-heading max-w-4xl text-5xl font-bold leading-[1.1] tracking-tight text-slate-900 sm:text-6xl">
               {title}
             </h1>
+            <p className="max-w-2xl text-lg font-medium leading-relaxed text-slate-500/80">
+              {description}
+            </p>
           </div>
-          <p className="hero-copy text-base sm:text-lg">{description}</p>
-          {badges?.length ? (
-            <div className="token-row">
-              {badges.map((badge) => (
-                <Badge key={badge} variant="secondary">
-                  {badge}
-                </Badge>
-              ))}
-            </div>
-          ) : null}
-          {actions ? <div className="token-row">{actions}</div> : null}
-        </CardContent>
-      </Card>
-      {aside}
+          
+          <div className="flex flex-wrap items-center gap-4">
+            {badges?.map((badge) => (
+              <div key={badge} className="rounded-full bg-slate-100 px-4 py-1.5 text-xs font-bold text-slate-500 border border-slate-200/50">
+                {badge}
+              </div>
+            ))}
+            {actions}
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center">
+        {aside}
+      </div>
     </section>
   );
 }
@@ -107,55 +114,55 @@ export function PageHeader({
   const headerActions = actions ?? action;
 
   return (
-    <section className="rounded-lg border border-border/70 bg-card/95 px-4 py-4 shadow-sm sm:px-5">
-      {backHref || headerActions ? (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
-          <div className="flex items-center gap-3">
-            {backHref ? (
-              <Link
-                href={backHref}
-                className={cn(
-                  buttonVariants({ size: "sm", variant: "outline" }),
-                  "rounded-full pr-3 text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <ChevronLeft className="size-3.5" />
-                {backLabel}
-              </Link>
+    <section className="relative">
+      <div className="flex flex-col gap-4">
+        {backHref && (
+          <Link
+            href={backHref}
+            className="group flex w-fit items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 transition-colors hover:text-slate-900"
+          >
+            <ChevronLeft className="size-4 transition-transform group-hover:-translate-x-1" />
+            {backLabel}
+          </Link>
+        )}
+
+        <div className="flex items-start justify-between gap-8">
+          <div className="flex items-start gap-8">
+            {image ? (
+              <PreviewImage
+                alt={`${title} image`}
+                className="size-20 shrink-0 rounded-2xl shadow-xl shadow-black/5 ring-8 ring-slate-50/50"
+                height={80}
+                imageClassName="rounded-2xl"
+                previewTitle={title}
+                src={image}
+                width={80}
+              />
+            ) : avatar ? (
+              <div className="size-20 shrink-0 shadow-xl shadow-black/5 rounded-2xl overflow-hidden ring-8 ring-slate-50/50">{avatar}</div>
             ) : null}
-            {backHref && headerActions ? (
-              <div className="hidden h-4 w-px bg-border/70 sm:block" />
-            ) : null}
+            <div className="flex-1 pt-0.5 space-y-2">
+              {eyebrow && (
+                <p className="font-heading text-[10px] font-black uppercase tracking-[0.4em] text-primary">
+                  {eyebrow}
+                </p>
+              )}
+              <h1 className="font-heading text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+                {title}
+              </h1>
+              {description && (
+                <p className="max-w-3xl text-base font-medium leading-relaxed text-slate-500/80">
+                  {description}
+                </p>
+              )}
+            </div>
           </div>
-          {headerActions ? (
-            <div className="flex flex-wrap items-center gap-2">
+          
+          {headerActions && (
+            <div className="flex shrink-0 items-center gap-3 pt-1">
               {headerActions}
             </div>
-          ) : null}
-        </div>
-      ) : null}
-      <div className="flex min-w-0 items-center gap-4">
-        {image ? (
-          <PreviewImage
-            alt={`${title} image`}
-            className="size-14 shrink-0 rounded-xl"
-            height={56}
-            imageClassName="rounded-xl"
-            previewTitle={title}
-            src={image}
-            width={56}
-          />
-        ) : avatar ? (
-          avatar
-        ) : null}
-        <div className="min-w-0">
-          {eyebrow ? <p className="editorial-kicker mb-1">{eyebrow}</p> : null}
-          <h1 className="text-xl font-semibold sm:text-2xl">{title}</h1>
-          {description ? (
-            <p className="mt-1.5 max-w-3xl text-sm leading-6 text-muted-foreground sm:text-[0.95rem]">
-              {description}
-            </p>
-          ) : null}
+          )}
         </div>
       </div>
     </section>
@@ -178,27 +185,29 @@ export function StatCard({
   value,
 }: StatCardProps) {
   const card = (
-    <Card
-      className={cn(
-        "border-border/75 bg-card/95 shadow-sm",
-        href && "transition-colors hover:border-primary/30 hover:bg-accent/25",
-      )}
-    >
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-medium text-muted-foreground">{label}</p>
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary ring-1 ring-primary/15">
-            <Icon className="size-4" />
-          </div>
+    <div className={cn(
+      "group relative flex h-full min-h-[160px] flex-col justify-between overflow-hidden rounded-2xl border-0 bg-white p-8 shadow-lg shadow-black/[0.02] transition-all hover:shadow-xl hover:shadow-black/[0.04]",
+      href && "cursor-pointer active:scale-[0.98]"
+    )}>
+      <div className="flex items-start justify-between">
+        <div className="space-y-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
+            {label}
+          </p>
+          <h3 className="font-heading text-4xl font-bold tracking-tight tabular-nums text-slate-900 capitalize">
+            {value}
+          </h3>
         </div>
-        <p className="mt-3 font-sans text-2xl font-bold tabular-nums">
-          {value}
+        <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-50 text-slate-400 transition-all group-hover:bg-primary/10 group-hover:text-primary">
+          <Icon className="size-6" />
+        </div>
+      </div>
+      {description && (
+        <p className="mt-6 text-xs font-bold text-slate-400/80">
+          {description}
         </p>
-        {description ? (
-          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
-        ) : null}
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 
   if (href) {
@@ -220,13 +229,62 @@ export function InsightCard({
   className,
 }: InsightCardProps) {
   return (
-    <Card className={cn("surface-card gap-0", className)}>
-      <CardHeader className="gap-2">
-        <p className="editorial-kicker">{eyebrow}</p>
-        <CardTitle>{title}</CardTitle>
-        {description ? <CardDescription>{description}</CardDescription> : null}
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
+    <div className={cn(
+      "overflow-hidden rounded-2xl border-0 bg-white p-10 shadow-xl shadow-black/[0.03]",
+      className
+    )}>
+      <div className="mb-10 flex flex-col gap-2">
+        <p className="font-heading text-[10px] font-black uppercase tracking-[0.4em] text-primary">
+          {eyebrow}
+        </p>
+        <h3 className="font-heading text-3xl font-bold tracking-tight text-slate-900">
+          {title}
+        </h3>
+        {description && (
+          <p className="text-base font-medium text-slate-500/80">
+            {description}
+          </p>
+        )}
+      </div>
+      <div className="relative z-10">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+type MenuCardProps = {
+  description: string;
+  href: Route;
+  icon: LucideIcon;
+  title: string;
+};
+
+export function MenuCard({
+  description,
+  href,
+  icon: Icon,
+  title,
+}: MenuCardProps) {
+  return (
+    <Link href={href} className="group block h-full">
+      <Card className="h-full border-0 bg-white p-8 shadow-lg shadow-black/[0.02] transition-all hover:shadow-xl hover:shadow-black/[0.04] hover:bg-slate-50/50">
+        <CardHeader className="p-0 mb-6">
+          <div className="flex items-center gap-4">
+            <div className="flex size-12 items-center justify-center rounded-xl bg-slate-50 text-slate-400 transition-all group-hover:bg-primary/10 group-hover:text-primary">
+              <Icon className="size-5" />
+            </div>
+            <CardTitle className="text-xl font-bold tracking-tight text-slate-900">
+              {title}
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <p className="text-sm font-medium leading-relaxed text-slate-500/80">
+            {description}
+          </p>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }

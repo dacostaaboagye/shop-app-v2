@@ -7,9 +7,11 @@ import {
   Palette,
   ShieldCheck,
 } from "lucide-react";
-import Link from "next/link";
-import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  PageHeader,
+  PageShell,
+  MenuCard,
+} from "@/components/system/page-shell";
 import { toRoute } from "@/lib/routes";
 
 const SETTINGS_LINKS = [
@@ -52,29 +54,16 @@ export function SettingsOverviewPageClient() {
         description="Manage platform configuration by area instead of one growing settings form."
         title="Settings"
       />
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {SETTINGS_LINKS.map((item) => {
-          const Icon = item.icon;
-          return (
-            <Link href={item.href} key={item.href}>
-              <Card className="h-full transition-colors hover:bg-accent/40">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <span className="flex size-9 items-center justify-center rounded-md bg-primary/10 text-primary">
-                      <Icon className="size-4" />
-                    </span>
-                    <CardTitle>{item.label}</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    {item.description}
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-          );
-        })}
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {SETTINGS_LINKS.map((item) => (
+          <MenuCard
+            key={item.href}
+            description={item.description}
+            href={item.href}
+            icon={item.icon}
+            title={item.label}
+          />
+        ))}
       </div>
     </PageShell>
   );

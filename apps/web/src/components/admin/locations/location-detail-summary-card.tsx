@@ -22,7 +22,7 @@ export function LocationDetailSummaryCard({
   const TypeIcon = location.type === "store" ? Store : Warehouse;
 
   return (
-    <Card className="border-border/70 bg-card shadow-none">
+    <Card className="h-full border-border/70 bg-card shadow-none">
       <CardHeader>
         <CardTitle>Location details</CardTitle>
         <CardDescription>
