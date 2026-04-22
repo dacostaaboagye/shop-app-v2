@@ -13,7 +13,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { PageHeader, StatCard } from "@/components/system/page-shell";
 import { PermissionGate } from "@/components/system/permission-gate";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PersonAvatar } from "@/components/system/person-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,7 +21,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   formatAdminDate,
   formatDisplayName,
-  getInitials,
   PASSWORD_RESET_BADGE_CLASS_NAME,
   USER_STATUS_META,
 } from "@/lib/admin-models";
@@ -121,11 +120,12 @@ export function UserAccessDetailBody({
 
       <Card className="border-border/70 bg-card shadow-none">
         <CardContent className="flex flex-wrap items-center gap-3 p-4">
-          <Avatar className="size-10">
-            <AvatarFallback>
-              {getInitials(user.firstName, user.lastName)}
-            </AvatarFallback>
-          </Avatar>
+          <PersonAvatar
+            firstName={user.firstName}
+            imageUrl={user.primaryImageUrl}
+            lastName={user.lastName}
+            size="md"
+          />
           <div className="min-w-0">
             <p className="font-medium leading-tight">{displayName}</p>
             <p className="font-mono text-xs text-muted-foreground">

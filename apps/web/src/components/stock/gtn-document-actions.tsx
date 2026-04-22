@@ -1,40 +1,34 @@
 "use client";
 
 import { Download, FileText, Share2 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   downloadDocumentFile,
   shareDocumentFile,
 } from "@/lib/documents/document-file-actions";
 import { fetchGtnDocumentDownloadFile } from "@/lib/react-query/official-documents";
+import { toRoute } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 
-type GtnDocumentAction = "download" | "share" | "view";
+type GtnDocumentAction = "download" | "share";
 
 export function GtnDocumentActions({ reference }: { reference: string }) {
   const [pendingAction, setPendingAction] = useState<GtnDocumentAction | null>(
     null,
   );
+  const pathname = usePathname();
   const disabled = pendingAction != null;
+  const portal = pathname.startsWith("/manager") ? "manager" : "worker";
+  const viewHref = toRoute(
+    `/${portal}/documents/gtns/${encodeURIComponent(reference)}`,
+  );
 
   async function getFile() {
     return fetchGtnDocumentDownloadFile(reference);
-  }
-
-  async function handleView() {
-    try {
-      setPendingAction("view");
-      const file = await getFile();
-      const url = URL.createObjectURL(file);
-      const opened = window.open(url, "_blank", "noopener,noreferrer");
-      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
-      if (!opened) toast.error("Allow pop-ups to view the GTN PDF.");
-    } catch {
-      toast.error("Unable to open this GTN PDF.");
-    } finally {
-      setPendingAction(null);
-    }
   }
 
   async function handleDownload() {
@@ -77,15 +71,16 @@ export function GtnDocumentActions({ reference }: { reference: string }) {
 
   return (
     <div className="flex flex-wrap gap-2">
-      <Button
-        disabled={disabled}
-        onClick={() => void handleView()}
-        size="sm"
-        variant="outline"
+      <Link
+        className={cn(
+          buttonVariants({ size: "sm", variant: "outline" }),
+          disabled && "pointer-events-none opacity-50",
+        )}
+        href={viewHref}
       >
         <FileText data-icon="inline-start" />
         View GTN PDF
-      </Button>
+      </Link>
       <Button
         disabled={disabled}
         onClick={() => void handleDownload()}

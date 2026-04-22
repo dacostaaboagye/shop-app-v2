@@ -28,7 +28,9 @@ export function AppTopbar({
   const user = useAuthSessionStore((state) => state.user);
   const activeItem = getActiveItem(pathname);
   const locationSelector = useTopbarLocationSelector(
-    activeItem?.requiredPermission ?? null,
+    activeItem?.locationSelectorPermission === undefined
+      ? (activeItem?.requiredPermission ?? null)
+      : activeItem.locationSelectorPermission,
   );
   const notificationsQuery = useQuery({
     enabled: !!user,
@@ -38,7 +40,7 @@ export function AppTopbar({
   const notificationCount = notificationsQuery.data?.unreadCount ?? 0;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border/70 bg-background/92 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-border/70 bg-card/90 shadow-sm backdrop-blur">
       <div className="mx-auto flex min-h-16 w-full max-w-[96rem] items-center justify-between gap-4 px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <Button
@@ -53,7 +55,7 @@ export function AppTopbar({
           </Button>
 
           <div className="min-w-0">
-            <h1 className="truncate text-lg font-medium">
+            <h1 className="truncate text-base font-semibold sm:text-lg">
               {activeItem?.label ?? "Dashboard"}
             </h1>
           </div>
@@ -107,7 +109,7 @@ function TopbarLocationSelector({
 
   if (scopes.length === 1) {
     return (
-      <div className="hidden max-w-52 truncate rounded-md border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground md:block">
+      <div className="hidden max-w-52 truncate rounded-md border border-border/75 bg-background/70 px-3 py-1.5 text-xs text-muted-foreground shadow-xs md:block">
         Acting at{" "}
         <span className="font-medium text-foreground">
           {scopes[0]?.locationName}
@@ -120,7 +122,7 @@ function TopbarLocationSelector({
     <div className="hidden min-w-44 max-w-56 md:block">
       <Select
         aria-label="Select acting location"
-        className="h-9 bg-card text-xs"
+        className="h-9 bg-background/70 text-xs shadow-xs"
         onChange={(event) => onLocationChange(event.target.value)}
         value={selectedLocationSlug}
       >

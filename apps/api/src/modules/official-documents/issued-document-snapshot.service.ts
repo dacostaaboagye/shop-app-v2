@@ -1,12 +1,17 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type {
   IssuedDocumentSnapshotResponse,
   OfficialDocumentProfileResponse,
   OfficialDocumentType,
 } from "@shop/contracts";
 import { AppError } from "../_core/errors/app-error.js";
+import type {
+  PlatformEventPublisher,
+  PlatformEventRecord,
+} from "../events/platform-event.types.js";
 
 export type IssueDocumentSnapshotInput = {
+  actorUserSlug?: string;
   documentReference: string;
   documentType: OfficialDocumentType;
   issuedAt: Date;
@@ -40,7 +45,10 @@ type IssuedDocumentSnapshotRepository = {
 const SCHEMA_VERSION = "official-document-v1";
 
 export class IssuedDocumentSnapshotService {
-  constructor(private readonly repository: IssuedDocumentSnapshotRepository) {}
+  constructor(
+    private readonly repository: IssuedDocumentSnapshotRepository,
+    private readonly eventPublisher: PlatformEventPublisher | null = null,
+  ) {}
 
   async findSnapshotByResource(input: {
     documentType: OfficialDocumentType;
@@ -89,8 +97,46 @@ export class IssuedDocumentSnapshotService {
       schemaVersion: SCHEMA_VERSION,
     });
 
+    await this.eventPublisher?.publish(createIssuedDocumentEvent(input));
+
     return toResponse(created);
   }
+}
+
+function createIssuedDocumentEvent(
+  input: IssueDocumentSnapshotInput,
+): PlatformEventRecord {
+  return {
+    actor: { userSlug: input.actorUserSlug ?? "system" },
+    audience: [
+      ...(input.issuedBy
+        ? [{ kind: "user" as const, userId: input.issuedBy }]
+        : []),
+      { kind: "permission", permission: "settings.documents.view" },
+    ],
+    id: randomUUID(),
+    occurredAt: input.issuedAt.toISOString(),
+    payload: {
+      documentReference: input.documentReference,
+      documentType: input.documentType,
+      locationId: input.locationId,
+      resourceKind: input.resourceKind,
+      resourceReference: input.resourceReference,
+    },
+    resource: {
+      kind: input.resourceKind,
+      reference: input.resourceReference,
+    },
+    summary: `${formatDocumentType(input.documentType)} ${input.documentReference} was issued for ${input.resourceReference}.`,
+    type: "documents.issued",
+  };
+}
+
+function formatDocumentType(documentType: OfficialDocumentType): string {
+  return documentType
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function toResponse(

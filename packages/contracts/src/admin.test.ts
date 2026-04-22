@@ -151,6 +151,7 @@ describe("admin contracts", () => {
           email: "worker@example.com",
           firstName: "Ama",
           lastName: "Mensah",
+          primaryImageUrl: "https://cdn.example.com/users/ama.jpg",
           roleName: "Worker",
           roleSlug: "worker",
           status: "active",
@@ -162,5 +163,9 @@ describe("admin contracts", () => {
     });
 
     assert.equal(parsed.items[0]?.activeAssignmentCount, 3);
+    assert.equal(
+      parsed.items[0]?.primaryImageUrl,
+      "https://cdn.example.com/users/ama.jpg",
+    );
   });
 });

@@ -1,6 +1,7 @@
 export * from "./admin.js";
 export * from "./admin-access.js";
 export * from "./admin-location-write.js";
+export * from "./admin-suppliers.js";
 export * from "./admin-user-access.js";
 export * from "./assignments.js";
 export * from "./auth.js";

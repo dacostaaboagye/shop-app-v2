@@ -22,6 +22,7 @@ describe("admin location query routes", () => {
                   email: "worker@example.com",
                   firstName: "Ama",
                   lastName: "Mensah",
+                  primaryImageUrl: "https://cdn.example.com/users/ama.jpg",
                   roleName: "Worker",
                   roleSlug: "worker" as const,
                   status: "active" as const,
@@ -48,6 +49,10 @@ describe("admin location query routes", () => {
     assert.equal(response.statusCode, 200);
     assert.equal(response.json().locationName, "Downtown Store");
     assert.equal(response.json().items[0]?.userSlug, "ama-mensah");
+    assert.equal(
+      response.json().items[0]?.primaryImageUrl,
+      "https://cdn.example.com/users/ama.jpg",
+    );
     assert.equal(state.lastSlug, "downtown-store");
   });
 

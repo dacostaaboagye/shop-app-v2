@@ -20,6 +20,7 @@ import {
   toOfficialDocumentSettingsFormValues,
   toOfficialDocumentSettingsPayload,
 } from "./official-document-settings-form.support";
+import { OfficialDocumentTemplatePreview } from "./official-document-template-preview";
 
 export type OfficialDocumentSettingsSection =
   | "brand"
@@ -49,16 +50,8 @@ export function OfficialDocumentSettingsForm({
       onSubmit(toOfficialDocumentSettingsPayload(value)),
   });
   const config = SETTINGS_SECTION_CONFIG[section];
-
-  return (
-    <form
-      className="flex flex-col gap-4"
-      onSubmit={(event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        if (canManage) void form.handleSubmit();
-      }}
-    >
+  const settingsFields = (
+    <div className="flex flex-col gap-4">
       <OfficialDocumentSettingsCard
         description={config.description}
         title={config.title}
@@ -72,6 +65,33 @@ export function OfficialDocumentSettingsForm({
           {isSaving ? "Saving..." : config.saveLabel}
         </Button>
       </div>
+    </div>
+  );
+
+  return (
+    <form
+      className="flex flex-col gap-4"
+      onSubmit={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (canManage) void form.handleSubmit();
+      }}
+    >
+      {section === "brand" ? (
+        <div className="grid gap-5 xl:grid-cols-[minmax(320px,420px)_minmax(0,1fr)] xl:items-start">
+          {settingsFields}
+          <form.Subscribe selector={(state) => state.values}>
+            {(values) => (
+              <OfficialDocumentTemplatePreview
+                logoImageUrl={settings.brand.logoImageUrl}
+                values={values}
+              />
+            )}
+          </form.Subscribe>
+        </div>
+      ) : (
+        settingsFields
+      )}
     </form>
   );
 }

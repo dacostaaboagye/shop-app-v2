@@ -37,7 +37,7 @@ export async function toSalesIssuedDocumentPdfFile(
     doc.on("error", reject);
   });
 
-  renderSalesIssuedDocumentPdf(doc, {
+  await renderSalesIssuedDocumentPdf(doc, {
     invoice,
     profile,
     snapshot,

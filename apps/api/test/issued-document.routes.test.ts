@@ -10,7 +10,7 @@ const LOCATION_ID = "22222222-2222-4222-8222-222222222222";
 
 describe("issued document routes", () => {
   it("returns an official sales document snapshot for an authenticated actor", async () => {
-    const calls: Array<{ actorUserId: string; reference: string }> = [];
+    const calls: IssuedDocumentCall[] = [];
     const server = createIssuedDocumentServer(calls);
 
     const response = await server.inject({
@@ -22,7 +22,11 @@ describe("issued document routes", () => {
     assert.equal(response.statusCode, 200);
     assert.equal(response.json().documentReference, "INV/2026/000001");
     assert.deepEqual(calls, [
-      { actorUserId: USER_ID, reference: "INV/2026/000001" },
+      {
+        actorUserId: USER_ID,
+        actorUserSlug: "admin-user",
+        reference: "INV/2026/000001",
+      },
     ]);
   });
 
@@ -38,7 +42,7 @@ describe("issued document routes", () => {
   });
 
   it("downloads the official sales document PDF from the issued snapshot", async () => {
-    const calls: Array<{ actorUserId: string; reference: string }> = [];
+    const calls: IssuedDocumentCall[] = [];
     const server = createIssuedDocumentServer(calls);
 
     const response = await server.inject({
@@ -55,12 +59,16 @@ describe("issued document routes", () => {
     );
     assert.equal(response.rawPayload.subarray(0, 4).toString("utf8"), "%PDF");
     assert.deepEqual(calls, [
-      { actorUserId: USER_ID, reference: "INV/2026/000001" },
+      {
+        actorUserId: USER_ID,
+        actorUserSlug: "admin-user",
+        reference: "INV/2026/000001",
+      },
     ]);
   });
 
   it("downloads the official GTN PDF from the issued snapshot", async () => {
-    const calls: Array<{ actorUserId: string; reference: string }> = [];
+    const calls: IssuedDocumentCall[] = [];
     const server = createIssuedDocumentServer(calls);
 
     const response = await server.inject({
@@ -75,13 +83,23 @@ describe("issued document routes", () => {
       response.headers["content-disposition"],
       'attachment; filename="GTN-00001.pdf"',
     );
-    assert.deepEqual(calls, [{ actorUserId: USER_ID, reference: "GTN-00001" }]);
+    assert.deepEqual(calls, [
+      {
+        actorUserId: USER_ID,
+        actorUserSlug: "admin-user",
+        reference: "GTN-00001",
+      },
+    ]);
   });
 });
 
-function createIssuedDocumentServer(
-  calls: Array<{ actorUserId: string; reference: string }>,
-) {
+type IssuedDocumentCall = {
+  actorUserId: string;
+  actorUserSlug?: string;
+  reference: string;
+};
+
+function createIssuedDocumentServer(calls: IssuedDocumentCall[]) {
   return createServer({
     accessControl: {
       accessTokenAuthenticationService: {

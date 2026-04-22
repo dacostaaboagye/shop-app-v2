@@ -7,6 +7,7 @@ import type {
   AdminStockBalanceListResponse,
   AdminStockBalanceSummary,
   AdminStockCountRequest,
+  LocationReservationQuery,
   LocationStockBalanceQuery,
 } from "@shop/contracts";
 import { fetchJson } from "@/lib/react-query/fetch-json";
@@ -102,6 +103,25 @@ export async function fetchAdminReservations(
   );
 }
 
+export const managerReservationsQueryKey = (
+  query: Partial<LocationReservationQuery>,
+) => ["stock", "reservations", "manager", query] as const;
+
+export async function fetchManagerReservations(
+  query: LocationReservationQuery,
+): Promise<AdminReservationListResponse> {
+  const params = new URLSearchParams({
+    limit: String(query.limit),
+    locationId: query.locationId,
+  });
+  if (query.q) params.set("q", query.q);
+  return fetchJson<AdminReservationListResponse>(
+    `/api/manager/stock/reservations/active?${params.toString()}`,
+    undefined,
+    { auth: "required" },
+  );
+}
+
 export const workerStockBalancesQueryKey = (
   query: Partial<LocationStockBalanceQuery>,
 ) => ["stock", "balances", "worker", query] as const;
@@ -147,6 +167,20 @@ export async function postStockCount(
 ): Promise<AdminStockBalanceSummary> {
   return fetchJson<AdminStockBalanceSummary>(
     "/api/admin/stock/balances/count",
+    {
+      body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+    { auth: "required" },
+  );
+}
+
+export async function postManagerStockCount(
+  body: AdminStockCountRequest,
+): Promise<AdminStockBalanceSummary> {
+  return fetchJson<AdminStockBalanceSummary>(
+    "/api/manager/stock/balances/count",
     {
       body: JSON.stringify(body),
       headers: { "Content-Type": "application/json" },

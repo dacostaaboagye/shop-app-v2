@@ -61,7 +61,7 @@ Goal:
   context in the UI
 
 Status:
-- pending
+- in progress
 
 Acceptance criteria:
 - workers operate only in assigned locations
@@ -70,6 +70,34 @@ Acceptance criteria:
 - admins can act globally or in an explicit override mode with recorded reason
 - frontend location selection is derived from transfer-operating rules, not only
   from generic permission scope hooks
+
+Production-readiness findings:
+- see [production-readiness-findings.md](./production-readiness-findings.md)
+
+Implementation notes:
+- the first slice must introduce a typed operating-context model that separates
+  global read context from location-bound action context
+- admin list pages should default to global context and expose location filters
+- manager and worker action pages should require a concrete selected location
+- the active location store may remember the user's current selection, but it
+  must not replace backend authorization or server-owned data
+
+Current evidence:
+- frontend operating-context resolver added in
+  `apps/web/src/lib/authorization/operating-context.ts`
+- existing permission-location hook now resolves through the typed operating
+  context in `apps/web/src/lib/authorization/use-active-location-scope.ts`
+- scoped pages now prefer the explicit `?location=` URL value and then sync the
+  selected location back into the shared Zustand active-location store
+- admin stock levels and reservations opt out of the topbar location selector
+  because they are global admin list contexts with page-level location filters
+- location detail staff links now route to the operational staff list and user
+  profile pages instead of the access-control user pages
+- resolver tests cover global, location-required, missing-location, and
+  optional global-or-location behavior in
+  `apps/web/src/lib/authorization/operating-context.test.ts`
+- admin stock filter tests cover global defaults and explicit location filters
+  in `apps/web/src/app/admin/stock/balances/page.support.test.ts`
 
 ### `E-02-01D` transfer aggregate and append-only events
 

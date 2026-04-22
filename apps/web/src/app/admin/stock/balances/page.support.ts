@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useActiveLocationStore } from "@/store/use-active-location-store";
 
 export const STOCK_BALANCE_LOCATIONS_QUERY = {
@@ -72,45 +72,19 @@ export function hasStockBalanceFilter(filter: StockBalanceFilter): boolean {
 }
 
 export function useStockBalanceFilter() {
-  const activeLocationSlug = useActiveLocationStore(
-    (state) => state.selectedLocationSlug,
-  );
   const setActiveLocationSlug = useActiveLocationStore(
     (state) => state.setSelectedLocationSlug,
   );
-  const lastSyncedActiveLocationSlug = useRef<string | null>(null);
   const [draftFilter, setDraftFilter] = useState<StockBalanceFilter>(() =>
-    createStockBalanceFilter(activeLocationSlug),
+    createStockBalanceFilter(),
   );
   const [filter, setFilter] = useState<StockBalanceFilter>(() =>
-    createStockBalanceFilter(activeLocationSlug),
+    createStockBalanceFilter(),
   );
-
-  useEffect(() => {
-    if (
-      !activeLocationSlug ||
-      activeLocationSlug === lastSyncedActiveLocationSlug.current
-    ) {
-      return;
-    }
-
-    lastSyncedActiveLocationSlug.current = activeLocationSlug;
-    setDraftFilter((current) =>
-      current.locationSlug === activeLocationSlug
-        ? current
-        : { ...current, locationSlug: activeLocationSlug },
-    );
-    setFilter((current) =>
-      current.locationSlug === activeLocationSlug
-        ? current
-        : { ...current, locationSlug: activeLocationSlug },
-    );
-  }, [activeLocationSlug]);
 
   function updateDraft(patch: Partial<StockBalanceFilter>) {
     if (Object.hasOwn(patch, "locationSlug")) {
       if (patch.locationSlug) {
-        lastSyncedActiveLocationSlug.current = patch.locationSlug;
         setActiveLocationSlug(patch.locationSlug);
       }
     }
@@ -121,7 +95,6 @@ export function useStockBalanceFilter() {
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (draftFilter.locationSlug) {
-      lastSyncedActiveLocationSlug.current = draftFilter.locationSlug;
       setActiveLocationSlug(draftFilter.locationSlug);
     }
     setFilter({ ...draftFilter, q: draftFilter.q.trim() });

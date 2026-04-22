@@ -1,10 +1,11 @@
 "use client";
 
 import type { AdminStockBalanceSummary } from "@shop/contracts";
-import { useQuery } from "@tanstack/react-query";
-import { Search, X } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ClipboardList, Search, X } from "lucide-react";
 import { useState } from "react";
 import { buildStockBalanceColumns } from "@/components/admin/stock/stock-balance-columns";
+import { StockCountDialog } from "@/components/admin/stock/stock-count-dialog";
 import { AppDataTable } from "@/components/data-table/app-data-table";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
@@ -16,11 +17,13 @@ import { usePermissionLocationScope } from "@/lib/authorization/use-permission-l
 import {
   fetchManagerStockBalances,
   managerStockBalancesQueryKey,
+  postManagerStockCount,
 } from "@/lib/react-query/stock-admin";
 
 const SKELETON_KEYS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 export function ManagerStockPageClient() {
+  const queryClient = useQueryClient();
   const {
     accessibleLocationScopes,
     isLoading,
@@ -31,6 +34,9 @@ export function ManagerStockPageClient() {
 
   const [search, setSearch] = useState("");
   const [activeSearch, setActiveSearch] = useState("");
+  const [countTarget, setCountTarget] =
+    useState<AdminStockBalanceSummary | null>(null);
+  const [countOpen, setCountOpen] = useState(false);
 
   const query = {
     locationId: selectedLocationScope?.locationId ?? "",
@@ -45,8 +51,20 @@ export function ManagerStockPageClient() {
     queryKey: managerStockBalancesQueryKey(selectedLocationScope ? query : {}),
     staleTime: 30_000,
   });
+  const countMutation = useMutation({
+    mutationFn: postManagerStockCount,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["stock", "balances", "manager"],
+      });
+      setCountOpen(false);
+      setCountTarget(null);
+    },
+  });
 
-  const columns = buildStockBalanceColumns(null);
+  const canCount =
+    selectedLocationScope?.permissions.includes("inventory.write") ?? false;
+  const columns = buildStockBalanceColumns(canCount ? openCountDialog : null);
   const stockItems = stockQuery.data?.items ?? [];
   const totals = stockItems.reduce(
     (acc, item) => ({
@@ -63,9 +81,28 @@ export function ManagerStockPageClient() {
     setActiveSearch(search.trim());
   }
 
+  function openCountDialog(row: AdminStockBalanceSummary | null) {
+    setCountTarget(row);
+    countMutation.reset();
+    setCountOpen(true);
+  }
+
   return (
     <PageShell>
       <PageHeader
+        actions={
+          canCount ? (
+            <Button
+              onClick={() => openCountDialog(null)}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <ClipboardList data-icon="inline-start" />
+              Enter count
+            </Button>
+          ) : null
+        }
         description="On-hand, reserved, available, and in-transit quantities at your managed location."
         title="Stock levels"
       />
@@ -153,6 +190,20 @@ export function ManagerStockPageClient() {
           getRowId={(row: AdminStockBalanceSummary) => row.skuId}
         />
       )}
+
+      <StockCountDialog
+        error={countMutation.error}
+        isPending={countMutation.isPending}
+        locationName={selectedLocationScope?.locationName ?? ""}
+        locationSlug={selectedLocationScope?.locationSlug ?? ""}
+        onOpenChange={(open) => {
+          setCountOpen(open);
+          if (!open) countMutation.reset();
+        }}
+        onSubmit={(req) => countMutation.mutate(req)}
+        open={countOpen}
+        row={countTarget}
+      />
     </PageShell>
   );
 }

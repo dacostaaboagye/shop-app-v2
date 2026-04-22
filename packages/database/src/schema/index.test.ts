@@ -35,6 +35,16 @@ import {
   stockOwnershipEvents,
   stockReservationStatusEnum,
   stockReservations,
+  supplierContactStatusEnum,
+  supplierContacts,
+  supplierProcurementOrderLines,
+  supplierProcurementOrders,
+  supplierProcurementStatusEnum,
+  supplierProducts,
+  supplierStatusEnum,
+  supplierTransactionTypeEnum,
+  supplierTransactions,
+  suppliers,
   userNotificationStatusEnum,
   userNotifications,
   userPermissionOverrides,
@@ -62,6 +72,18 @@ assert.equal(getTableName(stockBalances), "stock_balances");
 assert.equal(getTableName(stockMovements), "stock_movements");
 assert.equal(getTableName(stockOwnershipEvents), "stock_ownership_events");
 assert.equal(getTableName(stockReservations), "stock_reservations");
+assert.equal(getTableName(suppliers), "suppliers");
+assert.equal(getTableName(supplierContacts), "supplier_contacts");
+assert.equal(getTableName(supplierProducts), "supplier_products");
+assert.equal(getTableName(supplierTransactions), "supplier_transactions");
+assert.equal(
+  getTableName(supplierProcurementOrders),
+  "supplier_procurement_orders",
+);
+assert.equal(
+  getTableName(supplierProcurementOrderLines),
+  "supplier_procurement_order_lines",
+);
 assert.equal(getTableName(platformEvents), "platform_events");
 assert.equal(
   getTableName(officialDocumentSettings),
@@ -119,6 +141,26 @@ assert.deepEqual(platformEventDeliveryStatusEnum.enumValues, [
   "failed",
 ]);
 assert.deepEqual(userNotificationStatusEnum.enumValues, ["unread", "read"]);
+assert.deepEqual(supplierStatusEnum.enumValues, ["active", "inactive"]);
+assert.deepEqual(supplierContactStatusEnum.enumValues, ["active", "inactive"]);
+assert.deepEqual(supplierTransactionTypeEnum.enumValues, [
+  "purchase_order",
+  "supplier_invoice",
+  "goods_receipt",
+  "payment",
+  "return",
+  "credit_note",
+]);
+assert.deepEqual(supplierProcurementStatusEnum.enumValues, [
+  "draft",
+  "submitted",
+  "approved",
+  "ordered",
+  "partially_received",
+  "received",
+  "cancelled",
+  "closed",
+]);
 assert.deepEqual(officialDocumentTypeEnum.enumValues, [
   "sales_receipt",
   "sales_invoice",
@@ -160,6 +202,15 @@ assert.equal(userNotifications.readAt.name, "read_at");
 assert.equal(stockBalances.skuId.name, "sku_id");
 assert.equal(stockMovements.quantityDelta.name, "quantity_delta");
 assert.equal(stockReservations.sourceKey.name, "source_key");
+assert.equal(suppliers.paymentTermsDays.name, "payment_terms_days");
+assert.equal(supplierContacts.userId.name, "user_id");
+assert.equal(supplierProducts.productId.name, "product_id");
+assert.equal(supplierTransactions.transactionType.name, "transaction_type");
+assert.equal(
+  supplierProcurementOrders.destinationLocationId.name,
+  "destination_location_id",
+);
+assert.equal(supplierProcurementOrderLines.skuId.name, "sku_id");
 
 const migrationSql = readAllMigrationSql();
 
@@ -215,6 +266,13 @@ assert.match(
   /ALTER TABLE "stock_ownership_events" DROP COLUMN "effective_to"/,
 );
 assert.match(migrationSql, /stock_ownership_events_quantity_positive/);
+assert.match(migrationSql, /supplier_status/);
+assert.match(migrationSql, /suppliers_name_unique/);
+assert.match(migrationSql, /supplier_contacts_primary_unique/);
+assert.match(migrationSql, /supplier_products_supplier_product_unique/);
+assert.match(migrationSql, /supplier_transaction_type/);
+assert.match(migrationSql, /supplier_procurement_status/);
+assert.match(migrationSql, /supplier_procurement_orders_reference_unique/);
 
 console.log("database schema foundation assertions passed");
 

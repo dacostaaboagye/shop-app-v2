@@ -34,6 +34,9 @@ export function getVisibleNavSections(
       href: entry.href,
       icon: entry.icon,
       label: entry.label,
+      ...(entry.locationSelectorPermission !== undefined
+        ? { locationSelectorPermission: entry.locationSelectorPermission }
+        : {}),
       requiredPermission: entry.requiredPermission,
     };
 
@@ -57,6 +60,9 @@ export function getRouteItem(pathname: string): PortalNavItem | undefined {
       href: entry.href,
       icon: entry.icon,
       label: entry.label,
+      ...(entry.locationSelectorPermission !== undefined
+        ? { locationSelectorPermission: entry.locationSelectorPermission }
+        : {}),
       requiredPermission: entry.requiredPermission,
     };
     const score = getItemMatchScore(item, pathname);

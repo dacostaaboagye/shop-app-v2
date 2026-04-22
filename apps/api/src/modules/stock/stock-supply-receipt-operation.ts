@@ -12,6 +12,7 @@ import type {
   SupplyRequestRow,
 } from "./postgres-supply-request.repository.js";
 import { toSupplyRequestRow } from "./postgres-supply-request-mappers.js";
+import { formatStockSupplyEventSummary } from "./stock-supply-event-summary.js";
 import {
   appendStockSupplyEventWithinTransaction,
   notifyStockSupplyEventsCommitted,
@@ -91,7 +92,11 @@ export async function confirmStockSupplyReceipt(
       actor: input.actor,
       payload: { gtnReference: existingGtn?.reference ?? null },
       supplyRequest,
-      summary: `${supplyRequest.reference} was received.`,
+      summary: formatStockSupplyEventSummary({
+        action: "received",
+        gtnReference: existingGtn?.reference ?? null,
+        supplyRequest,
+      }),
       type: "transfer.received",
     });
 

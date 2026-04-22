@@ -5,7 +5,10 @@ import {
 import type { FastifyInstance } from "fastify";
 import { AppError } from "../_core/errors/app-error.js";
 import type { RouteDefinition } from "../_core/route-contract.js";
-import { getAuthenticatedUserId } from "../auth/auth-route-support.js";
+import {
+  getAuthenticatedActor,
+  getAuthenticatedUserId,
+} from "../auth/auth-route-support.js";
 import type { GtnIssuedDocumentSnapshotService } from "./gtn-issued-document-snapshot.service.js";
 import type { SalesIssuedDocumentSnapshotService } from "./sales-issued-document-snapshot.service.js";
 
@@ -58,6 +61,7 @@ export function registerIssuedDocumentRoutes(
       );
       const snapshot =
         await dependencies.salesDocumentSnapshotService.getOrIssueSnapshot({
+          actorUserSlug: getAuthenticatedActor(request).userSlug,
           actorUserId: getAuthenticatedUserId(request),
           reference,
         });
@@ -75,6 +79,7 @@ export function registerIssuedDocumentRoutes(
       );
       const snapshot =
         await dependencies.gtnDocumentSnapshotService.getOrIssueSnapshot({
+          actorUserSlug: getAuthenticatedActor(request).userSlug,
           actorUserId: getAuthenticatedUserId(request),
           reference,
         });
@@ -92,6 +97,7 @@ export function registerIssuedDocumentRoutes(
       );
       const file =
         await dependencies.salesDocumentSnapshotService.getPdfDownload({
+          actorUserSlug: getAuthenticatedActor(request).userSlug,
           actorUserId: getAuthenticatedUserId(request),
           reference,
         });
@@ -116,6 +122,7 @@ export function registerIssuedDocumentRoutes(
       );
       const file = await dependencies.gtnDocumentSnapshotService.getPdfDownload(
         {
+          actorUserSlug: getAuthenticatedActor(request).userSlug,
           actorUserId: getAuthenticatedUserId(request),
           reference,
         },

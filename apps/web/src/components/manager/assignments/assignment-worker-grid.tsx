@@ -2,6 +2,7 @@
 
 import type { LocationStaffSummary } from "@shop/contracts";
 import { Check } from "lucide-react";
+import { PersonAvatar } from "@/components/system/person-avatar";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -24,9 +25,6 @@ export function AssignmentWorkerGrid({ onSelect, selected, workers }: Props) {
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
       {workers.map((worker) => {
         const isSelected = selected?.userId === worker.userId;
-        const initials =
-          worker.firstName.charAt(0).toUpperCase() +
-          worker.lastName.charAt(0).toUpperCase();
 
         return (
           <button
@@ -45,16 +43,16 @@ export function AssignmentWorkerGrid({ onSelect, selected, workers }: Props) {
                 <Check className="size-3" strokeWidth={3} />
               </span>
             )}
-            <div
+            <PersonAvatar
               className={cn(
-                "flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold",
-                isSelected
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground",
+                isSelected ? "ring-2 ring-primary ring-offset-2" : "",
               )}
-            >
-              {initials}
-            </div>
+              firstName={worker.firstName}
+              imageUrl={worker.primaryImageUrl}
+              interactive={false}
+              lastName={worker.lastName}
+              size="lg"
+            />
             <div className="min-w-0 w-full">
               <p className="truncate text-sm font-medium leading-snug">
                 {worker.firstName} {worker.lastName}

@@ -115,6 +115,10 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
     description: "View the admin supplier management surface.",
   },
   {
+    key: "suppliers.manage",
+    description: "Create and update supplier organizations and relationships.",
+  },
+  {
     key: "settings.documents.view",
     description: "View official document, brand, and money settings.",
   },
@@ -234,6 +238,7 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
       "orders.view",
       "deliveries.view",
       "suppliers.view",
+      "suppliers.manage",
       "settings.documents.view",
       "settings.documents.manage",
       "settings.location_documents.manage",
@@ -263,6 +268,7 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
     permissions: [
       "manager.dashboard.view",
       "inventory.read",
+      "inventory.write",
       "stock.view",
       "transfers.view",
       "staff.view",

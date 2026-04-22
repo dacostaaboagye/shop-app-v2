@@ -44,6 +44,7 @@ export function registerManagerStaffRoutes(
           lastName: member.lastName,
           lastSaleAt: toIsoTimestamp(member.lastSaleAt),
           netSalesAmount: member.netSalesAmount,
+          primaryImageUrl: member.primaryImageUrl,
           roleName: member.roleName,
           roleSlug: member.roleSlug,
           returnsCount: member.returnsCount,

@@ -26,6 +26,7 @@ import { MediaPanel } from "../catalog/media/media-panel";
 import { LocationDetailMapCard } from "./location-detail-map-card";
 import { LocationDetailSummaryCard } from "./location-detail-summary-card";
 import { LocationEditForm } from "./location-edit-form";
+import { getAdminStaffLocationHref } from "./location-staff-links";
 import { LocationStaffPanel } from "./location-staff-panel";
 import { LocationZonesPanel } from "./location-zones-panel";
 
@@ -90,9 +91,7 @@ export function LocationDetailView({
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           description="Workers and managers at this location."
-          href={toRoute(
-            `/admin/access/users?locationSlug=${encodeURIComponent(location.slug)}`,
-          )}
+          href={getAdminStaffLocationHref(location.slug)}
           icon={Users}
           label="Staff"
           value={location.staffCount}

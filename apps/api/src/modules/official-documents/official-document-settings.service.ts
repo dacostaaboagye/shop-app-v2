@@ -5,6 +5,7 @@ import type {
 } from "@shop/contracts";
 import type { z } from "zod";
 import { AppError } from "../_core/errors/app-error.js";
+import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import type { OfficialDocumentSettingsRepository } from "./official-document-settings.repository.js";
 import type {
   LocationDocumentSettingsPatch,
@@ -12,6 +13,10 @@ import type {
   OfficialDocumentSettingsPatch,
   OfficialDocumentSettingsRecord,
 } from "./official-document-settings.types.js";
+import {
+  createOfficialDocumentSettingsEvent,
+  getChangedSettingSections,
+} from "./official-document-settings-events.js";
 
 type GlobalSettingsResponse = z.infer<
   typeof officialDocumentSettingsResponseSchema
@@ -29,6 +34,7 @@ export class OfficialDocumentSettingsService {
   constructor(
     private readonly repository: OfficialDocumentSettingsRepository,
     private readonly brandLogoResolver: OfficialDocumentBrandLogoResolver | null = null,
+    private readonly eventPublisher: PlatformEventPublisher | null = null,
   ) {}
 
   async getGlobalSettings(): Promise<GlobalSettingsResponse> {
@@ -39,6 +45,7 @@ export class OfficialDocumentSettingsService {
   }
 
   async updateGlobalSettings(input: {
+    actor: { userSlug: string };
     patch: OfficialDocumentSettingsPatch;
     updatedBy: string;
     now: Date;
@@ -59,6 +66,14 @@ export class OfficialDocumentSettingsService {
       settings,
       updatedBy: input.updatedBy,
     });
+    await this.eventPublisher?.publish(
+      createOfficialDocumentSettingsEvent({
+        actor: input.actor,
+        changedSections: getChangedSettingSections(input.patch),
+        occurredAt: input.now,
+        scope: "global",
+      }),
+    );
     return serializeGlobal(saved, await this.resolveLogoImageUrl());
   }
 
@@ -131,6 +146,7 @@ export class OfficialDocumentSettingsService {
   }
 
   async updateLocationSettings(input: {
+    actor: { userSlug: string };
     locationId: string;
     patch: LocationDocumentSettingsPatch;
     updatedBy: string;
@@ -138,6 +154,16 @@ export class OfficialDocumentSettingsService {
   }): Promise<LocationSettingsResponse> {
     const saved = await this.repository.saveLocationSettings(input);
     if (!saved) throw locationNotFoundError(input.locationId);
+    await this.eventPublisher?.publish(
+      createOfficialDocumentSettingsEvent({
+        actor: input.actor,
+        changedSections: getChangedSettingSections(input.patch),
+        locationId: input.locationId,
+        locationName: saved.locationName,
+        occurredAt: input.now,
+        scope: "location",
+      }),
+    );
     return serializeLocation(saved);
   }
 

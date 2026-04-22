@@ -1,6 +1,7 @@
 "use client";
 
 import type { LocationStaffSummary } from "@shop/contracts";
+import { PersonAvatar } from "@/components/system/person-avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -49,27 +50,35 @@ export function ManagerStaffList({
             className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0 lg:flex-row lg:items-center lg:justify-between"
             key={`${member.userId}:${member.roleSlug}`}
           >
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="font-medium">
-                  {member.firstName} {member.lastName}
+            <div className="flex min-w-0 items-start gap-3">
+              <PersonAvatar
+                firstName={member.firstName}
+                imageUrl={member.primaryImageUrl}
+                lastName={member.lastName}
+                size="md"
+              />
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-medium">
+                    {member.firstName} {member.lastName}
+                  </p>
+                  <Badge
+                    variant={
+                      member.roleSlug === "manager" ? "secondary" : "outline"
+                    }
+                  >
+                    {member.roleName}
+                  </Badge>
+                  <Badge variant="outline">{member.status}</Badge>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {member.email}
                 </p>
-                <Badge
-                  variant={
-                    member.roleSlug === "manager" ? "secondary" : "outline"
-                  }
-                >
-                  {member.roleName}
-                </Badge>
-                <Badge variant="outline">{member.status}</Badge>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Assigned{" "}
+                  {new Date(member.assignedAt).toLocaleDateString("en-GB")}
+                </p>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {member.email}
-              </p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Assigned{" "}
-                {new Date(member.assignedAt).toLocaleDateString("en-GB")}
-              </p>
             </div>
             <div className="grid gap-3 text-sm sm:grid-cols-4 lg:min-w-[32rem]">
               <StaffMetric

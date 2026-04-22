@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { OfficialDocumentProfileResponse } from "@shop/contracts";
+import type { PlatformEventRecord } from "../src/modules/events/platform-event.types.js";
 import {
   IssuedDocumentSnapshotService,
   type PersistedIssuedDocumentSnapshot,
@@ -34,9 +35,15 @@ const profile: OfficialDocumentProfileResponse = {
 describe("IssuedDocumentSnapshotService", () => {
   it("creates immutable issued document snapshots with a content hash", async () => {
     const repository = new InMemoryIssuedDocumentRepository();
-    const service = new IssuedDocumentSnapshotService(repository);
+    const events: PlatformEventRecord[] = [];
+    const service = new IssuedDocumentSnapshotService(repository, {
+      async publish(event) {
+        events.push(event);
+      },
+    });
 
     const snapshot = await service.issueSnapshot({
+      actorUserSlug: "worker-a",
       documentReference: "RCT/2026/000001",
       documentType: "sales_receipt",
       issuedAt: NOW,
@@ -51,11 +58,22 @@ describe("IssuedDocumentSnapshotService", () => {
     assert.equal(snapshot.schemaVersion, "official-document-v1");
     assert.match(snapshot.contentHash, /^sha256:/);
     assert.equal(repository.items.length, 1);
+    assert.equal(events.length, 1);
+    assert.equal(events[0]?.type, "documents.issued");
+    assert.equal(
+      events[0]?.summary,
+      "Sales Receipt RCT/2026/000001 was issued for INV/2026/000001.",
+    );
   });
 
   it("returns the existing snapshot for an idempotent issue request", async () => {
     const repository = new InMemoryIssuedDocumentRepository();
-    const service = new IssuedDocumentSnapshotService(repository);
+    const events: PlatformEventRecord[] = [];
+    const service = new IssuedDocumentSnapshotService(repository, {
+      async publish(event) {
+        events.push(event);
+      },
+    });
     const input = {
       documentReference: "RCT/2026/000001",
       documentType: "sales_receipt" as const,
@@ -73,6 +91,7 @@ describe("IssuedDocumentSnapshotService", () => {
 
     assert.equal(first.contentHash, second.contentHash);
     assert.equal(repository.items.length, 1);
+    assert.equal(events.length, 1);
   });
 
   it("rejects attempts to reissue the same resource with different content", async () => {

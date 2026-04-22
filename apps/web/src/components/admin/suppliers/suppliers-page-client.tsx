@@ -2,13 +2,13 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Search, X } from "lucide-react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   getUsersErrorMessage,
   replaceUserQuery,
   USER_PAGE_SIZE_OPTIONS,
-  USER_STATUS_FILTER_OPTIONS,
   USER_TABLE_SKELETON_KEYS,
 } from "@/components/admin/users/users-page-client.support";
 import {
@@ -17,14 +17,16 @@ import {
 } from "@/components/data-table/app-data-table";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Button } from "@/components/ui/button";
+import { PermissionGate } from "@/components/system/permission-gate";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  adminUsersQueryKey,
-  fetchAdminUsers,
+  adminSuppliersQueryKey,
+  fetchAdminSuppliers,
 } from "@/lib/react-query/admin-directory";
+import { toRoute } from "@/lib/routes";
 import {
   getPageCount,
   readEnumParam,
@@ -32,8 +34,10 @@ import {
   readStringParam,
 } from "@/lib/url-state";
 import { supplierColumns } from "./suppliers-columns";
+import { createSupplierQuery } from "./suppliers-page-client.support";
 
 const SORT_OPTIONS = ["name", "status", "createdAt"] as const;
+const SUPPLIER_STATUS_FILTER_OPTIONS = ["all", "active", "inactive"] as const;
 
 export function SuppliersPageClient() {
   const pathname = usePathname();
@@ -47,7 +51,7 @@ export function SuppliersPageClient() {
   const status = readEnumParam(
     searchParams,
     "status",
-    USER_STATUS_FILTER_OPTIONS,
+    SUPPLIER_STATUS_FILTER_OPTIONS,
     "all",
   );
   const sort = readEnumParam(searchParams, "sort", SORT_OPTIONS, "name");
@@ -74,23 +78,22 @@ export function SuppliersPageClient() {
   }, [draftSearch, pathname, query, router, searchParams]);
 
   const backendQuery = useMemo(
-    () => ({
-      dir,
-      locationSlug: "",
-      page,
-      pageSize,
-      q: query,
-      role: "supplier",
-      sort,
-      status,
-    }),
+    () =>
+      createSupplierQuery({
+        dir,
+        page,
+        pageSize,
+        q: query,
+        sort,
+        status,
+      }),
     [dir, page, pageSize, query, sort, status],
   );
 
   const suppliersQuery = useQuery({
     placeholderData: (prev) => prev,
-    queryFn: () => fetchAdminUsers(backendQuery),
-    queryKey: adminUsersQueryKey(backendQuery),
+    queryFn: () => fetchAdminSuppliers(backendQuery),
+    queryKey: adminSuppliersQueryKey(backendQuery),
   });
 
   const totalPages = getPageCount(
@@ -111,7 +114,17 @@ export function SuppliersPageClient() {
   return (
     <PageShell>
       <PageHeader
-        description="Supplier accounts with catalogue access and purchase relationships."
+        actions={
+          <PermissionGate permission="suppliers.manage">
+            <Link
+              className={buttonVariants({ size: "sm" })}
+              href={toRoute("/admin/suppliers/new")}
+            >
+              New supplier
+            </Link>
+          </PermissionGate>
+        }
+        description="Supplier organizations, primary contacts, payment terms, and linked portal access."
         title="Suppliers"
       />
       <div className="flex flex-wrap items-center gap-3">
@@ -137,8 +150,7 @@ export function SuppliersPageClient() {
         >
           <option value="all">All status</option>
           <option value="active">Active</option>
-          <option value="suspended">Suspended</option>
-          <option value="deactivated">Deactivated</option>
+          <option value="inactive">Inactive</option>
         </Select>
         {hasFilters ? (
           <Button
@@ -187,11 +199,16 @@ export function SuppliersPageClient() {
             emptyDescription={
               hasFilters
                 ? "Try adjusting the filters or search term."
-                : "No supplier accounts have been created yet."
+                : "No supplier organizations have been created yet."
             }
             emptyTitle={hasFilters ? "No suppliers match" : "No suppliers"}
             emptyState={{ kind: hasFilters ? "no-results" : "no-data" }}
             getRowId={(row) => row.slug}
+            onRowClick={(row) =>
+              router.push(
+                toRoute(`/admin/suppliers/${encodeURIComponent(row.slug)}`),
+              )
+            }
             onSortingChange={(next) =>
               replaceUserQuery(router, pathname, searchParams, {
                 dir: next?.direction ?? null,

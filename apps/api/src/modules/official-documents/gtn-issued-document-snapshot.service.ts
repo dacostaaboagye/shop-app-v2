@@ -43,6 +43,7 @@ export class GtnIssuedDocumentSnapshotService {
   ) {}
 
   async getOrIssueSnapshot(input: {
+    actorUserSlug?: string;
     actorUserId: string;
     reference: string;
   }): Promise<IssuedDocumentSnapshotResponse> {
@@ -78,6 +79,7 @@ export class GtnIssuedDocumentSnapshotService {
       });
 
     return this.dependencies.snapshotService.issueSnapshot({
+      ...(input.actorUserSlug ? { actorUserSlug: input.actorUserSlug } : {}),
       documentReference: gtn.reference,
       documentType: "goods_transfer_note",
       issuedAt: gtn.dispatchedAt,
@@ -91,6 +93,7 @@ export class GtnIssuedDocumentSnapshotService {
   }
 
   async getPdfDownload(input: {
+    actorUserSlug?: string;
     actorUserId: string;
     reference: string;
   }): Promise<IssuedGtnDocumentFile> {

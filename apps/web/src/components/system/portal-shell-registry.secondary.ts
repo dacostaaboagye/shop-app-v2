@@ -36,6 +36,17 @@ export const SECONDARY_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     section: "Operations",
   },
   {
+    activeMatchers: [
+      { mode: "descendants", path: "/manager/stock/reservations" },
+    ],
+    description: "Active reservations reducing availability at this location.",
+    href: toRoute("/manager/stock/reservations"),
+    icon: ClipboardList,
+    label: "Reservations",
+    requiredPermission: "stock.view",
+    section: "Operations",
+  },
+  {
     activeMatchers: [{ mode: "descendants", path: "/manager/transfers" }],
     description: "Inbound and outbound stock transfers for this location.",
     href: toRoute("/manager/transfers"),

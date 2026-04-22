@@ -112,6 +112,7 @@ export const locationStaffSummarySchema = z.object({
   lastName: z.string().min(1).max(120),
   lastSaleAt: z.iso.datetime().nullable().default(null),
   netSalesAmount: z.string().default("0.00"),
+  primaryImageUrl: z.string().nullable().optional(),
   roleName: z.string().min(1).max(120),
   roleSlug: z.enum(["manager", "worker"]),
   returnsCount: z.number().int().min(0).default(0),

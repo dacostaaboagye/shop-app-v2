@@ -7,6 +7,11 @@ export type InvoiceRecord = {
   confirmedAt: Date | null;
   createdAt: Date;
   createdBy: string | null;
+  customerBillingAddressLines: string[] | null;
+  customerEmail: string | null;
+  customerName: string | null;
+  customerPhone: string | null;
+  customerTaxNumber: string | null;
   id: string;
   locationId: string;
   notes: string | null;
@@ -60,6 +65,11 @@ export type CreateSaleTransactionInput = {
   attributedWorkerId: string;
   confirmedAt: Date;
   createdBy: string;
+  customerBillingAddressLines?: string[] | null;
+  customerEmail?: string | null;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  customerTaxNumber?: string | null;
   lineItems: SaleLineInput[];
   locationId: string;
   notes: string | null;
@@ -69,6 +79,30 @@ export type CreateSaleTransactionInput = {
   subtotalAmount: string;
   taxAmount: string;
   totalAmount: string;
+};
+
+export type CreateReturnTransactionInput = {
+  attributedWorkerId: string | null;
+  confirmedAt: Date;
+  createdBy: string;
+  lines: {
+    lineTotal: string;
+    quantity: number;
+    skuId: string;
+    skuSnapshot: { sku: string; variantName: string; productName: string };
+    taxAmount: string;
+    taxCategory: string | null;
+    taxRate: string | null;
+    unitPrice: string;
+  }[];
+  locationId: string;
+  now: Date;
+  parentInvoiceId: string;
+  reference: string;
+  subtotalAmount: string;
+  taxAmount: string;
+  totalAmount: string;
+  voidReason: string;
 };
 
 export type VariantSaleDetails = {

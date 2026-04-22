@@ -88,7 +88,7 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
   });
 
   return (
-    <aside className="flex h-full flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+    <aside className="flex h-full flex-col border-r border-sidebar-border bg-sidebar/95 text-sidebar-foreground shadow-sm">
       <PortalSidebarBrand heading={config.heading} onNavigate={onNavigate} />
 
       <nav
@@ -121,7 +121,7 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
                   <AccordionItem key={section.title} value={section.title}>
                     <AccordionTrigger
                       className={cn(
-                        "group/trigger relative rounded-lg px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all hover:bg-sidebar-accent/40 hover:no-underline",
+                        "group/trigger relative rounded-lg px-3 py-2 text-xs font-bold uppercase transition-all hover:bg-sidebar-accent/40 hover:no-underline",
                         sectionActive
                           ? "text-sidebar-primary"
                           : "text-sidebar-foreground/75 hover:text-sidebar-foreground data-open:text-sidebar-foreground",
@@ -130,7 +130,7 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
                       {section.title}
                     </AccordionTrigger>
                     <AccordionContent>
-                      <div className="mt-1 flex flex-col gap-0.5 pt-1 pl-2">
+                      <div className="mt-1 flex flex-col gap-1 pt-1 pl-2">
                         {section.items.map((item) => {
                           const active = activeItem?.href === item.href;
                           const Icon = item.icon;
@@ -143,14 +143,14 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
                               {...navigateProps}
                               scroll={false}
                               className={cn(
-                                "group/link relative flex items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 transition-all duration-200",
+                                "group/link relative flex items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 transition-colors duration-200",
                                 active
-                                  ? "bg-sidebar-accent/60 text-sidebar-accent-foreground shadow-sm ring-1 ring-sidebar-border/30"
+                                  ? "border-sidebar-primary/20 bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
                                   : "text-sidebar-foreground/65 hover:bg-sidebar-accent/30 hover:text-sidebar-foreground",
                               )}
                             >
                               {active && (
-                                <div className="absolute top-1/2 -left-1.5 h-6 w-1 -translate-y-1/2 rounded-full bg-sidebar-primary shadow-[0_0_10px_rgba(var(--sidebar-primary-rgb),0.5)]" />
+                                <div className="absolute top-1/2 -left-1.5 h-6 w-1 -translate-y-1/2 rounded-full bg-sidebar-primary" />
                               )}
                               <div
                                 className={cn(
@@ -162,7 +162,7 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
                               >
                                 <Icon className="size-3.5" />
                               </div>
-                              <p className="text-sm font-medium tracking-wide">
+                              <p className="text-sm font-medium">
                                 {item.label}
                               </p>
                             </Link>

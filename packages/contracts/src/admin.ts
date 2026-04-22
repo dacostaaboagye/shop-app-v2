@@ -100,6 +100,7 @@ export const adminLocationStaffSummarySchema = z.object({
   email: z.email(),
   firstName: z.string().min(1).max(120),
   lastName: z.string().min(1).max(120),
+  primaryImageUrl: z.string().nullable().optional(),
   roleName: z.string().min(1).max(120),
   roleSlug: z.enum(["manager", "worker"]),
   status: authUserStatusSchema,

@@ -5,10 +5,7 @@ import { useEffect, useMemo } from "react";
 import { useAuthorization } from "@/components/providers/authorization-provider";
 import { toRoute } from "@/lib/routes";
 import { useActiveLocationStore } from "@/store/use-active-location-store";
-import {
-  getPermissionLocationScopes,
-  resolveActiveLocationScope,
-} from "./location-scopes";
+import { resolveOperatingContext } from "./operating-context";
 
 export function useActiveLocationScope(permission: string | null) {
   const pathname = usePathname();
@@ -22,24 +19,27 @@ export function useActiveLocationScope(permission: string | null) {
     (state) => state.setSelectedLocationSlug,
   );
   const searchParamsString = searchParams.toString();
-  const accessibleLocationScopes = useMemo(
-    () =>
-      permission ? getPermissionLocationScopes(locationScopes, permission) : [],
-    [locationScopes, permission],
-  );
   const urlLocationSlug = useMemo(
     () => searchParams.get("location")?.trim() ?? "",
     [searchParams],
   );
-  const selectedLocationScope = useMemo(
+  const operatingContext = useMemo(
     () =>
-      resolveActiveLocationScope({
+      resolveOperatingContext({
         activeLocationSlug,
-        scopes: accessibleLocationScopes,
+        locationScopes,
+        policy: permission
+          ? { kind: "location-required", permission }
+          : { kind: "global" },
         urlLocationSlug,
       }),
-    [accessibleLocationScopes, activeLocationSlug, urlLocationSlug],
+    [activeLocationSlug, locationScopes, permission, urlLocationSlug],
   );
+  const accessibleLocationScopes = operatingContext.selectableLocationScopes;
+  const selectedLocationScope =
+    operatingContext.kind === "location"
+      ? operatingContext.locationScope
+      : null;
   const selectedLocationSlug = selectedLocationScope?.locationSlug ?? "";
 
   useEffect(() => {

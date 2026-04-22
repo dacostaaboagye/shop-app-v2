@@ -8,6 +8,7 @@ import type {
   GtnRow,
   SupplyRequestRow,
 } from "./postgres-supply-request.repository.js";
+import { formatStockSupplyEventSummary } from "./stock-supply-event-summary.js";
 
 export class StockSupplyEventPublisher {
   constructor(private readonly eventPublisher: PlatformEventPublisher) {}
@@ -20,7 +21,10 @@ export class StockSupplyEventPublisher {
       createStockSupplyEvent({
         actor: input.actor,
         supplyRequest: input.supplyRequest,
-        summary: `${input.supplyRequest.reference} was requested.`,
+        summary: formatStockSupplyEventSummary({
+          action: "requested",
+          supplyRequest: input.supplyRequest,
+        }),
         type: "transfer.requested",
       }),
     );
@@ -34,7 +38,10 @@ export class StockSupplyEventPublisher {
       createStockSupplyEvent({
         actor: input.actor,
         supplyRequest: input.supplyRequest,
-        summary: `${input.supplyRequest.reference} was cancelled.`,
+        summary: formatStockSupplyEventSummary({
+          action: "cancelled",
+          supplyRequest: input.supplyRequest,
+        }),
         type: "transfer.cancelled",
       }),
     );
@@ -48,7 +55,10 @@ export class StockSupplyEventPublisher {
       createStockSupplyEvent({
         actor: input.actor,
         supplyRequest: input.supplyRequest,
-        summary: `${input.supplyRequest.reference} was approved.`,
+        summary: formatStockSupplyEventSummary({
+          action: "approved",
+          supplyRequest: input.supplyRequest,
+        }),
         type: "transfer.approved",
       }),
     );
@@ -62,7 +72,10 @@ export class StockSupplyEventPublisher {
       createStockSupplyEvent({
         actor: input.actor,
         supplyRequest: input.supplyRequest,
-        summary: `${input.supplyRequest.reference} was rejected.`,
+        summary: formatStockSupplyEventSummary({
+          action: "rejected",
+          supplyRequest: input.supplyRequest,
+        }),
         type: "transfer.rejected",
       }),
     );
@@ -80,7 +93,11 @@ export class StockSupplyEventPublisher {
           gtnReference: input.gtn.reference,
         },
         supplyRequest: input.supplyRequest,
-        summary: `${input.supplyRequest.reference} was dispatched.`,
+        summary: formatStockSupplyEventSummary({
+          action: "dispatched",
+          gtnReference: input.gtn.reference,
+          supplyRequest: input.supplyRequest,
+        }),
         type: "transfer.dispatched",
       }),
     );
@@ -98,7 +115,11 @@ export class StockSupplyEventPublisher {
           gtnReference: input.gtn.reference,
         },
         supplyRequest: input.supplyRequest,
-        summary: `${input.supplyRequest.reference} was received.`,
+        summary: formatStockSupplyEventSummary({
+          action: "received",
+          gtnReference: input.gtn.reference,
+          supplyRequest: input.supplyRequest,
+        }),
         type: "transfer.received",
       }),
     );

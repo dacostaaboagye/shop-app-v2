@@ -33,7 +33,7 @@ export async function toGtnIssuedDocumentPdfFile(
     doc.on("error", reject);
   });
 
-  renderGtnIssuedDocumentPdf(doc, {
+  await renderGtnIssuedDocumentPdf(doc, {
     gtn,
     profile: snapshot.profileSnapshot,
     snapshot,

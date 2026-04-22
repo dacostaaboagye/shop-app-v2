@@ -8,10 +8,11 @@ import { useMemo, useState } from "react";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { MoneyProfile } from "@/lib/money/format-money";
+import { PosSaleAssignmentFilters } from "./pos-sale-assignment-filters";
 import {
-  PosSaleAssignmentFilters,
-  type PosSaleFilterOption,
-} from "./pos-sale-assignment-filters";
+  filterSaleAssignments,
+  getSaleAssignmentFilterOptions,
+} from "./pos-sale-assignment-workspace.support";
 import {
   type CartBodyProps,
   type CartItem,
@@ -53,27 +54,24 @@ export function PosSaleAssignmentWorkspace({
   const [brandSlug, setBrandSlug] = useState("");
   const [categorySlug, setCategorySlug] = useState("");
   const brandOptions = useMemo(
-    () => getFilterOptions(assignments, "brandSlug", "brandName"),
+    () => getSaleAssignmentFilterOptions(assignments, "brandSlug", "brandName"),
     [assignments],
   );
   const categoryOptions = useMemo(
-    () => getFilterOptions(assignments, "categorySlug", "categoryName"),
+    () =>
+      getSaleAssignmentFilterOptions(
+        assignments,
+        "categorySlug",
+        "categoryName",
+      ),
     [assignments],
   );
   const filteredAssignments = useMemo(
     () =>
-      assignments.filter((assignment) => {
-        const query = search.trim().toLowerCase();
-        const matchesSearch =
-          !query ||
-          assignment.productName.toLowerCase().includes(query) ||
-          assignment.variantName.toLowerCase().includes(query) ||
-          assignment.sku.toLowerCase().includes(query);
-        const matchesBrand = !brandSlug || assignment.brandSlug === brandSlug;
-        const matchesCategory =
-          !categorySlug || assignment.categorySlug === categorySlug;
-
-        return matchesSearch && matchesBrand && matchesCategory;
+      filterSaleAssignments(assignments, {
+        brandSlug,
+        categorySlug,
+        search,
       }),
     [assignments, brandSlug, categorySlug, search],
   );
@@ -169,23 +167,5 @@ export function PosSaleAssignmentWorkspace({
         open={cartSheetOpen}
       />
     </>
-  );
-}
-
-function getFilterOptions(
-  assignments: readonly CurrentAssignment[],
-  valueKey: "brandSlug" | "categorySlug",
-  labelKey: "brandName" | "categoryName",
-): PosSaleFilterOption[] {
-  const options = new Map<string, string>();
-
-  for (const assignment of assignments) {
-    const value = assignment[valueKey];
-    if (!value) continue;
-    options.set(value, assignment[labelKey] ?? value);
-  }
-
-  return Array.from(options, ([value, label]) => ({ label, value })).sort(
-    (left, right) => left.label.localeCompare(right.label),
   );
 }

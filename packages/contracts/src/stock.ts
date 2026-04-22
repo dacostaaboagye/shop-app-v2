@@ -75,6 +75,12 @@ export const adminReservationQuerySchema = z.object({
   q: z.string().trim().max(120).default(""),
 });
 
+export const locationReservationQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  locationId: z.string().uuid(),
+  q: z.string().trim().max(120).default(""),
+});
+
 export const adminReservationSummarySchema = z.object({
   createdAt: z.iso.datetime(),
   expiresAt: z.iso.datetime().nullable(),
@@ -121,6 +127,9 @@ export type AdminReservationListResponse = z.infer<
 >;
 export type AdminReservationSummary = z.infer<
   typeof adminReservationSummarySchema
+>;
+export type LocationReservationQuery = z.infer<
+  typeof locationReservationQuerySchema
 >;
 export type AdminStockCountRequest = z.infer<
   typeof adminStockCountRequestSchema

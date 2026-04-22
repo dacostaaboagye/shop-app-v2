@@ -11,7 +11,10 @@ import { z } from "zod";
 import { AppError } from "../_core/errors/app-error.js";
 import type { RouteDefinition } from "../_core/route-contract.js";
 import type { PermissionResolutionService } from "../access-control/permission-resolution.service.js";
-import { getAuthenticatedUserId } from "../auth/auth-route-support.js";
+import {
+  getAuthenticatedActor,
+  getAuthenticatedUserId,
+} from "../auth/auth-route-support.js";
 import type { OfficialDocumentSettingsService } from "./official-document-settings.service.js";
 
 type OfficialDocumentSettingsRouteDependencies = {
@@ -102,6 +105,7 @@ export function registerOfficialDocumentSettingsRoutes(
         request.body,
       );
       const settings = await dependencies.settingsService.updateGlobalSettings({
+        actor: getAuthenticatedActor(request),
         now: new Date(),
         patch,
         updatedBy: getAuthenticatedUserId(request),
@@ -145,6 +149,7 @@ export function registerOfficialDocumentSettingsRoutes(
       );
       const settings =
         await dependencies.settingsService.updateLocationSettings({
+          actor: getAuthenticatedActor(request),
           locationId,
           now: new Date(),
           patch,

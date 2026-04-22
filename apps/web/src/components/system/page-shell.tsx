@@ -107,7 +107,7 @@ export function PageHeader({
   const headerActions = actions ?? action;
 
   return (
-    <section className="rounded-2xl border border-border/70 bg-linear-to-br from-background via-background to-muted/35 px-4 py-4 shadow-xs sm:px-5">
+    <section className="rounded-lg border border-border/70 bg-card/95 px-4 py-4 shadow-sm sm:px-5">
       {backHref || headerActions ? (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
           <div className="flex items-center gap-3">
@@ -152,7 +152,7 @@ export function PageHeader({
           {eyebrow ? <p className="editorial-kicker mb-1">{eyebrow}</p> : null}
           <h1 className="text-xl font-semibold sm:text-2xl">{title}</h1>
           {description ? (
-            <p className="mt-1.5 max-w-3xl text-sm text-muted-foreground sm:text-[0.95rem]">
+            <p className="mt-1.5 max-w-3xl text-sm leading-6 text-muted-foreground sm:text-[0.95rem]">
               {description}
             </p>
           ) : null}
@@ -180,14 +180,14 @@ export function StatCard({
   const card = (
     <Card
       className={cn(
-        "border-border bg-card shadow-none",
-        href && "transition-colors hover:bg-accent/40",
+        "border-border/75 bg-card/95 shadow-sm",
+        href && "transition-colors hover:border-primary/30 hover:bg-accent/25",
       )}
     >
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-2">
           <p className="text-sm font-medium text-muted-foreground">{label}</p>
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary ring-1 ring-primary/15">
             <Icon className="size-4" />
           </div>
         </div>

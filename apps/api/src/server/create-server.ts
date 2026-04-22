@@ -9,6 +9,7 @@ import { registerAdminAccessRoutes } from "../modules/admin/admin-access.routes.
 import { registerAdminDirectoryRoutes } from "../modules/admin/admin-directory.routes.js";
 import { registerAdminLocationQueryRoutes } from "../modules/admin/admin-location-query.routes.js";
 import { registerAdminLocationWriteRoutes } from "../modules/admin/admin-location-write.routes.js";
+import { registerAdminSupplierRoutes } from "../modules/admin/admin-supplier.routes.js";
 import { registerAdminUserAccessRoutes } from "../modules/admin/admin-user-access.routes.js";
 import { registerManagerStaffRoutes } from "../modules/assignments/manager-staff.routes.js";
 import { registerStockAssignmentRoutes } from "../modules/assignments/stock-assignment.routes.js";
@@ -39,6 +40,7 @@ type CreateServerOptions = {
   adminDirectory?: Parameters<typeof registerAdminDirectoryRoutes>[1];
   adminLocationQuery?: Parameters<typeof registerAdminLocationQueryRoutes>[1];
   adminLocationWrite?: Parameters<typeof registerAdminLocationWriteRoutes>[1];
+  adminSuppliers?: Parameters<typeof registerAdminSupplierRoutes>[1];
   adminUserAccess?: Parameters<typeof registerAdminUserAccessRoutes>[1];
   auth?: Parameters<typeof registerAuthRoutes>[1];
   catalogManagerQuery?: Parameters<typeof registerCatalogManagerQueryRoutes>[1];
@@ -102,6 +104,7 @@ export function createServer(options: CreateServerOptions = {}) {
   registerAdminAccessRoutes(server, options.adminAccess);
   registerAdminLocationQueryRoutes(server, options.adminLocationQuery);
   registerAdminLocationWriteRoutes(server, options.adminLocationWrite);
+  registerAdminSupplierRoutes(server, options.adminSuppliers);
   registerAdminUserAccessRoutes(server, options.adminUserAccess);
   registerCatalogBrandRoutes(server, options.catalogBrands);
   registerCatalogMediaRoutes(server, options.catalogMedia);

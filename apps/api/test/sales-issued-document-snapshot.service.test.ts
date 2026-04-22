@@ -132,6 +132,11 @@ function invoice(): InvoiceWithLines {
     confirmedAt: NOW,
     createdAt: NOW,
     createdBy: USER_ID,
+    customerBillingAddressLines: ["12 Market Street"],
+    customerEmail: "buyer@example.com",
+    customerName: "Adwoa Mensah",
+    customerPhone: "+233 20 000 0000",
+    customerTaxNumber: "TIN-CUSTOMER",
     id: "44444444-4444-4444-8444-444444444444",
     lines: [
       {

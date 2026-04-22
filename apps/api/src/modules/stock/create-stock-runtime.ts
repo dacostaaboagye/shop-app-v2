@@ -79,7 +79,10 @@ export function createStockRuntime(
       stockBalanceQueryRepo: new PostgresStockBalanceQueryRepository(
         databaseRuntime.db,
       ),
-      stockCountRepo: new AdminStockCountRepository(databaseRuntime.db),
+      stockCountRepo: new AdminStockCountRepository(
+        databaseRuntime.db,
+        options.platformEventPublisher,
+      ),
       supplyRequestRepository,
       supplyService,
       variantSnapshotRepository: {

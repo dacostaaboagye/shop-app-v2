@@ -3,6 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { AuthenticatedActor } from "../auth/access-token-authentication.service.js";
 import type { SupplyRequestRow } from "./postgres-supply-request.repository.js";
 import { toSupplyRequestRow } from "./postgres-supply-request-mappers.js";
+import { formatStockSupplyEventSummary } from "./stock-supply-event-summary.js";
 import {
   appendStockSupplyEventWithinTransaction,
   notifyStockSupplyEventsCommitted,
@@ -39,7 +40,10 @@ export async function transitionPendingStockSupplyRequest(
     await appendStockSupplyEventWithinTransaction(context, tx, {
       actor: input.actor,
       supplyRequest,
-      summary: `${supplyRequest.reference} was ${input.summaryVerb}.`,
+      summary: formatStockSupplyEventSummary({
+        action: toStockSupplyEventAction(input.summaryVerb),
+        supplyRequest,
+      }),
       type: input.type,
     });
     return supplyRequest;
@@ -78,7 +82,10 @@ export async function cancelMatchingStockSupplyRequest(
     await appendStockSupplyEventWithinTransaction(context, tx, {
       actor: input.actor,
       supplyRequest,
-      summary: `${supplyRequest.reference} was cancelled.`,
+      summary: formatStockSupplyEventSummary({
+        action: "cancelled",
+        supplyRequest,
+      }),
       type: "transfer.cancelled",
     });
     return supplyRequest;
@@ -90,4 +97,14 @@ export async function cancelMatchingStockSupplyRequest(
 
 function toServiceSupplyRequestRow(row: SupplyRequestRecord): SupplyRequestRow {
   return toSupplyRequestRow(row, null, null, null, null, null);
+}
+
+function toStockSupplyEventAction(summaryVerb: string) {
+  if (summaryVerb === "approved" || summaryVerb === "rejected") {
+    return summaryVerb;
+  }
+
+  throw new Error(
+    `Unsupported stock supply event summary verb: ${summaryVerb}`,
+  );
 }

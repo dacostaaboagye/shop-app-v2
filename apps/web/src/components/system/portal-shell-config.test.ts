@@ -134,4 +134,44 @@ describe("portal-shell-config", () => {
     assert.equal(item?.label, "Admin overview");
     assert.equal(item?.requiredPermission, "admin.dashboard.view");
   });
+
+  it("keeps global admin stock pages out of the topbar location selector", () => {
+    const stockLevels = getRouteItem("/admin/stock/balances");
+    const reservations = getRouteItem("/admin/stock/reservations");
+
+    assert.equal(stockLevels?.requiredPermission, "admin.dashboard.view");
+    assert.equal(stockLevels?.locationSelectorPermission, null);
+    assert.equal(reservations?.requiredPermission, "admin.dashboard.view");
+    assert.equal(reservations?.locationSelectorPermission, null);
+  });
+
+  it("does not show admin Supply stock pages to location-scoped managers", () => {
+    const sections = getVisibleNavSections(
+      createPermissionAbility([
+        "manager.dashboard.view",
+        "inventory.read",
+        "stock.view",
+      ]),
+    );
+    const supplySection = sections.find((s) => s.title === "Supply");
+    const operationsSection = sections.find((s) => s.title === "Operations");
+
+    assert.equal(supplySection, undefined);
+    assert.ok(
+      operationsSection?.items.some((item) => item.href === "/manager/stock"),
+    );
+  });
+
+  it("keeps manager stock and manager supply requests as distinct sidebar paths", () => {
+    const stockLevels = getRouteItem("/manager/stock");
+    const reservations = getRouteItem("/manager/stock/reservations");
+    const supplyRequests = getRouteItem("/manager/stock/supply-requests");
+
+    assert.equal(stockLevels?.label, "Location stock");
+    assert.equal(stockLevels?.requiredPermission, "stock.view");
+    assert.equal(reservations?.label, "Reservations");
+    assert.equal(reservations?.requiredPermission, "stock.view");
+    assert.equal(supplyRequests?.label, "Supply requests");
+    assert.equal(supplyRequests?.requiredPermission, "stock.supply.manage");
+  });
 });

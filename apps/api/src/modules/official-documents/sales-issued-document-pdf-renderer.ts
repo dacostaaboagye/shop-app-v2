@@ -4,6 +4,12 @@ import type {
   OfficialDocumentProfileResponse,
 } from "@shop/contracts";
 import {
+  drawDocumentHero,
+  drawDocumentShell,
+  drawPdfFooter,
+  drawSectionTitle,
+} from "./official-document-pdf-layout.js";
+import {
   formatLabel,
   formatMoney,
   toPdfColor,
@@ -16,83 +22,98 @@ type RenderInput = {
   title: string;
 };
 
-export function renderSalesIssuedDocumentPdf(
+export async function renderSalesIssuedDocumentPdf(
   doc: PDFKit.PDFDocument,
   input: RenderInput,
-): void {
+): Promise<void> {
   const primary = toPdfColor(input.profile.primaryColor, "#1c5c57");
   const accent = toPdfColor(input.profile.accentColor, "#d87422");
 
-  drawPageShell(doc, primary, accent);
-  drawHeader(doc, input, primary);
-  drawMeta(doc, input);
-  const tableEndY = drawLineItems(doc, input, 250);
+  drawDocumentShell(doc);
+  await drawHeader(doc, input, primary);
+  drawCustomerAndMeta(doc, input, primary);
+  const tableEndY = drawLineItems(doc, input, 368);
   const totalsEndY = drawTotals(
     doc,
     input,
-    Math.max(tableEndY + 18, 408),
+    Math.max(tableEndY + 18, 498),
     primary,
   );
-  drawFooter(doc, input, totalsEndY);
+  drawFooter(doc, input, totalsEndY, accent);
 }
 
-function drawPageShell(
+async function drawHeader(
   doc: PDFKit.PDFDocument,
+  input: RenderInput,
   primary: string,
-  accent: string,
-): void {
-  doc.rect(0, 0, doc.page.width, doc.page.height).fill("#fbfaf8");
-  doc.rect(24, 24, doc.page.width - 48, doc.page.height - 48).fill("#ffffff");
-  doc.rect(24, 24, doc.page.width - 48, 10).fill(primary);
-  doc.rect(24, 34, doc.page.width - 48, 3).fill(accent);
+): Promise<void> {
+  await drawDocumentHero(doc, {
+    accent: toPdfColor(input.profile.accentColor, "#d87422"),
+    primary,
+    profile: input.profile,
+    reference: input.invoice.reference,
+    status: input.invoice.status,
+    title: input.title,
+  });
 }
 
-function drawHeader(
+function drawCustomerAndMeta(
   doc: PDFKit.PDFDocument,
   input: RenderInput,
   primary: string,
 ): void {
-  doc.roundedRect(42, 58, 46, 46, 3).fill(primary);
-  doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(15);
-  doc.text(input.profile.logoText, 42, 73, { align: "center", width: 46 });
+  drawCustomerBlock(doc, input);
+  drawMetaBlock(doc, input, primary);
+}
 
-  doc.fillColor("#15110f").font("Helvetica-Bold").fontSize(22);
-  doc.text(input.profile.brandName.toUpperCase(), 104, 55, { width: 250 });
-  doc.fillColor("#6f665f").font("Helvetica").fontSize(9.5);
-  doc.text(input.profile.legalName, 104, 82, { width: 270 });
-  doc.text(input.profile.addressLines.join(", "), 104, 96, { width: 270 });
+function drawCustomerBlock(doc: PDFKit.PDFDocument, input: RenderInput): void {
+  const customerName =
+    input.invoice.customerName ??
+    (input.invoice.type === "pos" ? "Walk-in customer" : "Customer account");
+  const addressLines = input.invoice.customerBillingAddressLines ?? [];
+  const contactLines = [
+    input.invoice.customerEmail,
+    input.invoice.customerPhone,
+    input.invoice.customerTaxNumber
+      ? `Tax: ${input.invoice.customerTaxNumber}`
+      : null,
+  ].filter(Boolean);
 
-  doc.roundedRect(390, 55, 150, 76, 4).strokeColor("#d8d0c8").stroke();
-  doc.fillColor(primary).font("Helvetica-Bold").fontSize(12);
-  doc.text(input.title.toUpperCase(), 405, 70, { align: "right", width: 120 });
-  doc.fillColor("#15110f").fontSize(10);
-  doc.text(input.invoice.reference, 405, 91, { align: "right", width: 120 });
-  doc.fillColor("#6f665f").font("Helvetica-Bold").fontSize(8);
-  doc.text(input.invoice.status.toUpperCase(), 405, 110, {
-    align: "right",
-    width: 120,
+  doc.fillColor("#15110f").font("Helvetica-Bold").fontSize(9);
+  doc.text("CUSTOMER", 42, 224);
+  doc.fillColor("#15110f").font("Helvetica-Bold").fontSize(10);
+  doc.text(customerName, 42, 242, { width: 224 });
+  doc.fillColor("#6f665f").font("Helvetica").fontSize(8.5);
+  const detailLines = [...addressLines, ...contactLines];
+  doc.text(detailLines.join("\n") || "No customer details captured.", 42, 258, {
+    height: 58,
+    width: 224,
   });
 }
 
-function drawMeta(doc: PDFKit.PDFDocument, input: RenderInput): void {
+function drawMetaBlock(
+  doc: PDFKit.PDFDocument,
+  input: RenderInput,
+  primary: string,
+): void {
   const issuedAt = new Date(
     input.invoice.confirmedAt ?? input.invoice.createdAt,
   ).toLocaleString(input.profile.locale, { timeZone: input.profile.timezone });
   const rows: Array<[string, string]> = [
-    ["Issued at", issuedAt],
+    ["Issued", issuedAt],
     ["Payment", formatLabel(input.invoice.paymentMethod ?? "not recorded")],
     ["Currency", input.profile.currencyCode],
-    ["Tax number", input.profile.taxNumber],
-    ["Registration", input.profile.registrationNumber],
+    ["Reference", input.invoice.reference],
   ];
 
-  doc.roundedRect(42, 154, 498, 56, 4).fill("#f4f0ea");
   rows.forEach(([label, value], index) => {
-    const x = 58 + index * 96;
-    doc.fillColor("#716860").font("Helvetica-Bold").fontSize(7.5);
-    doc.text(label.toUpperCase(), x, 170, { width: 82 });
-    doc.fillColor("#15110f").font("Helvetica").fontSize(8.5);
-    doc.text(value, x, 184, { width: 82 });
+    const y = 224 + index * 28;
+    doc.rect(300, y, 112, 22).fill(primary);
+    doc.rect(422, y, 118, 22).fill("#f6f7f4");
+    doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(7.5);
+    doc.text(label.toUpperCase(), 310, y + 7, { width: 92 });
+    doc.fillColor("#15110f").font("Helvetica").fontSize(8);
+    doc.text(value, 432, y + 7, { width: 96 });
   });
 }
 
@@ -101,8 +122,7 @@ function drawLineItems(
   input: RenderInput,
   startY: number,
 ): number {
-  doc.fillColor("#15110f").font("Helvetica-Bold").fontSize(12);
-  doc.text("Line Items", 42, startY - 28);
+  drawSectionTitle(doc, "Line Items", 42, startY - 28);
   drawTableHeader(doc, startY);
 
   let y = startY + 28;
@@ -118,16 +138,17 @@ function drawLineItems(
       { width: 220 },
     );
     doc.fillColor("#15110f").font("Helvetica").fontSize(9);
-    doc.text(String(line.quantity), 318, y, { align: "right", width: 42 });
-    doc.text(formatMoney(line.unitPrice, input.profile), 382, y, {
+    doc.text("Each", 282, y, { width: 52 });
+    doc.text(String(line.quantity), 344, y, { align: "right", width: 52 });
+    doc.text(formatMoney(line.unitPrice, input.profile), 406, y, {
       align: "right",
       width: 62,
     });
     doc
       .font("Helvetica-Bold")
-      .text(formatMoney(line.lineTotal, input.profile), 462, y, {
+      .text(formatMoney(line.lineTotal, input.profile), 474, y, {
         align: "right",
-        width: 66,
+        width: 54,
       });
     y += 40;
   });
@@ -143,10 +164,11 @@ function drawLineItems(
 function drawTableHeader(doc: PDFKit.PDFDocument, y: number): void {
   doc.rect(42, y - 4, 498, 24).fill("#15110f");
   doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(7.5);
-  doc.text("ITEM", 54, y + 4);
-  doc.text("QTY", 318, y + 4, { align: "right", width: 42 });
-  doc.text("UNIT", 382, y + 4, { align: "right", width: 62 });
-  doc.text("TOTAL", 462, y + 4, { align: "right", width: 66 });
+  doc.text("SERVICE", 54, y + 4);
+  doc.text("UNIT", 282, y + 4, { width: 52 });
+  doc.text("QUANTITY", 344, y + 4, { align: "right", width: 52 });
+  doc.text("RATE", 406, y + 4, { align: "right", width: 62 });
+  doc.text("TOTAL", 474, y + 4, { align: "right", width: 54 });
 }
 
 function drawTotals(
@@ -198,43 +220,15 @@ function drawFooter(
   doc: PDFKit.PDFDocument,
   input: RenderInput,
   y: number,
+  accent: string,
 ): void {
-  const footerY = Math.max(608, Math.min(y + 28, 626));
-  doc.roundedRect(42, footerY, 498, 104, 4).fill("#fbfaf8");
-  doc.roundedRect(42, footerY, 498, 104, 4).strokeColor("#d8d0c8").stroke();
-  doc
-    .rect(42, footerY, 4, 104)
-    .fill(toPdfColor(input.profile.accentColor, "#d87422"));
-
-  doc.fillColor("#15110f").font("Helvetica-Bold").fontSize(8.5);
-  doc.text(input.profile.footer, 58, footerY + 16, {
-    height: 34,
-    width: 292,
-  });
-  doc.fillColor("#6f665f").font("Helvetica").fontSize(7.5);
-  doc.text(
-    `${input.profile.phone} | ${input.profile.email} | ${input.profile.website}`,
-    58,
-    footerY + 60,
-    { width: 292 },
+  const footerY = Math.max(650, Math.min(y + 28, 674));
+  drawPdfFooter(
+    doc,
+    input.profile,
+    input.snapshot.contentHash,
+    input.snapshot.schemaVersion,
+    footerY,
+    accent,
   );
-  doc.text(input.profile.addressLines.join(", "), 58, footerY + 74, {
-    width: 292,
-  });
-
-  doc.fillColor("#15110f").font("Helvetica-Bold").fontSize(7.5);
-  doc.text("DOCUMENT EVIDENCE", 370, footerY + 16, {
-    align: "right",
-    width: 150,
-  });
-  doc.fillColor("#6f665f").font("Helvetica").fontSize(6.6);
-  doc.text(input.snapshot.contentHash, 370, footerY + 32, {
-    align: "right",
-    height: 28,
-    width: 150,
-  });
-  doc.text(input.snapshot.schemaVersion, 370, footerY + 74, {
-    align: "right",
-    width: 150,
-  });
 }

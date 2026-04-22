@@ -2,10 +2,11 @@
 
 import type { AdminLocationStaffSummary } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
-import { ShieldCheck, UserRound } from "lucide-react";
+import { UserRound } from "lucide-react";
 import Link from "next/link";
 import { AppEmptyState } from "@/components/system/app-empty-state";
 import { AppErrorBanner } from "@/components/system/app-error";
+import { PersonAvatar } from "@/components/system/person-avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -19,7 +20,7 @@ import {
   adminLocationStaffQueryKey,
   fetchAdminLocationStaff,
 } from "@/lib/react-query/admin-location-write";
-import { toRoute } from "@/lib/routes";
+import { getAdminStaffUserHref } from "./location-staff-links";
 
 const STAFF_SKELETON_KEYS = ["staff-1", "staff-2", "staff-3"] as const;
 
@@ -73,24 +74,21 @@ export function LocationStaffPanel({ locationSlug }: { locationSlug: string }) {
 
 function StaffRow({ member }: { member: AdminLocationStaffSummary }) {
   return (
-    <Link
-      className="flex flex-col gap-3 p-4 transition-colors hover:bg-accent/40 sm:flex-row sm:items-center sm:justify-between"
-      href={toRoute(
-        `/admin/access/users/${encodeURIComponent(member.userSlug)}`,
-      )}
-    >
+    <div className="flex flex-col gap-3 p-4 transition-colors hover:bg-accent/40 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 items-start gap-3">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-          {member.roleSlug === "manager" ? (
-            <ShieldCheck data-icon="inline-start" />
-          ) : (
-            <UserRound data-icon="inline-start" />
-          )}
-        </div>
+        <PersonAvatar
+          firstName={member.firstName}
+          imageUrl={member.primaryImageUrl}
+          lastName={member.lastName}
+          size="md"
+        />
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium">
+          <Link
+            className="block truncate text-sm font-medium hover:text-primary"
+            href={getAdminStaffUserHref(member.userSlug)}
+          >
             {member.firstName} {member.lastName}
-          </p>
+          </Link>
           <p className="truncate text-xs text-muted-foreground">
             {member.email}
           </p>
@@ -108,6 +106,6 @@ function StaffRow({ member }: { member: AdminLocationStaffSummary }) {
           {member.activeAssignmentCount === 1 ? "" : "s"}
         </span>
       </div>
-    </Link>
+    </div>
   );
 }

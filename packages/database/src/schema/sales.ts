@@ -43,6 +43,13 @@ export const invoices = pgTable(
     attributedWorkerId: uuid("attributed_worker_id").references(() => users.id),
     createdBy: uuid("created_by").references(() => users.id),
     paymentMethod: varchar("payment_method", { length: 50 }),
+    customerName: varchar("customer_name", { length: 200 }),
+    customerEmail: varchar("customer_email", { length: 160 }),
+    customerPhone: varchar("customer_phone", { length: 80 }),
+    customerTaxNumber: varchar("customer_tax_number", { length: 120 }),
+    customerBillingAddressLines: jsonb("customer_billing_address_lines").$type<
+      string[]
+    >(),
     status: invoiceStatusEnum("status").default("confirmed").notNull(),
     subtotalAmount: numeric("subtotal_amount", {
       precision: 12,

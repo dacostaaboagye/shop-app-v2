@@ -14,6 +14,7 @@ export type PortalNavItem = {
   href: Route;
   icon: LucideIcon;
   label: string;
+  locationSelectorPermission?: string | null;
   requiredPermission?: string;
 };
 
@@ -33,6 +34,7 @@ export type NavRegistryEntry = {
   href: Route;
   icon: LucideIcon;
   label: string;
+  locationSelectorPermission?: string | null;
   requiredPermission: string;
   section: string;
   sidebar?: false;

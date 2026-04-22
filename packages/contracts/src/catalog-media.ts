@@ -5,6 +5,7 @@ export const catalogMediaEntityTypeSchema = z.enum([
   "category",
   "location",
   "product",
+  "supplier",
   "system",
   "user",
   "variant",

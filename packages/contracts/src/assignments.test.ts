@@ -49,6 +49,7 @@ describe("assignment contracts", () => {
           lastName: "Mensah",
           lastSaleAt: "2026-04-20T16:30:00.000Z",
           netSalesAmount: "125.50",
+          primaryImageUrl: "https://cdn.example.com/users/ama.jpg",
           roleName: "Worker",
           roleSlug: "worker",
           returnsCount: 1,
@@ -66,6 +67,10 @@ describe("assignment contracts", () => {
 
     assert.equal(parsed.items[0]?.salesCount, 3);
     assert.equal(parsed.items[0]?.netSalesAmount, "125.50");
+    assert.equal(
+      parsed.items[0]?.primaryImageUrl,
+      "https://cdn.example.com/users/ama.jpg",
+    );
   });
 
   it("defaults performance metrics for older staff payloads", () => {

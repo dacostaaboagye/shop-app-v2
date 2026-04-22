@@ -40,6 +40,7 @@ export class SalesIssuedDocumentSnapshotService {
   ) {}
 
   async getOrIssueSnapshot(input: {
+    actorUserSlug?: string;
     actorUserId: string;
     reference: string;
   }): Promise<IssuedDocumentSnapshotResponse> {
@@ -68,6 +69,7 @@ export class SalesIssuedDocumentSnapshotService {
       });
 
     return this.dependencies.snapshotService.issueSnapshot({
+      ...(input.actorUserSlug ? { actorUserSlug: input.actorUserSlug } : {}),
       documentReference: invoice.reference,
       documentType,
       issuedAt: invoice.confirmedAt ?? invoice.createdAt,
@@ -81,6 +83,7 @@ export class SalesIssuedDocumentSnapshotService {
   }
 
   async getPdfDownload(input: {
+    actorUserSlug?: string;
     actorUserId: string;
     reference: string;
   }): Promise<IssuedSalesDocumentFile> {

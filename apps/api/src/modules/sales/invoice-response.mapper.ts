@@ -6,6 +6,11 @@ export function toInvoiceResponse(invoice: {
   attributedWorkerEmail?: string | null;
   confirmedAt: Date | null;
   createdAt: Date;
+  customerBillingAddressLines?: string[] | null;
+  customerEmail?: string | null;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  customerTaxNumber?: string | null;
   lines: {
     lineTotal: string;
     quantity: number;
@@ -33,6 +38,11 @@ export function toInvoiceResponse(invoice: {
     attributedWorkerName: invoice.attributedWorkerName ?? null,
     confirmedAt: invoice.confirmedAt?.toISOString() ?? null,
     createdAt: invoice.createdAt.toISOString(),
+    customerBillingAddressLines: invoice.customerBillingAddressLines ?? null,
+    customerEmail: invoice.customerEmail ?? null,
+    customerName: invoice.customerName ?? null,
+    customerPhone: invoice.customerPhone ?? null,
+    customerTaxNumber: invoice.customerTaxNumber ?? null,
     lines: invoice.lines.map((line) => ({
       lineTotal: line.lineTotal,
       quantity: line.quantity,

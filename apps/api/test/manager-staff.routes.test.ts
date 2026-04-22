@@ -27,6 +27,7 @@ describe("manager staff routes", () => {
                 lastSaleAt: "2026-04-18T11:00:00.000Z",
                 locationName: "Downtown Store",
                 netSalesAmount: "120.00",
+                primaryImageUrl: "https://cdn.example.com/users/ama.jpg",
                 roleName: "Worker",
                 roleSlug: "worker" as const,
                 returnsCount: 1,
@@ -89,6 +90,10 @@ describe("manager staff routes", () => {
     assert.equal(response.json().items[0]?.roleSlug, "worker");
     assert.equal(response.json().items[0]?.salesCount, 3);
     assert.equal(response.json().items[0]?.netSalesAmount, "120.00");
+    assert.equal(
+      response.json().items[0]?.primaryImageUrl,
+      "https://cdn.example.com/users/ama.jpg",
+    );
     assert.equal(state.lastLocationId, "4181707d-c61e-4c22-995d-335295748060");
     assert.deepEqual(state.lastPermissionScope, {
       locationId: "4181707d-c61e-4c22-995d-335295748060",

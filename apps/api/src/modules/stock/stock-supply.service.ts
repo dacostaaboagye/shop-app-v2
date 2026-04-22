@@ -9,6 +9,7 @@ import type {
 import { PostgresSupplyRequestRepository } from "./postgres-supply-request.repository.js";
 import { toSupplyRequestRow } from "./postgres-supply-request-mappers.js";
 import { dispatchStockSupply } from "./stock-supply-dispatch-operation.js";
+import { formatStockSupplyEventSummary } from "./stock-supply-event-summary.js";
 import {
   appendStockSupplyEventWithinTransaction,
   notifyStockSupplyEventsCommitted,
@@ -70,7 +71,10 @@ export class StockSupplyService {
         {
           actor: input.actor,
           supplyRequest,
-          summary: `${supplyRequest.reference} was requested.`,
+          summary: formatStockSupplyEventSummary({
+            action: "requested",
+            supplyRequest,
+          }),
           type: "transfer.requested",
         },
       );

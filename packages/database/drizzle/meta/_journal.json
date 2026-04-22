@@ -155,6 +155,34 @@
       "when": 1776668762633,
       "tag": "0021_curvy_midnight",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1776799302316,
+      "tag": "0022_hesitant_invaders",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1776838336476,
+      "tag": "0023_left_prodigy",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1776838838427,
+      "tag": "0024_supplier_user_backfill",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1776840074747,
+      "tag": "0025_solid_bishop",
+      "breakpoints": true
     }
   ]
 }

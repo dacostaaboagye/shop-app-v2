@@ -1,6 +1,7 @@
 import { invoices, locations, roles, userRoles, users } from "@shop/database";
 import { and, asc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
+import { listPrimaryImageUrls } from "../catalog/catalog-primary-image.loader.js";
 import { getCurrentAssignmentCountsForLocation } from "../inventory-ownership/ownership-latest-event-query.js";
 
 export type LocationStaffRow = {
@@ -12,6 +13,7 @@ export type LocationStaffRow = {
   lastSaleAt: Date | string | null;
   locationName: string;
   netSalesAmount: string;
+  primaryImageUrl: string | null;
   returnsCount: number;
   returnsTotalAmount: string;
   roleName: string;
@@ -70,6 +72,12 @@ export async function getLocationStaffRows(
     )
     .orderBy(asc(roles.slug), asc(users.firstName), asc(users.lastName));
 
+  const primaryImageUrls = await listPrimaryImageUrls(
+    db,
+    "user",
+    rows.map((row) => row.userSlug),
+  );
+
   return rows.map((row) => ({
     activeAssignmentCount: Number(row.activeAssignmentCount ?? 0),
     assignedAt: row.assignedAt,
@@ -79,6 +87,7 @@ export async function getLocationStaffRows(
     lastSaleAt: row.lastSaleAt,
     locationName: row.locationName,
     netSalesAmount: row.netSalesAmount ?? "0.00",
+    primaryImageUrl: primaryImageUrls.get(row.userSlug) ?? null,
     returnsCount: Number(row.returnsCount ?? 0),
     returnsTotalAmount: row.returnsTotalAmount ?? "0.00",
     roleName: row.roleName,

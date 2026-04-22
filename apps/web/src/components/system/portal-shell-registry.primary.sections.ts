@@ -204,7 +204,8 @@ export const PRIMARY_SECTION_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     href: toRoute("/admin/stock/balances"),
     icon: Boxes,
     label: "Stock levels",
-    requiredPermission: "inventory.read",
+    locationSelectorPermission: null,
+    requiredPermission: "admin.dashboard.view",
     section: "Supply",
   },
   {
@@ -215,7 +216,8 @@ export const PRIMARY_SECTION_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     href: toRoute("/admin/stock/reservations"),
     icon: Boxes,
     label: "Reservations",
-    requiredPermission: "inventory.read",
+    locationSelectorPermission: null,
+    requiredPermission: "admin.dashboard.view",
     section: "Supply",
   },
   {

@@ -6,6 +6,7 @@ import {
   adminReservationQuerySchema,
   adminStockBalanceListResponseSchema,
   adminStockBalanceQuerySchema,
+  locationReservationQuerySchema,
 } from "./stock.js";
 
 describe("stock contracts", () => {
@@ -91,5 +92,16 @@ describe("stock contracts", () => {
 
     assert.equal(parsed.locationSlug, "");
     assert.equal(parsed.limit, 50);
+  });
+
+  it("accepts location-scoped reservation filters", () => {
+    const parsed = locationReservationQuerySchema.parse({
+      locationId: "11111111-1111-4111-8111-111111111111",
+      q: "rice",
+    });
+
+    assert.equal(parsed.locationId, "11111111-1111-4111-8111-111111111111");
+    assert.equal(parsed.limit, 50);
+    assert.equal(parsed.q, "rice");
   });
 });

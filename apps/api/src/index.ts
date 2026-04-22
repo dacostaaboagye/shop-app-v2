@@ -48,8 +48,12 @@ const notificationQueryService = new NotificationQueryService(
 const notificationWriteService = new NotificationWriteService(
   new PostgresNotificationWriteRepository(databaseRuntime.db),
 );
-const officialDocumentRuntime =
-  createOfficialDocumentSettingsRuntime(databaseRuntime);
+const officialDocumentRuntime = createOfficialDocumentSettingsRuntime(
+  databaseRuntime,
+  {
+    platformEventPublisher: platformEventRuntime.platformEventPublisher,
+  },
+);
 const salesDocumentSnapshotService = new SalesIssuedDocumentSnapshotService({
   invoiceRepository: salesRuntime.sales.invoiceQueryRepository,
   permissionService: authRuntime.accessControl.permissionService,
@@ -70,6 +74,7 @@ const server = createServer({
   adminDirectory: adminDirectoryRuntime.adminDirectory,
   adminLocationQuery: adminDirectoryRuntime.adminDirectory,
   adminLocationWrite: adminDirectoryRuntime.adminDirectory,
+  adminSuppliers: adminDirectoryRuntime.adminDirectory,
   adminUserAccess: adminDirectoryRuntime.adminDirectory,
   auth: authRuntime.auth,
   catalogManagerQuery: {
@@ -109,14 +114,20 @@ const server = createServer({
     permissionService: authRuntime.accessControl.permissionService,
     posSaleService: salesRuntime.sales.posSaleService,
   },
-  stock: stockRuntime.stock,
+  stock: {
+    permissionService: authRuntime.accessControl.permissionService,
+    reservationQueryRepo: stockRuntime.stock.reservationQueryRepo,
+  },
   stockAssignments: assignmentsRuntime.assignments,
   stockBalance: stockRuntime.stock,
   stockBalanceLocation: {
     permissionService: authRuntime.accessControl.permissionService,
     stockBalanceQueryRepo: stockRuntime.stock.stockBalanceQueryRepo,
   },
-  stockCount: stockRuntime.stock,
+  stockCount: {
+    permissionService: authRuntime.accessControl.permissionService,
+    stockCountRepo: stockRuntime.stock.stockCountRepo,
+  },
   stockSupply: {
     locationRepository: stockRuntime.stock.locationRepository,
     permissionService: authRuntime.accessControl.permissionService,
