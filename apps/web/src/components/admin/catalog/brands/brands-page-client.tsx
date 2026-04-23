@@ -2,7 +2,6 @@
 
 import type { AdminBrandListQuery } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
-import { Search, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -14,9 +13,7 @@ import { useAuthorization } from "@/components/providers/authorization-provider"
 import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { PermissionGate } from "@/components/system/permission-gate";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   adminBrandsQueryKey,
@@ -31,6 +28,7 @@ import {
   readStringParam,
 } from "@/lib/url-state";
 import { createCatalogBulkActions } from "../catalog-bulk-status-actions";
+import { BrandFilters } from "./brand-filters";
 import { brandTableColumns } from "./brand-table-columns";
 import {
   BRAND_PAGE_SIZE_OPTIONS,
@@ -119,52 +117,26 @@ export function BrandsPageClient() {
         title="Brands"
       />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative min-w-56 flex-1">
-          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="h-9 pl-9"
-            onChange={(e) => setDraftSearch(e.target.value)}
-            placeholder="Search by name or slug"
-            value={draftSearch}
-          />
-        </div>
-        <Select
-          aria-label="Filter by status"
-          className="h-9"
-          onChange={(e) =>
-            replaceBrandQuery(router, pathname, searchParams, {
-              page: null,
-              status: e.target.value === "all" ? null : e.target.value,
-            })
-          }
-          value={status}
-        >
-          <option value="all">All status</option>
-          <option value="active">Active</option>
-          <option value="archived">Archived</option>
-        </Select>
-        {hasFilters ? (
-          <Button
-            onClick={() =>
-              replaceBrandQuery(router, pathname, searchParams, {
-                page: null,
-                q: null,
-                status: null,
-              })
-            }
-            size="sm"
-            type="button"
-            variant="ghost"
-          >
-            <X data-icon="inline-start" />
-            Clear
-          </Button>
-        ) : null}
-        <span className="ml-auto tabular-nums text-sm text-muted-foreground">
-          {totalCount} total
-        </span>
-      </div>
+      <BrandFilters
+        draftSearch={draftSearch}
+        hasFilters={hasFilters}
+        onClear={() =>
+          replaceBrandQuery(router, pathname, searchParams, {
+            page: null,
+            q: null,
+            status: null,
+          })
+        }
+        onDraftSearchChange={setDraftSearch}
+        onStatusChange={(val) =>
+          replaceBrandQuery(router, pathname, searchParams, {
+            page: null,
+            status: val,
+          })
+        }
+        status={status}
+        totalCount={totalCount}
+      />
 
       {brandsQuery.isPending && !brandsQuery.data ? (
         <div className="flex flex-col gap-2">

@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type {
+  EmailTemplatePreviewRequest,
+  EmailTemplatePreviewResponse,
+  EmailTemplatePreviewType,
   LocationDocumentSettingsResponse,
   OfficialDocumentProfileResponse,
   OfficialDocumentSettingsResponse,
@@ -74,6 +77,71 @@ describe("official document settings routes", () => {
     assert.equal(capturedBrandName, "Amali Shop");
   });
 
+  it("returns a configured email template preview", async () => {
+    const server = createSettingsServer();
+
+    const response = await server.inject({
+      headers: { authorization: bearerToken() },
+      method: "GET",
+      url: "/api/admin/settings/email-templates/supplierInvite/preview",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().type, "supplierInvite");
+    assert.equal(response.json().subject, "Preview");
+  });
+
+  it("renders a draft email template preview", async () => {
+    let capturedType: EmailTemplatePreviewType | undefined;
+    let capturedDraft: EmailTemplatePreviewRequest | undefined;
+    const server = createSettingsServer({
+      async previewEmailTemplate(type, draft) {
+        capturedType = type;
+        capturedDraft = draft;
+        return {
+          allowedVariables: ["firstName", "supplierName"],
+          html: "<p>Draft preview</p>",
+          subject: draft?.template.subject ?? "Preview",
+          text: "Draft preview",
+          type,
+          unknownVariables: ["unknownToken"],
+        };
+      },
+    });
+
+    const payload: EmailTemplatePreviewRequest = {
+      brand: {
+        accentColor: "hsl(28 72% 48%)",
+        brandName: "Amali Shop",
+        logoText: "AS",
+        primaryColor: "hsl(174 52% 23%)",
+      },
+      business: {
+        email: "accounts@example.com",
+      },
+      template: {
+        actionLabel: "Open portal",
+        footer: "Contact accounts@example.com for support.",
+        heading: "Supplier portal access",
+        intro: "Hi {{firstName}}, manage {{supplierName}}.",
+        subject: "Draft invite for {{supplierName}}",
+      },
+    };
+
+    const response = await server.inject({
+      headers: { authorization: bearerToken() },
+      method: "POST",
+      payload,
+      url: "/api/admin/settings/email-templates/supplierInvite/preview",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().subject, payload.template.subject);
+    assert.deepEqual(response.json().unknownVariables, ["unknownToken"]);
+    assert.equal(capturedType, "supplierInvite");
+    assert.equal(capturedDraft?.brand.brandName, "Amali Shop");
+  });
+
   it("enforces scoped location permission for manager overrides", async () => {
     const permissionCalls: Array<{ locationId?: string; permission: string }> =
       [];
@@ -111,6 +179,10 @@ function createSettingsServer(
       patch: UpdateOfficialDocumentSettingsRequest;
       updatedBy: string;
     }) => Promise<OfficialDocumentSettingsResponse>;
+    previewEmailTemplate?: (
+      type: EmailTemplatePreviewType,
+      draft?: EmailTemplatePreviewRequest,
+    ) => Promise<EmailTemplatePreviewResponse>;
   } = {},
 ) {
   return createServer({
@@ -167,6 +239,18 @@ function createSettingsServer(
         },
         async getLocationSettings(locationId) {
           return locationSettings(locationId);
+        },
+        async previewEmailTemplate(type, draft) {
+          if (input.previewEmailTemplate)
+            return input.previewEmailTemplate(type, draft);
+          return {
+            allowedVariables: ["firstName"],
+            html: "<p>Preview</p>",
+            subject: "Preview",
+            text: "Preview",
+            type,
+            unknownVariables: [],
+          };
         },
         async resolveDocumentProfile(input = {}) {
           return documentProfile(input.locationId);
@@ -258,6 +342,30 @@ function globalSettings(): OfficialDocumentSettingsResponse {
       receiptFooter: "Official document.",
       receiptPrefix: "RCT",
       timezone: "Africa/Accra",
+    },
+    emailTemplates: {
+      emailVerification: {
+        actionLabel: "Verify email address",
+        footer: "This link expires in 24 hours.",
+        heading: "Verify your email",
+        intro: "Hi {{firstName}}, please verify your email address.",
+        subject: "Verify your email address",
+      },
+      passwordReset: {
+        actionLabel: "Reset password",
+        footer: "This link expires in 1 hour.",
+        heading: "Reset your password",
+        intro: "Hi {{firstName}}, we received a password reset request.",
+        subject: "Reset your password",
+      },
+      supplierInvite: {
+        actionLabel: "Set up portal access",
+        footer: "This link expires in 1 hour.",
+        heading: "Supplier portal access",
+        intro:
+          "Hi {{firstName}}, you have been invited to manage {{supplierName}}.",
+        subject: "Supplier portal invitation for {{supplierName}}",
+      },
     },
     locationOverridePolicy: {
       allowLocationAddress: true,

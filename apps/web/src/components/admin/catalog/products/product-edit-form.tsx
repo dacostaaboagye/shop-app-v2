@@ -14,9 +14,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { FieldGroup } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { ProductBasicDetailsFields } from "./product-basic-details-fields";
 import { FeaturesField } from "./product-features-field";
 
 export type ProductEditValues = {
@@ -54,7 +53,11 @@ export function ProductEditForm({
     defaultValues,
     onSubmit: async ({ value }) => {
       setWasSubmitted(true);
-      onSubmit(value);
+      onSubmit({
+        ...value,
+        brandSlug: value.brandSlug === "none" ? "" : value.brandSlug,
+        categorySlug: value.categorySlug === "none" ? "" : value.categorySlug,
+      });
     },
   });
 
@@ -86,107 +89,12 @@ export function ProductEditForm({
             </Alert>
           ) : null}
           <FieldGroup>
-            <form.Field
-              name="name"
-              validators={{
-                onBlur: ({ value }) =>
-                  value.trim() ? undefined : "Enter a product name.",
-                onSubmit: ({ value }) =>
-                  value.trim() ? undefined : "Enter a product name.",
-              }}
-            >
-              {(field) => (
-                <AppFormField
-                  errors={field.state.meta.errors}
-                  inputId={field.name}
-                  label="Name"
-                  showErrors={
-                    (field.state.meta.isDirty && field.state.meta.isBlurred) ||
-                    wasSubmitted
-                  }
-                >
-                  <Input
-                    id={field.name}
-                    maxLength={200}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    value={field.state.value}
-                  />
-                </AppFormField>
-              )}
-            </form.Field>
-
-            <form.Field name="brandSlug">
-              {(field) => (
-                <AppFormField
-                  errors={field.state.meta.errors}
-                  inputId={field.name}
-                  label="Brand"
-                  showErrors={wasSubmitted}
-                >
-                  <Select
-                    id={field.name}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    value={field.state.value}
-                  >
-                    <option value="">No brand</option>
-                    {brands.map((b) => (
-                      <option key={b.slug} value={b.slug}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </Select>
-                </AppFormField>
-              )}
-            </form.Field>
-
-            <form.Field name="categorySlug">
-              {(field) => (
-                <AppFormField
-                  errors={field.state.meta.errors}
-                  inputId={field.name}
-                  label="Category"
-                  showErrors={wasSubmitted}
-                >
-                  <Select
-                    id={field.name}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    value={field.state.value}
-                  >
-                    <option value="">No category</option>
-                    {categories.map((c) => (
-                      <option key={c.slug} value={c.slug}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </Select>
-                </AppFormField>
-              )}
-            </form.Field>
-
-            <form.Field name="status">
-              {(field) => (
-                <AppFormField
-                  errors={field.state.meta.errors}
-                  inputId={field.name}
-                  label="Status"
-                  showErrors={wasSubmitted}
-                >
-                  <Select
-                    id={field.name}
-                    onChange={(e) =>
-                      field.handleChange(
-                        e.target.value as "active" | "archived",
-                      )
-                    }
-                    value={field.state.value}
-                  >
-                    <option value="active">Active</option>
-                    <option value="archived">Archived</option>
-                  </Select>
-                </AppFormField>
-              )}
-            </form.Field>
+            <ProductBasicDetailsFields
+              brands={brands}
+              categories={categories}
+              form={form}
+              wasSubmitted={wasSubmitted}
+            />
             <form.Field name="description">
               {(field) => (
                 <AppFormField

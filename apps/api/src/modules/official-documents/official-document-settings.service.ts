@@ -1,11 +1,14 @@
 import type {
+  EmailTemplatePreviewRequest,
+  emailTemplatePreviewResponseSchema,
   locationDocumentSettingsResponseSchema,
   officialDocumentProfileResponseSchema,
   officialDocumentSettingsResponseSchema,
 } from "@shop/contracts";
+import type { EmailTemplateSettings } from "@shop/database";
 import type { z } from "zod";
-import { AppError } from "../_core/errors/app-error.js";
 import type { PlatformEventPublisher } from "../events/platform-event.types.js";
+import { previewEmailTemplate as renderEmailTemplatePreview } from "./official-document-email-template-preview.service.js";
 import type { OfficialDocumentSettingsRepository } from "./official-document-settings.repository.js";
 import type {
   LocationDocumentSettingsPatch,
@@ -13,10 +16,15 @@ import type {
   OfficialDocumentSettingsPatch,
   OfficialDocumentSettingsRecord,
 } from "./official-document-settings.types.js";
+import { locationNotFoundError } from "./official-document-settings-errors.js";
 import {
   createOfficialDocumentSettingsEvent,
   getChangedSettingSections,
 } from "./official-document-settings-events.js";
+import {
+  mergeDefined,
+  mergeEmailTemplates,
+} from "./official-document-settings-merge.js";
 
 type GlobalSettingsResponse = z.infer<
   typeof officialDocumentSettingsResponseSchema
@@ -25,6 +33,9 @@ type LocationSettingsResponse = z.infer<
   typeof locationDocumentSettingsResponseSchema
 >;
 type ProfileResponse = z.infer<typeof officialDocumentProfileResponseSchema>;
+type EmailTemplatePreviewResponse = z.infer<
+  typeof emailTemplatePreviewResponseSchema
+>;
 
 export type OfficialDocumentBrandLogoResolver = {
   getLogoImageUrl: () => Promise<string | null>;
@@ -34,6 +45,7 @@ export class OfficialDocumentSettingsService {
   constructor(
     private readonly repository: OfficialDocumentSettingsRepository,
     private readonly brandLogoResolver: OfficialDocumentBrandLogoResolver | null = null,
+    private readonly emailFromAddress: string | null = null,
     private readonly eventPublisher: PlatformEventPublisher | null = null,
   ) {}
 
@@ -42,6 +54,29 @@ export class OfficialDocumentSettingsService {
       await this.repository.getGlobalSettings(),
       await this.resolveLogoImageUrl(),
     );
+  }
+
+  async previewEmailTemplate(
+    type: keyof EmailTemplateSettings,
+    draft?: EmailTemplatePreviewRequest,
+  ): Promise<EmailTemplatePreviewResponse> {
+    const settings = await this.repository.getGlobalSettings();
+    const logoImageUrl = await this.resolveLogoImageUrl();
+    if (draft) {
+      return renderEmailTemplatePreview({
+        draft,
+        emailFromAddress: this.emailFromAddress,
+        logoImageUrl,
+        settings,
+        type,
+      });
+    }
+    return renderEmailTemplatePreview({
+      emailFromAddress: this.emailFromAddress,
+      logoImageUrl,
+      settings,
+      type,
+    });
   }
 
   async updateGlobalSettings(input: {
@@ -56,6 +91,10 @@ export class OfficialDocumentSettingsService {
       business: mergeDefined(current.business, input.patch.business),
       currency: mergeDefined(current.currency, input.patch.currency),
       documents: mergeDefined(current.documents, input.patch.documents),
+      emailTemplates: mergeEmailTemplates(
+        current.emailTemplates,
+        input.patch.emailTemplates,
+      ),
       locationOverridePolicy: mergeDefined(
         current.locationOverridePolicy,
         input.patch.locationOverridePolicy,
@@ -172,23 +211,6 @@ export class OfficialDocumentSettingsService {
   }
 }
 
-type LoosePatch<T> = { [K in keyof T]?: T[K] | undefined };
-
-function mergeDefined<T extends Record<string, unknown>>(
-  current: T,
-  patch: LoosePatch<T> | undefined,
-): T {
-  if (!patch) return current;
-
-  const next = { ...current };
-  for (const [key, value] of Object.entries(patch)) {
-    if (value !== undefined) {
-      next[key as keyof T] = value as T[keyof T];
-    }
-  }
-  return next;
-}
-
 function serializeGlobal(
   input: OfficialDocumentSettingsRecord,
   logoImageUrl: string | null,
@@ -198,6 +220,7 @@ function serializeGlobal(
     business: input.business,
     currency: input.currency,
     documents: input.documents,
+    emailTemplates: input.emailTemplates,
     locationOverridePolicy: input.locationOverridePolicy,
     updatedAt: input.updatedAt?.toISOString() ?? null,
     updatedByUserSlug: input.updatedByUserSlug,
@@ -232,13 +255,4 @@ function serializeLocation(input: {
     updatedAt: input.updatedAt?.toISOString() ?? null,
     updatedByUserSlug: input.updatedByUserSlug,
   };
-}
-
-function locationNotFoundError(locationId: string): AppError {
-  return new AppError({
-    code: "not_found",
-    detail: `Location ${locationId} does not exist.`,
-    statusCode: 404,
-    title: "Location not found",
-  });
 }

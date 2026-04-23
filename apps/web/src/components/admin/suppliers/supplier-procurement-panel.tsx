@@ -8,10 +8,12 @@ import { ShoppingCart } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import { AppEmptyState } from "@/components/system/app-empty-state";
+import { AppTableWrapper } from "@/components/system/app-table-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { SelectField, TextField } from "./supplier-form-controls";
 
 type ProcurementAction = "approve" | "cancel" | "close" | "order" | "submit";
@@ -46,17 +48,23 @@ export function ProcurementPanel(props: {
   );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Supply lifecycle</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+    <div className="flex flex-col gap-6 rounded-xl border border-border/50 bg-white p-6 shadow-sm">
+      <div className="flex flex-col gap-4">
+        <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">
+          Draft purchase order
+        </h3>
         <PurchaseOrderForm
           form={orderForm}
           onChange={setOrderForm}
           onCreate={props.onCreateOrder}
           variants={variants}
         />
+      </div>
+
+      <div className="flex flex-col gap-4">
+        <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">
+          Managed lifecycle
+        </h3>
         {props.orders.length === 0 ? (
           <AppEmptyState
             description="Supplier purchase orders, approvals, dispatch, receipts, and closure will appear here."
@@ -65,17 +73,21 @@ export function ProcurementPanel(props: {
             title="No procurement orders"
           />
         ) : (
-          props.orders.map((order) => (
-            <OrderRow
-              key={order.reference}
-              onAction={props.onAction}
-              onReceive={props.onReceive}
-              order={order}
-            />
-          ))
+          <AppTableWrapper>
+            {props.orders.map((order, index) => (
+              <OrderRow
+                index={index}
+                itemCount={props.orders.length}
+                key={order.reference}
+                onAction={props.onAction}
+                onReceive={props.onReceive}
+                order={order}
+              />
+            ))}
+          </AppTableWrapper>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -87,7 +99,7 @@ function PurchaseOrderForm(props: {
 }) {
   return (
     <>
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3">
         <SelectField
           label="SKU"
           onChange={(variantSlug) =>
@@ -122,37 +134,48 @@ function PurchaseOrderForm(props: {
           value={props.form.unitCost}
         />
       </div>
-      <Textarea
-        onChange={(event) =>
-          props.onChange((value) => ({ ...value, notes: event.target.value }))
-        }
-        placeholder="Internal purchasing note or delivery instruction"
-        value={props.form.notes}
-      />
-      <Button
-        disabled={!props.form.variantSlug}
-        onClick={() =>
-          props.onCreate({
-            lines: [
-              {
-                requestedQuantity: props.form.quantity,
-                unitCost: props.form.unitCost || null,
-                variantSlug: props.form.variantSlug,
-              },
-            ],
-            notes: props.form.notes || null,
-          })
-        }
-        size="sm"
-        type="button"
-      >
-        Draft purchase order
-      </Button>
+      <div className="flex flex-col gap-1.5">
+        <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
+          Purchasing notes
+        </Label>
+        <Textarea
+          className="min-h-20 rounded-xl border-border/60 bg-muted/20 transition-all focus:bg-background focus:ring-primary/20"
+          onChange={(event) =>
+            props.onChange((value) => ({ ...value, notes: event.target.value }))
+          }
+          placeholder="Internal purchasing note or delivery instruction"
+          value={props.form.notes}
+        />
+      </div>
+      <div className="flex justify-start">
+        <Button
+          className="h-11 rounded-xl px-8"
+          disabled={!props.form.variantSlug}
+          onClick={() =>
+            props.onCreate({
+              lines: [
+                {
+                  requestedQuantity: props.form.quantity,
+                  unitCost: props.form.unitCost || null,
+                  variantSlug: props.form.variantSlug,
+                },
+              ],
+              notes: props.form.notes || null,
+            })
+          }
+          size="sm"
+          type="button"
+        >
+          Draft purchase order
+        </Button>
+      </div>
     </>
   );
 }
 
 function OrderRow(props: {
+  index: number;
+  itemCount: number;
   onAction: (reference: string, action: ProcurementAction) => void;
   onReceive: (
     reference: string,
@@ -161,13 +184,29 @@ function OrderRow(props: {
   order: AdminSupplierDetail["procurementOrders"][number];
 }) {
   return (
-    <div className="rounded-md border border-border p-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <p className="font-medium">{props.order.reference}</p>
-          <p className="text-sm text-muted-foreground">
-            {props.order.destinationLocationName ?? "No destination"} -{" "}
-            {props.order.lines.length} line(s)
+    <div
+      className={cn(
+        "flex flex-col gap-4 p-4",
+        props.index !== props.itemCount - 1 && "border-b border-border/50",
+      )}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="font-semibold text-foreground">
+              {props.order.reference}
+            </p>
+            <Badge
+              className="rounded-md font-bold uppercase tracking-wider text-[10px]"
+              variant="secondary"
+            >
+              {props.order.status.replaceAll("_", " ")}
+            </Badge>
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground/80">
+            {props.order.destinationLocationName ?? "Direct shipment"} •{" "}
+            {props.order.lines.length} line item
+            {props.order.lines.length === 1 ? "" : "s"}
           </p>
         </div>
         <Badge variant="outline">

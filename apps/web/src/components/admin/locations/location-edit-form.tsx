@@ -13,7 +13,13 @@ import {
 } from "@/components/ui/card";
 import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   LocationFormActions,
   LocationFulfilmentField,
@@ -137,16 +143,18 @@ export function LocationEditForm({
                 >
                   <Select
                     disabled={isPending}
-                    id={field.name}
-                    onChange={(e) =>
-                      field.handleChange(
-                        e.target.value as "store" | "warehouse",
-                      )
+                    onValueChange={(value) =>
+                      field.handleChange(value as "store" | "warehouse")
                     }
                     value={field.state.value}
                   >
-                    <option value="store">Store</option>
-                    <option value="warehouse">Warehouse</option>
+                    <SelectTrigger id={field.name}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="store">Store</SelectItem>
+                      <SelectItem value="warehouse">Warehouse</SelectItem>
+                    </SelectContent>
                   </Select>
                 </AppFormField>
               )}
@@ -162,16 +170,18 @@ export function LocationEditForm({
                 >
                   <Select
                     disabled={isPending}
-                    id={field.name}
-                    onChange={(e) =>
-                      field.handleChange(
-                        e.target.value as "active" | "inactive",
-                      )
+                    onValueChange={(value) =>
+                      field.handleChange(value as "active" | "inactive")
                     }
                     value={field.state.value}
                   >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
+                    <SelectTrigger id={field.name}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
                   </Select>
                 </AppFormField>
               )}

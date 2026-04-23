@@ -2,6 +2,7 @@
 
 import type { CurrentAssignment } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
+import { Package } from "lucide-react";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
@@ -114,25 +115,44 @@ function StockList({
 }) {
   if (items.length === 0) {
     return (
-      <div className="rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-        No variants are currently assigned to you
-        {locationName ? ` at ${locationName}` : ""}.
+      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 p-12 text-center">
+        <div className="mb-4 rounded-full bg-muted p-4">
+          <Package className="size-6 text-muted-foreground/40" />
+        </div>
+        <p className="text-sm font-medium">No variants assigned</p>
+        <p className="max-w-[240px] text-xs text-muted-foreground mt-1">
+          No variants are currently assigned to you
+          {locationName ? ` at ${locationName}` : ""}.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {locationName ? (
-        <p className="text-sm text-muted-foreground">
-          {items.length} variant{items.length !== 1 ? "s" : ""} assigned at{" "}
-          <span className="font-medium text-foreground">{locationName}</span>
-        </p>
+        <div className="flex items-center gap-2">
+          <Badge
+            variant="outline"
+            className="rounded-lg bg-primary text-primary-foreground border-primary shadow-sm"
+          >
+            {items.length} variant{items.length !== 1 ? "s" : ""}
+          </Badge>
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground/60">
+            assigned at <span className="text-foreground">{locationName}</span>
+          </p>
+        </div>
       ) : null}
-      <div className="divide-y divide-border rounded-md border border-border bg-card">
-        {items.map((item) => (
-          <StockRow key={item.skuId} item={item} moneyProfile={moneyProfile} />
-        ))}
+      <div className="overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm">
+        <div className="divide-y divide-border/50">
+          {items.map((item) => (
+            <StockRow
+              key={item.skuId}
+              item={item}
+              moneyProfile={moneyProfile}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -146,60 +166,84 @@ function StockRow({
   moneyProfile: Parameters<typeof formatMoney>[1];
 }) {
   const available = item.availableQuantity;
+  const isOut = available === 0;
   const isLow = available > 0 && available <= 3;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 p-4">
-      <div className="flex items-start gap-3">
+    <div className="group relative flex flex-col gap-4 p-4 transition-colors hover:bg-muted sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:py-4">
+      <div className="flex items-start gap-4">
         <ProductThumbnail
-          className="size-10 shrink-0"
+          className={cn(
+            "size-12 shrink-0 rounded-xl transition-transform group-hover:scale-105",
+            isOut && "ring-2 ring-destructive/20",
+            isLow && "ring-2 ring-warning/20",
+          )}
           imageUrl={item.primaryImageUrl}
           productName={item.productName}
           variantName={item.variantName}
         />
         <div className="min-w-0">
-          <p className="font-medium leading-none">{item.productName}</p>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h4 className="truncate text-sm font-bold leading-tight group-hover:text-primary transition-colors">
+            {item.productName}
+          </h4>
+          <p className="mt-1 truncate text-xs font-medium text-muted-foreground/80">
             {item.variantName}
           </p>
-          <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+          <p className="mt-1 font-mono text-[9px] uppercase tracking-wider text-muted-foreground/40">
             {item.sku}
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-3 text-sm">
-        <div className="text-right">
-          <p className="text-xs text-muted-foreground">Price</p>
-          <p className="font-medium tabular-nums">
+
+      <div className="flex flex-wrap items-center gap-6 sm:gap-8">
+        <div className="flex flex-col sm:items-end gap-0.5">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40">
+            Price
+          </span>
+          <p className="text-sm font-bold tabular-nums">
             {formatMoney(item.sellingPrice, moneyProfile)}
           </p>
         </div>
-        <div className="text-right">
-          <p className="text-xs text-muted-foreground">Assigned</p>
-          <p className="font-medium tabular-nums">{item.quantity}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-xs text-muted-foreground">Available</p>
-          <p
-            className={cn(
-              "font-medium tabular-nums",
-              available === 0
-                ? "text-destructive"
-                : isLow
-                  ? "text-warning"
-                  : "text-foreground",
-            )}
-          >
-            {available}
+        <div className="flex flex-col sm:items-end gap-0.5">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40">
+            Assigned
+          </span>
+          <p className="text-sm font-bold tabular-nums text-muted-foreground">
+            {item.quantity.toLocaleString()}
           </p>
         </div>
-        {available === 0 ? (
-          <Badge variant="destructive">Out</Badge>
-        ) : isLow ? (
-          <Badge variant="outline" className="border-warning/50 text-warning">
-            Low
-          </Badge>
-        ) : null}
+        <div className="flex flex-col sm:items-end gap-0.5 min-w-[70px]">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40">
+            Available
+          </span>
+          <p
+            className={cn(
+              "text-sm font-bold tabular-nums",
+              isOut
+                ? "text-destructive"
+                : isLow
+                  ? "text-warning-foreground"
+                  : "text-success",
+            )}
+          >
+            {available.toLocaleString()}
+          </p>
+        </div>
+        <div className="flex sm:min-w-[80px] sm:justify-end">
+          {isOut ? (
+            <Badge className="bg-destructive text-destructive-foreground border-none rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-sm">
+              Out
+            </Badge>
+          ) : isLow ? (
+            <Badge className="bg-warning text-warning-foreground border-none rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-sm">
+              Low
+            </Badge>
+          ) : (
+            <Badge className="bg-success text-success-foreground border-none rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-sm">
+              Good
+            </Badge>
+          )}
+        </div>
       </div>
     </div>
   );

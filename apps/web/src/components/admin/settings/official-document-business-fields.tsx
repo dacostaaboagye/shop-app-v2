@@ -74,7 +74,7 @@ export function OfficialDocumentBusinessFields({
       </form.Field>
       <form.Field name="email">
         {(field) => (
-          <AppFormField inputId={field.name} label="Email">
+          <AppFormField inputId={field.name} label="Business support email">
             <Input
               id={field.name}
               onBlur={field.handleBlur}

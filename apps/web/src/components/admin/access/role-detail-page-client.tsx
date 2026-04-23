@@ -145,7 +145,7 @@ function RoleDetailBody({
       </Card>
 
       <Tabs defaultValue="coverage">
-        <TabsList variant="line">
+        <TabsList>
           <TabsTrigger value="coverage">Coverage</TabsTrigger>
           <PermissionGate permission="access.roles.manage">
             <TabsTrigger value="editor">Editor</TabsTrigger>

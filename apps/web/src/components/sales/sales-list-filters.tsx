@@ -1,10 +1,17 @@
 "use client";
 
+import { formatISO, parseISO } from "date-fns";
 import { CalendarDays, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { DatePickerSimple } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export type SalesDocumentTypeFilter = "all" | "credit_note" | "invoice";
 
@@ -29,52 +36,87 @@ export function SalesListFilters({
 }: Props) {
   const hasFilters = Boolean(dateFrom || dateTo || documentType !== "all");
 
+  const fromDate = dateFrom ? parseISO(dateFrom) : undefined;
+  const toDate = dateTo ? parseISO(dateTo) : undefined;
+
   return (
-    <div className="rounded-md border border-border bg-card p-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="sales-date-from">From</Label>
-            <Input
+    <div className="rounded-xl border border-border/50 bg-white p-6 shadow-sm">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="grid gap-6 sm:grid-cols-3 flex-1">
+          <div className="flex flex-col gap-1.5 w-full">
+            <Label
+              htmlFor="sales-date-from"
+              className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
+            >
+              From
+            </Label>
+            <DatePickerSimple
+              {...(fromDate ? { date: fromDate } : {})}
               id="sales-date-from"
-              onChange={(event) => onDateFromChange(event.target.value)}
-              type="date"
-              value={dateFrom}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="sales-date-to">To</Label>
-            <Input
-              id="sales-date-to"
-              onChange={(event) => onDateToChange(event.target.value)}
-              type="date"
-              value={dateTo}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="sales-document-type">Document type</Label>
-            <Select
-              id="sales-document-type"
-              onChange={(event) =>
-                onDocumentTypeChange(
-                  event.target.value as SalesDocumentTypeFilter,
+              onSelect={(date) =>
+                onDateFromChange(
+                  date ? formatISO(date, { representation: "date" }) : "",
                 )
               }
-              value={documentType}
+              placeholder="From date"
+              className="h-11 rounded-xl border-border/60 bg-muted/20 focus:bg-background transition-all"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5 w-full">
+            <Label
+              htmlFor="sales-date-to"
+              className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
             >
-              <option value="all">All documents</option>
-              <option value="invoice">Invoices</option>
-              <option value="credit_note">Credit notes</option>
+              To
+            </Label>
+            <DatePickerSimple
+              {...(toDate ? { date: toDate } : {})}
+              id="sales-date-to"
+              onSelect={(date) =>
+                onDateToChange(
+                  date ? formatISO(date, { representation: "date" }) : "",
+                )
+              }
+              placeholder="To date"
+              className="h-11 rounded-xl border-border/60 bg-muted/20 focus:bg-background transition-all"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
+              Document type
+            </Label>
+            <Select
+              value={documentType}
+              onValueChange={(value) =>
+                onDocumentTypeChange(value as SalesDocumentTypeFilter)
+              }
+            >
+              <SelectTrigger
+                id="sales-document-type"
+                className="h-11 w-full rounded-xl border-border/60 bg-muted/20 focus:bg-background transition-all"
+              >
+                <SelectValue placeholder="All documents" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All documents</SelectItem>
+                <SelectItem value="invoice">Invoices</SelectItem>
+                <SelectItem value="credit_note">Credit notes</SelectItem>
+              </SelectContent>
             </Select>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button disabled={!hasFilters} onClick={onClear} variant="outline">
-            <X data-icon="inline-start" />
+        <div className="flex flex-wrap items-center gap-4">
+          <Button
+            disabled={!hasFilters}
+            onClick={onClear}
+            variant="outline"
+            className="h-11 rounded-xl border-border/60 bg-white hover:bg-muted font-bold text-xs px-6"
+          >
+            <X className="size-4 mr-2" />
             Clear
           </Button>
-          <div className="flex items-center gap-2 rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-            <CalendarDays className="size-4" />
+          <div className="flex items-center gap-2 rounded-xl bg-muted/20 border border-border/50 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 shadow-sm">
+            <CalendarDays className="size-4 text-primary/60" />
             Filters apply to transaction date.
           </div>
         </div>

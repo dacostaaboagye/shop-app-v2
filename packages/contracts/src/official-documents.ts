@@ -11,6 +11,7 @@ import {
   supportedCurrencyCodes,
   supportedTimeZones,
 } from "./official-document-options.js";
+import { emailTemplateSettingsSchema } from "./official-document-email-templates.js";
 
 const currencyCodeSchema = z
   .string()
@@ -92,6 +93,7 @@ export const officialDocumentSettingsResponseSchema = z.object({
   business: documentBusinessSettingsSchema,
   currency: moneySettingsSchema,
   documents: documentDefaultsSchema,
+  emailTemplates: emailTemplateSettingsSchema,
   locationOverridePolicy: locationOverridePolicySchema,
   updatedAt: z.iso.datetime().nullable(),
   updatedByUserSlug: z.string().nullable(),
@@ -101,6 +103,13 @@ const updateBrandSettingsSchema = documentBrandSettingsSchema.partial();
 const updateBusinessSettingsSchema = documentBusinessSettingsSchema.partial();
 const updateMoneySettingsSchema = moneySettingsSchema.partial();
 const updateDocumentDefaultsSchema = documentDefaultsSchema.partial();
+const updateEmailTemplateDefinitionSchema =
+  emailTemplateSettingsSchema.shape.supplierInvite.partial();
+const updateEmailTemplateSettingsSchema = z.object({
+  emailVerification: updateEmailTemplateDefinitionSchema.optional(),
+  passwordReset: updateEmailTemplateDefinitionSchema.optional(),
+  supplierInvite: updateEmailTemplateDefinitionSchema.optional(),
+});
 const updateLocationOverridePolicySchema =
   locationOverridePolicySchema.partial();
 
@@ -109,6 +118,7 @@ export const updateOfficialDocumentSettingsRequestSchema = z.object({
   business: updateBusinessSettingsSchema.optional(),
   currency: updateMoneySettingsSchema.optional(),
   documents: updateDocumentDefaultsSchema.optional(),
+  emailTemplates: updateEmailTemplateSettingsSchema.optional(),
   locationOverridePolicy: updateLocationOverridePolicySchema.optional(),
 });
 

@@ -56,7 +56,9 @@ export function AuthRegisterForm() {
       <AuthGoogleOAuthButton />
       <div className="relative flex items-center gap-4 py-2">
         <div className="flex-1 border-t border-border/60" />
-        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">or</span>
+        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">
+          or
+        </span>
         <div className="flex-1 border-t border-border/60" />
       </div>
 

@@ -29,10 +29,19 @@ export function OfficialDocumentDocumentFields({
       <TextField form={form} label="Receipt prefix" name="receiptPrefix" />
       <TextField form={form} label="Invoice prefix" name="invoicePrefix" />
       <TextField form={form} label="GTN prefix" name="gtnPrefix" />
-      <TextField form={form} label="Locale" name="locale" />
+      <TextField
+        form={form}
+        info="BCP 47 language tag (e.g. en-GB) used for document formatting and locale-specific translations."
+        label="Locale"
+        name="locale"
+      />
       <form.Field name="timezone">
         {(field) => (
-          <AppFormField inputId={field.name} label="Timezone">
+          <AppFormField
+            info="The default timezone used for document issue dates and operational timestamps."
+            inputId={field.name}
+            label="Timezone"
+          >
             <TimeZoneSelect
               id={field.name}
               onChange={field.handleChange}
@@ -61,17 +70,19 @@ export function OfficialDocumentDocumentFields({
 
 function TextField({
   form,
+  info,
   label,
   name,
 }: {
   form: OfficialDocumentSettingsFormApi;
+  info?: string;
   label: string;
   name: "gtnPrefix" | "invoicePrefix" | "locale" | "receiptPrefix";
 }) {
   return (
     <form.Field name={name}>
       {(field) => (
-        <AppFormField inputId={field.name} label={label}>
+        <AppFormField info={info} inputId={field.name} label={label}>
           <Input
             id={field.name}
             onBlur={field.handleBlur}

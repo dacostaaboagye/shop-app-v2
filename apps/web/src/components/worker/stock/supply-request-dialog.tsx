@@ -18,7 +18,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { getAppErrorMessage } from "@/lib/errors/app-error";
 import {
@@ -120,18 +126,18 @@ export function SupplyRequestDialog({ onOpenChange, open, target }: Props) {
 
         {target ? (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/30 px-3 py-3">
+            <div className="flex flex-col gap-3 rounded-xl border border-border bg-white px-3 py-3 shadow-sm">
               <div>
                 <p className="font-medium">{target.productName}</p>
                 <p className="text-sm text-muted-foreground">
                   {target.variantName}
                 </p>
-                <p className="font-mono text-xs text-muted-foreground">
+                <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground/40">
                   {target.sku}
                 </p>
               </div>
 
-              <div className="flex items-start gap-2 rounded-md bg-background/70 px-2.5 py-2 text-xs text-muted-foreground">
+              <div className="flex items-start gap-2 rounded-lg bg-muted/30 px-2.5 py-2 text-xs text-muted-foreground">
                 <MapPin className="mt-0.5 size-3.5 shrink-0" />
                 <div className="flex flex-col gap-1">
                   <span className="font-medium text-foreground">
@@ -161,25 +167,32 @@ export function SupplyRequestDialog({ onOpenChange, open, target }: Props) {
                 />
               ) : (
                 <Select
-                  id={sourceId}
-                  required
-                  disabled={sourceLocationsQuery.isPending}
                   value={sourceLocationId}
-                  onChange={(e) => setSourceLocationId(e.target.value)}
+                  onValueChange={setSourceLocationId}
                 >
-                  <option value="" disabled>
-                    {sourceLocationsQuery.isPending
-                      ? "Loading..."
-                      : "Select a source location"}
-                  </option>
-                  {sourceLocations.map((location) => (
-                    <option
-                      key={location.locationId}
-                      value={location.locationId}
-                    >
-                      {location.locationName}
-                    </option>
-                  ))}
+                  <SelectTrigger
+                    id={sourceId}
+                    disabled={sourceLocationsQuery.isPending}
+                    className="w-full"
+                  >
+                    <SelectValue
+                      placeholder={
+                        sourceLocationsQuery.isPending
+                          ? "Loading..."
+                          : "Select a source location"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sourceLocations.map((location) => (
+                      <SelectItem
+                        key={location.locationId}
+                        value={location.locationId}
+                      >
+                        {location.locationName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               )}
               <p className="text-xs text-muted-foreground">

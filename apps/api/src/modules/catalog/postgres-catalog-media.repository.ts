@@ -32,7 +32,7 @@ function toRecord(row: MediaResult): AdminMediaRecord {
     storageKey: row.asset.storageKey,
     publicUrl: row.asset.publicUrl,
     mimeType: row.asset.mimeType,
-    mediaType: row.asset.mediaType as "image" | "video",
+    mediaType: row.asset.mediaType as "document" | "image" | "video",
     fileSizeBytes: row.asset.fileSizeBytes ?? undefined,
     heightPx: row.asset.heightPx ?? undefined,
     widthPx: row.asset.widthPx ?? undefined,

@@ -1,8 +1,13 @@
 import type {
+  EmailOperationsResponse,
+  EmailTemplatePreviewRequest,
+  EmailTemplatePreviewResponse,
+  EmailTemplatePreviewType,
   IssuedDocumentSnapshotResponse,
   LocationDocumentSettingsResponse,
   OfficialDocumentProfileResponse,
   OfficialDocumentSettingsResponse,
+  SendTestEmailRequest,
   UpdateLocationDocumentSettingsRequest,
   UpdateOfficialDocumentSettingsRequest,
 } from "@shop/contracts";
@@ -23,6 +28,14 @@ export const gtnDocumentDownloadFileQueryKey = (reference: string) =>
   ["official-documents", "gtn-download-file", reference] as const;
 export const locationDocumentSettingsQueryKey = (locationId: string) =>
   ["official-documents", "location-settings", locationId] as const;
+export const emailTemplatePreviewQueryKey = (
+  type: EmailTemplatePreviewType,
+  payload: EmailTemplatePreviewRequest,
+) => ["official-documents", "email-template-preview", type, payload] as const;
+export const emailOperationsQueryKey = [
+  "messaging",
+  "email-operations",
+] as const;
 
 export async function fetchOfficialDocumentSettings() {
   return fetchJson<OfficialDocumentSettingsResponse>(
@@ -89,10 +102,48 @@ export async function updateOfficialDocumentSettings(
   );
 }
 
+export async function previewEmailTemplate({
+  payload,
+  type,
+}: {
+  payload: EmailTemplatePreviewRequest;
+  type: EmailTemplatePreviewType;
+}) {
+  return fetchJson<EmailTemplatePreviewResponse>(
+    `/api/admin/settings/email-templates/${encodeURIComponent(type)}/preview`,
+    {
+      body: JSON.stringify(payload),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+    { auth: "required" },
+  );
+}
+
 export async function fetchLocationDocumentSettings(locationId: string) {
   return fetchJson<LocationDocumentSettingsResponse>(
     `/api/manager/settings/locations/${encodeURIComponent(locationId)}/documents`,
     undefined,
+    { auth: "required" },
+  );
+}
+
+export async function fetchEmailOperations() {
+  return fetchJson<EmailOperationsResponse>(
+    "/api/admin/settings/email/operations",
+    undefined,
+    { auth: "required" },
+  );
+}
+
+export async function sendTestEmail(payload: SendTestEmailRequest) {
+  return fetchJson<{ ok: true }>(
+    "/api/admin/settings/email/test-send",
+    {
+      body: JSON.stringify(payload),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
     { auth: "required" },
   );
 }

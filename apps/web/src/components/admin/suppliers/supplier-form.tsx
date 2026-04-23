@@ -7,7 +7,13 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export type SupplierFormValues = {
   email: string;
@@ -139,16 +145,18 @@ export function SupplierForm({
               showErrors={wasSubmitted}
             >
               <Select
-                id={field.name}
-                onChange={(event) =>
-                  field.handleChange(
-                    event.target.value as "active" | "inactive",
-                  )
+                onValueChange={(value) =>
+                  field.handleChange(value as "active" | "inactive")
                 }
                 value={field.state.value}
               >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <SelectTrigger id={field.name}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
               </Select>
             </AppFormField>
           )}

@@ -15,7 +15,7 @@ export function ViewModeToggle({
   return (
     <fieldset
       aria-label="Change view"
-      className="flex items-center gap-1 rounded-lg border border-border bg-muted p-1"
+      className="flex w-fit items-center gap-1 rounded-xl border border-border/50 bg-muted/30 p-[3px]"
     >
       <ViewModeButton
         active={viewMode === "card"}

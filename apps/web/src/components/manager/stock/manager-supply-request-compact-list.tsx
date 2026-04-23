@@ -1,5 +1,6 @@
 import type { StockSupplyRequestResponse } from "@shop/contracts";
 import { ArrowRight, CheckCircle2, XCircle } from "lucide-react";
+import { AppTableWrapper } from "@/components/system/app-table-wrapper";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { SupplyRequestAction } from "./manager-supply-requests.support";
@@ -18,7 +19,7 @@ export function CompactIncomingRequestList({
   ) => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+    <AppTableWrapper>
       {items.map((item, index) => (
         <CompactIncomingRequestRow
           index={index}
@@ -29,7 +30,7 @@ export function CompactIncomingRequestList({
           onAction={onAction}
         />
       ))}
-    </div>
+    </AppTableWrapper>
   );
 }
 

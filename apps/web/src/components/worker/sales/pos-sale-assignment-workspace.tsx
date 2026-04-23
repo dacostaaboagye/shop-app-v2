@@ -101,7 +101,7 @@ export function PosSaleAssignmentWorkspace({
 
   if (assignments.length === 0) {
     return (
-      <div className="rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+      <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
         No variants are currently assigned to you at this location.
       </div>
     );
@@ -130,7 +130,7 @@ export function PosSaleAssignmentWorkspace({
               onSearchChange={setSearch}
               search={search}
             />
-            <div className="divide-y divide-border rounded-md border border-border bg-card">
+            <div className="divide-y divide-border rounded-xl border border-border bg-card">
               {filteredAssignments.length > 0 ? (
                 filteredAssignments.map((assignment) => (
                   <VariantRow

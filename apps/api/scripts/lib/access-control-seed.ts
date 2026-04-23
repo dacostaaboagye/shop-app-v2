@@ -155,6 +155,14 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
     description: "View the supplier's product catalogue.",
   },
   {
+    key: "supplier.orders.view",
+    description: "View purchase orders issued to the supplier.",
+  },
+  {
+    key: "supplier.inquiries.view",
+    description: "View sourcing inquiries sent to the supplier.",
+  },
+  {
     key: "agent.routes.view",
     description: "View assigned delivery routes for the current agent.",
   },
@@ -308,7 +316,12 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
     slug: "supplier",
     name: "Supplier",
     description: "Supplier with supplier portal access.",
-    permissions: ["supplier.dashboard.view", "supplier.catalog.view"],
+    permissions: [
+      "supplier.dashboard.view",
+      "supplier.catalog.view",
+      "supplier.orders.view",
+      "supplier.inquiries.view",
+    ],
   },
   {
     slug: "agent",

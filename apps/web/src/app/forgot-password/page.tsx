@@ -15,10 +15,10 @@ export default function ForgotPasswordPage() {
             Enter your email and we&apos;ll send a reset link.
           </p>
         </div>
-        
+
         <div className="flex flex-col gap-6">
           <AuthForgotPasswordForm />
-          
+
           <div className="mt-4 flex items-center justify-center gap-2 border-t border-border/20 pt-8 text-sm font-medium text-muted-foreground">
             Remember your password?{" "}
             <Link

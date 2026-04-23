@@ -8,7 +8,6 @@ import {
   PageShell,
   StatCard,
 } from "@/components/system/page-shell";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   adminProductsQueryKey,
@@ -16,7 +15,9 @@ import {
 } from "@/lib/react-query/admin-catalog-products";
 import {
   adminSupplierQueryKey,
+  adminUsersQueryKey,
   fetchAdminSupplier,
+  fetchAdminUsers,
 } from "@/lib/react-query/admin-directory";
 import { toRoute } from "@/lib/routes";
 import { ContactsPanel } from "./supplier-contact-product-panels";
@@ -59,6 +60,30 @@ export function SupplierDetailPageClient({ slug }: { slug: string }) {
     }),
     staleTime: 60_000,
   });
+  const usersQuery = useQuery({
+    queryFn: () =>
+      fetchAdminUsers({
+        dir: "asc",
+        locationSlug: "",
+        page: 1,
+        pageSize: 100,
+        q: "",
+        role: "",
+        sort: "name",
+        status: "active",
+      }),
+    queryKey: adminUsersQueryKey({
+      dir: "asc",
+      locationSlug: "",
+      page: 1,
+      pageSize: 100,
+      q: "",
+      role: "",
+      sort: "name",
+      status: "active",
+    }),
+    staleTime: 60_000,
+  });
   const actions = useSupplierDetailActions({
     refetchSupplier: () => void supplierQuery.refetch(),
     slug,
@@ -88,7 +113,7 @@ export function SupplierDetailPageClient({ slug }: { slug: string }) {
   const supplier = supplierQuery.data;
 
   return (
-    <PageShell>
+    <PageShell className="rounded-[2rem] bg-linear-to-b from-muted/35 via-background to-background">
       <PageHeader
         backHref={toRoute("/admin/suppliers")}
         backLabel="Suppliers"
@@ -123,7 +148,7 @@ export function SupplierDetailPageClient({ slug }: { slug: string }) {
       </div>
 
       <Tabs defaultValue="overview">
-        <TabsList variant="line">
+        <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="contacts">Contacts</TabsTrigger>
           <TabsTrigger value="products">Products</TabsTrigger>
@@ -132,32 +157,46 @@ export function SupplierDetailPageClient({ slug }: { slug: string }) {
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
         </TabsList>
         <TabsContent className="pt-3" value="overview">
-          <Card>
-            <CardHeader>
-              <CardTitle>Organization details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SupplierForm
-                defaultValues={toSupplierFormValues(supplier)}
-                error={actions.updateMutation.error}
-                isPending={actions.updateMutation.isPending}
-                onSubmit={(values) => actions.updateMutation.mutate(values)}
-                submitLabel="Save changes"
-              />
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border border-border/50 bg-white p-6 shadow-sm">
+            <h3 className="mb-6 text-sm font-bold uppercase tracking-widest text-muted-foreground/60">
+              Organization details
+            </h3>
+            <SupplierForm
+              defaultValues={toSupplierFormValues(supplier)}
+              error={actions.updateMutation.error}
+              isPending={actions.updateMutation.isPending}
+              onSubmit={(values) => actions.updateMutation.mutate(values)}
+              submitLabel="Save changes"
+            />
+          </div>
         </TabsContent>
         <TabsContent className="pt-3" value="contacts">
           <ContactsPanel
             contacts={supplier.contacts}
             isPending={
               actions.contactMutation.isPending ||
-              actions.removeContactMutation.isPending
+              actions.removeContactMutation.isPending ||
+              actions.linkContactPortalMutation.isPending ||
+              actions.inviteContactPortalMutation.isPending ||
+              actions.unlinkContactPortalMutation.isPending
             }
             onAddContact={(input) => actions.contactMutation.mutate(input)}
+            onInvitePortalUser={(contactReference) =>
+              actions.inviteContactPortalMutation.mutate(contactReference)
+            }
+            onLinkPortalUser={(contactReference, userSlug) =>
+              actions.linkContactPortalMutation.mutate({
+                contactReference,
+                userSlug,
+              })
+            }
             onRemoveContact={(contactReference) =>
               actions.removeContactMutation.mutate(contactReference)
             }
+            onUnlinkPortalUser={(contactReference) =>
+              actions.unlinkContactPortalMutation.mutate(contactReference)
+            }
+            userOptions={usersQuery.data?.items ?? []}
           />
         </TabsContent>
         <TabsContent className="pt-3" value="products">

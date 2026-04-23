@@ -35,7 +35,7 @@ export function NotificationFeedCard({
     <article
       className={cn(
         "border border-border bg-muted/35 p-4",
-        isPage ? "rounded-2xl bg-card/80 shadow-xs" : "rounded-lg",
+        isPage ? "rounded-xl bg-card/80 shadow-sm" : "rounded-lg",
         notification.status === "read" && !isPage ? "opacity-75" : "",
       )}
     >

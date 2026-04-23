@@ -129,18 +129,18 @@ function SalesList({
 }) {
   if (response.items.length === 0) {
     return (
-      <div className="rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+      <div className="rounded-xl border border-dashed border-border bg-white p-12 text-center text-sm text-muted-foreground shadow-sm">
         No sales recorded yet at this location.
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <p className="text-sm text-muted-foreground">
+    <div className="flex flex-col gap-4">
+      <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground/60 px-1">
         {response.total} record{response.total !== 1 ? "s" : ""} found
       </p>
-      <div className="divide-y divide-border rounded-md border border-border bg-card">
+      <div className="divide-y divide-border/50 rounded-xl border border-border bg-white shadow-sm overflow-hidden">
         {response.items.map((invoice) => {
           const paymentLabel =
             invoice.paymentMethod === "mobile_money"
@@ -153,36 +153,37 @@ function SalesList({
           return (
             <Link
               key={invoice.reference}
-              className="flex items-center justify-between gap-3 p-4 transition-colors hover:bg-accent/40"
+              className="flex items-center justify-between gap-3 p-5 transition-all hover:bg-muted active:bg-muted/80"
               href={toRoute(
                 `/worker/sales/${encodeURIComponent(invoice.reference)}`,
               )}
             >
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                  <Receipt className="size-4" />
+              <div className="flex items-center gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-sm">
+                  <Receipt className="size-5" />
                 </div>
                 <div>
-                  <p className="font-mono text-sm font-medium">
+                  <p className="font-mono text-sm font-bold tracking-tight">
                     {invoice.reference}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 mt-0.5">
                     {new Date(invoice.createdAt).toLocaleString()}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 text-sm">
+              <div className="flex items-center gap-4 text-sm">
                 <Badge
                   variant={
                     invoice.type === "credit_note" ? "destructive" : "secondary"
                   }
+                  className="rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border-none shadow-sm"
                 >
                   {invoice.type === "credit_note" ? "Return" : "Sale"}
                 </Badge>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
                   {paymentLabel}
                 </span>
-                <span className="font-medium tabular-nums">
+                <span className="font-heading text-base font-bold tabular-nums">
                   {formatMoney(invoice.totalAmount, moneyProfile)}
                 </span>
               </div>

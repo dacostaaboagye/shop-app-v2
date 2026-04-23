@@ -127,7 +127,7 @@ export function AdminStaffPageClient() {
         description="Managers and workers across every location with server-side role, status, and location filters."
         title="Staff"
       />
-      
+
       <div className="flex flex-col gap-6">
         <AdminStaffFilters
           draftSearch={draftSearch}
@@ -168,7 +168,7 @@ export function AdminStaffPageClient() {
         />
 
         {/* Sovereign Table Surface */}
-        <div className="overflow-hidden rounded-2xl bg-white shadow-xl shadow-black/[0.03] border border-slate-200/50">
+        <div className="overflow-hidden rounded-xl bg-white shadow-sm border border-border/50">
           {staffQuery.isPending && !staffQuery.data ? (
             <div className="flex flex-col gap-1 p-4">
               {USER_TABLE_SKELETON_KEYS.map((key) => (
@@ -198,7 +198,9 @@ export function AdminStaffPageClient() {
                     ? "Try adjusting the staff filters or search term."
                     : "No manager or worker accounts were returned."
                 }
-                emptyTitle={hasFilters ? "No staff match" : "No staff available"}
+                emptyTitle={
+                  hasFilters ? "No staff match" : "No staff available"
+                }
                 emptyState={{ kind: hasFilters ? "no-results" : "no-data" }}
                 getRowId={(row) => row.slug}
                 onRowClick={(row: { slug: string }) =>

@@ -1,4 +1,6 @@
+import type { ApiEnv } from "../../env.js";
 import type { DatabaseRuntime } from "../../infrastructure/database.js";
+import { createConfiguredEmailService } from "../messaging/create-email-runtime.js";
 import { PostgresReferenceNumberRepository } from "../public-identifiers/postgres-reference-number.repository.js";
 import { PostgresSlugRepository } from "../public-identifiers/postgres-slug.repository.js";
 import { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
@@ -38,6 +40,10 @@ type AdminDirectoryRuntime = {
 
 export function createAdminDirectoryRuntime(
   databaseRuntime: DatabaseRuntime,
+  env?: Pick<
+    ApiEnv,
+    "emailFromAddress" | "nodeEnv" | "resendApiKey" | "webBaseUrl"
+  >,
 ): AdminDirectoryRuntime {
   const slugService = new SlugService(
     new PostgresSlugRepository(databaseRuntime.db),
@@ -48,6 +54,9 @@ export function createAdminDirectoryRuntime(
   const accessQueryRepository = new PostgresAdminAccessQueryRepository(
     databaseRuntime.db,
   );
+  const emailService = env
+    ? createConfiguredEmailService(databaseRuntime, env)
+    : null;
 
   return {
     adminDirectory: {
@@ -77,6 +86,8 @@ export function createAdminDirectoryRuntime(
         new PostgresAdminSupplierWriteRepository(
           databaseRuntime.db,
           slugService,
+          emailService,
+          env?.webBaseUrl ?? "http://localhost:3000",
         ),
         referenceNumberService,
       ),

@@ -20,17 +20,32 @@ export type OfficialDocumentSettingsFormValues = {
   defaultDisplayCurrencyCode: string;
   defaultPaperSize: "receipt_80mm" | "a4" | "letter";
   email: string;
+  emailVerificationActionLabel: string;
+  emailVerificationFooter: string;
+  emailVerificationHeading: string;
+  emailVerificationIntro: string;
+  emailVerificationSubject: string;
   gtnPrefix: string;
   invoicePrefix: string;
   legalName: string;
   locale: string;
   logoText: string;
   phone: string;
+  passwordResetActionLabel: string;
+  passwordResetFooter: string;
+  passwordResetHeading: string;
+  passwordResetIntro: string;
+  passwordResetSubject: string;
   primaryColor: string;
   receiptFooter: string;
   receiptPrefix: string;
   registrationNumber: string;
   roundingMode: "half_even" | "half_up" | "floor" | "ceiling";
+  supplierInviteActionLabel: string;
+  supplierInviteFooter: string;
+  supplierInviteHeading: string;
+  supplierInviteIntro: string;
+  supplierInviteSubject: string;
   taxNumber: string;
   timezone: string;
   website: string;
@@ -59,17 +74,34 @@ export function toOfficialDocumentSettingsFormValues(
     defaultDisplayCurrencyCode: settings.currency.defaultDisplayCurrencyCode,
     defaultPaperSize: settings.documents.defaultPaperSize,
     email: settings.business.email,
+    emailVerificationActionLabel:
+      settings.emailTemplates.emailVerification.actionLabel,
+    emailVerificationFooter: settings.emailTemplates.emailVerification.footer,
+    emailVerificationHeading: settings.emailTemplates.emailVerification.heading,
+    emailVerificationIntro: settings.emailTemplates.emailVerification.intro,
+    emailVerificationSubject: settings.emailTemplates.emailVerification.subject,
     gtnPrefix: settings.documents.gtnPrefix,
     invoicePrefix: settings.documents.invoicePrefix,
     legalName: settings.business.legalName,
     locale: settings.documents.locale,
     logoText: settings.brand.logoText,
     phone: settings.business.phone,
+    passwordResetActionLabel: settings.emailTemplates.passwordReset.actionLabel,
+    passwordResetFooter: settings.emailTemplates.passwordReset.footer,
+    passwordResetHeading: settings.emailTemplates.passwordReset.heading,
+    passwordResetIntro: settings.emailTemplates.passwordReset.intro,
+    passwordResetSubject: settings.emailTemplates.passwordReset.subject,
     primaryColor: settings.brand.primaryColor,
     receiptFooter: settings.documents.receiptFooter,
     receiptPrefix: settings.documents.receiptPrefix,
     registrationNumber: settings.business.registrationNumber,
     roundingMode: settings.currency.roundingMode,
+    supplierInviteActionLabel:
+      settings.emailTemplates.supplierInvite.actionLabel,
+    supplierInviteFooter: settings.emailTemplates.supplierInvite.footer,
+    supplierInviteHeading: settings.emailTemplates.supplierInvite.heading,
+    supplierInviteIntro: settings.emailTemplates.supplierInvite.intro,
+    supplierInviteSubject: settings.emailTemplates.supplierInvite.subject,
     taxNumber: settings.business.taxNumber,
     timezone: settings.documents.timezone,
     website: settings.business.website,
@@ -113,6 +145,29 @@ export function toOfficialDocumentSettingsPayload(
       receiptFooter: values.receiptFooter.trim(),
       receiptPrefix: values.receiptPrefix.trim(),
       timezone: values.timezone.trim(),
+    },
+    emailTemplates: {
+      emailVerification: {
+        actionLabel: values.emailVerificationActionLabel.trim(),
+        footer: values.emailVerificationFooter.trim(),
+        heading: values.emailVerificationHeading.trim(),
+        intro: values.emailVerificationIntro.trim(),
+        subject: values.emailVerificationSubject.trim(),
+      },
+      passwordReset: {
+        actionLabel: values.passwordResetActionLabel.trim(),
+        footer: values.passwordResetFooter.trim(),
+        heading: values.passwordResetHeading.trim(),
+        intro: values.passwordResetIntro.trim(),
+        subject: values.passwordResetSubject.trim(),
+      },
+      supplierInvite: {
+        actionLabel: values.supplierInviteActionLabel.trim(),
+        footer: values.supplierInviteFooter.trim(),
+        heading: values.supplierInviteHeading.trim(),
+        intro: values.supplierInviteIntro.trim(),
+        subject: values.supplierInviteSubject.trim(),
+      },
     },
     locationOverridePolicy: {
       allowLocationAddress: values.allowLocationAddress,

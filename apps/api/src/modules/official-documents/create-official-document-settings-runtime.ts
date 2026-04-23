@@ -1,4 +1,5 @@
 import { APPLICATION_BRAND_MEDIA_ENTITY } from "@shop/contracts";
+import type { ApiEnv } from "../../env.js";
 import type { DatabaseRuntime } from "../../infrastructure/database.js";
 import { getPrimaryImageUrl } from "../catalog/catalog-primary-image.loader.js";
 import type { PlatformEventPublisher } from "../events/platform-event.types.js";
@@ -9,7 +10,10 @@ import { PostgresIssuedDocumentRepository } from "./postgres-issued-document.rep
 
 export function createOfficialDocumentSettingsRuntime(
   databaseRuntime: DatabaseRuntime,
-  options: { platformEventPublisher?: PlatformEventPublisher } = {},
+  options: {
+    emailFromAddress?: ApiEnv["emailFromAddress"];
+    platformEventPublisher?: PlatformEventPublisher;
+  } = {},
 ) {
   const settingsRepository = new OfficialDocumentSettingsRepository(
     databaseRuntime.db,
@@ -34,6 +38,7 @@ export function createOfficialDocumentSettingsRuntime(
               APPLICATION_BRAND_MEDIA_ENTITY.entitySlug,
             ),
         },
+        options.emailFromAddress ?? null,
         options.platformEventPublisher ?? null,
       ),
     },

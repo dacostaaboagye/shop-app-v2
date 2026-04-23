@@ -74,7 +74,7 @@ function PreviewToolbar() {
           Brand colors, logo, and document layout
         </p>
       </div>
-      <TabsList className="h-auto max-w-full flex-wrap justify-start bg-background/10">
+      <TabsList className="h-auto max-w-full flex-wrap justify-start">
         {OFFICIAL_DOCUMENT_TEMPLATE_PREVIEWS.map((template) => (
           <TabsTrigger
             className="text-background/70 data-active:bg-background data-active:text-foreground"

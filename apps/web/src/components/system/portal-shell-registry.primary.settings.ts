@@ -1,4 +1,4 @@
-import { Settings } from "lucide-react";
+import { History, Mail, Settings } from "lucide-react";
 import { toRoute } from "@/lib/routes";
 import type { NavRegistryEntry } from "./portal-shell-config.types";
 
@@ -47,6 +47,29 @@ export const PRIMARY_SETTINGS_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     href: toRoute("/admin/settings/documents"),
     icon: Settings,
     label: "Documents",
+    requiredPermission: "settings.documents.view",
+    section: "Settings",
+  },
+  {
+    activeMatchers: [
+      { mode: "descendants", path: "/admin/settings/messaging/templates" },
+      { mode: "descendants", path: "/admin/settings/email" },
+    ],
+    description: "Configure transactional email templates and previews.",
+    href: toRoute("/admin/settings/messaging/templates"),
+    icon: Mail,
+    label: "Email templates",
+    requiredPermission: "settings.documents.view",
+    section: "Settings",
+  },
+  {
+    activeMatchers: [
+      { mode: "descendants", path: "/admin/settings/messaging/operations" },
+    ],
+    description: "Review delivery mode, recent attempts, and send test emails.",
+    href: toRoute("/admin/settings/messaging/operations"),
+    icon: History,
+    label: "Email operations",
     requiredPermission: "settings.documents.view",
     section: "Settings",
   },

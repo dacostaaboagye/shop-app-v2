@@ -23,6 +23,7 @@ export type ApiEnv = {
   r2PublicUrl?: string;
   r2SecretAccessKey?: string;
   resendApiKey?: string;
+  resendWebhookSecret?: string;
   webBaseUrl?: string;
 };
 
@@ -41,6 +42,7 @@ export function getApiEnv(): ApiEnv {
   const googleClientSecret = readStringEnv("GOOGLE_CLIENT_SECRET");
   const googleCallbackUrl = readStringEnv("GOOGLE_CALLBACK_URL");
   const resendApiKey = readStringEnv("RESEND_API_KEY");
+  const resendWebhookSecret = readStringEnv("RESEND_WEBHOOK_SECRET");
 
   return {
     apiHost: readStringEnv("API_HOST") ?? "0.0.0.0",
@@ -72,6 +74,7 @@ export function getApiEnv(): ApiEnv {
     ...(r2Bucket ? { r2Bucket } : {}),
     ...(r2PublicUrl ? { r2PublicUrl } : {}),
     ...(resendApiKey ? { resendApiKey } : {}),
+    ...(resendWebhookSecret ? { resendWebhookSecret } : {}),
     ...(webBaseUrl ? { webBaseUrl } : {}),
   };
 }

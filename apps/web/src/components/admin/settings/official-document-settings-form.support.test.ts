@@ -39,6 +39,30 @@ const settings = {
     receiptPrefix: "RCT",
     timezone: "Africa/Accra",
   },
+  emailTemplates: {
+    emailVerification: {
+      actionLabel: "Verify email address",
+      footer: "This link expires in 24 hours.",
+      heading: "Verify your email",
+      intro: "Hi {{firstName}}, please verify your email address.",
+      subject: "Verify your email address",
+    },
+    passwordReset: {
+      actionLabel: "Reset password",
+      footer: "This link expires in 1 hour.",
+      heading: "Reset your password",
+      intro: "Hi {{firstName}}, we received a password reset request.",
+      subject: "Reset your password",
+    },
+    supplierInvite: {
+      actionLabel: "Set up portal access",
+      footer: "This link expires in 1 hour.",
+      heading: "Supplier portal access",
+      intro:
+        "Hi {{firstName}}, you have been invited to manage {{supplierName}}.",
+      subject: "Supplier portal invitation for {{supplierName}}",
+    },
+  },
   locationOverridePolicy: {
     allowLocationAddress: true,
     allowLocationContact: true,
@@ -62,6 +86,10 @@ test("maps official document settings into editable form values", () => {
   assert.equal(values.baseCurrencyCode, "GHS");
   assert.equal(values.roundingMode, "half_up");
   assert.equal(values.receiptPrefix, "RCT");
+  assert.equal(
+    values.supplierInviteSubject,
+    "Supplier portal invitation for {{supplierName}}",
+  );
 });
 
 test("maps form values into a normalized settings payload", () => {
@@ -77,6 +105,10 @@ test("maps form values into a normalized settings payload", () => {
   assert.equal(payload.currency?.defaultDisplayCurrencyCode, "USD");
   assert.equal(payload.currency?.roundingMode, "half_up");
   assert.equal(payload.documents?.receiptPrefix, "RCT");
+  assert.equal(
+    payload.emailTemplates?.supplierInvite?.subject,
+    "Supplier portal invitation for {{supplierName}}",
+  );
   assert.equal(payload.brand?.primaryColor, "hsl(174 52% 23%)");
   assert.equal(payload.brand?.accentColor, "hsl(28 72% 48%)");
   assert.equal(payload.locationOverridePolicy?.allowLocationDisplayName, true);

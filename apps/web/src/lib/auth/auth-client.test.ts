@@ -2,7 +2,13 @@ import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { ApiError } from "@/lib/react-query/query-client";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
-import { login, logout, refreshAccessToken, register } from "./auth-client";
+import {
+  login,
+  logout,
+  refreshAccessToken,
+  register,
+  resendVerification,
+} from "./auth-client";
 
 const originalFetch = globalThis.fetch;
 
@@ -210,4 +216,137 @@ describe("auth-client", () => {
 
     assert.equal(useAuthSessionStore.getState().accessToken, null);
   });
+
+  it("sends bearer auth when resending verification", async () => {
+    process.env.NEXT_PUBLIC_API_BASE_URL = "http://localhost:4000";
+    useAuthSessionStore.getState().setSession({
+      accessToken: "a".repeat(64),
+      accessTokenExpiresAt: "2026-04-08T13:00:00.000Z",
+      user: {
+        availablePortals: ["admin"],
+        email: "manager@example.com",
+        emailVerified: false,
+        firstName: "Store",
+        lastLoginAt: null,
+        lastName: "Manager",
+        preferredPortal: "admin",
+        requiresPasswordChange: false,
+        slug: "store-manager",
+        status: "active",
+      },
+    });
+
+    globalThis.fetch = async (input, init) => {
+      assert.equal(
+        String(input),
+        "http://localhost:4000/api/auth/resend-verification",
+      );
+      assert.equal(init?.credentials, "include");
+      assert.equal(init?.method, "POST");
+      assert.equal(
+        new Headers(init?.headers).get("Authorization"),
+        `Bearer ${"a".repeat(64)}`,
+      );
+
+      return new Response(null, { status: 204 });
+    };
+
+    await resendVerification();
+  });
+
+  it("refreshes and retries resend verification after a 401", async () => {
+    process.env.NEXT_PUBLIC_API_BASE_URL = "http://localhost:4000";
+    let requestCount = 0;
+    useAuthSessionStore.getState().setSession({
+      accessToken: "expired-token",
+      accessTokenExpiresAt: "2026-04-08T12:00:00.000Z",
+      user: {
+        availablePortals: ["admin"],
+        email: "manager@example.com",
+        emailVerified: false,
+        firstName: "Store",
+        lastLoginAt: null,
+        lastName: "Manager",
+        preferredPortal: "admin",
+        requiresPasswordChange: false,
+        slug: "store-manager",
+        status: "active",
+      },
+    });
+
+    globalThis.fetch = async (input, init) => {
+      requestCount += 1;
+
+      if (requestCount === 1) {
+        assert.equal(
+          new Headers(init?.headers).get("Authorization"),
+          "Bearer expired-token",
+        );
+        return unauthorizedResponse();
+      }
+
+      if (requestCount === 2) {
+        assert.equal(String(input), "http://localhost:4000/api/auth/refresh");
+        assert.equal(init?.credentials, "include");
+        return sessionResponse("b".repeat(64));
+      }
+
+      assert.equal(requestCount, 3);
+      assert.equal(
+        String(input),
+        "http://localhost:4000/api/auth/resend-verification",
+      );
+      assert.equal(
+        new Headers(init?.headers).get("Authorization"),
+        `Bearer ${"b".repeat(64)}`,
+      );
+      return new Response(null, { status: 204 });
+    };
+
+    await resendVerification();
+
+    assert.equal(requestCount, 3);
+  });
 });
+
+function unauthorizedResponse() {
+  return new Response(
+    JSON.stringify({
+      code: "unauthorized",
+      detail: "A valid bearer access token is required for this route.",
+      requestId: "req_401",
+      status: 401,
+      timestamp: "2026-04-08T00:00:00.000Z",
+      title: "Authentication required",
+    }),
+    {
+      status: 401,
+      headers: { "content-type": "application/json" },
+    },
+  );
+}
+
+function sessionResponse(accessToken: string) {
+  return new Response(
+    JSON.stringify({
+      accessToken,
+      accessTokenExpiresAt: "2026-04-08T13:00:00.000Z",
+      user: {
+        availablePortals: ["admin"],
+        email: "manager@example.com",
+        emailVerified: false,
+        firstName: "Store",
+        lastLoginAt: null,
+        lastName: "Manager",
+        preferredPortal: "admin",
+        requiresPasswordChange: false,
+        slug: "store-manager",
+        status: "active",
+      },
+    }),
+    {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    },
+  );
+}

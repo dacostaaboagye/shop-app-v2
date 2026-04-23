@@ -5,7 +5,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   adminBrandsQueryKey,
   adminCategoriesQueryKey,
@@ -55,18 +61,17 @@ export function ProductFilters({
   });
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <div className="relative min-w-56 flex-1">
-        <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+    <div className="flex flex-wrap items-center gap-4 rounded-xl bg-white p-4 shadow-sm border border-border/50">
+      <div className="relative min-w-[320px] flex-1">
+        <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          className="h-9 pl-9"
+          className="h-10 border-0 bg-muted pl-10 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-primary/20 transition-all rounded-xl"
           onChange={(event) => onDraftSearchChange(event.target.value)}
           placeholder="Search by name or slug"
           value={draftSearch}
         />
       </div>
       <ProductFilterSelect
-        ariaLabel="Filter by brand"
         disabled={brandsQuery.isPending}
         emptyLabel="All brands"
         items={brandsQuery.data?.items ?? []}
@@ -75,7 +80,6 @@ export function ProductFilters({
         onQueryChange={onQueryChange}
       />
       <ProductFilterSelect
-        ariaLabel="Filter by category"
         disabled={categoriesQuery.isPending}
         emptyLabel="All categories"
         items={categoriesQuery.data?.items ?? []}
@@ -84,22 +88,26 @@ export function ProductFilters({
         onQueryChange={onQueryChange}
       />
       <Select
-        aria-label="Filter by status"
-        className="h-9"
-        onChange={(event) =>
+        onValueChange={(value) =>
           onQueryChange({
             page: null,
-            status: event.target.value === "all" ? null : event.target.value,
+            status: value === "all" ? null : value,
           })
         }
-        value={status}
+        value={status || "all"}
       >
-        <option value="all">All status</option>
-        <option value="active">Active</option>
-        <option value="archived">Archived</option>
+        <SelectTrigger className="h-10 min-w-[140px]">
+          <SelectValue placeholder="All status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All status</SelectItem>
+          <SelectItem value="active">Active</SelectItem>
+          <SelectItem value="archived">Archived</SelectItem>
+        </SelectContent>
       </Select>
       {hasFilters ? (
         <Button
+          className="h-10 rounded-xl px-4 text-muted-foreground hover:text-foreground hover:bg-muted"
           onClick={() =>
             onQueryChange({
               brandSlug: null,
@@ -113,19 +121,22 @@ export function ProductFilters({
           type="button"
           variant="ghost"
         >
-          <X data-icon="inline-start" />
-          Clear
+          <X className="mr-2 size-4" />
+          Clear filters
         </Button>
       ) : null}
-      <span className="ml-auto tabular-nums text-sm text-muted-foreground">
-        {totalCount} total
-      </span>
+      <div className="ml-auto flex items-center gap-3">
+        <div className="h-4 w-px bg-border" />
+        <span className="text-sm tabular-nums text-muted-foreground">
+          <span className="font-medium text-foreground">{totalCount}</span>{" "}
+          products
+        </span>
+      </div>
     </div>
   );
 }
 
 function ProductFilterSelect({
-  ariaLabel,
   disabled,
   emptyLabel,
   items,
@@ -133,7 +144,6 @@ function ProductFilterSelect({
   paramName,
   value,
 }: {
-  ariaLabel: string;
   disabled: boolean;
   emptyLabel: string;
   items: Array<AdminBrandSummary | AdminCategorySummary>;
@@ -143,23 +153,26 @@ function ProductFilterSelect({
 }) {
   return (
     <Select
-      aria-label={ariaLabel}
-      className="h-9 min-w-44"
       disabled={disabled}
-      onChange={(event) =>
+      onValueChange={(val) =>
         onQueryChange({
           page: null,
-          [paramName]: event.target.value === "all" ? null : event.target.value,
+          [paramName]: val === "all" ? null : val,
         })
       }
       value={value === "" ? "all" : value}
     >
-      <option value="all">{emptyLabel}</option>
-      {items.map((item) => (
-        <option key={item.slug} value={item.slug}>
-          {item.name}
-        </option>
-      ))}
+      <SelectTrigger className="h-10 min-w-[180px]">
+        <SelectValue placeholder={emptyLabel} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">{emptyLabel}</SelectItem>
+        {items.map((item) => (
+          <SelectItem key={item.slug} value={item.slug}>
+            {item.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
     </Select>
   );
 }

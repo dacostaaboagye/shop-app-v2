@@ -11,6 +11,7 @@ import { registerAdminLocationQueryRoutes } from "../modules/admin/admin-locatio
 import { registerAdminLocationWriteRoutes } from "../modules/admin/admin-location-write.routes.js";
 import { registerAdminSupplierRoutes } from "../modules/admin/admin-supplier.routes.js";
 import { registerAdminUserAccessRoutes } from "../modules/admin/admin-user-access.routes.js";
+import { registerSupplierPortalRoutes } from "../modules/admin/supplier-portal.routes.js";
 import { registerManagerStaffRoutes } from "../modules/assignments/manager-staff.routes.js";
 import { registerStockAssignmentRoutes } from "../modules/assignments/stock-assignment.routes.js";
 import { registerAuthRoutes } from "../modules/auth/auth.routes.js";
@@ -22,6 +23,8 @@ import { registerCatalogManagerQueryRoutes } from "../modules/catalog/catalog-ma
 import { registerCatalogMediaRoutes } from "../modules/catalog/catalog-media.routes.js";
 import { registerPlatformEventAdminRoutes } from "../modules/events/platform-event-admin.routes.js";
 import { registerPlatformEventRoutes } from "../modules/events/platform-events.routes.js";
+import { registerEmailAdminRoutes } from "../modules/messaging/email-admin.routes.js";
+import { registerEmailWebhookRoutes } from "../modules/messaging/email-webhook.routes.js";
 import { registerNotificationRoutes } from "../modules/notifications/notification.routes.js";
 import { registerIssuedDocumentRoutes } from "../modules/official-documents/issued-document.routes.js";
 import { registerOfficialDocumentSettingsRoutes } from "../modules/official-documents/official-document-settings.routes.js";
@@ -41,6 +44,7 @@ type CreateServerOptions = {
   adminLocationQuery?: Parameters<typeof registerAdminLocationQueryRoutes>[1];
   adminLocationWrite?: Parameters<typeof registerAdminLocationWriteRoutes>[1];
   adminSuppliers?: Parameters<typeof registerAdminSupplierRoutes>[1];
+  supplierPortal?: Parameters<typeof registerSupplierPortalRoutes>[1];
   adminUserAccess?: Parameters<typeof registerAdminUserAccessRoutes>[1];
   auth?: Parameters<typeof registerAuthRoutes>[1];
   catalogManagerQuery?: Parameters<typeof registerCatalogManagerQueryRoutes>[1];
@@ -48,6 +52,8 @@ type CreateServerOptions = {
   catalogMedia?: Parameters<typeof registerCatalogMediaRoutes>[1];
   events?: Parameters<typeof registerPlatformEventRoutes>[1];
   eventsAdmin?: Parameters<typeof registerPlatformEventAdminRoutes>[1];
+  messagingAdmin?: Parameters<typeof registerEmailAdminRoutes>[1];
+  messagingWebhooks?: Parameters<typeof registerEmailWebhookRoutes>[1];
   notifications?: Parameters<typeof registerNotificationRoutes>[1];
   issuedDocuments?: Parameters<typeof registerIssuedDocumentRoutes>[1];
   officialDocuments?: Parameters<
@@ -105,6 +111,10 @@ export function createServer(options: CreateServerOptions = {}) {
   registerAdminLocationQueryRoutes(server, options.adminLocationQuery);
   registerAdminLocationWriteRoutes(server, options.adminLocationWrite);
   registerAdminSupplierRoutes(server, options.adminSuppliers);
+  registerSupplierPortalRoutes(
+    server,
+    options.supplierPortal ?? options.adminSuppliers,
+  );
   registerAdminUserAccessRoutes(server, options.adminUserAccess);
   registerCatalogBrandRoutes(server, options.catalogBrands);
   registerCatalogMediaRoutes(server, options.catalogMedia);
@@ -113,6 +123,8 @@ export function createServer(options: CreateServerOptions = {}) {
   registerCatalogProductOptionsRoutes(server, options.catalogProductOptions);
   registerPlatformEventRoutes(server, options.events);
   registerPlatformEventAdminRoutes(server, options.eventsAdmin);
+  registerEmailAdminRoutes(server, options.messagingAdmin);
+  registerEmailWebhookRoutes(server, options.messagingWebhooks);
   registerNotificationRoutes(server, options.notifications);
   registerIssuedDocumentRoutes(server, options.issuedDocuments);
   registerOfficialDocumentSettingsRoutes(server, options.officialDocuments);

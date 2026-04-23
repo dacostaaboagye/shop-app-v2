@@ -1,4 +1,7 @@
 import {
+  emailTemplatePreviewRequestSchema,
+  emailTemplatePreviewResponseSchema,
+  emailTemplatePreviewTypeSchema,
   locationDocumentSettingsResponseSchema,
   officialDocumentProfileQuerySchema,
   officialDocumentProfileResponseSchema,
@@ -23,6 +26,7 @@ type OfficialDocumentSettingsRouteDependencies = {
     OfficialDocumentSettingsService,
     | "getGlobalSettings"
     | "getLocationSettings"
+    | "previewEmailTemplate"
     | "resolveDocumentProfile"
     | "updateGlobalSettings"
     | "updateLocationSettings"
@@ -41,6 +45,18 @@ const adminUpdateSettingsRoute: RouteDefinition = {
   access: { kind: "permission", permission: "settings.documents.manage" },
   method: "PATCH",
   url: "/api/admin/settings/documents",
+};
+
+const adminPreviewEmailTemplateRoute: RouteDefinition = {
+  access: { kind: "permission", permission: "settings.documents.view" },
+  method: "GET",
+  url: "/api/admin/settings/email-templates/:type/preview",
+};
+
+const adminPreviewDraftEmailTemplateRoute: RouteDefinition = {
+  access: { kind: "permission", permission: "settings.documents.view" },
+  method: "POST",
+  url: "/api/admin/settings/email-templates/:type/preview",
 };
 
 const getDocumentProfileRoute: RouteDefinition = {
@@ -115,6 +131,37 @@ export function registerOfficialDocumentSettingsRoutes(
   });
 
   server.route({
+    config: { access: adminPreviewEmailTemplateRoute.access },
+    method: adminPreviewEmailTemplateRoute.method,
+    url: adminPreviewEmailTemplateRoute.url,
+    async handler(request) {
+      const { type } = z
+        .object({ type: emailTemplatePreviewTypeSchema })
+        .parse(request.params);
+      const preview =
+        await dependencies.settingsService.previewEmailTemplate(type);
+      return emailTemplatePreviewResponseSchema.parse(preview);
+    },
+  });
+
+  server.route({
+    config: { access: adminPreviewDraftEmailTemplateRoute.access },
+    method: adminPreviewDraftEmailTemplateRoute.method,
+    url: adminPreviewDraftEmailTemplateRoute.url,
+    async handler(request) {
+      const { type } = z
+        .object({ type: emailTemplatePreviewTypeSchema })
+        .parse(request.params);
+      const draft = emailTemplatePreviewRequestSchema.parse(request.body);
+      const preview = await dependencies.settingsService.previewEmailTemplate(
+        type,
+        draft,
+      );
+      return emailTemplatePreviewResponseSchema.parse(preview);
+    },
+  });
+
+  server.route({
     config: { access: locationGetSettingsRoute.access },
     method: locationGetSettingsRoute.method,
     url: locationGetSettingsRoute.url,
@@ -172,6 +219,9 @@ function createUnavailableDependencies(): OfficialDocumentSettingsRouteDependenc
         throw unavailableSettingsError();
       },
       async getLocationSettings() {
+        throw unavailableSettingsError();
+      },
+      async previewEmailTemplate() {
         throw unavailableSettingsError();
       },
       async resolveDocumentProfile() {

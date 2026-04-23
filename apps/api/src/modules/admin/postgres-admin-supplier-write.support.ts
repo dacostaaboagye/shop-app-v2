@@ -1,3 +1,4 @@
+import type { AdminUpdateSupplierRequest } from "@shop/contracts";
 import { catalogProducts, suppliers, users } from "@shop/database";
 import { eq } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
@@ -49,4 +50,40 @@ export async function resolveUserId(db: ApiDatabase, slug: string) {
   }
 
   return user.id;
+}
+
+export async function updateSupplierProfile(
+  db: ApiDatabase,
+  input: {
+    now: Date;
+    payload: AdminUpdateSupplierRequest;
+    supplierSlug: string;
+  },
+) {
+  const [row] = await db
+    .update(suppliers)
+    .set({
+      ...("email" in input.payload && { email: input.payload.email ?? null }),
+      ...("legalName" in input.payload && {
+        legalName: input.payload.legalName ?? null,
+      }),
+      ...(input.payload.name !== undefined && { name: input.payload.name }),
+      ...("notes" in input.payload && { notes: input.payload.notes ?? null }),
+      ...(input.payload.paymentTermsDays !== undefined && {
+        paymentTermsDays: input.payload.paymentTermsDays,
+      }),
+      ...("phone" in input.payload && { phone: input.payload.phone ?? null }),
+      ...(input.payload.status !== undefined && {
+        status: input.payload.status,
+      }),
+      ...("taxId" in input.payload && { taxId: input.payload.taxId ?? null }),
+      ...(input.payload.website !== undefined && {
+        website: input.payload.website ?? null,
+      }),
+      updatedAt: input.now,
+    })
+    .where(eq(suppliers.slug, input.supplierSlug))
+    .returning({ slug: suppliers.slug });
+
+  return row ?? null;
 }

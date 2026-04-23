@@ -9,18 +9,24 @@ import type { AdminSupplierWriteService } from "./admin-supplier-write.service.j
 export type AdminSupplierRouteDependencies = {
   adminSupplierQueryService: Pick<
     AdminSupplierQueryService,
-    "getSupplier" | "listSuppliers"
+    "getSupplier" | "getSupplierForPortalUser" | "listSuppliers"
   >;
   adminSupplierWriteService: Pick<
     AdminSupplierWriteService,
     | "addContact"
+    | "createInquiry"
     | "createProcurementOrder"
     | "createSupplier"
+    | "inviteContactPortal"
+    | "linkContactPortal"
     | "linkProduct"
     | "receiveProcurementOrder"
+    | "removeContact"
     | "transitionProcurementOrder"
+    | "unlinkContactPortal"
     | "unlinkProduct"
     | "updateSupplier"
+    | "updateInquiry"
   >;
 };
 
@@ -28,6 +34,9 @@ export function createUnavailableSupplierDependencies(): AdminSupplierRouteDepen
   return {
     adminSupplierQueryService: {
       async getSupplier() {
+        throw unavailableSupplierError();
+      },
+      async getSupplierForPortalUser() {
         throw unavailableSupplierError();
       },
       async listSuppliers() {
@@ -41,13 +50,25 @@ export function createUnavailableSupplierDependencies(): AdminSupplierRouteDepen
       async createProcurementOrder() {
         throw unavailableSupplierError();
       },
+      async createInquiry() {
+        throw unavailableSupplierError();
+      },
       async createSupplier() {
         throw unavailableSupplierError();
       },
       async linkProduct() {
         throw unavailableSupplierError();
       },
+      async inviteContactPortal() {
+        throw unavailableSupplierError();
+      },
+      async linkContactPortal() {
+        throw unavailableSupplierError();
+      },
       async receiveProcurementOrder() {
+        throw unavailableSupplierError();
+      },
+      async removeContact() {
         throw unavailableSupplierError();
       },
       async transitionProcurementOrder() {
@@ -56,7 +77,13 @@ export function createUnavailableSupplierDependencies(): AdminSupplierRouteDepen
       async unlinkProduct() {
         throw unavailableSupplierError();
       },
+      async unlinkContactPortal() {
+        throw unavailableSupplierError();
+      },
       async updateSupplier() {
+        throw unavailableSupplierError();
+      },
+      async updateInquiry() {
         throw unavailableSupplierError();
       },
     },
@@ -113,6 +140,28 @@ export function supplierProductLinkNotFound(slug: string, productSlug: string) {
     detail: `Supplier "${slug}" is not linked to product "${productSlug}".`,
     statusCode: 404,
     title: "Supplier product link not found",
+  });
+}
+
+export function supplierContactNotFound(
+  slug: string,
+  contactReference: string,
+) {
+  return new AppError({
+    code: "not_found",
+    detail: `Supplier "${slug}" does not have contact "${contactReference}".`,
+    statusCode: 404,
+    title: "Supplier contact not found",
+  });
+}
+
+export function supplierPrimaryContactCannotBeRemoved() {
+  return new AppError({
+    code: "conflict",
+    detail:
+      "The primary supplier contact cannot be removed. Mark another contact as primary first.",
+    statusCode: 409,
+    title: "Primary contact cannot be removed",
   });
 }
 

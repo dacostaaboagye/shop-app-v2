@@ -1,5 +1,11 @@
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type StockFilterSelectProps = {
   id: string;
@@ -25,17 +31,20 @@ export function StockFilterSelect({
   return (
     <div className="flex min-w-44 flex-1 flex-col gap-1.5">
       <Label htmlFor={id}>{label}</Label>
-      <Select
-        id={id}
-        onChange={(event) => onChange(event.target.value)}
-        value={value}
-      >
-        <option value="">{isLoading ? loadingLabel : placeholder}</option>
-        {options.map((option) => (
-          <option key={option.slug} value={option.slug}>
-            {option.name}
-          </option>
-        ))}
+      <Select onValueChange={onChange} value={value || "all"}>
+        <SelectTrigger id={id}>
+          <SelectValue placeholder={isLoading ? loadingLabel : placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">
+            {isLoading ? loadingLabel : placeholder}
+          </SelectItem>
+          {options.map((option) => (
+            <SelectItem key={option.slug} value={option.slug}>
+              {option.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
       </Select>
     </div>
   );

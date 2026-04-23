@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuthorization } from "@/components/providers/authorization-provider";
 import { AppEmptyState } from "@/components/system/app-empty-state";
 import {
+  MenuCard,
   PageHeader,
   PageShell,
   StatCard,
@@ -29,7 +30,6 @@ import {
 import { toRoute } from "@/lib/routes";
 import {
   ACCESS_AUDIT_SKELETON_KEYS,
-  AccessLinkCard,
   getAuditEntryKey,
 } from "./access-overview-support";
 
@@ -102,31 +102,35 @@ export function AccessOverviewClient() {
               on their own permission keys.
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2">
-            <AccessLinkCard
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <MenuCard
               description="Review role definitions, granted permission sets, and assignment impact."
               href="/admin/access/roles"
-              label="Roles"
+              icon={ShieldCheck}
+              title="Roles"
             />
             <PermissionGate permission="users.view">
-              <AccessLinkCard
+              <MenuCard
                 description="Inspect current user role coverage and assigned location scopes."
                 href="/admin/access/users"
-                label="User access"
+                icon={Users}
+                title="User access"
               />
             </PermissionGate>
             <PermissionGate permission="access.permissions.view">
-              <AccessLinkCard
+              <MenuCard
                 description="Inspect page permissions and action permissions across the platform."
                 href="/admin/access/permissions"
-                label="Permissions"
+                icon={KeyRound}
+                title="Permissions"
               />
             </PermissionGate>
             <PermissionGate permission="access.audit.view">
-              <AccessLinkCard
+              <MenuCard
                 description="Review append-only access changes with actor, target, and reason."
                 href="/admin/access/audit"
-                label="Audit log"
+                icon={ClipboardList}
+                title="Audit log"
               />
             </PermissionGate>
           </CardContent>

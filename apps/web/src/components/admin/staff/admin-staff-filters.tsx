@@ -59,11 +59,11 @@ export function AdminStaffFilters({
   totalCount,
 }: AdminStaffFiltersProps) {
   return (
-    <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-white p-4 shadow-xl shadow-black/[0.02] border border-slate-200/50">
+    <div className="flex flex-wrap items-center gap-4 rounded-xl bg-white p-4 shadow-sm border border-border/50">
       <div className="relative min-w-[320px] flex-1">
-        <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+        <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          className="h-10 border-0 bg-slate-50 pl-10 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-primary/20 transition-all rounded-xl"
+          className="h-10 border-0 bg-muted pl-10 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-primary/20 transition-all rounded-xl"
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder="Search staff by name or email..."
           value={draftSearch}
@@ -71,10 +71,7 @@ export function AdminStaffFilters({
       </div>
 
       <div className="flex items-center gap-2">
-        <Select
-          onValueChange={onLocationChange}
-          value={locationSlug || "all"}
-        >
+        <Select onValueChange={onLocationChange} value={locationSlug || "all"}>
           <SelectTrigger className="min-w-[160px]">
             <SelectValue />
           </SelectTrigger>
@@ -89,7 +86,9 @@ export function AdminStaffFilters({
         </Select>
 
         <Select
-          onValueChange={(nextRole) => onRoleChange(nextRole as AdminStaffRoleFilter)}
+          onValueChange={(nextRole) =>
+            onRoleChange(nextRole as AdminStaffRoleFilter)
+          }
           value={role || "all"}
         >
           <SelectTrigger className="min-w-[140px]">
@@ -105,11 +104,7 @@ export function AdminStaffFilters({
         <Select
           onValueChange={(nextStatus) =>
             onStatusChange(
-              nextStatus as
-                | "active"
-                | "all"
-                | "deactivated"
-                | "suspended",
+              nextStatus as "active" | "all" | "deactivated" | "suspended",
             )
           }
           value={status || "all"}
@@ -132,7 +127,7 @@ export function AdminStaffFilters({
           size="sm"
           type="button"
           variant="ghost"
-          className="h-10 rounded-xl px-4 text-slate-400 hover:text-slate-900 hover:bg-slate-50"
+          className="h-10 rounded-xl px-4 text-muted-foreground hover:text-foreground hover:bg-muted"
         >
           <X className="mr-2 size-4" />
           Clear filters
@@ -140,8 +135,8 @@ export function AdminStaffFilters({
       ) : null}
 
       <div className="ml-auto flex items-center gap-3 pr-2">
-        <div className="h-4 w-px bg-slate-200" />
-        <span className="text-[0.65rem] font-bold uppercase tracking-wider text-slate-400 tabular-nums">
+        <div className="h-4 w-px bg-muted" />
+        <span className="text-[0.65rem] font-bold uppercase tracking-wider text-muted-foreground tabular-nums">
           {totalCount} staff
         </span>
       </div>

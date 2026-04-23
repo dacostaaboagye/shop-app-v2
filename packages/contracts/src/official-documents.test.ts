@@ -43,6 +43,30 @@ test("official document settings contracts accept production settings", () => {
       receiptPrefix: "RCT",
       timezone: "Africa/Accra",
     },
+    emailTemplates: {
+      emailVerification: {
+        actionLabel: "Verify email address",
+        footer: "This link expires in 24 hours.",
+        heading: "Verify your email",
+        intro: "Hi {{firstName}}, please verify your email address.",
+        subject: "Verify your email address",
+      },
+      passwordReset: {
+        actionLabel: "Reset password",
+        footer: "This link expires in 1 hour.",
+        heading: "Reset your password",
+        intro: "Hi {{firstName}}, we received a password reset request.",
+        subject: "Reset your password",
+      },
+      supplierInvite: {
+        actionLabel: "Set up portal access",
+        footer: "This link expires in 1 hour.",
+        heading: "Supplier portal access",
+        intro:
+          "Hi {{firstName}}, you have been invited to manage {{supplierName}}.",
+        subject: "Supplier portal invitation for {{supplierName}}",
+      },
+    },
     locationOverridePolicy: {
       allowLocationAddress: true,
       allowLocationContact: true,

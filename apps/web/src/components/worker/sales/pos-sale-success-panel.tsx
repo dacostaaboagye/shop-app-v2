@@ -100,7 +100,7 @@ export function SaleSuccessPanel({
         </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <div className="divide-y divide-border rounded-md border border-border">
+        <div className="divide-y divide-border rounded-xl border border-border">
           {invoice.lines.map((line) => (
             <div key={line.skuId} className="flex items-center gap-3 px-3 py-3">
               <div className="min-w-0 flex-1">
@@ -118,7 +118,7 @@ export function SaleSuccessPanel({
             </div>
           ))}
         </div>
-        <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2.5 text-sm">
+        <div className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2.5 text-sm">
           <span className="text-muted-foreground">Total</span>
           <span className="font-semibold tabular-nums">
             {formatMoney(invoice.totalAmount, moneyProfile)}
@@ -127,7 +127,7 @@ export function SaleSuccessPanel({
         <p className="text-center text-xs text-muted-foreground">
           Payment: {paymentLabel}
         </p>
-        <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+        <div className="rounded-xl border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
           The official PDF receipt is now available for customer handover,
           download, sharing, audit evidence, and future return support.
         </div>

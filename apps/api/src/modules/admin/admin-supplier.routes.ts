@@ -1,16 +1,18 @@
 import {
-  adminCreateSupplierContactRequestSchema,
+  adminCreateSupplierInquiryRequestSchema,
   adminCreateSupplierProcurementOrderRequestSchema,
   adminCreateSupplierRequestSchema,
   adminLinkSupplierProductRequestSchema,
   adminSupplierDetailSchema,
   adminSupplierListQuerySchema,
   adminSupplierListResponseSchema,
+  adminUpdateSupplierInquiryRequestSchema,
   adminUpdateSupplierRequestSchema,
 } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
 import type { RouteDefinition } from "../_core/route-contract.js";
 import { getAuthenticatedUserId } from "../auth/auth-route-support.js";
+import { registerAdminSupplierContactRoutes } from "./admin-supplier-contact.routes.js";
 import {
   type AdminSupplierRouteDependencies,
   createUnavailableSupplierDependencies,
@@ -97,23 +99,10 @@ export function registerAdminSupplierRoutes(
     },
   );
 
-  server.post(
-    "/api/admin/suppliers/:slug/contacts",
-    { config: { access: adminSupplierManageAccess } },
-    async (request) => {
-      const { slug } = request.params as { slug: string };
-      const payload = adminCreateSupplierContactRequestSchema.parse(
-        request.body,
-      );
-      const supplier = await dependencies.adminSupplierWriteService.addContact(
-        slug,
-        getAuthenticatedUserId(request),
-        payload,
-        new Date(),
-      );
-      if (!supplier) throw supplierNotFound(slug);
-      return adminSupplierDetailSchema.parse(supplier);
-    },
+  registerAdminSupplierContactRoutes(
+    server,
+    dependencies,
+    adminSupplierManageAccess,
   );
 
   server.post(
@@ -149,6 +138,50 @@ export function registerAdminSupplierRoutes(
           new Date(),
         );
       if (!supplier) throw supplierNotFound(slug);
+      return adminSupplierDetailSchema.parse(supplier);
+    },
+  );
+
+  server.post(
+    "/api/admin/suppliers/:slug/inquiries",
+    { config: { access: adminSupplierManageAccess } },
+    async (request) => {
+      const { slug } = request.params as { slug: string };
+      const payload = adminCreateSupplierInquiryRequestSchema.parse(
+        request.body,
+      );
+      const supplier =
+        await dependencies.adminSupplierWriteService.createInquiry(
+          slug,
+          getAuthenticatedUserId(request),
+          payload,
+          new Date(),
+        );
+      if (!supplier) throw supplierNotFound(slug);
+      return adminSupplierDetailSchema.parse(supplier);
+    },
+  );
+
+  server.patch(
+    "/api/admin/suppliers/:slug/inquiries/:reference",
+    { config: { access: adminSupplierManageAccess } },
+    async (request) => {
+      const { reference, slug } = request.params as {
+        reference: string;
+        slug: string;
+      };
+      const payload = adminUpdateSupplierInquiryRequestSchema.parse(
+        request.body,
+      );
+      const supplier =
+        await dependencies.adminSupplierWriteService.updateInquiry(
+          slug,
+          reference,
+          getAuthenticatedUserId(request),
+          payload,
+          new Date(),
+        );
+      if (!supplier) throw supplierProcurementOrderNotFound(slug, reference);
       return adminSupplierDetailSchema.parse(supplier);
     },
   );

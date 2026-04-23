@@ -10,9 +10,11 @@ export const reservationColumns: ColumnDef<AdminReservationSummary>[] = [
     enableSorting: false,
     header: "Product / Variant",
     cell: ({ row }) => (
-      <div className="min-w-0">
-        <p className="font-medium leading-none">{row.original.productName}</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
+      <div className="flex flex-col gap-0.5">
+        <p className="text-sm font-bold text-foreground truncate max-w-[240px]">
+          {row.original.productName}
+        </p>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
           {row.original.variantName}
         </p>
       </div>
@@ -22,13 +24,20 @@ export const reservationColumns: ColumnDef<AdminReservationSummary>[] = [
     accessorKey: "locationName",
     enableSorting: false,
     header: "Location",
+    cell: ({ getValue }) => (
+      <span className="text-sm font-medium text-muted-foreground/80">
+        {getValue() as string}
+      </span>
+    ),
   },
   {
     accessorKey: "sku",
     enableSorting: false,
     header: "SKU",
     cell: ({ getValue }) => (
-      <span className="font-mono text-xs">{getValue() as string}</span>
+      <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
+        {getValue() as string}
+      </span>
     ),
   },
   {
@@ -36,7 +45,9 @@ export const reservationColumns: ColumnDef<AdminReservationSummary>[] = [
     header: "Reserved",
     meta: { align: "right" },
     cell: ({ getValue }) => (
-      <span className="tabular-nums font-medium">{getValue() as number}</span>
+      <span className="tabular-nums text-sm font-bold text-foreground">
+        {getValue() as number}
+      </span>
     ),
   },
   {
@@ -44,7 +55,12 @@ export const reservationColumns: ColumnDef<AdminReservationSummary>[] = [
     enableSorting: false,
     header: "Source",
     cell: ({ getValue }) => (
-      <Badge variant="outline">{getValue() as string}</Badge>
+      <Badge
+        className="rounded-md font-bold uppercase tracking-wider text-[10px]"
+        variant="secondary"
+      >
+        {(getValue() as string).replaceAll("_", " ")}
+      </Badge>
     ),
   },
   {
@@ -52,7 +68,7 @@ export const reservationColumns: ColumnDef<AdminReservationSummary>[] = [
     enableSorting: false,
     header: "Source key",
     cell: ({ getValue }) => (
-      <span className="font-mono text-xs text-muted-foreground">
+      <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground/30">
         {getValue() as string}
       </span>
     ),
@@ -64,11 +80,18 @@ export const reservationColumns: ColumnDef<AdminReservationSummary>[] = [
     cell: ({ getValue }) => {
       const value = getValue() as string | null;
       return value ? (
-        <span className="tabular-nums text-sm">
-          {new Date(value).toLocaleString()}
+        <span className="tabular-nums text-[11px] font-bold uppercase tracking-widest text-muted-foreground/50">
+          {new Date(value).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
         </span>
       ) : (
-        <span className="text-muted-foreground">-</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/20">
+          -
+        </span>
       );
     },
   },

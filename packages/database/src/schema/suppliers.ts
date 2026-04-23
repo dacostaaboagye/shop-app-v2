@@ -35,6 +35,13 @@ export const supplierTransactionTypeEnum = pgEnum("supplier_transaction_type", [
   "credit_note",
 ]);
 
+export const supplierInquiryStatusEnum = pgEnum("supplier_inquiry_status", [
+  "sent",
+  "responded",
+  "converted",
+  "cancelled",
+]);
+
 export const suppliers = pgTable(
   "suppliers",
   {
@@ -118,6 +125,35 @@ export const supplierTransactions = pgTable(
   ],
 );
 
+export const supplierInquiries = pgTable(
+  "supplier_inquiries",
+  {
+    id: publicUuidColumn(),
+    reference: varchar("reference", { length: 25 }).notNull(),
+    supplierId: uuid("supplier_id")
+      .notNull()
+      .references(() => suppliers.id, { onDelete: "cascade" }),
+    productId: uuid("product_id").references(() => catalogProducts.id),
+    requestedProductName: varchar("requested_product_name", { length: 200 }),
+    attachmentUrl: varchar("attachment_url", { length: 1000 }),
+    attachmentName: varchar("attachment_name", { length: 255 }),
+    attachmentMimeType: varchar("attachment_mime_type", { length: 100 }),
+    status: supplierInquiryStatusEnum("status").default("sent").notNull(),
+    requestedQuantity: integer("requested_quantity"),
+    neededBy: timestamp("needed_by", { withTimezone: true }),
+    message: text("message").notNull(),
+    supplierResponse: text("supplier_response"),
+    respondedAt: timestamp("responded_at", { withTimezone: true }),
+    requestedBy: uuid("requested_by").references(() => users.id),
+    ...auditColumns,
+  },
+  (table) => [
+    uniqueIndex("supplier_inquiries_reference_unique").on(table.reference),
+    index("supplier_inquiries_supplier_idx").on(table.supplierId),
+    index("supplier_inquiries_status_idx").on(table.status),
+  ],
+);
+
 export const supplierContacts = pgTable(
   "supplier_contacts",
   {
@@ -146,6 +182,7 @@ export const supplierContacts = pgTable(
 
 export const suppliersRelations = relations(suppliers, ({ many, one }) => ({
   contacts: many(supplierContacts),
+  inquiries: many(supplierInquiries),
   products: many(supplierProducts),
   transactions: many(supplierTransactions),
   creator: one(users, {
@@ -178,6 +215,20 @@ export const supplierTransactionsRelations = relations(
     creator: one(users, {
       fields: [supplierTransactions.createdBy],
       references: [users.id],
+    }),
+  }),
+);
+
+export const supplierInquiriesRelations = relations(
+  supplierInquiries,
+  ({ one }) => ({
+    product: one(catalogProducts, {
+      fields: [supplierInquiries.productId],
+      references: [catalogProducts.id],
+    }),
+    supplier: one(suppliers, {
+      fields: [supplierInquiries.supplierId],
+      references: [suppliers.id],
     }),
   }),
 );

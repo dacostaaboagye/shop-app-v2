@@ -6,9 +6,16 @@ import type {
 } from "@shop/contracts";
 import { useForm } from "@tanstack/react-form";
 import { Save } from "lucide-react";
+import { useState } from "react";
+import { FloatingActionBar } from "@/components/system/floating-action-bar";
 import { Button } from "@/components/ui/button";
 import { OfficialDocumentBusinessFields } from "./official-document-business-fields";
 import { OfficialDocumentDocumentFields } from "./official-document-document-fields";
+import {
+  type EmailTemplateTabKey,
+  OfficialDocumentEmailTemplateFields,
+} from "./official-document-email-template-fields";
+import { OfficialDocumentEmailTemplatePreview } from "./official-document-email-template-preview";
 import {
   OfficialDocumentBrandFields,
   type OfficialDocumentSettingsFormApi,
@@ -26,6 +33,7 @@ export type OfficialDocumentSettingsSection =
   | "brand"
   | "business"
   | "documents"
+  | "email"
   | "money"
   | "overrides";
 
@@ -49,6 +57,8 @@ export function OfficialDocumentSettingsForm({
     onSubmit: async ({ value }) =>
       onSubmit(toOfficialDocumentSettingsPayload(value)),
   });
+  const [activeEmailTemplate, setActiveEmailTemplate] =
+    useState<EmailTemplateTabKey>("supplierInvite");
   const config = SETTINGS_SECTION_CONFIG[section];
   const settingsFields = (
     <div className="flex flex-col gap-4">
@@ -56,7 +66,10 @@ export function OfficialDocumentSettingsForm({
         description={config.description}
         title={config.title}
       >
-        {renderSection(section, form as OfficialDocumentSettingsFormApi)}
+        {renderSection(section, form as OfficialDocumentSettingsFormApi, {
+          activeEmailTemplate,
+          setActiveEmailTemplate,
+        })}
       </OfficialDocumentSettingsCard>
 
       <div className="flex justify-end">
@@ -89,9 +102,39 @@ export function OfficialDocumentSettingsForm({
             )}
           </form.Subscribe>
         </div>
+      ) : section === "email" ? (
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] xl:items-start">
+          {settingsFields}
+          <form.Subscribe selector={(state) => state.values}>
+            {(values) => (
+              <OfficialDocumentEmailTemplatePreview
+                activeTemplate={activeEmailTemplate}
+                logoImageUrl={settings.brand.logoImageUrl}
+                values={values}
+              />
+            )}
+          </form.Subscribe>
+        </div>
       ) : (
         settingsFields
       )}
+
+      <form.Subscribe
+        selector={(state) => ({
+          canSubmit: state.canSubmit,
+          isDirty: state.isDirty,
+        })}
+      >
+        {({ isDirty }) => (
+          <FloatingActionBar
+            isSaving={isSaving}
+            isVisible={isDirty}
+            onReset={() => form.reset()}
+            onSave={() => void form.handleSubmit()}
+            saveLabel={config.saveLabel}
+          />
+        )}
+      </form.Subscribe>
     </form>
   );
 }
@@ -105,7 +148,7 @@ const SETTINGS_SECTION_CONFIG = {
   },
   business: {
     description:
-      "Legal and contact details used on official business documents.",
+      "Legal details for official documents and the support email used for replies and customer contact.",
     saveLabel: "Save business settings",
     title: "Business profile",
   },
@@ -114,6 +157,12 @@ const SETTINGS_SECTION_CONFIG = {
       "Default document numbering, paper, timezone, locale, and footer behavior.",
     saveLabel: "Save document settings",
     title: "Document defaults",
+  },
+  email: {
+    description:
+      "Editable transactional email copy for account access and supplier portal invitations. Delivery sender comes from deployment email configuration, while the business support email is used for replies and support contact. Use {{firstName}} and {{supplierName}} where available.",
+    saveLabel: "Save email templates",
+    title: "Email templates",
   },
   money: {
     description:
@@ -135,6 +184,10 @@ const SETTINGS_SECTION_CONFIG = {
 function renderSection(
   section: OfficialDocumentSettingsSection,
   form: OfficialDocumentSettingsFormApi,
+  emailTemplateState: {
+    activeEmailTemplate: EmailTemplateTabKey;
+    setActiveEmailTemplate: (value: EmailTemplateTabKey) => void;
+  },
 ) {
   switch (section) {
     case "brand":
@@ -143,6 +196,14 @@ function renderSection(
       return <OfficialDocumentBusinessFields form={form} />;
     case "documents":
       return <OfficialDocumentDocumentFields form={form} />;
+    case "email":
+      return (
+        <OfficialDocumentEmailTemplateFields
+          activeTemplate={emailTemplateState.activeEmailTemplate}
+          form={form}
+          onTemplateChange={emailTemplateState.setActiveEmailTemplate}
+        />
+      );
     case "money":
       return <OfficialDocumentMoneyFields form={form} />;
     case "overrides":

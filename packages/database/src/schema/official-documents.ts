@@ -59,6 +59,20 @@ export type LocationOverridePolicy = {
   allowLocationNumberPrefix: boolean;
 };
 
+export type EmailTemplateSettings = {
+  supplierInvite: EmailTemplateDefinition;
+  passwordReset: EmailTemplateDefinition;
+  emailVerification: EmailTemplateDefinition;
+};
+
+export type EmailTemplateDefinition = {
+  subject: string;
+  heading: string;
+  intro: string;
+  actionLabel: string;
+  footer: string;
+};
+
 export type IssuedDocumentProfileSnapshot = {
   brandName: string;
   logoImageUrl: string | null;
@@ -107,6 +121,9 @@ export const officialDocumentSettings = pgTable(
     business: jsonb("business").$type<DocumentBusinessSettings>().notNull(),
     currency: jsonb("currency").$type<MoneySettings>().notNull(),
     documents: jsonb("documents").$type<DocumentDefaults>().notNull(),
+    emailTemplates: jsonb("email_templates")
+      .$type<EmailTemplateSettings>()
+      .notNull(),
     locationOverridePolicy: jsonb("location_override_policy")
       .$type<LocationOverridePolicy>()
       .notNull(),

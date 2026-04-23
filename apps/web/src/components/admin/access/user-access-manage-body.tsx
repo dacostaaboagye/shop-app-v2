@@ -36,7 +36,7 @@ export function UserAccessManageBody({
   return (
     <>
       <Tabs defaultValue="roles">
-        <TabsList variant="line">
+        <TabsList>
           <TabsTrigger value="roles">Roles</TabsTrigger>
           <TabsTrigger value="permissions">Permissions</TabsTrigger>
         </TabsList>

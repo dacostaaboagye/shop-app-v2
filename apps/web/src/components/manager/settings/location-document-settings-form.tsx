@@ -3,19 +3,17 @@
 import type { UpdateLocationDocumentSettingsRequest } from "@shop/contracts";
 import { useForm } from "@tanstack/react-form";
 import { Save } from "lucide-react";
-import { AppFormField } from "@/components/forms/app-form-field";
 import { TimeZoneSelect } from "@/components/settings/document-setting-selects";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -45,7 +43,7 @@ export function LocationDocumentSettingsForm({
 
   return (
     <form
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-6"
       onSubmit={(event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -53,184 +51,278 @@ export function LocationDocumentSettingsForm({
       }}
     >
       <Tabs className="w-full" defaultValue="location-profile">
-        <TabsList className="h-auto w-full flex-wrap justify-start">
-          <TabsTrigger value="location-profile">Location profile</TabsTrigger>
-          <TabsTrigger value="receipt">Receipt behavior</TabsTrigger>
+        <TabsList className="h-12 mb-6">
+          <TabsTrigger
+            className="px-6 py-2 text-xs font-bold uppercase tracking-widest"
+            value="location-profile"
+          >
+            Location profile
+          </TabsTrigger>
+          <TabsTrigger
+            className="px-6 py-2 text-xs font-bold uppercase tracking-widest"
+            value="receipt"
+          >
+            Receipt behavior
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent className="flex flex-col gap-4" value="location-profile">
-          <Card>
-            <CardHeader>
-              <CardTitle>{locationName} document overrides</CardTitle>
-              <CardDescription>
+        <TabsContent
+          className="mt-0 focus-visible:outline-none"
+          value="location-profile"
+        >
+          <div className="rounded-xl border border-border/50 bg-white p-8 shadow-sm">
+            <div className="mb-8">
+              <h3 className="text-lg font-bold text-foreground">
+                {locationName} profile overrides
+              </h3>
+              <p className="text-sm text-muted-foreground/80 mt-1">
                 Empty fields inherit the official admin configuration. Brand,
                 legal, and currency settings remain platform controlled.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <FieldGroup>
-                <form.Field name="displayName">
+              </p>
+            </div>
+
+            <div className="grid gap-8">
+              <form.Field name="displayName">
+                {(field) => (
+                  <div className="flex flex-col gap-2">
+                    <Label
+                      htmlFor={field.name}
+                      className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
+                    >
+                      Display name
+                    </Label>
+                    <Input
+                      id={field.name}
+                      className="h-11 rounded-xl border-border/60 bg-muted/20 focus:bg-background transition-all font-medium"
+                      onBlur={field.handleBlur}
+                      onChange={(event) =>
+                        field.handleChange(event.target.value)
+                      }
+                      placeholder="Inherit location name"
+                      value={field.state.value}
+                    />
+                  </div>
+                )}
+              </form.Field>
+
+              <form.Field name="addressLines">
+                {(field) => (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <Label
+                        htmlFor={field.name}
+                        className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
+                      >
+                        Printed address
+                      </Label>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/30">
+                        One line per printed address line
+                      </span>
+                    </div>
+                    <Textarea
+                      id={field.name}
+                      className="min-h-[120px] rounded-xl border-border/60 bg-muted/20 focus:bg-background transition-all font-medium resize-none leading-relaxed"
+                      maxLength={800}
+                      onBlur={field.handleBlur}
+                      onChange={(event) =>
+                        field.handleChange(event.target.value)
+                      }
+                      placeholder="Inherit business address"
+                      value={field.state.value}
+                    />
+                  </div>
+                )}
+              </form.Field>
+
+              <div className="grid gap-8 sm:grid-cols-2">
+                <form.Field name="phone">
                   {(field) => (
-                    <AppFormField inputId={field.name} label="Display name">
+                    <div className="flex flex-col gap-2">
+                      <Label
+                        htmlFor={field.name}
+                        className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
+                      >
+                        Printed phone
+                      </Label>
                       <Input
                         id={field.name}
+                        className="h-11 rounded-xl border-border/60 bg-muted/20 focus:bg-background transition-all font-medium"
                         onBlur={field.handleBlur}
                         onChange={(event) =>
                           field.handleChange(event.target.value)
                         }
-                        placeholder="Inherit location name"
+                        placeholder="Inherit business phone"
                         value={field.state.value}
                       />
-                    </AppFormField>
+                    </div>
                   )}
                 </form.Field>
-                <form.Field name="addressLines">
+                <form.Field name="email">
                   {(field) => (
-                    <AppFormField
-                      description="One line per printed address line."
-                      inputId={field.name}
-                      label="Printed address"
-                    >
-                      <Textarea
+                    <div className="flex flex-col gap-2">
+                      <Label
+                        htmlFor={field.name}
+                        className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
+                      >
+                        Printed email
+                      </Label>
+                      <Input
                         id={field.name}
-                        maxLength={800}
+                        className="h-11 rounded-xl border-border/60 bg-muted/20 focus:bg-background transition-all font-medium"
                         onBlur={field.handleBlur}
                         onChange={(event) =>
                           field.handleChange(event.target.value)
                         }
-                        placeholder="Inherit business address"
-                        rows={4}
+                        placeholder="Inherit business email"
+                        type="email"
                         value={field.state.value}
                       />
-                    </AppFormField>
+                    </div>
                   )}
                 </form.Field>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <form.Field name="phone">
-                    {(field) => (
-                      <AppFormField inputId={field.name} label="Printed phone">
-                        <Input
-                          id={field.name}
-                          onBlur={field.handleBlur}
-                          onChange={(event) =>
-                            field.handleChange(event.target.value)
-                          }
-                          placeholder="Inherit business phone"
-                          value={field.state.value}
-                        />
-                      </AppFormField>
-                    )}
-                  </form.Field>
-                  <form.Field name="email">
-                    {(field) => (
-                      <AppFormField inputId={field.name} label="Printed email">
-                        <Input
-                          id={field.name}
-                          onBlur={field.handleBlur}
-                          onChange={(event) =>
-                            field.handleChange(event.target.value)
-                          }
-                          placeholder="Inherit business email"
-                          type="email"
-                          value={field.state.value}
-                        />
-                      </AppFormField>
-                    )}
-                  </form.Field>
-                </div>
-              </FieldGroup>
-            </CardContent>
-          </Card>
+              </div>
+            </div>
+          </div>
         </TabsContent>
 
-        <TabsContent className="flex flex-col gap-4" value="receipt">
-          <Card>
-            <CardHeader>
-              <CardTitle>Receipt behavior</CardTitle>
-              <CardDescription>
+        <TabsContent
+          className="mt-0 focus-visible:outline-none"
+          value="receipt"
+        >
+          <div className="rounded-xl border border-border/50 bg-white p-8 shadow-sm">
+            <div className="mb-8">
+              <h3 className="text-lg font-bold text-foreground">
+                Receipt behavior
+              </h3>
+              <p className="text-sm text-muted-foreground/80 mt-1">
                 Configure branch-specific receipt copy and print format.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <FieldGroup>
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <form.Field name="documentPrefix">
-                    {(field) => (
-                      <AppFormField inputId={field.name} label="Number prefix">
-                        <Input
-                          id={field.name}
-                          maxLength={20}
-                          onBlur={field.handleBlur}
-                          onChange={(event) =>
-                            field.handleChange(event.target.value)
-                          }
-                          placeholder="Inherit"
-                          value={field.state.value}
-                        />
-                      </AppFormField>
-                    )}
-                  </form.Field>
-                  <form.Field name="defaultPaperSize">
-                    {(field) => (
-                      <AppFormField inputId={field.name} label="Paper size">
-                        <Select
-                          id={field.name}
-                          onChange={(event) =>
-                            field.handleChange(
-                              event.target
-                                .value as LocationDocumentSettingsFormValues["defaultPaperSize"],
-                            )
-                          }
-                          value={field.state.value}
-                        >
-                          <option value="inherit">Inherit</option>
-                          <option value="receipt_80mm">80mm receipt</option>
-                          <option value="a4">A4 document</option>
-                          <option value="letter">Letter document</option>
-                        </Select>
-                      </AppFormField>
-                    )}
-                  </form.Field>
-                  <form.Field name="timezone">
-                    {(field) => (
-                      <AppFormField inputId={field.name} label="Timezone">
-                        <TimeZoneSelect
-                          allowInherit
-                          id={field.name}
-                          onChange={field.handleChange}
-                          value={field.state.value}
-                        />
-                      </AppFormField>
-                    )}
-                  </form.Field>
-                </div>
-                <form.Field name="receiptFooter">
+              </p>
+            </div>
+
+            <div className="grid gap-8">
+              <div className="grid gap-8 sm:grid-cols-3">
+                <form.Field name="documentPrefix">
                   {(field) => (
-                    <AppFormField inputId={field.name} label="Receipt footer">
-                      <Textarea
+                    <div className="flex flex-col gap-2">
+                      <Label
+                        htmlFor={field.name}
+                        className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
+                      >
+                        Number prefix
+                      </Label>
+                      <Input
                         id={field.name}
-                        maxLength={500}
+                        className="h-11 rounded-xl border-border/60 bg-muted/20 focus:bg-background transition-all font-medium"
+                        maxLength={20}
                         onBlur={field.handleBlur}
                         onChange={(event) =>
                           field.handleChange(event.target.value)
                         }
-                        placeholder="Inherit official footer"
-                        rows={3}
+                        placeholder="Inherit"
                         value={field.state.value}
                       />
-                    </AppFormField>
+                    </div>
                   )}
                 </form.Field>
-              </FieldGroup>
-            </CardContent>
-          </Card>
+                <form.Field name="defaultPaperSize">
+                  {(field) => (
+                    <div className="flex flex-col gap-2">
+                      <Label
+                        htmlFor={field.name}
+                        className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
+                      >
+                        Paper size
+                      </Label>
+                      <Select
+                        value={field.state.value}
+                        onValueChange={(value) =>
+                          field.handleChange(
+                            value as LocationDocumentSettingsFormValues["defaultPaperSize"],
+                          )
+                        }
+                      >
+                        <SelectTrigger className="h-11 rounded-xl border-border/60 bg-muted/20 focus:bg-background transition-all">
+                          <SelectValue placeholder="Select paper size" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-border/50 shadow-sm">
+                          <SelectItem value="inherit">Inherit</SelectItem>
+                          <SelectItem value="receipt_80mm">
+                            80mm receipt
+                          </SelectItem>
+                          <SelectItem value="a4">A4 document</SelectItem>
+                          <SelectItem value="letter">
+                            Letter document
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </form.Field>
+                <form.Field name="timezone">
+                  {(field) => (
+                    <div className="flex flex-col gap-2">
+                      <Label
+                        htmlFor={field.name}
+                        className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
+                      >
+                        Timezone
+                      </Label>
+                      <TimeZoneSelect
+                        allowInherit
+                        id={field.name}
+                        onChange={field.handleChange}
+                        value={field.state.value}
+                      />
+                    </div>
+                  )}
+                </form.Field>
+              </div>
+
+              <form.Field name="receiptFooter">
+                {(field) => (
+                  <div className="flex flex-col gap-2">
+                    <Label
+                      htmlFor={field.name}
+                      className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
+                    >
+                      Receipt footer
+                    </Label>
+                    <Textarea
+                      id={field.name}
+                      className="min-h-[100px] rounded-xl border-border/60 bg-muted/20 focus:bg-background transition-all font-medium resize-none leading-relaxed"
+                      maxLength={500}
+                      onBlur={field.handleBlur}
+                      onChange={(event) =>
+                        field.handleChange(event.target.value)
+                      }
+                      placeholder="Inherit official footer"
+                      value={field.state.value}
+                    />
+                  </div>
+                )}
+              </form.Field>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 
-      <div className="flex justify-end">
-        <Button disabled={isSaving} type="submit">
-          <Save data-icon="inline-start" />
-          {isSaving ? "Saving..." : "Save location document settings"}
+      <div className="flex justify-end pt-4">
+        <Button
+          disabled={isSaving}
+          type="submit"
+          className="h-12 rounded-xl px-8 font-bold shadow-sm transition-all active:scale-[0.98]"
+        >
+          {isSaving ? (
+            <div className="flex items-center gap-2">
+              <div className="size-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+              Saving...
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Save className="size-5" />
+              Save location document settings
+            </div>
+          )}
         </Button>
       </div>
     </form>

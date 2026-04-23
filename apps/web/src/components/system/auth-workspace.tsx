@@ -5,14 +5,6 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AuthLoginForm } from "@/components/forms/auth-login-form";
 import { AuthRegisterForm } from "@/components/forms/auth-register-form";
-import { buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { getPortalHref, getPrimaryPortal } from "@/lib/portals";
 import { toRoute } from "@/lib/routes";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
@@ -58,16 +50,14 @@ export function AuthWorkspace({ mode = "login" }: AuthWorkspaceProps) {
   const content = anonymousCopy[mode];
 
   return (
-    <div className="overflow-hidden rounded-[2.5rem] border border-border/40 bg-card/60 p-10 backdrop-blur-xl shadow-2xl shadow-black/5">
+    <div className="overflow-hidden rounded-xl border border-border/50 bg-card p-10 shadow-panel">
       <div className="mb-10 flex flex-col items-center gap-2 text-center">
         <h2 className="font-heading text-3xl font-bold tracking-tight text-foreground">
           {content.title}
         </h2>
-        <p className="text-base text-muted-foreground">
-          {content.description}
-        </p>
+        <p className="text-base text-muted-foreground">{content.description}</p>
       </div>
-      
+
       <div className="flex flex-col gap-6">
         {sessionNotice ? (
           <AppBanner

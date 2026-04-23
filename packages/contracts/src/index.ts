@@ -1,6 +1,7 @@
 export * from "./admin.js";
 export * from "./admin-access.js";
 export * from "./admin-location-write.js";
+export * from "./admin-supplier-procurement.js";
 export * from "./admin-suppliers.js";
 export * from "./admin-user-access.js";
 export * from "./assignments.js";
@@ -11,7 +12,9 @@ export * from "./catalog-product-options.js";
 export * from "./catalog-products.js";
 export * from "./catalog-variants.js";
 export * from "./errors.js";
+export * from "./messaging.js";
 export * from "./notifications.js";
+export * from "./official-document-email-templates.js";
 export * from "./official-documents.js";
 export * from "./platform-events.js";
 export * from "./sales.js";

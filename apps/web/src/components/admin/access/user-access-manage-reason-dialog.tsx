@@ -16,7 +16,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { FieldGroup } from "@/components/ui/field";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { adminUserAccessDetailQueryKey } from "@/lib/react-query/admin-user-access";
@@ -146,21 +152,26 @@ export function UserAccessManageReasonDialog({
                   >
                     <Select
                       disabled={isPending}
-                      id={field.name}
-                      onBlur={field.handleBlur}
-                      onChange={(event) =>
-                        field.handleChange(event.target.value)
-                      }
+                      onValueChange={(value) => field.handleChange(value)}
                       value={field.state.value}
                     >
-                      <option value="">
-                        {scopeIsRequired ? "Select a location" : "Global"}
-                      </option>
-                      {activeLocations.map((location) => (
-                        <option key={location.slug} value={location.slug}>
-                          {location.name}
-                        </option>
-                      ))}
+                      <SelectTrigger id={field.name}>
+                        <SelectValue
+                          placeholder={
+                            scopeIsRequired ? "Select a location" : "Global"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">
+                          {scopeIsRequired ? "Select a location" : "Global"}
+                        </SelectItem>
+                        {activeLocations.map((location) => (
+                          <SelectItem key={location.slug} value={location.slug}>
+                            {location.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
                     </Select>
                   </AppFormField>
                 )}

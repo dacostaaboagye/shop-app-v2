@@ -15,6 +15,7 @@ export function getGoogleOAuthUrl(): string {
 }
 
 type JsonRequestInit = Omit<RequestInit, "body"> & {
+  auth?: "none" | "required";
   body?: unknown;
 };
 
@@ -103,7 +104,15 @@ async function requestAuthSession(
 }
 
 async function request(path: string, init: JsonRequestInit): Promise<Response> {
-  const { body: _body, ...requestInit } = init;
+  return requestOnce(path, init, false);
+}
+
+async function requestOnce(
+  path: string,
+  init: JsonRequestInit,
+  hasRetried: boolean,
+): Promise<Response> {
+  const { auth: _auth, body: _body, ...requestInit } = init;
   const headers = new Headers(init.headers);
   const requestBody =
     init.body !== undefined ? JSON.stringify(init.body) : undefined;
@@ -114,6 +123,13 @@ async function request(path: string, init: JsonRequestInit): Promise<Response> {
 
   if (init.body !== undefined && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
+  }
+
+  if (init.auth === "required") {
+    const accessToken = getAccessToken();
+    if (accessToken) {
+      headers.set("Authorization", `Bearer ${accessToken}`);
+    }
   }
 
   let response: Response;
@@ -127,6 +143,14 @@ async function request(path: string, init: JsonRequestInit): Promise<Response> {
     });
   } catch (error) {
     throw toNetworkError(error);
+  }
+
+  if (response.status === 401 && init.auth === "required" && !hasRetried) {
+    const session = await refreshAccessToken();
+
+    if (session) {
+      return requestOnce(path, init, true);
+    }
   }
 
   if (!response.ok) {
@@ -171,6 +195,7 @@ export async function verifyEmail(token: string): Promise<void> {
 
 export async function resendVerification(): Promise<void> {
   await request("/api/auth/resend-verification", {
+    auth: "required",
     method: "POST",
   });
 }

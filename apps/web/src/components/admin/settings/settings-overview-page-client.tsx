@@ -3,14 +3,16 @@
 import {
   Building2,
   FileText,
+  History,
   Landmark,
+  Mail,
   Palette,
   ShieldCheck,
 } from "lucide-react";
 import {
+  MenuCard,
   PageHeader,
   PageShell,
-  MenuCard,
 } from "@/components/system/page-shell";
 import { toRoute } from "@/lib/routes";
 
@@ -38,6 +40,18 @@ const SETTINGS_LINKS = [
     href: toRoute("/admin/settings/documents"),
     icon: FileText,
     label: "Documents",
+  },
+  {
+    description: "Configure transactional email templates and preview output.",
+    href: toRoute("/admin/settings/messaging/templates"),
+    icon: Mail,
+    label: "Email templates",
+  },
+  {
+    description: "Review delivery diagnostics and send branded test emails.",
+    href: toRoute("/admin/settings/messaging/operations"),
+    icon: History,
+    label: "Email operations",
   },
   {
     description: "Fields managers may override for their locations.",

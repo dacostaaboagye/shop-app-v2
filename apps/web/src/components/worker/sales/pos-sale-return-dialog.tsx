@@ -110,7 +110,7 @@ export function PosSaleReturnDialog({
           </DialogDescription>
         </DialogHeader>
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-          <div className="max-h-[45vh] overflow-auto rounded-lg border border-border">
+          <div className="max-h-[45vh] overflow-auto rounded-xl border border-border">
             {invoice.lines.map((line) => (
               <div
                 className="grid gap-3 border-b border-border p-3 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_7rem]"

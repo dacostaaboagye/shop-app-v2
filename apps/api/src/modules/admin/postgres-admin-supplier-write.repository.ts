@@ -6,11 +6,23 @@ import type {
   AdminSupplierProcurementReceiveRequest,
   AdminUpdateSupplierRequest,
 } from "@shop/contracts";
-import { supplierContacts, supplierProducts, suppliers } from "@shop/database";
+import { supplierProducts, suppliers } from "@shop/database";
 import { and, eq } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
+import type { EmailService } from "../messaging/email.service.js";
 import type { SlugAllocator } from "../public-identifiers/slug.service.js";
 import type { AdminSupplierWriteRepository } from "./admin-supplier-write.service.js";
+import {
+  addSupplierContact,
+  inviteSupplierContactPortal,
+  linkSupplierContactPortal,
+  removeSupplierContact,
+  unlinkSupplierContactPortal,
+} from "./postgres-admin-supplier-contact-write.js";
+import {
+  createSupplierInquiry,
+  updateSupplierInquiry,
+} from "./postgres-admin-supplier-inquiry-write.js";
 import {
   createSupplierProcurementOrder,
   receiveSupplierProcurementOrder,
@@ -20,7 +32,7 @@ import { PostgresAdminSupplierQueryRepository } from "./postgres-admin-supplier-
 import {
   findProduct,
   findSupplier,
-  resolveUserId,
+  updateSupplierProfile,
 } from "./postgres-admin-supplier-write.support.js";
 
 export class PostgresAdminSupplierWriteRepository
@@ -31,6 +43,8 @@ export class PostgresAdminSupplierWriteRepository
   constructor(
     private readonly db: ApiDatabase,
     private readonly slugAllocator: SlugAllocator,
+    private readonly emailService: EmailService | null = null,
+    private readonly webBaseUrl = "http://localhost:3000",
   ) {
     this.reader = new PostgresAdminSupplierQueryRepository(db);
   }
@@ -41,36 +55,37 @@ export class PostgresAdminSupplierWriteRepository
     payload: AdminCreateSupplierContactRequest;
     supplierSlug: string;
   }) {
-    const supplier = await findSupplier(this.db, input.supplierSlug);
-    if (!supplier) return null;
-    const userId = input.payload.userSlug
-      ? await resolveUserId(this.db, input.payload.userSlug)
-      : null;
+    return addSupplierContact({ ...input, db: this.db, reader: this.reader });
+  }
 
-    await this.db.transaction(async (tx) => {
-      if (input.payload.isPrimary) {
-        await tx
-          .update(supplierContacts)
-          .set({ isPrimary: false, updatedAt: input.now })
-          .where(eq(supplierContacts.supplierId, supplier.id));
-      }
-
-      await tx.insert(supplierContacts).values({
-        email: input.payload.email ?? null,
-        firstName: input.payload.firstName,
-        isPrimary: input.payload.isPrimary,
-        jobTitle: input.payload.jobTitle ?? null,
-        lastName: input.payload.lastName,
-        phone: input.payload.phone ?? null,
-        status: input.payload.status,
-        supplierId: supplier.id,
-        userId,
-        createdAt: input.now,
-        updatedAt: input.now,
-      });
+  async linkContactPortal(input: {
+    actorId: string;
+    contactReference: string;
+    now: Date;
+    payload: Parameters<typeof linkSupplierContactPortal>[0]["payload"];
+    supplierSlug: string;
+  }) {
+    return linkSupplierContactPortal({
+      ...input,
+      db: this.db,
+      reader: this.reader,
     });
+  }
 
-    return this.reader.getSupplier(input.supplierSlug);
+  async inviteContactPortal(input: {
+    actorId: string;
+    contactReference: string;
+    now: Date;
+    supplierSlug: string;
+  }) {
+    return inviteSupplierContactPortal({
+      ...input,
+      db: this.db,
+      emailService: this.emailService,
+      reader: this.reader,
+      slugAllocator: this.slugAllocator,
+      webBaseUrl: this.webBaseUrl,
+    });
   }
 
   async createSupplier(input: {
@@ -118,6 +133,20 @@ export class PostgresAdminSupplierWriteRepository
     });
   }
 
+  async createInquiry(input: {
+    actorId: string;
+    now: Date;
+    payload: Parameters<typeof createSupplierInquiry>[0]["payload"];
+    reference: string;
+    supplierSlug: string;
+  }) {
+    return createSupplierInquiry({
+      ...input,
+      db: this.db,
+      reader: this.reader,
+    });
+  }
+
   async linkProduct(input: {
     actorId: string;
     now: Date;
@@ -157,6 +186,25 @@ export class PostgresAdminSupplierWriteRepository
       });
 
     return this.reader.getSupplier(input.supplierSlug);
+  }
+
+  async removeContact(input: {
+    contactReference: string;
+    supplierSlug: string;
+  }) {
+    return removeSupplierContact({ ...input, db: this.db });
+  }
+
+  async unlinkContactPortal(input: {
+    contactReference: string;
+    now: Date;
+    supplierSlug: string;
+  }) {
+    return unlinkSupplierContactPortal({
+      ...input,
+      db: this.db,
+      reader: this.reader,
+    });
   }
 
   async unlinkProduct(input: { productSlug: string; supplierSlug: string }) {
@@ -211,31 +259,22 @@ export class PostgresAdminSupplierWriteRepository
     payload: AdminUpdateSupplierRequest;
     supplierSlug: string;
   }) {
-    const [row] = await this.db
-      .update(suppliers)
-      .set({
-        ...("email" in input.payload && { email: input.payload.email ?? null }),
-        ...("legalName" in input.payload && {
-          legalName: input.payload.legalName ?? null,
-        }),
-        ...(input.payload.name !== undefined && { name: input.payload.name }),
-        ...("notes" in input.payload && { notes: input.payload.notes ?? null }),
-        ...(input.payload.paymentTermsDays !== undefined && {
-          paymentTermsDays: input.payload.paymentTermsDays,
-        }),
-        ...("phone" in input.payload && { phone: input.payload.phone ?? null }),
-        ...(input.payload.status !== undefined && {
-          status: input.payload.status,
-        }),
-        ...("taxId" in input.payload && { taxId: input.payload.taxId ?? null }),
-        ...(input.payload.website !== undefined && {
-          website: input.payload.website ?? null,
-        }),
-        updatedAt: input.now,
-      })
-      .where(eq(suppliers.slug, input.supplierSlug))
-      .returning({ slug: suppliers.slug });
+    const row = await updateSupplierProfile(this.db, input);
 
     return row ? this.reader.getSupplier(row.slug) : null;
+  }
+
+  async updateInquiry(input: {
+    actorId: string;
+    now: Date;
+    payload: Parameters<typeof updateSupplierInquiry>[0]["payload"];
+    reference: string;
+    supplierSlug: string;
+  }) {
+    return updateSupplierInquiry({
+      ...input,
+      db: this.db,
+      reader: this.reader,
+    });
   }
 }

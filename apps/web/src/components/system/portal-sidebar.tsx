@@ -102,10 +102,7 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
         {isLoading ? (
           <div className="flex flex-col gap-3">
             {SIDEBAR_SKELETON_KEYS.map((key) => (
-              <div
-                key={key}
-                className="h-10 rounded-xl bg-sidebar-accent/50"
-              />
+              <div key={key} className="h-10 rounded-xl bg-sidebar-accent/50" />
             ))}
           </div>
         ) : (
@@ -122,7 +119,11 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
                 );
 
                 return (
-                  <AccordionItem key={section.title} value={section.title} className="border-none">
+                  <AccordionItem
+                    key={section.title}
+                    value={section.title}
+                    className="border-none"
+                  >
                     <AccordionTrigger
                       className={cn(
                         "group/trigger relative rounded-xl px-2 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:bg-sidebar-accent/50 hover:no-underline",
@@ -149,11 +150,18 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
                               className={cn(
                                 "group/link flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200",
                                 active
-                                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/20"
+                                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
                                   : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground",
                               )}
                             >
-                              <Icon className={cn("size-4 shrink-0 transition-transform duration-300 group-hover/link:scale-110", active ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/40 group-hover/link:text-sidebar-foreground")} />
+                              <Icon
+                                className={cn(
+                                  "size-4 shrink-0 transition-transform duration-300 group-hover/link:scale-110",
+                                  active
+                                    ? "text-sidebar-primary-foreground"
+                                    : "text-sidebar-foreground/40 group-hover/link:text-sidebar-foreground",
+                                )}
+                              />
                               <span className="text-sm font-semibold tracking-tight">
                                 {item.label}
                               </span>
@@ -174,15 +182,18 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
         <button
           type="button"
           onClick={onAccountOpen}
-          className="group flex w-full items-center gap-3 rounded-2xl border border-sidebar-border/60 bg-sidebar-accent/30 p-2 text-left transition-all hover:bg-sidebar-accent hover:shadow-md active:scale-[0.98]"
+          className="group flex w-full items-center gap-3 rounded-xl border border-sidebar-border/60 bg-sidebar-accent/30 p-2 text-left transition-all hover:bg-sidebar-accent active:scale-[0.98]"
         >
           <div className="relative">
-            <Avatar size="lg" className="rounded-xl ring-2 ring-transparent transition-all group-hover:ring-sidebar-primary/20">
+            <Avatar
+              size="lg"
+              className="rounded-lg ring-2 ring-transparent transition-all group-hover:ring-sidebar-primary/20"
+            >
               <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground font-bold">
                 {getUserInitials(user)}
               </AvatarFallback>
             </Avatar>
-            <div className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-sidebar bg-emerald-500" />
+            <div className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-sidebar bg-primary" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-bold text-sidebar-foreground">

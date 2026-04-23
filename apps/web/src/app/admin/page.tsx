@@ -13,14 +13,6 @@ import {
   InsightCard,
   PageShell,
 } from "@/components/system/page-shell";
-import { buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { toRoute } from "@/lib/routes";
 
 const quickLinks: {
@@ -72,11 +64,15 @@ export default function AdminPage() {
           >
             <div className="mt-4 flex flex-col gap-3">
               <div className="flex items-center justify-between rounded-xl bg-muted/40 p-3">
-                <span className="text-xs font-bold text-muted-foreground/80">API Latency</span>
-                <span className="text-xs font-black text-emerald-500">24ms</span>
+                <span className="text-xs font-bold text-muted-foreground/80">
+                  API Latency
+                </span>
+                <span className="text-xs font-black text-primary">24ms</span>
               </div>
               <div className="flex items-center justify-between rounded-xl bg-muted/40 p-3">
-                <span className="text-xs font-bold text-muted-foreground/80">Active Sessions</span>
+                <span className="text-xs font-bold text-muted-foreground/80">
+                  Active Sessions
+                </span>
                 <span className="text-xs font-black text-foreground">142</span>
               </div>
             </div>
@@ -95,7 +91,7 @@ export default function AdminPage() {
               <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
                 <Icon className="size-6" />
               </div>
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2">
                 <h3 className="font-heading text-lg font-bold tracking-tight text-foreground">
                   {title}
                 </h3>
@@ -104,7 +100,7 @@ export default function AdminPage() {
                 </p>
               </div>
             </div>
-            
+
             <div className="mt-6 flex items-center gap-2 text-xs font-bold text-primary opacity-0 transition-all duration-300 group-hover:translate-x-1 group-hover:opacity-100">
               View portal
               <ArrowRight className="size-3.5" />

@@ -3,6 +3,7 @@ import type {
   AdminCreateSupplierInquiryRequest,
   AdminCreateSupplierProcurementOrderRequest,
   AdminCreateSupplierRequest,
+  AdminLinkSupplierContactPortalRequest,
   AdminLinkSupplierProductRequest,
   AdminLocationListQuery,
   AdminLocationListResponse,
@@ -113,6 +114,40 @@ export async function removeAdminSupplierContact(
 ): Promise<{ success: boolean }> {
   return fetchJson<{ success: boolean }>(
     `/api/admin/suppliers/${encodeURIComponent(slug)}/contacts/${encodeURIComponent(contactReference)}`,
+    { method: "DELETE" },
+    { auth: "required" },
+  );
+}
+
+export async function linkAdminSupplierContactPortal(
+  slug: string,
+  contactReference: string,
+  input: AdminLinkSupplierContactPortalRequest,
+): Promise<AdminSupplierDetail> {
+  return fetchJson<AdminSupplierDetail>(
+    `/api/admin/suppliers/${encodeURIComponent(slug)}/contacts/${encodeURIComponent(contactReference)}/portal-link`,
+    { body: JSON.stringify(input), headers: jsonHeaders(), method: "POST" },
+    { auth: "required" },
+  );
+}
+
+export async function inviteAdminSupplierContactPortal(
+  slug: string,
+  contactReference: string,
+): Promise<AdminSupplierDetail> {
+  return fetchJson<AdminSupplierDetail>(
+    `/api/admin/suppliers/${encodeURIComponent(slug)}/contacts/${encodeURIComponent(contactReference)}/portal-invite`,
+    { method: "POST" },
+    { auth: "required" },
+  );
+}
+
+export async function unlinkAdminSupplierContactPortal(
+  slug: string,
+  contactReference: string,
+): Promise<AdminSupplierDetail> {
+  return fetchJson<AdminSupplierDetail>(
+    `/api/admin/suppliers/${encodeURIComponent(slug)}/contacts/${encodeURIComponent(contactReference)}/portal-link`,
     { method: "DELETE" },
     { auth: "required" },
   );

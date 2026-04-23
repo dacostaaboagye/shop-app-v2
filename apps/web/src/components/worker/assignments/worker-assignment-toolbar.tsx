@@ -49,10 +49,10 @@ function AssignmentSearchInput({
   search: string;
 }) {
   return (
-    <div className="relative min-w-40 flex-1">
-      <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+    <div className="relative min-w-64 flex-1">
+      <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50 transition-colors group-focus-within:text-primary" />
       <Input
-        className="pl-9 pr-9"
+        className="h-10 rounded-xl border-border bg-white pl-10 pr-10 shadow-sm transition-all focus:bg-background focus:ring-primary/20"
         id="assignments-search"
         inputMode="search"
         onChange={(event) => onSearchChange(event.target.value)}
@@ -62,13 +62,13 @@ function AssignmentSearchInput({
       {search ? (
         <Button
           aria-label="Clear search"
-          className="absolute right-1 top-1/2 -translate-y-1/2"
+          className="absolute right-1 top-1/2 -translate-y-1/2 size-8 rounded-lg text-muted-foreground/60 hover:bg-muted"
           onClick={() => onSearchChange("")}
-          size="sm"
+          size="icon"
           type="button"
           variant="ghost"
         >
-          <X data-icon="inline-start" />
+          <X className="size-3.5" />
         </Button>
       ) : null}
     </div>
@@ -87,16 +87,16 @@ function StockFilterChips({
   return (
     <fieldset
       aria-label="Filter by stock status"
-      className="flex items-center gap-1 overflow-x-auto rounded-lg border border-border bg-muted p-1"
+      className="flex w-fit items-center gap-1 overflow-x-auto rounded-xl border border-border/50 bg-muted/30 p-[3px]"
     >
       {FILTER_OPTIONS.map((option) => (
         <button
           aria-pressed={stockFilter === option.value}
           className={cn(
-            "inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-ring",
+            "inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-bold transition-all active:scale-[0.98]",
             stockFilter === option.value
               ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground",
+              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
           )}
           id={`filter-${option.value}`}
           key={option.value}
@@ -107,10 +107,10 @@ function StockFilterChips({
           {counts[option.value] > 0 ? (
             <span
               className={cn(
-                "rounded px-1 text-[10px] tabular-nums",
+                "rounded-md px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
                 stockFilter === option.value
-                  ? "bg-muted text-muted-foreground"
-                  : "opacity-60",
+                  ? "bg-primary/10 text-primary"
+                  : "bg-muted text-muted-foreground/60",
               )}
             >
               {counts[option.value]}

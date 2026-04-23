@@ -7,10 +7,13 @@ import {
   adminSupplierQueryKey,
   createAdminSupplierInquiry,
   createAdminSupplierProcurementOrder,
+  inviteAdminSupplierContactPortal,
+  linkAdminSupplierContactPortal,
   linkAdminSupplierProduct,
   receiveAdminSupplierProcurementOrder,
   removeAdminSupplierContact,
   transitionAdminSupplierProcurementOrder,
+  unlinkAdminSupplierContactPortal,
   unlinkAdminSupplierProduct,
   updateAdminSupplier,
   updateAdminSupplierInquiry,
@@ -60,6 +63,32 @@ export function useSupplierDetailActions(input: {
     onSuccess: () => {
       input.refetchSupplier();
       toast.success("Supplier contact removed");
+    },
+  });
+  const linkContactPortalMutation = useMutation({
+    mutationFn: (payload: { contactReference: string; userSlug: string }) =>
+      linkAdminSupplierContactPortal(input.slug, payload.contactReference, {
+        userSlug: payload.userSlug,
+      }),
+    onSuccess: (supplier) => {
+      setSupplier(supplier);
+      toast.success("Supplier portal user linked");
+    },
+  });
+  const inviteContactPortalMutation = useMutation({
+    mutationFn: (contactReference: string) =>
+      inviteAdminSupplierContactPortal(input.slug, contactReference),
+    onSuccess: (supplier) => {
+      setSupplier(supplier);
+      toast.success("Supplier portal invite sent");
+    },
+  });
+  const unlinkContactPortalMutation = useMutation({
+    mutationFn: (contactReference: string) =>
+      unlinkAdminSupplierContactPortal(input.slug, contactReference),
+    onSuccess: (supplier) => {
+      setSupplier(supplier);
+      toast.success("Supplier portal user unlinked");
     },
   });
   const productMutation = useMutation({
@@ -144,11 +173,14 @@ export function useSupplierDetailActions(input: {
     contactMutation,
     inquiryMutation,
     inquiryStatusMutation,
+    inviteContactPortalMutation,
+    linkContactPortalMutation,
     procurementActionMutation,
     procurementCreateMutation,
     procurementReceiveMutation,
     productMutation,
     removeContactMutation,
+    unlinkContactPortalMutation,
     unlinkProductMutation,
     updateMutation,
   };

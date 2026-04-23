@@ -66,6 +66,8 @@ describe("portal-shell-config", () => {
         "Business",
         "Money",
         "Documents",
+        "Email templates",
+        "Email operations",
         "Location overrides",
       ],
     );

@@ -10,16 +10,16 @@ import {
   timeZoneOptions,
 } from "./document-setting-select-options";
 
-type SelectProps = {
+type SelectProps<T extends string = string> = {
   id: string;
-  value: string;
-  onChange: (value: string) => void;
+  value: T;
+  onChange: (value: T) => void;
 };
 
 export function CurrencySelect({ id, onChange, value }: SelectProps) {
   return (
-    <Select onValueChange={onChange} value={value}>
-      <SelectTrigger className="w-full">
+    <Select onValueChange={(next) => onChange(next)} value={value}>
+      <SelectTrigger className="w-full" id={id}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -40,8 +40,8 @@ export function TimeZoneSelect({
   value,
 }: SelectProps & { allowInherit?: boolean }) {
   return (
-    <Select onValueChange={onChange} value={value}>
-      <SelectTrigger className="w-full">
+    <Select onValueChange={(next) => onChange(next)} value={value}>
+      <SelectTrigger className="w-full" id={id}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -56,10 +56,14 @@ export function TimeZoneSelect({
   );
 }
 
-export function PaperSizeSelect({ id, onChange, value }: SelectProps) {
+export function PaperSizeSelect<T extends string>({
+  id,
+  onChange,
+  value,
+}: SelectProps<T>) {
   return (
-    <Select onValueChange={onChange} value={value}>
-      <SelectTrigger className="w-full">
+    <Select onValueChange={(next) => onChange(next as T)} value={value}>
+      <SelectTrigger className="w-full" id={id}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

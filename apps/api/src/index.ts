@@ -8,6 +8,7 @@ import { createCatalogRuntime } from "./modules/catalog/create-catalog-runtime.j
 import { PostgresVariantSearchRepository } from "./modules/catalog/postgres-variant-search.repository.js";
 import { createPlatformEventRuntime } from "./modules/events/create-platform-event-runtime.js";
 import { InMemoryPlatformEventBus } from "./modules/events/in-memory-platform-event-bus.js";
+import { createMessagingRuntime } from "./modules/messaging/create-email-runtime.js";
 import { NotificationQueryService } from "./modules/notifications/notification-query.service.js";
 import { NotificationWriteService } from "./modules/notifications/notification-write.service.js";
 import { PostgresNotificationQueryRepository } from "./modules/notifications/postgres-notification-query.repository.js";
@@ -28,7 +29,8 @@ if (!env.databaseUrl) {
 const databaseRuntime = createDatabaseRuntime(env.databaseUrl);
 const storage = createR2StorageService(env);
 const eventBus = new InMemoryPlatformEventBus();
-const adminDirectoryRuntime = createAdminDirectoryRuntime(databaseRuntime);
+const messagingRuntime = createMessagingRuntime(databaseRuntime, env);
+const adminDirectoryRuntime = createAdminDirectoryRuntime(databaseRuntime, env);
 const authRuntime = createAuthRuntime(databaseRuntime, env);
 const catalogRuntime = createCatalogRuntime(databaseRuntime, storage);
 const salesRuntime = createSalesRuntime(databaseRuntime);
@@ -51,6 +53,7 @@ const notificationWriteService = new NotificationWriteService(
 const officialDocumentRuntime = createOfficialDocumentSettingsRuntime(
   databaseRuntime,
   {
+    emailFromAddress: env.emailFromAddress,
     platformEventPublisher: platformEventRuntime.platformEventPublisher,
   },
 );
@@ -91,6 +94,12 @@ const server = createServer({
   eventsAdmin: {
     deliveryHealthService:
       platformEventRuntime.platformEventDeliveryHealthService,
+  },
+  messagingAdmin: {
+    operationsService: messagingRuntime.emailOperationsService,
+  },
+  messagingWebhooks: {
+    resendWebhookService: messagingRuntime.resendWebhookService,
   },
   notifications: {
     notificationQueryService,

@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import type { OfficialDocumentSettingsFormApi } from "./official-document-identity-fields";
 import type { OfficialDocumentSettingsFormValues } from "./official-document-settings-form.support";
 
@@ -21,7 +22,11 @@ export function OfficialDocumentMoneyFields({
     <FieldGroup>
       <form.Field name="baseCurrencyCode">
         {(field) => (
-          <AppFormField inputId={field.name} label="Base currency">
+          <AppFormField
+            info="The primary currency used for internal accounting and base pricing."
+            inputId={field.name}
+            label="Base currency"
+          >
             <CurrencySelect
               id={field.name}
               onChange={field.handleChange}
@@ -32,7 +37,11 @@ export function OfficialDocumentMoneyFields({
       </form.Field>
       <form.Field name="defaultDisplayCurrencyCode">
         {(field) => (
-          <AppFormField inputId={field.name} label="Display currency">
+          <AppFormField
+            info="The currency shown to customers by default."
+            inputId={field.name}
+            label="Display currency"
+          >
             <CurrencySelect
               id={field.name}
               onChange={field.handleChange}
@@ -43,7 +52,11 @@ export function OfficialDocumentMoneyFields({
       </form.Field>
       <form.Field name="currencyScale">
         {(field) => (
-          <AppFormField inputId={field.name} label="Currency scale">
+          <AppFormField
+            info="Number of decimal places used for prices (standard is 2)."
+            inputId={field.name}
+            label="Currency scale"
+          >
             <Input
               id={field.name}
               max={4}
@@ -60,7 +73,11 @@ export function OfficialDocumentMoneyFields({
       </form.Field>
       <form.Field name="roundingMode">
         {(field) => (
-          <AppFormField inputId={field.name} label="Rounding mode">
+          <AppFormField
+            info="Mathematical strategy for handling decimal rounding in currency calculations."
+            inputId={field.name}
+            label="Rounding mode"
+          >
             <Select
               onValueChange={(value) =>
                 field.handleChange(
@@ -84,11 +101,13 @@ export function OfficialDocumentMoneyFields({
       </form.Field>
       <BooleanField
         form={form}
+        info="Enables processing of orders and receipts in currencies other than the base currency."
         label="Allow multi-currency sales"
         name="allowMultiCurrencySales"
       />
       <BooleanField
         form={form}
+        info="Enables manual override or automatic fetching of currency exchange rates for multi-currency transactions."
         label="Allow exchange rates"
         name="allowExchangeRates"
       />
@@ -98,25 +117,25 @@ export function OfficialDocumentMoneyFields({
 
 function BooleanField({
   form,
+  info,
   label,
   name,
 }: {
   form: OfficialDocumentSettingsFormApi;
+  info?: string;
   label: string;
   name: "allowExchangeRates" | "allowMultiCurrencySales";
 }) {
   return (
     <form.Field name={name}>
       {(field) => (
-        <AppFormField inputId={field.name} label={label}>
-          <input
-            checked={field.state.value}
-            className="size-4 accent-primary"
-            id={field.name}
-            onBlur={field.handleBlur}
-            onChange={(event) => field.handleChange(event.target.checked)}
-            type="checkbox"
-          />
+        <AppFormField info={info} inputId={field.name} label={label}>
+          <div className="flex h-10 items-center">
+            <Switch
+              checked={field.state.value}
+              onCheckedChange={field.handleChange}
+            />
+          </div>
         </AppFormField>
       )}
     </form.Field>

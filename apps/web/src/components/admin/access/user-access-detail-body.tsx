@@ -180,7 +180,7 @@ export function UserAccessDetailBody({
       />
 
       <Tabs defaultValue="effective">
-        <TabsList variant="line">
+        <TabsList>
           <TabsTrigger value="effective">Effective access</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>

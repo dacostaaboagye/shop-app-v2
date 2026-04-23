@@ -12,6 +12,9 @@ import {
   deliveries,
   deliveryItems,
   deliveryStatusEnum,
+  emailDeliveryAttempts,
+  emailDeliveryStatusEvents,
+  emailDeliveryStatusEnum,
   issuedDocuments,
   locationDocumentSettings,
   mediaAssets,
@@ -37,14 +40,16 @@ import {
   stockReservations,
   supplierContactStatusEnum,
   supplierContacts,
+  supplierInquiries,
+  supplierInquiryStatusEnum,
   supplierProcurementOrderLines,
   supplierProcurementOrders,
   supplierProcurementStatusEnum,
   supplierProducts,
   supplierStatusEnum,
-  supplierTransactionTypeEnum,
-  supplierTransactions,
   suppliers,
+  supplierTransactions,
+  supplierTransactionTypeEnum,
   userNotificationStatusEnum,
   userNotifications,
   userPermissionOverrides,
@@ -67,6 +72,11 @@ assert.equal(getTableName(catalogCategories), "catalog_categories");
 assert.equal(getTableName(catalogProducts), "catalog_products");
 assert.equal(getTableName(deliveries), "deliveries");
 assert.equal(getTableName(deliveryItems), "delivery_items");
+assert.equal(getTableName(emailDeliveryAttempts), "email_delivery_attempts");
+assert.equal(
+  getTableName(emailDeliveryStatusEvents),
+  "email_delivery_status_events",
+);
 assert.equal(getTableName(productVariants), "product_variants");
 assert.equal(getTableName(stockBalances), "stock_balances");
 assert.equal(getTableName(stockMovements), "stock_movements");
@@ -76,6 +86,7 @@ assert.equal(getTableName(suppliers), "suppliers");
 assert.equal(getTableName(supplierContacts), "supplier_contacts");
 assert.equal(getTableName(supplierProducts), "supplier_products");
 assert.equal(getTableName(supplierTransactions), "supplier_transactions");
+assert.equal(getTableName(supplierInquiries), "supplier_inquiries");
 assert.equal(
   getTableName(supplierProcurementOrders),
   "supplier_procurement_orders",
@@ -115,6 +126,16 @@ assert.deepEqual(deliveryStatusEnum.enumValues, [
   "completed",
   "cancelled",
 ]);
+assert.deepEqual(emailDeliveryStatusEnum.enumValues, [
+  "bounced",
+  "complained",
+  "console_fallback",
+  "delayed",
+  "delivered",
+  "failed",
+  "sent",
+  "suppressed",
+]);
 assert.deepEqual(stockReservationStatusEnum.enumValues, [
   "active",
   "confirmed",
@@ -150,6 +171,12 @@ assert.deepEqual(supplierTransactionTypeEnum.enumValues, [
   "payment",
   "return",
   "credit_note",
+]);
+assert.deepEqual(supplierInquiryStatusEnum.enumValues, [
+  "sent",
+  "responded",
+  "converted",
+  "cancelled",
 ]);
 assert.deepEqual(supplierProcurementStatusEnum.enumValues, [
   "draft",
@@ -206,6 +233,12 @@ assert.equal(suppliers.paymentTermsDays.name, "payment_terms_days");
 assert.equal(supplierContacts.userId.name, "user_id");
 assert.equal(supplierProducts.productId.name, "product_id");
 assert.equal(supplierTransactions.transactionType.name, "transaction_type");
+assert.equal(supplierInquiries.reference.name, "reference");
+assert.equal(
+  supplierInquiries.requestedProductName.name,
+  "requested_product_name",
+);
+assert.equal(supplierInquiries.attachmentUrl.name, "attachment_url");
 assert.equal(
   supplierProcurementOrders.destinationLocationId.name,
   "destination_location_id",
@@ -245,6 +278,9 @@ assert.match(migrationSql, /catalog_media_assignments_primary_unique/);
 assert.match(migrationSql, /delivery_status/);
 assert.match(migrationSql, /delivery_items_reference_unique/);
 assert.match(migrationSql, /delivery_items_quantity_positive/);
+assert.match(migrationSql, /email_delivery_status/);
+assert.match(migrationSql, /email_delivery_attempts/);
+assert.match(migrationSql, /email_delivery_status_events/);
 assert.match(migrationSql, /idx_ownership_resolution/);
 assert.match(migrationSql, /idx_ownership_chain/);
 assert.match(migrationSql, /idx_ownership_worker/);
@@ -273,6 +309,8 @@ assert.match(migrationSql, /supplier_products_supplier_product_unique/);
 assert.match(migrationSql, /supplier_transaction_type/);
 assert.match(migrationSql, /supplier_procurement_status/);
 assert.match(migrationSql, /supplier_procurement_orders_reference_unique/);
+assert.match(migrationSql, /supplier_inquiry_status/);
+assert.match(migrationSql, /supplier_inquiries_reference_unique/);
 
 console.log("database schema foundation assertions passed");
 

@@ -1,10 +1,13 @@
 import type {
   AdminCreateSupplierContactRequest,
+  AdminCreateSupplierInquiryRequest,
   AdminCreateSupplierProcurementOrderRequest,
   AdminCreateSupplierRequest,
+  AdminLinkSupplierContactPortalRequest,
   AdminLinkSupplierProductRequest,
   AdminSupplierDetail,
   AdminSupplierProcurementReceiveRequest,
+  AdminUpdateSupplierInquiryRequest,
   AdminUpdateSupplierRequest,
 } from "@shop/contracts";
 import { AppError } from "../_core/errors/app-error.js";
@@ -17,6 +20,28 @@ export type AdminSupplierWriteRepository = {
     payload: AdminCreateSupplierContactRequest;
     supplierSlug: string;
   }): Promise<AdminSupplierDetail | null>;
+  removeContact(input: {
+    contactReference: string;
+    supplierSlug: string;
+  }): Promise<"deleted" | "not_found" | "primary_contact">;
+  linkContactPortal(input: {
+    actorId: string;
+    contactReference: string;
+    now: Date;
+    payload: AdminLinkSupplierContactPortalRequest;
+    supplierSlug: string;
+  }): Promise<AdminSupplierDetail | null>;
+  inviteContactPortal(input: {
+    actorId: string;
+    contactReference: string;
+    now: Date;
+    supplierSlug: string;
+  }): Promise<AdminSupplierDetail | null>;
+  unlinkContactPortal(input: {
+    contactReference: string;
+    now: Date;
+    supplierSlug: string;
+  }): Promise<AdminSupplierDetail | null>;
   createSupplier(input: {
     actorId: string;
     now: Date;
@@ -26,6 +51,13 @@ export type AdminSupplierWriteRepository = {
     actorId: string;
     now: Date;
     payload: AdminCreateSupplierProcurementOrderRequest;
+    reference: string;
+    supplierSlug: string;
+  }): Promise<AdminSupplierDetail | null>;
+  createInquiry(input: {
+    actorId: string;
+    now: Date;
+    payload: AdminCreateSupplierInquiryRequest;
     reference: string;
     supplierSlug: string;
   }): Promise<AdminSupplierDetail | null>;
@@ -61,6 +93,13 @@ export type AdminSupplierWriteRepository = {
     payload: AdminUpdateSupplierRequest;
     supplierSlug: string;
   }): Promise<AdminSupplierDetail | null>;
+  updateInquiry(input: {
+    actorId: string;
+    now: Date;
+    payload: AdminUpdateSupplierInquiryRequest;
+    reference: string;
+    supplierSlug: string;
+  }): Promise<AdminSupplierDetail | null>;
 };
 
 export class AdminSupplierWriteService {
@@ -79,6 +118,52 @@ export class AdminSupplierWriteService {
     now: Date,
   ) {
     return this.repository.addContact({ actorId, now, payload, supplierSlug });
+  }
+
+  async removeContact(supplierSlug: string, contactReference: string) {
+    return this.repository.removeContact({ contactReference, supplierSlug });
+  }
+
+  async linkContactPortal(
+    supplierSlug: string,
+    contactReference: string,
+    actorId: string,
+    payload: AdminLinkSupplierContactPortalRequest,
+    now: Date,
+  ) {
+    return this.repository.linkContactPortal({
+      actorId,
+      contactReference,
+      now,
+      payload,
+      supplierSlug,
+    });
+  }
+
+  async inviteContactPortal(
+    supplierSlug: string,
+    contactReference: string,
+    actorId: string,
+    now: Date,
+  ) {
+    return this.repository.inviteContactPortal({
+      actorId,
+      contactReference,
+      now,
+      supplierSlug,
+    });
+  }
+
+  async unlinkContactPortal(
+    supplierSlug: string,
+    contactReference: string,
+    now: Date,
+  ) {
+    return this.repository.unlinkContactPortal({
+      contactReference,
+      now,
+      supplierSlug,
+    });
   }
 
   async createSupplier(
@@ -108,6 +193,34 @@ export class AdminSupplierWriteService {
       sequenceKey: "purchase-order",
     });
     return this.repository.createProcurementOrder({
+      actorId,
+      now,
+      payload,
+      reference,
+      supplierSlug,
+    });
+  }
+
+  async createInquiry(
+    supplierSlug: string,
+    actorId: string,
+    payload: AdminCreateSupplierInquiryRequest,
+    now: Date,
+  ) {
+    if (!this.referenceNumberService) {
+      throw new AppError({
+        code: "internal_error",
+        detail:
+          "Reference generation is not configured for supplier inquiries.",
+        statusCode: 503,
+        title: "Supplier inquiry unavailable",
+      });
+    }
+    const reference = await this.referenceNumberService.generateReference({
+      now,
+      sequenceKey: "supplier-inquiry",
+    });
+    return this.repository.createInquiry({
       actorId,
       now,
       payload,
@@ -174,6 +287,22 @@ export class AdminSupplierWriteService {
       actorId,
       now,
       payload,
+      supplierSlug,
+    });
+  }
+
+  async updateInquiry(
+    supplierSlug: string,
+    reference: string,
+    actorId: string,
+    payload: AdminUpdateSupplierInquiryRequest,
+    now: Date,
+  ) {
+    return this.repository.updateInquiry({
+      actorId,
+      now,
+      payload,
+      reference,
       supplierSlug,
     });
   }

@@ -67,7 +67,10 @@ export function AppErrorState({
 
   return (
     <Empty
-      className={cn("hero-panel border-border/80 bg-card/85 py-14", className)}
+      className={cn(
+        "rounded-xl border border-border/50 bg-card/85 py-14 shadow-sm backdrop-blur-sm",
+        className,
+      )}
     >
       <EmptyHeader>
         <EmptyMedia variant="icon">

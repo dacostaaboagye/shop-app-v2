@@ -4,11 +4,11 @@ import "@fontsource-variable/source-serif-4/wght.css";
 import "@fontsource/source-code-pro/latin-400.css";
 import "@fontsource/source-code-pro/latin-500.css";
 import "./globals.css";
-import { AppProviders } from "@/components/providers/app-providers";
 import { Geist } from "next/font/google";
+import { AppProviders } from "@/components/providers/app-providers";
 import { cn } from "@/lib/utils";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "Shop App V2",

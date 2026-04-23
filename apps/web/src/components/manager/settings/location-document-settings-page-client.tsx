@@ -7,13 +7,6 @@ import { AppErrorBanner } from "@/components/system/app-error";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
 import {
@@ -161,42 +154,96 @@ function EffectiveProfilePreview({
 }: {
   profile: Awaited<ReturnType<typeof fetchOfficialDocumentProfile>> | undefined;
 }) {
-  if (!profile) return <Skeleton className="h-64 w-full" />;
+  if (!profile) return <Skeleton className="h-64 w-full rounded-xl" />;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="size-4" />
-          Effective print profile
-        </CardTitle>
-        <CardDescription>
-          This is what receipts and shared sales documents will use for this
-          location.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3 text-sm">
-        <div>
-          <p className="font-semibold">{profile.brandName}</p>
-          <p className="text-muted-foreground">{profile.legalName}</p>
+    <div className="flex flex-col gap-4">
+      <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 px-1">
+        Current print profile
+      </h3>
+      <div className="rounded-xl border border-border/50 bg-white p-6 shadow-sm">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/5 text-primary ring-1 ring-primary/10">
+            <FileText className="size-5" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-foreground">Print profile</h4>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
+              Active document configuration
+            </p>
+          </div>
         </div>
-        <div className="text-muted-foreground">
-          {profile.addressLines.map((line) => (
-            <p key={line}>{line}</p>
-          ))}
+
+        <div className="flex flex-col gap-5 text-sm">
+          <div className="flex flex-col gap-1">
+            <p className="font-bold text-foreground">{profile.brandName}</p>
+            <p className="text-xs font-medium text-muted-foreground/80">
+              {profile.legalName}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
+              Address
+            </p>
+            <div className="text-xs font-medium text-muted-foreground/80 leading-relaxed">
+              {profile.addressLines.map((line) => (
+                <p key={line}>{line}</p>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
+                Phone
+              </p>
+              <p className="text-xs font-bold text-foreground">
+                {profile.phone}
+              </p>
+            </div>
+            <div className="flex flex-col gap-1">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
+                Email
+              </p>
+              <p className="text-xs font-bold text-foreground truncate">
+                {profile.email}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
+              Footer
+            </p>
+            <div className="rounded-xl bg-muted/20 border border-border/50 p-4 text-[11px] font-medium text-muted-foreground/80 leading-relaxed italic">
+              "{profile.footer}"
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Badge
+              className="rounded-md font-bold uppercase tracking-wider text-[10px]"
+              variant="secondary"
+            >
+              {profile.currencyCode}
+            </Badge>
+            <Badge
+              className="rounded-md font-bold uppercase tracking-wider text-[10px]"
+              variant="outline"
+            >
+              {profile.paperSize.replace("_", " ")}
+            </Badge>
+            <Badge
+              className="rounded-md font-bold uppercase tracking-wider text-[10px]"
+              variant="outline"
+            >
+              {profile.timezone}
+            </Badge>
+          </div>
         </div>
-        <p className="text-muted-foreground">{profile.phone}</p>
-        <p className="text-muted-foreground">{profile.email}</p>
-        <div className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground">
-          {profile.footer}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="outline">{profile.currencyCode}</Badge>
-          <Badge variant="outline">{profile.paperSize}</Badge>
-          <Badge variant="outline">{profile.timezone}</Badge>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 

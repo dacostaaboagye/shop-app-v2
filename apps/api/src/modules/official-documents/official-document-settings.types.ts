@@ -8,6 +8,7 @@ import type {
   DocumentBrandSettings,
   DocumentBusinessSettings,
   DocumentDefaults,
+  EmailTemplateSettings,
   LocationOverridePolicy,
   MoneySettings,
 } from "@shop/database";
@@ -17,6 +18,7 @@ export type OfficialDocumentSettings = {
   business: DocumentBusinessSettings;
   currency: MoneySettings;
   documents: DocumentDefaults;
+  emailTemplates: EmailTemplateSettings;
   locationOverridePolicy: LocationOverridePolicy;
 };
 export type OfficialDocumentProfile = OfficialDocumentProfileResponse;

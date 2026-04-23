@@ -11,12 +11,19 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { AppDataTable } from "@/components/data-table/app-data-table";
 import { AppErrorBanner } from "@/components/system/app-error";
+import { AppTableWrapper } from "@/components/system/app-table-wrapper";
 import {
   PageHeader,
   PageShell,
   StatCard,
 } from "@/components/system/page-shell";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getAppErrorMessage } from "@/lib/errors/app-error";
 import {
@@ -111,76 +118,93 @@ export function AuditPageClient() {
         />
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="ml-auto flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Rows</span>
+      <div className="flex flex-wrap items-center gap-4 rounded-xl bg-white p-4 shadow-sm border border-border/50">
+        <div className="flex items-center gap-3">
+          <SlidersHorizontal className="size-4 text-muted-foreground" />
+          <span className="text-sm font-medium text-foreground">
+            Review options
+          </span>
+        </div>
+
+        <div className="ml-auto flex items-center gap-3">
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Rows per page
+          </span>
           <Select
-            aria-label="Rows per page"
-            className="h-9"
-            onChange={(event) =>
+            onValueChange={(value) =>
               replaceAuditQuery(router, pathname, searchParams, {
                 page: null,
-                pageSize:
-                  event.target.value === "25" ? null : event.target.value,
+                pageSize: value === "25" ? null : value,
               })
             }
             value={String(pageSize)}
           >
-            {PAGE_SIZE_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
+            <SelectTrigger className="h-9 min-w-[70px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZE_OPTIONS.map((option) => (
+                <SelectItem key={option} value={String(option)}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
           </Select>
+          <div className="h-4 w-px bg-border" />
+          <span className="text-sm tabular-nums text-muted-foreground">
+            <span className="font-medium text-foreground">
+              {auditQuery.data?.totalCount ?? 0}
+            </span>{" "}
+            total events
+          </span>
         </div>
-        <span className="text-sm tabular-nums text-muted-foreground">
-          {auditQuery.data?.totalCount ?? 0} total
-        </span>
       </div>
 
-      {auditQuery.isPending && !auditQuery.data ? (
-        <div className="flex flex-col gap-2">
-          {AUDIT_SKELETON_KEYS.map((key) => (
-            <Skeleton key={key} className="h-11 w-full" />
-          ))}
-        </div>
-      ) : (
-        <>
-          {auditQuery.isError ? (
-            <AppErrorBanner
-              detail={getErrorMessage(auditQuery.error)}
-              error={auditQuery.error}
-              onRetry={() => {
-                void auditQuery.refetch();
+      <AppTableWrapper>
+        {auditQuery.isPending && !auditQuery.data ? (
+          <div className="flex flex-col gap-2">
+            {AUDIT_SKELETON_KEYS.map((key) => (
+              <Skeleton key={key} className="h-11 w-full" />
+            ))}
+          </div>
+        ) : (
+          <>
+            {auditQuery.isError ? (
+              <AppErrorBanner
+                detail={getErrorMessage(auditQuery.error)}
+                error={auditQuery.error}
+                onRetry={() => {
+                  void auditQuery.refetch();
+                }}
+                title="Unable to load audit entries"
+              />
+            ) : null}
+            <AppDataTable
+              columns={auditTableColumns}
+              data={auditQuery.data?.items ?? []}
+              density="compact"
+              emptyDescription="No access-control history has been recorded yet."
+              emptyTitle="No audit entries"
+              getRowId={(row) => getAuditEntryKey(row)}
+              pagination={{
+                onPageChange: (nextPage) =>
+                  replaceAuditQuery(router, pathname, searchParams, {
+                    page: nextPage === 1 ? null : nextPage,
+                  }),
+                onPageSizeChange: (nextPageSize) =>
+                  replaceAuditQuery(router, pathname, searchParams, {
+                    page: null,
+                    pageSize: nextPageSize === 25 ? null : nextPageSize,
+                  }),
+                page: safePage,
+                pageSize,
+                pageSizeOptions: PAGE_SIZE_OPTIONS,
+                totalCount: auditQuery.data?.totalCount ?? 0,
               }}
-              title="Unable to load audit entries"
             />
-          ) : null}
-          <AppDataTable
-            columns={auditTableColumns}
-            data={auditQuery.data?.items ?? []}
-            density="compact"
-            emptyDescription="No access-control history has been recorded yet."
-            emptyTitle="No audit entries"
-            getRowId={(row) => getAuditEntryKey(row)}
-            pagination={{
-              onPageChange: (nextPage) =>
-                replaceAuditQuery(router, pathname, searchParams, {
-                  page: nextPage === 1 ? null : nextPage,
-                }),
-              onPageSizeChange: (nextPageSize) =>
-                replaceAuditQuery(router, pathname, searchParams, {
-                  page: null,
-                  pageSize: nextPageSize === 25 ? null : nextPageSize,
-                }),
-              page: safePage,
-              pageSize,
-              pageSizeOptions: PAGE_SIZE_OPTIONS,
-              totalCount: auditQuery.data?.totalCount ?? 0,
-            }}
-          />
-        </>
-      )}
+          </>
+        )}
+      </AppTableWrapper>
     </PageShell>
   );
 }

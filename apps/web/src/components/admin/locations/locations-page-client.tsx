@@ -19,13 +19,13 @@ import {
   fetchAdminLocations,
 } from "@/lib/react-query/admin-directory";
 import { toRoute } from "@/lib/routes";
-import { cn } from "@/lib/utils";
 import {
   getPageCount,
   readEnumParam,
   readPositiveIntParam,
   readStringParam,
 } from "@/lib/url-state";
+import { cn } from "@/lib/utils";
 import { locationTableColumns } from "./location-table-columns";
 import {
   getLocationsErrorMessage,
@@ -124,7 +124,10 @@ export function LocationsPageClient() {
         actions={
           <PermissionGate permission="locations.create">
             <Link
-              className={cn(buttonVariants({ size: "sm" }), "h-10 rounded-xl px-5 font-bold shadow-lg shadow-primary/20")}
+              className={cn(
+                buttonVariants({ size: "sm" }),
+                "h-10 rounded-xl px-5 font-bold shadow-sm",
+              )}
               href={toRoute("/admin/locations/new")}
             >
               New location
@@ -166,7 +169,7 @@ export function LocationsPageClient() {
         />
 
         {/* Sovereign Table Surface */}
-        <div className="overflow-hidden rounded-2xl bg-white shadow-xl shadow-black/[0.03] border border-slate-200/50">
+        <div className="overflow-hidden rounded-xl bg-white shadow-sm border border-border">
           {locationsQuery.isPending && !locationsQuery.data ? (
             <div className="flex flex-col gap-1 p-4">
               {LOCATION_SKELETON_KEYS.map((key) => (

@@ -31,7 +31,7 @@ export function WorkerSupplyRequestToolbar({
       <div className="relative min-w-40 flex-1">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          className="pl-9 pr-9"
+          className="h-10 rounded-xl border-border/60 bg-white pl-9 pr-9 shadow-sm transition-all focus:ring-primary/20"
           id="worker-requests-search"
           inputMode="search"
           onChange={(event) => onSearchChange(event.target.value)}
@@ -71,13 +71,13 @@ function FilterButtons({
   return (
     <fieldset
       aria-label="Filter by status"
-      className="flex items-center gap-1 overflow-x-auto rounded-lg border border-border bg-muted p-1"
+      className="flex w-fit items-center gap-1 overflow-x-auto rounded-xl border border-border/50 bg-muted/30 p-[3px]"
     >
       {WORKER_FILTER_OPTIONS.map((option) => (
         <button
           aria-pressed={statusFilter === option.value}
           className={cn(
-            "inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-ring",
+            "inline-flex items-center gap-1 whitespace-nowrap rounded-lg px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all focus-visible:outline-ring",
             statusFilter === option.value
               ? "bg-background text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground",
@@ -92,8 +92,8 @@ function FilterButtons({
               className={cn(
                 "rounded px-1 text-[10px] tabular-nums",
                 statusFilter === option.value
-                  ? "bg-muted text-muted-foreground"
-                  : "opacity-60",
+                  ? "bg-primary/10 text-primary"
+                  : "bg-muted text-muted-foreground opacity-60",
               )}
             >
               {counts[option.value]}
@@ -115,7 +115,7 @@ function ViewModeToggle({
   return (
     <fieldset
       aria-label="Change view"
-      className="flex items-center gap-1 rounded-lg border border-border bg-muted p-1"
+      className="flex w-fit items-center gap-1 rounded-xl border border-border/50 bg-muted/30 p-[3px]"
     >
       <ViewModeButton
         active={viewMode === "card"}
@@ -150,7 +150,7 @@ function ViewModeButton({
     <button
       aria-label={label}
       className={cn(
-        "flex h-7 w-7 items-center justify-center rounded-md transition-colors focus-visible:outline-ring",
+        "flex h-8 w-8 items-center justify-center rounded-lg transition-all focus-visible:outline-ring",
         active
           ? "bg-background text-foreground shadow-sm"
           : "text-muted-foreground hover:text-foreground",

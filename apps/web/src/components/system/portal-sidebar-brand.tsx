@@ -71,8 +71,7 @@ function BrandMark({
 }) {
   return (
     <div
-      aria-hidden
-      className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-primary/20 transition-transform group-hover:scale-105 active:scale-95"
+      className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-sidebar-primary text-sidebar-primary-foreground transition-transform group-hover:scale-[1.02] active:scale-[0.98]"
       style={{
         backgroundColor: primaryColor,
         borderBottom: `4px solid ${accentColor}`,

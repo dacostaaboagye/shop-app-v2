@@ -78,8 +78,11 @@ export async function listSupplierContacts(
       phone: supplierContacts.phone,
       status: supplierContacts.status,
       supplierId: supplierContacts.supplierId,
+      userEmailVerified: users.emailVerified,
       userId: supplierContacts.userId,
+      userRequiresPasswordChange: users.requiresPasswordChange,
       userSlug: users.slug,
+      userStatus: users.status,
     })
     .from(supplierContacts)
     .leftJoin(users, eq(users.id, supplierContacts.userId))
@@ -227,4 +230,14 @@ export function groupSupplierContacts(rows: SupplierContactRow[]) {
   }
 
   return summary;
+}
+
+export function getSupplierContactPortalStatus(row: SupplierContactRow) {
+  if (row.status === "inactive") return "inactive" as const;
+  if (!row.userSlug) return "none" as const;
+  if (row.userStatus !== "active") return "inactive" as const;
+  if (row.userRequiresPasswordChange || !row.userEmailVerified) {
+    return "invited" as const;
+  }
+  return "linked" as const;
 }

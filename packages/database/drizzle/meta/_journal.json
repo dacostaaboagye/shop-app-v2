@@ -183,6 +183,41 @@
       "when": 1776840074747,
       "tag": "0025_solid_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1776857211820,
+      "tag": "0026_fresh_metal_master",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1776859694785,
+      "tag": "0027_certain_cerise",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1776880019619,
+      "tag": "0028_cheerful_slayback",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1776938781203,
+      "tag": "0029_smart_zaladane",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1776978547820,
+      "tag": "0030_striped_nico_minoru",
+      "breakpoints": true
     }
   ]
 }

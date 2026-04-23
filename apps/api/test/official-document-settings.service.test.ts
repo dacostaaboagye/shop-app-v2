@@ -5,6 +5,7 @@ import {
   defaultBrandSettings,
   defaultBusinessSettings,
   defaultDocumentSettings,
+  defaultEmailTemplateSettings,
   defaultLocationOverridePolicy,
   defaultMoneySettings,
 } from "../src/modules/official-documents/official-document-defaults.js";
@@ -75,7 +76,7 @@ describe("OfficialDocumentSettingsService", () => {
 });
 
 function createService(events: PlatformEventRecord[]) {
-  return new OfficialDocumentSettingsService(createRepository(), null, {
+  return new OfficialDocumentSettingsService(createRepository(), null, null, {
     async publish(event) {
       events.push(event);
     },
@@ -127,6 +128,7 @@ function makeGlobalRecord(): OfficialDocumentSettingsRecord {
     business: defaultBusinessSettings,
     currency: defaultMoneySettings,
     documents: defaultDocumentSettings,
+    emailTemplates: defaultEmailTemplateSettings,
     locationOverridePolicy: defaultLocationOverridePolicy,
     updatedAt: null,
     updatedByUserSlug: null,

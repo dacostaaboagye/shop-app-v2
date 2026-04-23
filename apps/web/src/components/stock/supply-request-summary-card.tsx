@@ -39,7 +39,7 @@ export function SupplyRequestSummaryCard({
   return (
     <article
       className={cn(
-        "relative overflow-hidden rounded-xl border bg-card shadow-sm",
+        "relative overflow-hidden rounded-xl border border-border/50 bg-white shadow-sm",
         accent.border,
       )}
     >
@@ -100,7 +100,7 @@ export function SupplyRequestSummaryCard({
           />
         </div>
 
-        <dl className="grid grid-cols-2 divide-x divide-border rounded-lg border border-border bg-muted/30">
+        <dl className="grid grid-cols-2 divide-x divide-border/50 rounded-xl border border-border bg-white shadow-xs">
           <QuantityValue
             label="Requested"
             value={String(item.requestedQuantity)}
@@ -159,7 +159,7 @@ function RequestNotes({ item }: { item: StockSupplyRequestResponse }) {
   if (!item.notes && !item.resolutionNotes) return null;
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg bg-muted/40 px-3 py-2 text-xs italic leading-relaxed text-muted-foreground">
+    <div className="flex flex-col gap-2 rounded-xl bg-muted/20 px-3 py-2.5 text-xs italic leading-relaxed text-muted-foreground ring-1 ring-border/10">
       {item.notes ? (
         <p>
           <span className="font-semibold not-italic opacity-80">Worker:</span> "

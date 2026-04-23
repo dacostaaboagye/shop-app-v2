@@ -23,10 +23,10 @@ export default async function ResetPasswordPage({
             Choose a strong password for your account.
           </p>
         </div>
-        
+
         <div className="flex flex-col gap-6">
           <ResetPasswordClient token={token} />
-          
+
           <div className="mt-4 flex items-center justify-center gap-2 border-t border-border/20 pt-8 text-sm font-medium text-muted-foreground">
             Back to{" "}
             <Link
