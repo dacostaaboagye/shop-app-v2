@@ -7,10 +7,4 @@ coverage
 .env.local
 .pnpm-store
 *.tsbuildinfo
-/.claude/settings.local.json
-*.log
-*.xlsx
-*.csv
-backlog.json
-/.playwright-mcp
 

@@ -2,21 +2,22 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { AppProviders } from "@/components/providers/app-providers";
 import HomePage from "./page";
 
 Object.assign(globalThis, { React });
 
 describe("HomePage", () => {
-  it("renders the storefront landing with account entry calls to action", () => {
-    const markup = renderToStaticMarkup(
-      <AppProviders>
-        <HomePage />
-      </AppProviders>,
-    );
+  it("surfaces the architecture-first baseline", () => {
+    const markup = renderToStaticMarkup(<HomePage />);
 
-    assert.match(markup, /Accountability/);
-    assert.match(markup, /Launch System/);
-    assert.match(markup, /Server-checked permissions/);
+    assert.match(markup, /Build the hard parts first\./);
+    assert.match(
+      markup,
+      /Immutable ownership ledger before attribution or reporting/,
+    );
+    assert.match(
+      markup,
+      /Shared table patterns and UI state are already anchored/,
+    );
   });
 });

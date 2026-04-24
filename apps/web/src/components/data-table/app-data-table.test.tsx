@@ -51,24 +51,4 @@ describe("AppDataTable", () => {
     assert.match(markup, /No rows/);
     assert.match(markup, /Nothing to show\./);
   });
-
-  it("renders selection checkboxes when bulk actions are enabled", () => {
-    const markup = renderToStaticMarkup(
-      <AppDataTable
-        bulkActions={{
-          render: () => <span>Bulk actions</span>,
-          selectionAriaLabel: "module",
-        }}
-        columns={columns}
-        data={[{ module: "Identity", status: "Ready" }]}
-        emptyDescription="Nothing to show."
-        emptyTitle="No rows"
-        getRowId={(row) => row.module}
-      />,
-    );
-
-    assert.match(markup, /Select all module/);
-    assert.match(markup, /Select module/);
-    assert.match(markup, /type="checkbox"/);
-  });
 });

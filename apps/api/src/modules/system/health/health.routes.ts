@@ -10,7 +10,6 @@ const healthRoute: RouteDefinition = {
 
 export function registerHealthRoutes(server: FastifyInstance) {
   server.route({
-    config: { access: healthRoute.access },
     method: healthRoute.method,
     url: healthRoute.url,
     async handler() {

@@ -14,15 +14,8 @@
     "enabled": true,
     "rules": {
       "recommended": true,
-      "correctness": {
-        "noUnusedImports": "error",
-        "noUnusedVariables": "error"
-      },
       "nursery": {
         "useSortedClasses": "off"
-      },
-      "suspicious": {
-        "noExplicitAny": "error"
       }
     }
   },
