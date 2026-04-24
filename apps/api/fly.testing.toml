@@ -1,8 +1,8 @@
-app = "shop-api-testing"
-primary_region = "iad"
+app = "shop-app-testing"
+primary_region = "jnb"
 
 [build]
-  dockerfile = "apps/api/Dockerfile"
+  dockerfile = "Dockerfile"
 
 [env]
   API_HOST = "0.0.0.0"

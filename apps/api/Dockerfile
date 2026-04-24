@@ -28,7 +28,7 @@ RUN pnpm --filter @shop/domain build
 RUN pnpm --filter @shop/api build
 
 # Prune to a self-contained production deployment bundle
-RUN pnpm --filter @shop/api deploy --prod /app/out
+RUN pnpm --filter @shop/api deploy --legacy --prod /app/out
 
 # ── Runtime stage ─────────────────────────────────────────────────────────────
 FROM node:22-alpine AS runner

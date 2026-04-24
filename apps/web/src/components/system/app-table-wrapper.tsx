@@ -1,6 +1,6 @@
 export function AppTableWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-xl bg-white shadow-sm border border-border">
+    <div className="rounded-xl border border-border bg-white shadow-sm">
       {children}
     </div>
   );
