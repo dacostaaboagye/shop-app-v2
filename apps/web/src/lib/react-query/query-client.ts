@@ -1,41 +1,18 @@
-import type { ProblemDetails } from "@shop/contracts";
 import { QueryClient } from "@tanstack/react-query";
-import { getDisplayErrorMessage } from "@/lib/errors/problem-details";
+import {
+  ApiError,
+  isRetryableAppError,
+  NetworkError,
+} from "@/lib/errors/app-error";
 
-export class ApiError extends Error {
-  problem: ProblemDetails | null;
-  status: number;
-
-  constructor({
-    message,
-    problem,
-    status,
-  }: {
-    message?: string;
-    problem: ProblemDetails | null;
-    status: number;
-  }) {
-    super(message ?? getDisplayErrorMessage(problem));
-    this.name = "ApiError";
-    this.problem = problem;
-    this.status = status;
-  }
-}
+export { ApiError, NetworkError } from "@/lib/errors/app-error";
 
 export function shouldRetryQuery(
   failureCount: number,
   error: unknown,
 ): boolean {
-  if (error instanceof ApiError) {
-    if (error.status === 429) {
-      return failureCount < 2;
-    }
-
-    if (error.status >= 500) {
-      return failureCount < 2;
-    }
-
-    return false;
+  if (error instanceof ApiError || error instanceof NetworkError) {
+    return isRetryableAppError(error) && failureCount < 2;
   }
 
   return failureCount < 2;

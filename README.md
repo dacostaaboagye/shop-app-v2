@@ -26,6 +26,7 @@ The first implementation accumulated architectural drift. This repo restarts fro
 - Public APIs expose slugs and reference numbers, not raw database IDs
 - Route-level authorization is mandatory for every protected API endpoint
 - Ownership, stock, and audit trails are append-only where the backlog requires immutability
+- Ownership ledger rows are true append-only records: no `effective_to` column, no row updates, corrections via compensating events only
 - Business rules live in services and domain modules, never inline in route handlers
 - Every backlog item must map back to acceptance criteria and definition-of-done evidence
 
@@ -34,9 +35,13 @@ The first implementation accumulated architectural drift. This repo restarts fro
 ```bash
 pnpm install
 pnpm verify
+pnpm deploy:testing:bootstrap
 pnpm --filter @shop/api dev
 pnpm --filter @shop/web dev
 ```
+
+Testing-environment deployment guidance lives in
+[docs/engineering/testing-environment-deployment.md](./docs/engineering/testing-environment-deployment.md).
 
 ## Branch naming
 
@@ -56,6 +61,6 @@ We are executing the workbook in dependency order. Foundation work comes first:
 2. Public identifiers and routing infrastructure
 3. Immutable stock ownership ledger
 4. Stock balance and reservation concurrency controls
-5. Locations, products, deliveries, and portal features on top of those primitives
+5. Locations, product-catalog foundations, deliveries, and portal features on top of those primitives
 
 Read [AGENTS.md](./AGENTS.md) before making changes.

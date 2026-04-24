@@ -6,12 +6,12 @@ This frontend uses `shadcn/ui` with the `base-nova` style as a component source 
 
 The interface should feel:
 
-- editorial rather than generic
+- clear rather than theatrical
 - operationally trustworthy rather than playful
 - warm and premium rather than sterile
 - quiet under load, with clear recovery and feedback states
 
-Avoid default SaaS aesthetics, purple gradients, and interchangeable dashboard chrome.
+Avoid editorial marketing language, default SaaS aesthetics, purple gradients, and interchangeable dashboard chrome.
 
 ## Foundation
 
@@ -28,6 +28,7 @@ Avoid default SaaS aesthetics, purple gradients, and interchangeable dashboard c
 - Use semantic tokens and component variants, never raw palette utilities like `text-blue-600`
 - Use `gap-*`, never `space-x-*` or `space-y-*`
 - Compose with shadcn primitives before inventing custom markup
+- Keep corner radii restrained. Prefer sharper `md` or `lg` surfaces over oversized rounded treatments unless the interaction clearly needs softer geometry.
 - Use React Query for client-side remote data, never ad hoc fetch state machines in component trees
 - Use Zustand for client-only UI state, never for server cache duplication
 - Use TanStack Form for non-trivial forms, never manual field orchestration with scattered `useState`
@@ -48,6 +49,7 @@ Avoid default SaaS aesthetics, purple gradients, and interchangeable dashboard c
 - The palette is warm neutral with teal emphasis and copper support
 - Primary actions use the primary token
 - Neutral surfaces should carry depth through layered surfaces and shadow, not arbitrary borders everywhere
+- Let surfaces feel premium through material, spacing, and shadow before adding more curvature
 - Destructive states must use the destructive token path consistently
 
 ## Responsive behavior
@@ -73,7 +75,7 @@ Every interactive screen should plan for:
 - loading: `Skeleton`, `Spinner`
 - empty: `Empty`
 - soft warning: `Alert`
-- hard failure: shared error state components and retry paths
+- hard failure: `AppErrorBanner`, `AppErrorState`, and retry paths
 - disabled or pending actions: button disabled state plus visible status cue
 
 Client-data rules:
@@ -82,6 +84,7 @@ Client-data rules:
 - Client fetches should go through `fetchJson` unless a feature-specific wrapper adds value
 - Query cache lifecycle belongs to React Query, not Zustand
 - Optimistic or workflow-local UI state may live in Zustand when it is not server truth
+- Error surfaces should show request references when the shared problem-details contract provides them
 
 ## Component selection
 
