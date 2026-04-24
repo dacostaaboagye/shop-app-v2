@@ -1,10 +1,9 @@
 "use client";
 
-import { RotateCcw } from "lucide-react";
 import Link from "next/link";
+import { AppErrorState } from "@/components/system/app-error";
 import { PageShell } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 
 export default function GlobalError({
   error,
@@ -17,27 +16,20 @@ export default function GlobalError({
     <html lang="en">
       <body>
         <PageShell className="justify-center">
-          <Alert className="hero-panel border-border/80 bg-card/88 p-8">
-            <RotateCcw />
-            <AlertTitle>Something went wrong.</AlertTitle>
-            <AlertDescription className="flex flex-col gap-5">
-              <span>
-                {error.message ||
-                  "An unexpected error occurred while rendering this page."}
-              </span>
-              <div className="token-row">
-                <Button onClick={reset} size="lg" type="button">
-                  Try Again
-                </Button>
-                <Link
-                  className={buttonVariants({ size: "lg", variant: "outline" })}
-                  href="/"
-                >
-                  Return Home
-                </Link>
-              </div>
-            </AlertDescription>
-          </Alert>
+          <AppErrorState
+            action={
+              <Link
+                className={buttonVariants({ size: "lg", variant: "outline" })}
+                href="/"
+              >
+                Return home
+              </Link>
+            }
+            detail="An unexpected error occurred while rendering this page."
+            error={error}
+            onRetry={reset}
+            title="Something went wrong"
+          />
         </PageShell>
       </body>
     </html>

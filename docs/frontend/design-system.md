@@ -75,7 +75,7 @@ Every interactive screen should plan for:
 - loading: `Skeleton`, `Spinner`
 - empty: `Empty`
 - soft warning: `Alert`
-- hard failure: shared error state components and retry paths
+- hard failure: `AppErrorBanner`, `AppErrorState`, and retry paths
 - disabled or pending actions: button disabled state plus visible status cue
 
 Client-data rules:
@@ -84,6 +84,7 @@ Client-data rules:
 - Client fetches should go through `fetchJson` unless a feature-specific wrapper adds value
 - Query cache lifecycle belongs to React Query, not Zustand
 - Optimistic or workflow-local UI state may live in Zustand when it is not server truth
+- Error surfaces should show request references when the shared problem-details contract provides them
 
 ## Component selection
 

@@ -4,6 +4,7 @@ import {
   type LoginRequest,
   type RegisterRequest,
 } from "@shop/contracts";
+import { toNetworkError } from "@/lib/errors/app-error";
 import { parseProblemDetails } from "@/lib/errors/problem-details";
 import { ApiError } from "@/lib/react-query/query-client";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
@@ -14,6 +15,7 @@ export function getGoogleOAuthUrl(): string {
 }
 
 type JsonRequestInit = Omit<RequestInit, "body"> & {
+  auth?: "none" | "required";
   body?: unknown;
 };
 
@@ -102,7 +104,15 @@ async function requestAuthSession(
 }
 
 async function request(path: string, init: JsonRequestInit): Promise<Response> {
-  const { body: _body, ...requestInit } = init;
+  return requestOnce(path, init, false);
+}
+
+async function requestOnce(
+  path: string,
+  init: JsonRequestInit,
+  hasRetried: boolean,
+): Promise<Response> {
+  const { auth: _auth, body: _body, ...requestInit } = init;
   const headers = new Headers(init.headers);
   const requestBody =
     init.body !== undefined ? JSON.stringify(init.body) : undefined;
@@ -115,12 +125,33 @@ async function request(path: string, init: JsonRequestInit): Promise<Response> {
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(resolveApiUrl(path), {
-    ...requestInit,
-    credentials: "include",
-    headers,
-    ...(requestBody ? { body: requestBody } : {}),
-  });
+  if (init.auth === "required") {
+    const accessToken = getAccessToken();
+    if (accessToken) {
+      headers.set("Authorization", `Bearer ${accessToken}`);
+    }
+  }
+
+  let response: Response;
+
+  try {
+    response = await fetch(resolveApiUrl(path), {
+      ...requestInit,
+      credentials: "include",
+      headers,
+      ...(requestBody ? { body: requestBody } : {}),
+    });
+  } catch (error) {
+    throw toNetworkError(error);
+  }
+
+  if (response.status === 401 && init.auth === "required" && !hasRetried) {
+    const session = await refreshAccessToken();
+
+    if (session) {
+      return requestOnce(path, init, true);
+    }
+  }
 
   if (!response.ok) {
     throw await toApiError(response);
@@ -164,6 +195,7 @@ export async function verifyEmail(token: string): Promise<void> {
 
 export async function resendVerification(): Promise<void> {
   await request("/api/auth/resend-verification", {
+    auth: "required",
     method: "POST",
   });
 }

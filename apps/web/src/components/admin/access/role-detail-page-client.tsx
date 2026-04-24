@@ -5,12 +5,14 @@ import { useQuery } from "@tanstack/react-query";
 import { KeyRound, ShieldCheck, UserCheck, Users } from "lucide-react";
 import Link from "next/link";
 import { AppDataTable } from "@/components/data-table/app-data-table";
+import { useAuthorization } from "@/components/providers/authorization-provider";
+import { AppErrorBanner } from "@/components/system/app-error";
 import {
   PageHeader,
   PageShell,
   StatCard,
 } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PermissionGate } from "@/components/system/permission-gate";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -27,10 +29,6 @@ import {
   fetchAdminPermissions,
   fetchAdminRole,
 } from "@/lib/react-query/admin-access";
-import {
-  currentUserPermissionsQueryKey,
-  fetchCurrentUserPermissions,
-} from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
 import {
   getRoleErrorMessage,
@@ -39,17 +37,12 @@ import {
 import { RoleEditorForm } from "./role-editor-form";
 
 export function RoleDetailPageClient({ slug }: { slug: string }) {
+  const { can } = useAuthorization();
   const roleQuery = useQuery({
     queryFn: () => fetchAdminRole(slug),
     queryKey: adminRoleDetailQueryKey(slug),
   });
-  const currentPermissionsQuery = useQuery({
-    queryFn: fetchCurrentUserPermissions,
-    queryKey: currentUserPermissionsQueryKey,
-  });
-  const canManage =
-    currentPermissionsQuery.data?.permissions.includes("access.roles.manage") ??
-    false;
+  const canManage = can("access.roles.manage");
   const permissionOptionsQuery = useQuery({
     enabled: canManage,
     queryFn: () => fetchAdminPermissions({ page: 1, pageSize: 100, q: "" }),
@@ -64,15 +57,16 @@ export function RoleDetailPageClient({ slug }: { slug: string }) {
           <Skeleton className="h-64 w-full" />
         </div>
       ) : roleQuery.isError ? (
-        <Alert variant="destructive">
-          <AlertTitle>Unable to load role</AlertTitle>
-          <AlertDescription>
-            {getRoleErrorMessage(roleQuery.error)}
-          </AlertDescription>
-        </Alert>
+        <AppErrorBanner
+          detail={getRoleErrorMessage(roleQuery.error)}
+          error={roleQuery.error}
+          onRetry={() => {
+            void roleQuery.refetch();
+          }}
+          title="Unable to load role"
+        />
       ) : roleQuery.data ? (
         <RoleDetailBody
-          canManage={canManage}
           permissionOptions={permissionOptionsQuery.data?.items ?? []}
           role={roleQuery.data}
         />
@@ -82,11 +76,9 @@ export function RoleDetailPageClient({ slug }: { slug: string }) {
 }
 
 function RoleDetailBody({
-  canManage,
   permissionOptions,
   role,
 }: {
-  canManage: boolean;
   permissionOptions: readonly AdminPermissionSummary[];
   role: AdminRoleDetail;
 }) {
@@ -98,14 +90,14 @@ function RoleDetailBody({
     <>
       <PageHeader
         actions={
-          canManage ? (
+          <PermissionGate permission="access.roles.manage">
             <Link
               className={buttonVariants({ size: "sm", variant: "outline" })}
               href={toRoute("/admin/access/roles/new")}
             >
               Create related role
             </Link>
-          ) : undefined
+          </PermissionGate>
         }
         backHref={toRoute("/admin/access/roles")}
         description={role.description}
@@ -153,9 +145,11 @@ function RoleDetailBody({
       </Card>
 
       <Tabs defaultValue="coverage">
-        <TabsList variant="line">
+        <TabsList>
           <TabsTrigger value="coverage">Coverage</TabsTrigger>
-          {canManage ? <TabsTrigger value="editor">Editor</TabsTrigger> : null}
+          <PermissionGate permission="access.roles.manage">
+            <TabsTrigger value="editor">Editor</TabsTrigger>
+          </PermissionGate>
         </TabsList>
         <TabsContent className="pt-3" value="coverage">
           <AppDataTable
@@ -167,7 +161,7 @@ function RoleDetailBody({
             getRowId={(row) => row.key}
           />
         </TabsContent>
-        {canManage ? (
+        <PermissionGate permission="access.roles.manage">
           <TabsContent className="pt-3" value="editor">
             <Card className="border-border/70 bg-card shadow-none">
               <CardHeader>
@@ -194,7 +188,7 @@ function RoleDetailBody({
               </CardContent>
             </Card>
           </TabsContent>
-        ) : null}
+        </PermissionGate>
       </Tabs>
     </>
   );

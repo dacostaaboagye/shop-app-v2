@@ -20,7 +20,7 @@ export function UserProfileRecentActivityCard({
   recentActivity,
 }: Pick<AdminUserAccessDetail, "recentActivity">) {
   return (
-    <Card className="border-border/70 bg-card shadow-none">
+    <Card className="h-full border-border/70 bg-card shadow-none">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ActivityIcon className="size-4 text-muted-foreground" />

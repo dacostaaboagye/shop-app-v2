@@ -18,9 +18,11 @@ export const locationTableColumns: Array<
     id: "name",
     header: "Name",
     cell: ({ row }) => (
-      <div>
-        <p className="font-medium leading-none">{row.original.name}</p>
-        <p className="mt-0.5 font-mono text-[0.68rem] text-muted-foreground">
+      <div className="flex flex-col gap-0.5">
+        <p className="text-sm font-bold text-foreground truncate max-w-[240px]">
+          {row.original.name}
+        </p>
+        <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
           {row.original.slug}
         </p>
       </div>
@@ -36,7 +38,10 @@ export const locationTableColumns: Array<
 
       return (
         <Badge
-          className={cn("gap-1.5 text-[0.68rem]", meta.className)}
+          className={cn(
+            "gap-1.5 rounded-md font-bold uppercase tracking-wider text-[10px]",
+            meta.className,
+          )}
           variant="outline"
         >
           <Icon className="size-3" />
@@ -52,9 +57,13 @@ export const locationTableColumns: Array<
     header: "Manager",
     cell: ({ row }) =>
       row.original.managerName ? (
-        <span className="text-sm">{row.original.managerName}</span>
+        <span className="text-sm font-bold text-foreground">
+          {row.original.managerName}
+        </span>
       ) : (
-        <span className="text-sm text-muted-foreground">Unassigned</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/30">
+          Unassigned
+        </span>
       ),
   },
   {
@@ -62,9 +71,13 @@ export const locationTableColumns: Array<
     enableSorting: false,
     header: "Operations",
     cell: ({ row }) => (
-      <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-        <span>{row.original.staffCount} staff assigned</span>
-        <span>{row.original.zoneCount} zones configured</span>
+      <div className="flex flex-col gap-1">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
+          {row.original.staffCount} staff assigned
+        </span>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
+          {row.original.zoneCount} zones configured
+        </span>
       </div>
     ),
   },
@@ -77,12 +90,21 @@ export const locationTableColumns: Array<
 
       return (
         <div className="flex flex-wrap items-center gap-2">
-          <Badge className={meta.className} variant="outline">
+          <Badge
+            className={cn(
+              "rounded-md font-bold uppercase tracking-wider text-[10px]",
+              meta.className,
+            )}
+            variant="outline"
+          >
             {meta.label}
           </Badge>
           {row.original.isFulfilmentEnabled ? (
-            <Badge variant="secondary">
-              <Building2 className="size-3" />
+            <Badge
+              className="rounded-md font-bold uppercase tracking-wider text-[10px] bg-primary/5 text-primary border-primary/20"
+              variant="outline"
+            >
+              <Building2 className="size-3 mr-1.5" />
               Fulfilment
             </Badge>
           ) : null}
@@ -95,7 +117,7 @@ export const locationTableColumns: Array<
     accessorKey: "createdAt",
     header: "Created",
     cell: ({ row }) => (
-      <span className="tabular-nums text-sm text-muted-foreground">
+      <span className="tabular-nums text-[11px] font-bold uppercase tracking-widest text-muted-foreground/40">
         {formatAdminDate(row.original.createdAt)}
       </span>
     ),

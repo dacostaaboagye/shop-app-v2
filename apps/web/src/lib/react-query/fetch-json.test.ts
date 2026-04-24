@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
+import { NetworkError } from "@/lib/errors/app-error";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
 import { fetchJson } from "./fetch-json";
 import { ApiError } from "./query-client";
@@ -49,6 +50,24 @@ describe("fetchJson", () => {
         assert.equal(
           error.message,
           "Forbidden: You do not have access to this view.",
+        );
+        return true;
+      },
+    );
+  });
+
+  it("wraps transport failures in a retryable network error", async () => {
+    globalThis.fetch = async () => {
+      throw new TypeError("fetch failed");
+    };
+
+    await assert.rejects(
+      () => fetchJson("https://example.com"),
+      (error: unknown) => {
+        assert.ok(error instanceof NetworkError);
+        assert.equal(
+          error.message,
+          "We could not reach the server. Check your connection and try again.",
         );
         return true;
       },

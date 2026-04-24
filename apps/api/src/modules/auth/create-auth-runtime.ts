@@ -3,13 +3,13 @@ import type { DatabaseRuntime } from "../../infrastructure/database.js";
 import { BasicUserRoleService } from "../access-control/basic-user-role.service.js";
 import { PermissionResolutionService } from "../access-control/permission-resolution.service.js";
 import { PostgresPermissionRepository } from "../access-control/postgres-permission.repository.js";
+import { createConfiguredEmailService } from "../messaging/create-email-runtime.js";
 import { PostgresSlugRepository } from "../public-identifiers/postgres-slug.repository.js";
 import { SlugService } from "../public-identifiers/slug.service.js";
 import { AccessTokenAuthenticationService } from "./access-token-authentication.service.js";
 import { PasswordAuthenticationService } from "./authentication.service.js";
 import { CurrentUserService } from "./current-user.service.js";
 import { CurrentUserPermissionService } from "./current-user-permission.service.js";
-import { EmailService } from "./email.service.js";
 import { EmailVerificationService } from "./email-verification.service.js";
 import { GoogleOAuthService } from "./google-oauth.service.js";
 import { PasswordResetService } from "./password-reset.service.js";
@@ -65,7 +65,7 @@ export function createAuthRuntime(
   const permissionService = new PermissionResolutionService(
     new PostgresPermissionRepository(databaseRuntime.db),
   );
-  const emailService = new EmailService(env.resendApiKey, env.emailFromAddress);
+  const emailService = createConfiguredEmailService(databaseRuntime, env);
   const webBaseUrl = env.webBaseUrl ?? "http://localhost:3000";
 
   const emailVerificationService = new EmailVerificationService(

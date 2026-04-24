@@ -9,6 +9,9 @@ describe("admin directory routes", () => {
     const server = createAuthorizedServer({
       adminDirectory: {
         adminUserQueryService: {
+          async listStaff() {
+            return { items: [], totalCount: 0 };
+          },
           async listUsers(query) {
             state.lastQuery = query;
             return {
@@ -74,11 +77,81 @@ describe("admin directory routes", () => {
     });
   });
 
+  it("lists staff with role and location filters before pagination", async () => {
+    const state = { lastQuery: null as null | Record<string, unknown> };
+    const server = createAuthorizedServer({
+      adminDirectory: {
+        adminUserQueryService: {
+          async listStaff(query) {
+            state.lastQuery = query;
+            return {
+              items: [
+                {
+                  assignedLocations: [
+                    { name: "Ablekuma Warehouse", slug: "ablekuma" },
+                  ],
+                  createdAt: "2026-04-09T10:00:00.000Z",
+                  email: "manager@example.com",
+                  firstName: "Warehouse",
+                  lastLoginAt: null,
+                  lastName: "Manager",
+                  preferredPortal: "manager",
+                  requiresPasswordChange: false,
+                  roles: [{ name: "Manager", slug: "manager" }],
+                  slug: "warehouse-manager",
+                  status: "active" as const,
+                },
+              ],
+              totalCount: 3,
+            };
+          },
+          async listUsers() {
+            return { availableRoles: [], items: [], totalCount: 0 };
+          },
+        },
+        adminLocationQueryService: {
+          async listLocations() {
+            return { items: [], totalCount: 0 };
+          },
+        },
+      },
+    });
+
+    const response = await server.inject({
+      headers: { authorization: `Bearer ${issueTestToken()}` },
+      method: "GET",
+      query: {
+        locationSlug: "ablekuma",
+        page: "2",
+        pageSize: "20",
+        role: "manager",
+        status: "active",
+      },
+      url: "/api/admin/staff",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().totalCount, 3);
+    assert.deepEqual(state.lastQuery, {
+      dir: "asc",
+      locationSlug: "ablekuma",
+      page: 2,
+      pageSize: 20,
+      q: "",
+      role: "manager",
+      sort: "name",
+      status: "active",
+    });
+  });
+
   it("lists locations with backend-driven filters and pagination", async () => {
     const state = { lastQuery: null as null | Record<string, unknown> };
     const server = createAuthorizedServer({
       adminDirectory: {
         adminUserQueryService: {
+          async listStaff() {
+            return { items: [], totalCount: 0 };
+          },
           async listUsers() {
             return { availableRoles: [], items: [], totalCount: 0 };
           },

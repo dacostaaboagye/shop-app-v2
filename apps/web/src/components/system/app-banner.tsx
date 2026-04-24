@@ -47,7 +47,10 @@ export function AppBanner({
   const Icon = icon ?? meta.icon;
 
   return (
-    <Alert className={cn("surface-card", className)} variant={meta.variant}>
+    <Alert
+      className={cn("rounded-xl border border-border/50 shadow-sm", className)}
+      variant={meta.variant}
+    >
       <Icon />
       <AlertTitle>{title}</AlertTitle>
       <AlertDescription>{description}</AlertDescription>

@@ -41,7 +41,7 @@ export function UserAccessManagePermissionGroups({
 
   if (groups.length === 0) {
     return (
-      <div className="rounded-2xl border border-border/60 bg-card py-12 text-center">
+      <div className="rounded-xl border border-border/60 bg-card py-12 text-center">
         <p className="text-sm text-muted-foreground">
           No permissions match the current filters.
         </p>

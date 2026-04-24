@@ -7,6 +7,7 @@ import type {
   AdminUpdateUserProfileRequest,
   AdminUpdateUserStatusRequest,
 } from "@shop/contracts";
+import { AppError } from "../_core/errors/app-error.js";
 
 export type AdminUserAccessWriteRepository = {
   assignRole(input: {
@@ -72,6 +73,15 @@ export class AdminUserAccessWriteService {
     input: AdminAssignUserRoleRequest,
     now: Date,
   ) {
+    if (roleRequiresLocationScope(input.roleSlug) && !input.locationSlug) {
+      throw new AppError({
+        code: "validation_error",
+        detail: `Role "${input.roleSlug}" must be assigned to a location.`,
+        statusCode: 400,
+        title: "Location scope required",
+      });
+    }
+
     return this.repository.assignRole({ ...input, actorId, now, userSlug });
   }
 
@@ -147,4 +157,8 @@ export class AdminUserAccessWriteService {
       userSlug,
     });
   }
+}
+
+function roleRequiresLocationScope(roleSlug: string) {
+  return roleSlug === "manager" || roleSlug === "worker";
 }

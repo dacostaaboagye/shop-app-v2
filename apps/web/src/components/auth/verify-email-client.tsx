@@ -1,9 +1,10 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
+import { AppErrorBanner } from "@/components/system/app-error";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { buttonVariants } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -30,14 +31,10 @@ export function VerifyEmailClient({ token }: VerifyEmailClientProps) {
 
   if (!token) {
     return (
-      <Alert variant="destructive">
-        <XCircle className="h-4 w-4" />
-        <AlertTitle>Invalid link</AlertTitle>
-        <AlertDescription>
-          This verification link is missing a token. Use the link from your
-          email, or request a new verification email from your account.
-        </AlertDescription>
-      </Alert>
+      <AppErrorBanner
+        detail="This verification link is missing a token. Use the link from your email, or request a new verification email from your account."
+        title="Invalid link"
+      />
     );
   }
 
@@ -54,11 +51,11 @@ export function VerifyEmailClient({ token }: VerifyEmailClientProps) {
     const error = getAuthErrorMessage(mutation.error);
     return (
       <div className="flex flex-col gap-4">
-        <Alert variant="destructive">
-          <XCircle className="h-4 w-4" />
-          <AlertTitle>{error.title}</AlertTitle>
-          <AlertDescription>{error.detail}</AlertDescription>
-        </Alert>
+        <AppErrorBanner
+          detail={error.detail}
+          error={mutation.error}
+          title={error.title}
+        />
         <Link
           className={buttonVariants({
             variant: "outline",

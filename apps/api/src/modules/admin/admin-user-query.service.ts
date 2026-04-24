@@ -1,5 +1,6 @@
 import type {
   AdminRoleOption,
+  AdminStaffListQuery,
   AdminUserListQuery,
   AdminUserSummary,
 } from "@shop/contracts";
@@ -10,6 +11,10 @@ export type AdminUserQueryRepository = {
     items: AdminUserSummary[];
     totalCount: number;
   }>;
+  listStaff(input: AdminStaffListQuery): Promise<{
+    items: AdminUserSummary[];
+    totalCount: number;
+  }>;
 };
 
 export class AdminUserQueryService {
@@ -17,5 +22,9 @@ export class AdminUserQueryService {
 
   async listUsers(input: AdminUserListQuery) {
     return this.repository.listUsers(input);
+  }
+
+  async listStaff(input: AdminStaffListQuery) {
+    return this.repository.listStaff(input);
   }
 }

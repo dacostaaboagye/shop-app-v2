@@ -1,10 +1,16 @@
+import type { ApiEnv } from "../../env.js";
 import type { DatabaseRuntime } from "../../infrastructure/database.js";
+import { createConfiguredEmailService } from "../messaging/create-email-runtime.js";
+import { PostgresReferenceNumberRepository } from "../public-identifiers/postgres-reference-number.repository.js";
 import { PostgresSlugRepository } from "../public-identifiers/postgres-slug.repository.js";
+import { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
 import { SlugService } from "../public-identifiers/slug.service.js";
 import { AdminAccessQueryService } from "./admin-access-query.service.js";
 import { AdminAccessWriteService } from "./admin-access-write.service.js";
 import { AdminLocationQueryService } from "./admin-location-query.service.js";
 import { AdminLocationWriteService } from "./admin-location-write.service.js";
+import { AdminSupplierQueryService } from "./admin-supplier-query.service.js";
+import { AdminSupplierWriteService } from "./admin-supplier-write.service.js";
 import { AdminUserAccessQueryService } from "./admin-user-access-query.service.js";
 import { AdminUserAccessWriteService } from "./admin-user-access-write.service.js";
 import { AdminUserQueryService } from "./admin-user-query.service.js";
@@ -12,6 +18,8 @@ import { PostgresAdminAccessQueryRepository } from "./postgres-admin-access-quer
 import { PostgresAdminAccessWriteRepository } from "./postgres-admin-access-write.repository.js";
 import { PostgresAdminLocationQueryRepository } from "./postgres-admin-location-query.repository.js";
 import { PostgresAdminLocationWriteRepository } from "./postgres-admin-location-write.repository.js";
+import { PostgresAdminSupplierQueryRepository } from "./postgres-admin-supplier-query.repository.js";
+import { PostgresAdminSupplierWriteRepository } from "./postgres-admin-supplier-write.repository.js";
 import { PostgresAdminUserAccessQueryRepository } from "./postgres-admin-user-access-query.repository.js";
 import { PostgresAdminUserAccessWriteRepository } from "./postgres-admin-user-access-write.repository.js";
 import { PostgresAdminUserQueryRepository } from "./postgres-admin-user-query.repository.js";
@@ -22,6 +30,8 @@ type AdminDirectoryRuntime = {
     adminAccessWriteService: AdminAccessWriteService;
     adminLocationQueryService: AdminLocationQueryService;
     adminLocationWriteService: AdminLocationWriteService;
+    adminSupplierQueryService: AdminSupplierQueryService;
+    adminSupplierWriteService: AdminSupplierWriteService;
     adminUserAccessQueryService: AdminUserAccessQueryService;
     adminUserAccessWriteService: AdminUserAccessWriteService;
     adminUserQueryService: AdminUserQueryService;
@@ -30,13 +40,23 @@ type AdminDirectoryRuntime = {
 
 export function createAdminDirectoryRuntime(
   databaseRuntime: DatabaseRuntime,
+  env?: Pick<
+    ApiEnv,
+    "emailFromAddress" | "nodeEnv" | "resendApiKey" | "webBaseUrl"
+  >,
 ): AdminDirectoryRuntime {
   const slugService = new SlugService(
     new PostgresSlugRepository(databaseRuntime.db),
   );
+  const referenceNumberService = new ReferenceNumberService(
+    new PostgresReferenceNumberRepository(databaseRuntime.db),
+  );
   const accessQueryRepository = new PostgresAdminAccessQueryRepository(
     databaseRuntime.db,
   );
+  const emailService = env
+    ? createConfiguredEmailService(databaseRuntime, env)
+    : null;
 
   return {
     adminDirectory: {
@@ -58,6 +78,18 @@ export function createAdminDirectoryRuntime(
           databaseRuntime.db,
           slugService,
         ),
+      ),
+      adminSupplierQueryService: new AdminSupplierQueryService(
+        new PostgresAdminSupplierQueryRepository(databaseRuntime.db),
+      ),
+      adminSupplierWriteService: new AdminSupplierWriteService(
+        new PostgresAdminSupplierWriteRepository(
+          databaseRuntime.db,
+          slugService,
+          emailService,
+          env?.webBaseUrl ?? "http://localhost:3000",
+        ),
+        referenceNumberService,
       ),
       adminUserAccessQueryService: new AdminUserAccessQueryService(
         new PostgresAdminUserAccessQueryRepository(databaseRuntime.db),

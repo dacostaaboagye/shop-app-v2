@@ -35,14 +35,14 @@ export function AppEmptyState({
   return (
     <Empty
       className={cn(
-        "border-border bg-linear-to-b from-background to-muted/45 px-5 py-8",
+        "rounded-xl border border-border bg-muted/20 px-5 py-8",
         className,
       )}
     >
       <EmptyHeader>
         <EmptyMedia
           className={cn(
-            "size-11 rounded-2xl ring-1 ring-border",
+            "size-11 rounded-xl ring-1 ring-border",
             kind === "no-results"
               ? "bg-secondary text-secondary-foreground"
               : "bg-primary/10 text-primary",

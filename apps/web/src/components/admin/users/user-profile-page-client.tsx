@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useAuthorization } from "@/components/providers/authorization-provider";
 import { PageShell } from "@/components/system/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -8,10 +9,6 @@ import {
   adminUserAccessDetailQueryKey,
   fetchAdminUserAccessDetail,
 } from "@/lib/react-query/admin-user-access";
-import {
-  currentUserPermissionsQueryKey,
-  fetchCurrentUserPermissions,
-} from "@/lib/react-query/auth";
 import { UserProfileBody } from "./user-profile-body";
 
 const USER_PROFILE_SKELETON_KEYS = [
@@ -22,22 +19,12 @@ const USER_PROFILE_SKELETON_KEYS = [
 ] as const;
 
 export function UserProfilePageClient({ slug }: { slug: string }) {
+  const { can } = useAuthorization();
   const detailQuery = useQuery({
     queryFn: () => fetchAdminUserAccessDetail(slug),
     queryKey: adminUserAccessDetailQueryKey(slug),
   });
-  const currentPermissionsQuery = useQuery({
-    queryFn: fetchCurrentUserPermissions,
-    queryKey: currentUserPermissionsQueryKey,
-  });
-  const canManageAccess =
-    currentPermissionsQuery.data?.permissions.includes(
-      "access.assignments.manage",
-    ) ?? false;
-  const canManageMedia =
-    currentPermissionsQuery.data?.permissions.includes(
-      "catalog.media.manage",
-    ) ?? false;
+  const canManageMedia = can("catalog.media.manage");
 
   if (detailQuery.isPending && !detailQuery.data) {
     return (
@@ -74,7 +61,6 @@ export function UserProfilePageClient({ slug }: { slug: string }) {
 
   return (
     <UserProfileBody
-      canManageAccess={canManageAccess}
       canManageMedia={canManageMedia}
       slug={slug}
       user={detailQuery.data}

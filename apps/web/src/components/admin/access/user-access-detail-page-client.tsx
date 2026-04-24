@@ -1,17 +1,15 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useAuthorization } from "@/components/providers/authorization-provider";
+import { AppErrorBanner } from "@/components/system/app-error";
 import { PageShell } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getAppErrorMessage } from "@/lib/errors/app-error";
 import {
   adminUserAccessDetailQueryKey,
   fetchAdminUserAccessDetail,
 } from "@/lib/react-query/admin-user-access";
-import {
-  currentUserPermissionsQueryKey,
-  fetchCurrentUserPermissions,
-} from "@/lib/react-query/auth";
 import { UserAccessDetailBody } from "./user-access-detail-body";
 
 const USER_ACCESS_SKELETON_KEYS = [
@@ -22,22 +20,12 @@ const USER_ACCESS_SKELETON_KEYS = [
 ] as const;
 
 export function UserAccessDetailPageClient({ slug }: { slug: string }) {
+  const { can } = useAuthorization();
   const detailQuery = useQuery({
     queryFn: () => fetchAdminUserAccessDetail(slug),
     queryKey: adminUserAccessDetailQueryKey(slug),
   });
-  const currentPermissionsQuery = useQuery({
-    queryFn: fetchCurrentUserPermissions,
-    queryKey: currentUserPermissionsQueryKey,
-  });
-  const canManage =
-    currentPermissionsQuery.data?.permissions.includes(
-      "access.assignments.manage",
-    ) ?? false;
-  const canManageMedia =
-    currentPermissionsQuery.data?.permissions.includes(
-      "catalog.media.manage",
-    ) ?? false;
+  const canManageMedia = can("catalog.media.manage");
 
   return (
     <PageShell>
@@ -52,17 +40,16 @@ export function UserAccessDetailPageClient({ slug }: { slug: string }) {
           <Skeleton className="h-64 w-full" />
         </div>
       ) : detailQuery.isError ? (
-        <Alert variant="destructive">
-          <AlertTitle>Unable to load user access</AlertTitle>
-          <AlertDescription>
-            {detailQuery.error instanceof Error
-              ? detailQuery.error.message
-              : "An unexpected error occurred."}
-          </AlertDescription>
-        </Alert>
+        <AppErrorBanner
+          detail={getAppErrorMessage(detailQuery.error)}
+          error={detailQuery.error}
+          onRetry={() => {
+            void detailQuery.refetch();
+          }}
+          title="Unable to load user access"
+        />
       ) : detailQuery.data ? (
         <UserAccessDetailBody
-          canManage={canManage}
           canManageMedia={canManageMedia}
           slug={slug}
           user={detailQuery.data}

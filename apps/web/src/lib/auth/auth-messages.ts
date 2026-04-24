@@ -1,5 +1,8 @@
-import { getDisplayErrorMessage } from "@/lib/errors/problem-details";
-import { ApiError } from "@/lib/react-query/query-client";
+import {
+  ApiError,
+  getAppErrorDisplay,
+  getAppErrorMessage,
+} from "@/lib/errors/app-error";
 
 type AuthMessage = {
   detail: string;
@@ -7,15 +10,20 @@ type AuthMessage = {
 };
 
 export function getAuthErrorMessage(error: unknown): AuthMessage {
+  const display = getAppErrorDisplay(error, {
+    fallbackDetail: "The request could not be completed. Please try again.",
+    fallbackTitle: "Authentication failed",
+  });
+
   if (!(error instanceof ApiError)) {
     return {
-      detail: "The request could not be completed. Please try again.",
-      title: "Authentication failed",
+      detail: display.detail,
+      title: display.title,
     };
   }
 
   const problem = error.problem;
-  const title = problem?.title ?? "Authentication failed";
+  const title = display.title;
   const remainingLockoutSeconds = getRemainingLockoutSeconds(problem?.details);
 
   if (title === "Account locked" && remainingLockoutSeconds !== null) {
@@ -26,8 +34,11 @@ export function getAuthErrorMessage(error: unknown): AuthMessage {
   }
 
   return {
-    detail: getDisplayErrorMessage(problem),
-    title,
+    detail: getAppErrorMessage(error, {
+      fallbackDetail: "The request could not be completed. Please try again.",
+      fallbackTitle: "Authentication failed",
+    }),
+    title: display.title,
   };
 }
 

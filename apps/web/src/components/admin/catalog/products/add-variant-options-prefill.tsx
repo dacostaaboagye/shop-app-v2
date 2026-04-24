@@ -3,7 +3,13 @@
 import type { AdminProductOption } from "@shop/contracts";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type Props = {
   onApply: (name: string, sku: string) => void;
@@ -39,17 +45,25 @@ export function OptionsPrefill({ onApply, options, productSlug }: Props) {
           <div key={opt.optionId} className="flex flex-col gap-1">
             <p className="text-xs text-muted-foreground">{opt.name}</p>
             <Select
-              onChange={(e) =>
-                setSelections((s) => ({ ...s, [opt.optionId]: e.target.value }))
+              onValueChange={(val) =>
+                setSelections((s) => ({
+                  ...s,
+                  [opt.optionId]: val === "none" ? "" : val,
+                }))
               }
-              value={selections[opt.optionId] ?? ""}
+              value={selections[opt.optionId] || "none"}
             >
-              <option value="">—</option>
-              {opt.values.map((v) => (
-                <option key={v.valueId} value={v.value}>
-                  {v.value}
-                </option>
-              ))}
+              <SelectTrigger className="h-8 min-w-[80px]">
+                <SelectValue placeholder="—" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">—</SelectItem>
+                {opt.values.map((v) => (
+                  <SelectItem key={v.valueId} value={v.value}>
+                    {v.value}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </div>
         ))}

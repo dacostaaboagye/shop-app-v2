@@ -9,18 +9,15 @@ import {
   AppDataTable,
   type AppDataTableSort,
 } from "@/components/data-table/app-data-table";
+import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PermissionGate } from "@/components/system/permission-gate";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   adminLocationsQueryKey,
   fetchAdminLocations,
 } from "@/lib/react-query/admin-directory";
-import {
-  currentUserPermissionsQueryKey,
-  fetchCurrentUserPermissions,
-} from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
 import {
   getPageCount,
@@ -28,6 +25,7 @@ import {
   readPositiveIntParam,
   readStringParam,
 } from "@/lib/url-state";
+import { cn } from "@/lib/utils";
 import { locationTableColumns } from "./location-table-columns";
 import {
   getLocationsErrorMessage,
@@ -103,10 +101,6 @@ export function LocationsPageClient() {
     queryFn: () => fetchAdminLocations(backendQuery),
     queryKey: adminLocationsQueryKey(backendQuery),
   });
-  const permissionsQuery = useQuery({
-    queryFn: fetchCurrentUserPermissions,
-    queryKey: currentUserPermissionsQueryKey,
-  });
   const totalPages = getPageCount(
     locationsQuery.data?.totalCount ?? 0,
     pageSize,
@@ -114,8 +108,6 @@ export function LocationsPageClient() {
   const safePage = Math.min(page, totalPages);
   const hasFilters = query !== "" || status !== "all" || type !== "all";
   const sorting: AppDataTableSort = { columnId: sort, direction: dir };
-  const canCreateLocation =
-    permissionsQuery.data?.permissions.includes("locations.create") ?? false;
 
   useEffect(() => {
     if (!locationsQuery.data || safePage === page) {
@@ -130,110 +122,123 @@ export function LocationsPageClient() {
     <PageShell>
       <PageHeader
         actions={
-          canCreateLocation ? (
+          <PermissionGate permission="locations.create">
             <Link
-              className={buttonVariants({ size: "sm" })}
+              className={cn(
+                buttonVariants({ size: "sm" }),
+                "h-10 rounded-xl px-5 font-bold shadow-sm",
+              )}
               href={toRoute("/admin/locations/new")}
             >
               New location
             </Link>
-          ) : null
+          </PermissionGate>
         }
         description="Backend-backed location directory with URL-synced filters and server pagination."
         title="Locations"
       />
-      <LocationsPageToolbar
-        draftSearch={draftSearch}
-        hasFilters={hasFilters}
-        onClear={() =>
-          replaceLocationQuery(router, pathname, searchParams, {
-            page: null,
-            q: null,
-            status: null,
-            type: null,
-          })
-        }
-        onSearchChange={setDraftSearch}
-        onStatusChange={(value) =>
-          replaceLocationQuery(router, pathname, searchParams, {
-            page: null,
-            status: value === "all" ? null : value,
-          })
-        }
-        onTypeChange={(value) =>
-          replaceLocationQuery(router, pathname, searchParams, {
-            page: null,
-            type: value === "all" ? null : value,
-          })
-        }
-        status={status}
-        totalCount={locationsQuery.data?.totalCount ?? 0}
-        type={type}
-      />
 
-      {locationsQuery.isPending && !locationsQuery.data ? (
-        <div className="flex flex-col gap-2">
-          {LOCATION_SKELETON_KEYS.map((key) => (
-            <Skeleton key={key} className="h-11 w-full" />
-          ))}
+      <div className="flex flex-col gap-6">
+        <LocationsPageToolbar
+          draftSearch={draftSearch}
+          hasFilters={hasFilters}
+          onClear={() =>
+            replaceLocationQuery(router, pathname, searchParams, {
+              page: null,
+              q: null,
+              status: null,
+              type: null,
+            })
+          }
+          onSearchChange={setDraftSearch}
+          onStatusChange={(value) =>
+            replaceLocationQuery(router, pathname, searchParams, {
+              page: null,
+              status: value === "all" ? null : value,
+            })
+          }
+          onTypeChange={(value) =>
+            replaceLocationQuery(router, pathname, searchParams, {
+              page: null,
+              type: value === "all" ? null : value,
+            })
+          }
+          status={status}
+          totalCount={locationsQuery.data?.totalCount ?? 0}
+          type={type}
+        />
+
+        {/* Sovereign Table Surface */}
+        <div className="overflow-hidden rounded-xl bg-white shadow-sm border border-border">
+          {locationsQuery.isPending && !locationsQuery.data ? (
+            <div className="flex flex-col gap-1 p-4">
+              {LOCATION_SKELETON_KEYS.map((key) => (
+                <Skeleton key={key} className="h-12 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : (
+            <>
+              {locationsQuery.isError ? (
+                <div className="p-8">
+                  <AppErrorBanner
+                    detail={getLocationsErrorMessage(locationsQuery.error)}
+                    error={locationsQuery.error}
+                    onRetry={() => {
+                      void locationsQuery.refetch();
+                    }}
+                    title="Unable to load locations"
+                  />
+                </div>
+              ) : null}
+              <AppDataTable
+                columns={locationTableColumns}
+                data={locationsQuery.data?.items ?? []}
+                density="compact"
+                emptyDescription={
+                  hasFilters
+                    ? "Try adjusting the current filters or search term."
+                    : "No locations were returned from the current backend dataset."
+                }
+                emptyTitle={
+                  hasFilters ? "No locations match" : "No locations available"
+                }
+                emptyState={{
+                  kind: hasFilters ? "no-results" : "no-data",
+                }}
+                getRowId={(row) => row.slug}
+                onRowClick={(row: { slug: string }) =>
+                  router.push(
+                    toRoute(`/admin/locations/${encodeURIComponent(row.slug)}`),
+                  )
+                }
+                onSortingChange={(nextSorting) =>
+                  replaceLocationQuery(router, pathname, searchParams, {
+                    dir: nextSorting?.direction ?? null,
+                    page: null,
+                    sort: nextSorting?.columnId ?? null,
+                  })
+                }
+                pagination={{
+                  onPageChange: (nextPage) =>
+                    replaceLocationQuery(router, pathname, searchParams, {
+                      page: nextPage === 1 ? null : nextPage,
+                    }),
+                  onPageSizeChange: (nextPageSize) =>
+                    replaceLocationQuery(router, pathname, searchParams, {
+                      page: null,
+                      pageSize: nextPageSize === 10 ? null : nextPageSize,
+                    }),
+                  page: safePage,
+                  pageSize,
+                  pageSizeOptions: LOCATION_PAGE_SIZE_OPTIONS,
+                  totalCount: locationsQuery.data?.totalCount ?? 0,
+                }}
+                sorting={sorting}
+              />
+            </>
+          )}
         </div>
-      ) : (
-        <>
-          {locationsQuery.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Unable to load locations</AlertTitle>
-              <AlertDescription>
-                {getLocationsErrorMessage(locationsQuery.error)}
-              </AlertDescription>
-            </Alert>
-          ) : null}
-          <AppDataTable
-            columns={locationTableColumns}
-            data={locationsQuery.data?.items ?? []}
-            density="compact"
-            emptyDescription={
-              hasFilters
-                ? "Try adjusting the current filters or search term."
-                : "No locations were returned from the current backend dataset."
-            }
-            emptyTitle={
-              hasFilters ? "No locations match" : "No locations available"
-            }
-            emptyState={{
-              kind: hasFilters ? "no-results" : "no-data",
-            }}
-            getRowId={(row) => row.slug}
-            onRowClick={(row: { slug: string }) =>
-              router.push(
-                toRoute(`/admin/locations/${encodeURIComponent(row.slug)}`),
-              )
-            }
-            onSortingChange={(nextSorting) =>
-              replaceLocationQuery(router, pathname, searchParams, {
-                dir: nextSorting?.direction ?? null,
-                page: null,
-                sort: nextSorting?.columnId ?? null,
-              })
-            }
-            pagination={{
-              onPageChange: (nextPage) =>
-                replaceLocationQuery(router, pathname, searchParams, {
-                  page: nextPage === 1 ? null : nextPage,
-                }),
-              onPageSizeChange: (nextPageSize) =>
-                replaceLocationQuery(router, pathname, searchParams, {
-                  page: null,
-                  pageSize: nextPageSize === 10 ? null : nextPageSize,
-                }),
-              page: safePage,
-              pageSize,
-              pageSizeOptions: LOCATION_PAGE_SIZE_OPTIONS,
-              totalCount: locationsQuery.data?.totalCount ?? 0,
-            }}
-            sorting={sorting}
-          />
-        </>
-      )}
+      </div>
     </PageShell>
   );
 }

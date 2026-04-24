@@ -1,6 +1,8 @@
 import {
   adminLocationListQuerySchema,
   adminLocationListResponseSchema,
+  adminStaffListQuerySchema,
+  adminStaffListResponseSchema,
   adminUserListQuerySchema,
   adminUserListResponseSchema,
 } from "@shop/contracts";
@@ -12,7 +14,7 @@ import type { AdminUserQueryService } from "./admin-user-query.service.js";
 
 type AdminDirectoryRouteDependencies = {
   adminLocationQueryService: Pick<AdminLocationQueryService, "listLocations">;
-  adminUserQueryService: Pick<AdminUserQueryService, "listUsers">;
+  adminUserQueryService: Pick<AdminUserQueryService, "listStaff" | "listUsers">;
 };
 
 const adminUserListRoute: RouteDefinition = {
@@ -25,6 +27,12 @@ const adminLocationListRoute: RouteDefinition = {
   access: { kind: "permission", permission: "locations.view" },
   method: "GET",
   url: "/api/admin/locations",
+};
+
+const adminStaffListRoute: RouteDefinition = {
+  access: { kind: "permission", permission: "users.view" },
+  method: "GET",
+  url: "/api/admin/staff",
 };
 
 export function registerAdminDirectoryRoutes(
@@ -41,6 +49,23 @@ export function registerAdminDirectoryRoutes(
 
       return adminUserListResponseSchema.parse({
         availableRoles: result.availableRoles,
+        items: result.items,
+        page: query.page,
+        pageSize: query.pageSize,
+        totalCount: result.totalCount,
+      });
+    },
+  });
+
+  server.route({
+    config: { access: adminStaffListRoute.access },
+    method: adminStaffListRoute.method,
+    url: adminStaffListRoute.url,
+    async handler(request) {
+      const query = adminStaffListQuerySchema.parse(request.query);
+      const result = await dependencies.adminUserQueryService.listStaff(query);
+
+      return adminStaffListResponseSchema.parse({
         items: result.items,
         page: query.page,
         pageSize: query.pageSize,
@@ -76,6 +101,9 @@ function createUnavailableDependencies(): AdminDirectoryRouteDependencies {
       },
     },
     adminUserQueryService: {
+      async listStaff() {
+        throw unavailableAdminDirectoryError();
+      },
       async listUsers() {
         throw unavailableAdminDirectoryError();
       },

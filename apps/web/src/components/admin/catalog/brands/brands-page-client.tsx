@@ -2,7 +2,6 @@
 
 import type { AdminBrandListQuery } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
-import { Search, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -10,21 +9,17 @@ import {
   AppDataTable,
   type AppDataTableSort,
 } from "@/components/data-table/app-data-table";
+import { useAuthorization } from "@/components/providers/authorization-provider";
+import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { PermissionGate } from "@/components/system/permission-gate";
+import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   adminBrandsQueryKey,
   fetchAdminBrands,
   updateAdminBrand,
 } from "@/lib/react-query/admin-catalog";
-import {
-  currentUserPermissionsQueryKey,
-  fetchCurrentUserPermissions,
-} from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
 import {
   getPageCount,
@@ -33,6 +28,7 @@ import {
   readStringParam,
 } from "@/lib/url-state";
 import { createCatalogBulkActions } from "../catalog-bulk-status-actions";
+import { BrandFilters } from "./brand-filters";
 import { brandTableColumns } from "./brand-table-columns";
 import {
   BRAND_PAGE_SIZE_OPTIONS,
@@ -44,6 +40,7 @@ import {
 } from "./brands-page-client.support";
 
 export function BrandsPageClient() {
+  const { can } = useAuthorization();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -91,18 +88,12 @@ export function BrandsPageClient() {
     queryFn: () => fetchAdminBrands(backendQuery),
     queryKey: adminBrandsQueryKey(backendQuery),
   });
-  const permissionsQuery = useQuery({
-    queryFn: fetchCurrentUserPermissions,
-    queryKey: currentUserPermissionsQueryKey,
-  });
   const totalCount = brandsQuery.data?.totalCount ?? 0;
   const totalPages = getPageCount(totalCount, pageSize);
   const safePage = Math.min(page, totalPages);
   const hasFilters = q !== "" || status !== "all";
   const sorting: AppDataTableSort = { columnId: sort, direction: dir };
-  const canManage =
-    permissionsQuery.data?.permissions.includes("catalog.brands.manage") ??
-    false;
+  const canManage = can("catalog.brands.manage");
   useEffect(() => {
     if (!brandsQuery.data || safePage === page) return;
     replaceBrandQuery(router, pathname, searchParams, {
@@ -113,65 +104,39 @@ export function BrandsPageClient() {
     <PageShell>
       <PageHeader
         actions={
-          canManage ? (
+          <PermissionGate permission="catalog.brands.manage">
             <Link
               className={buttonVariants({ size: "sm" })}
               href={toRoute("/admin/products/brands/new")}
             >
               New brand
             </Link>
-          ) : null
+          </PermissionGate>
         }
         description="Manage brand entities used across the product catalogue."
         title="Brands"
       />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative min-w-56 flex-1">
-          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="h-9 pl-9"
-            onChange={(e) => setDraftSearch(e.target.value)}
-            placeholder="Search by name or slug"
-            value={draftSearch}
-          />
-        </div>
-        <Select
-          aria-label="Filter by status"
-          className="h-9"
-          onChange={(e) =>
-            replaceBrandQuery(router, pathname, searchParams, {
-              page: null,
-              status: e.target.value === "all" ? null : e.target.value,
-            })
-          }
-          value={status}
-        >
-          <option value="all">All status</option>
-          <option value="active">Active</option>
-          <option value="archived">Archived</option>
-        </Select>
-        {hasFilters ? (
-          <Button
-            onClick={() =>
-              replaceBrandQuery(router, pathname, searchParams, {
-                page: null,
-                q: null,
-                status: null,
-              })
-            }
-            size="sm"
-            type="button"
-            variant="ghost"
-          >
-            <X data-icon="inline-start" />
-            Clear
-          </Button>
-        ) : null}
-        <span className="ml-auto tabular-nums text-sm text-muted-foreground">
-          {totalCount} total
-        </span>
-      </div>
+      <BrandFilters
+        draftSearch={draftSearch}
+        hasFilters={hasFilters}
+        onClear={() =>
+          replaceBrandQuery(router, pathname, searchParams, {
+            page: null,
+            q: null,
+            status: null,
+          })
+        }
+        onDraftSearchChange={setDraftSearch}
+        onStatusChange={(val) =>
+          replaceBrandQuery(router, pathname, searchParams, {
+            page: null,
+            status: val,
+          })
+        }
+        status={status}
+        totalCount={totalCount}
+      />
 
       {brandsQuery.isPending && !brandsQuery.data ? (
         <div className="flex flex-col gap-2">
@@ -182,12 +147,14 @@ export function BrandsPageClient() {
       ) : (
         <>
           {brandsQuery.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Unable to load brands</AlertTitle>
-              <AlertDescription>
-                {getBrandsErrorMessage(brandsQuery.error)}
-              </AlertDescription>
-            </Alert>
+            <AppErrorBanner
+              detail={getBrandsErrorMessage(brandsQuery.error)}
+              error={brandsQuery.error}
+              onRetry={() => {
+                void brandsQuery.refetch();
+              }}
+              title="Unable to load brands"
+            />
           ) : null}
           <AppDataTable
             bulkActions={createCatalogBulkActions({

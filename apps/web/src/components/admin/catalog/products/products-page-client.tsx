@@ -1,7 +1,6 @@
 "use client";
 import type { AdminProductListQuery } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
-import { Search, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -9,21 +8,17 @@ import {
   AppDataTable,
   type AppDataTableSort,
 } from "@/components/data-table/app-data-table";
+import { useAuthorization } from "@/components/providers/authorization-provider";
+import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { PermissionGate } from "@/components/system/permission-gate";
+import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   adminProductsQueryKey,
   fetchAdminProducts,
   updateAdminProduct,
 } from "@/lib/react-query/admin-catalog-products";
-import {
-  currentUserPermissionsQueryKey,
-  fetchCurrentUserPermissions,
-} from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
 import {
   getPageCount,
@@ -32,6 +27,7 @@ import {
   readStringParam,
 } from "@/lib/url-state";
 import { createCatalogBulkActions } from "../catalog-bulk-status-actions";
+import { ProductFilters } from "./product-filters";
 import { productTableColumns } from "./product-table-columns";
 import {
   getProductsErrorMessage,
@@ -42,6 +38,7 @@ import {
   replaceProductQuery,
 } from "./products-page-client.support";
 export function ProductsPageClient() {
+  const { can } = useAuthorization();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -94,18 +91,13 @@ export function ProductsPageClient() {
     queryFn: () => fetchAdminProducts(backendQuery),
     queryKey: adminProductsQueryKey(backendQuery),
   });
-  const permissionsQuery = useQuery({
-    queryFn: fetchCurrentUserPermissions,
-    queryKey: currentUserPermissionsQueryKey,
-  });
   const totalCount = productsQuery.data?.totalCount ?? 0;
   const totalPages = getPageCount(totalCount, pageSize);
   const safePage = Math.min(page, totalPages);
-  const hasFilters = q !== "" || status !== "all";
+  const hasFilters =
+    q !== "" || status !== "all" || brandSlug !== "" || categorySlug !== "";
   const sorting: AppDataTableSort = { columnId: sort, direction: dir };
-  const canManage =
-    permissionsQuery.data?.permissions.includes("catalog.products.manage") ??
-    false;
+  const canManage = can("catalog.products.manage");
   useEffect(() => {
     if (!productsQuery.data || safePage === page) return;
     replaceProductQuery(router, pathname, searchParams, {
@@ -116,64 +108,30 @@ export function ProductsPageClient() {
     <PageShell>
       <PageHeader
         actions={
-          canManage ? (
+          <PermissionGate permission="catalog.products.manage">
             <Link
               className={buttonVariants({ size: "sm" })}
               href={toRoute("/admin/products/new")}
             >
               New product
             </Link>
-          ) : null
+          </PermissionGate>
         }
         description="Browse and manage products and their variants across the catalogue."
         title="Products"
       />
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative min-w-56 flex-1">
-          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="h-9 pl-9"
-            onChange={(e) => setDraftSearch(e.target.value)}
-            placeholder="Search by name or slug"
-            value={draftSearch}
-          />
-        </div>
-        <Select
-          aria-label="Filter by status"
-          className="h-9"
-          onChange={(e) =>
-            replaceProductQuery(router, pathname, searchParams, {
-              page: null,
-              status: e.target.value === "all" ? null : e.target.value,
-            })
-          }
-          value={status}
-        >
-          <option value="all">All status</option>
-          <option value="active">Active</option>
-          <option value="archived">Archived</option>
-        </Select>
-        {hasFilters ? (
-          <Button
-            onClick={() =>
-              replaceProductQuery(router, pathname, searchParams, {
-                page: null,
-                q: null,
-                status: null,
-              })
-            }
-            size="sm"
-            type="button"
-            variant="ghost"
-          >
-            <X data-icon="inline-start" />
-            Clear
-          </Button>
-        ) : null}
-        <span className="ml-auto tabular-nums text-sm text-muted-foreground">
-          {totalCount} total
-        </span>
-      </div>
+      <ProductFilters
+        brandSlug={brandSlug}
+        categorySlug={categorySlug}
+        draftSearch={draftSearch}
+        hasFilters={hasFilters}
+        onDraftSearchChange={setDraftSearch}
+        onQueryChange={(updates) =>
+          replaceProductQuery(router, pathname, searchParams, updates)
+        }
+        status={status}
+        totalCount={totalCount}
+      />
 
       {productsQuery.isPending && !productsQuery.data ? (
         <div className="flex flex-col gap-2">
@@ -184,12 +142,14 @@ export function ProductsPageClient() {
       ) : (
         <>
           {productsQuery.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Unable to load products</AlertTitle>
-              <AlertDescription>
-                {getProductsErrorMessage(productsQuery.error)}
-              </AlertDescription>
-            </Alert>
+            <AppErrorBanner
+              detail={getProductsErrorMessage(productsQuery.error)}
+              error={productsQuery.error}
+              onRetry={() => {
+                void productsQuery.refetch();
+              }}
+              title="Unable to load products"
+            />
           ) : null}
           <AppDataTable
             bulkActions={createCatalogBulkActions({

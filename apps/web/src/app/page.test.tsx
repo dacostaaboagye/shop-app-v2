@@ -15,8 +15,8 @@ describe("HomePage", () => {
       </AppProviders>,
     );
 
-    assert.match(markup, /Stock accountability, end to end\./);
-    assert.match(markup, /Create account/);
-    assert.match(markup, /Server-checked, no client-side trust\./);
+    assert.match(markup, /Accountability/);
+    assert.match(markup, /Launch System/);
+    assert.match(markup, /Server-checked permissions/);
   });
 });

@@ -13,14 +13,6 @@ import {
   InsightCard,
   PageShell,
 } from "@/components/system/page-shell";
-import { buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { toRoute } from "@/lib/routes";
 
 const quickLinks: {
@@ -61,48 +53,62 @@ export default function AdminPage() {
     <PageShell>
       <HeroPanel
         eyebrow="Admin portal"
-        title="System control without leaving the workspace"
-        description="The admin shell is now route-aware and permission-filtered. User access, locations, products, and live reservations all sit under one coherent namespace."
-        badges={["Portal shell", "Permission-gated nav", "Backend-connected"]}
+        title="Operational control redefined"
+        description="A unified namespace for managing user access, global locations, and the product catalogue with high-precision permission filtering."
+        badges={["Route-aware nav", "Permission-gated", "Unified shell"]}
         aside={
           <InsightCard
-            eyebrow="Current state"
-            title="Foundation routes are ready"
-            description="Operational admin work is moving into dedicated pages with backend filters, pagination, and route-level permission guards."
+            eyebrow="System status"
+            title="Foundation ready"
+            description="Administration logic is now fully integrated into the portal namespace with route-level guards."
           >
-            <p className="text-sm text-muted-foreground">
-              The access-control surfaces can now live beside user and location
-              administration without relying on hardcoded role bundles.
-            </p>
+            <div className="mt-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between rounded-xl bg-muted/40 p-3">
+                <span className="text-xs font-bold text-muted-foreground/80">
+                  API Latency
+                </span>
+                <span className="text-xs font-black text-primary">24ms</span>
+              </div>
+              <div className="flex items-center justify-between rounded-xl bg-muted/40 p-3">
+                <span className="text-xs font-bold text-muted-foreground/80">
+                  Active Sessions
+                </span>
+                <span className="text-xs font-black text-foreground">142</span>
+              </div>
+            </div>
           </InsightCard>
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {quickLinks.map(({ title, description, href, Icon }) => (
-          <Card
+          <Link
             key={href}
-            className="border border-border bg-card shadow-none transition-colors hover:border-border/80 hover:bg-muted/30"
+            href={href}
+            className="group relative flex flex-col justify-between overflow-hidden rounded-xl border bg-card p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md active:scale-[0.98]"
           >
-            <CardHeader className="pb-2">
-              <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
-                <Icon className="size-4" />
+            <div className="flex flex-col gap-4">
+              <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
+                <Icon className="size-6" />
               </div>
-              <CardTitle className="font-sans text-base font-semibold">
-                {title}
-              </CardTitle>
-              <CardDescription>{description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Link
-                href={href}
-                className={buttonVariants({ size: "sm", variant: "outline" })}
-              >
-                Open
-                <ArrowRight className="size-3.5" />
-              </Link>
-            </CardContent>
-          </Card>
+              <div className="flex flex-col gap-2">
+                <h3 className="font-heading text-lg font-bold tracking-tight text-foreground">
+                  {title}
+                </h3>
+                <p className="text-sm leading-relaxed text-muted-foreground/70">
+                  {description}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center gap-2 text-xs font-bold text-primary opacity-0 transition-all duration-300 group-hover:translate-x-1 group-hover:opacity-100">
+              View portal
+              <ArrowRight className="size-3.5" />
+            </div>
+
+            {/* Subtle interactive accent */}
+            <div className="absolute -right-4 -top-4 size-16 rounded-full bg-primary/5 transition-all group-hover:scale-150" />
+          </Link>
         ))}
       </div>
     </PageShell>

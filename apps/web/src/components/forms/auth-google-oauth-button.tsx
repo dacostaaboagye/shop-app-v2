@@ -5,7 +5,7 @@ import { getGoogleOAuthUrl } from "@/lib/auth/auth-client";
 export function AuthGoogleOAuthButton() {
   return (
     <a
-      className="flex items-center justify-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+      className="flex items-center justify-center gap-3 rounded-xl border border-border bg-background px-4 py-3 text-sm font-bold shadow-sm transition-all hover:bg-muted active:scale-[0.98]"
       href={getGoogleOAuthUrl()}
     >
       <GoogleIcon />

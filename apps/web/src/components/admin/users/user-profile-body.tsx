@@ -9,7 +9,9 @@ import {
   PageShell,
   StatCard,
 } from "@/components/system/page-shell";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { PermissionGate } from "@/components/system/permission-gate";
+import { PreviewImage } from "@/components/system/preview-image";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -33,12 +35,10 @@ import { cn } from "@/lib/utils";
 import { UserProfileRecentActivityCard } from "./user-profile-recent-activity-card";
 
 export function UserProfileBody({
-  canManageAccess,
   canManageMedia,
   slug,
   user,
 }: {
-  canManageAccess: boolean;
   canManageMedia: boolean;
   slug: string;
   user: AdminUserAccessDetail;
@@ -54,14 +54,18 @@ export function UserProfileBody({
     <PageShell>
       <PageHeader
         actions={
-          hasNonBasicRole && canManageAccess ? (
-            <Link
-              className={buttonVariants({ size: "sm", variant: "outline" })}
-              href={toRoute(`/admin/access/users/${encodeURIComponent(slug)}`)}
-            >
-              <ShieldCheck className="size-3.5" />
-              Manage access
-            </Link>
+          hasNonBasicRole ? (
+            <PermissionGate permission="access.assignments.manage">
+              <Link
+                className={buttonVariants({ size: "sm", variant: "outline" })}
+                href={toRoute(
+                  `/admin/access/users/${encodeURIComponent(slug)}`,
+                )}
+              >
+                <ShieldCheck className="size-3.5" />
+                Manage access
+              </Link>
+            </PermissionGate>
           ) : undefined
         }
         avatar={
@@ -110,7 +114,7 @@ export function UserProfileBody({
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_0.6fr]">
-        <Card className="border-border/70 bg-card shadow-none">
+        <Card className="h-full border-border/70 bg-card shadow-none">
           <CardHeader>
             <CardTitle>Identity</CardTitle>
             <CardDescription>
@@ -119,14 +123,23 @@ export function UserProfileBody({
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
             <div className="flex items-center gap-4">
-              <Avatar className="size-12">
-                {user.primaryImageUrl ? (
-                  <AvatarImage alt={displayName} src={user.primaryImageUrl} />
-                ) : null}
-                <AvatarFallback className="text-base">
-                  {getInitials(user.firstName, user.lastName)}
-                </AvatarFallback>
-              </Avatar>
+              {user.primaryImageUrl ? (
+                <PreviewImage
+                  alt={displayName}
+                  className="size-12 rounded-full"
+                  height={48}
+                  imageClassName="rounded-full"
+                  previewTitle={displayName}
+                  src={user.primaryImageUrl}
+                  width={48}
+                />
+              ) : (
+                <Avatar className="size-12">
+                  <AvatarFallback className="text-base">
+                    {getInitials(user.firstName, user.lastName)}
+                  </AvatarFallback>
+                </Avatar>
+              )}
               <div className="min-w-0">
                 <p className="font-semibold leading-tight">{displayName}</p>
                 <p className="font-mono text-sm text-muted-foreground">

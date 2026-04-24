@@ -13,6 +13,7 @@ export const slugEntityTypes = [
   "location_zone",
   "product_variant",
   "role",
+  "supplier",
   "user",
 ] as const;
 

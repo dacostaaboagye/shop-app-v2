@@ -4,13 +4,15 @@ import type { AdminUpdateCategoryRequest } from "@shop/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, Pencil, Trash2, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useAuthorization } from "@/components/providers/authorization-provider";
 import {
   PageHeader,
   PageShell,
   StatCard,
 } from "@/components/system/page-shell";
+import { PermissionGate } from "@/components/system/permission-gate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,10 +25,6 @@ import {
   fetchAdminCategory,
   updateAdminCategory,
 } from "@/lib/react-query/admin-catalog";
-import {
-  currentUserPermissionsQueryKey,
-  fetchCurrentUserPermissions,
-} from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
 import { readStringParam } from "@/lib/url-state";
 import { cn } from "@/lib/utils";
@@ -40,6 +38,7 @@ import {
 import { CategoryEditForm } from "./category-edit-form";
 
 export function CategoryDetailPageClient({ slug }: { slug: string }) {
+  const { can } = useAuthorization();
   const queryClient = useQueryClient();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -56,10 +55,14 @@ export function CategoryDetailPageClient({ slug }: { slug: string }) {
     queryFn: () => fetchAdminCategories(CATEGORY_PARENT_QUERY),
     queryKey: adminCategoriesQueryKey(CATEGORY_PARENT_QUERY),
   });
-  const permissionsQuery = useQuery({
-    queryFn: fetchCurrentUserPermissions,
-    queryKey: currentUserPermissionsQueryKey,
-  });
+  const canManage = can("catalog.categories.manage");
+  const canManageMedia = can("catalog.media.manage");
+
+  useEffect(() => {
+    if (!canManage && isEditing) {
+      setIsEditing(false);
+    }
+  }, [canManage, isEditing]);
 
   const updateMutation = useMutation({
     mutationFn: (input: AdminUpdateCategoryRequest) =>
@@ -95,9 +98,6 @@ export function CategoryDetailPageClient({ slug }: { slug: string }) {
 
   const category = categoryQuery.data;
   const statusMeta = CATALOG_STATUS_META[category.status];
-  const canManageMedia =
-    permissionsQuery.data?.permissions.includes("catalog.media.manage") ??
-    false;
   const parentOptions = (parentCategoriesQuery.data?.items ?? []).filter(
     (c) => c.slug !== slug,
   );
@@ -108,9 +108,18 @@ export function CategoryDetailPageClient({ slug }: { slug: string }) {
         actions={
           !isEditing ? (
             <div className="flex gap-2">
-              {permissionsQuery.data?.permissions.includes(
-                "catalog.categories.manage",
-              ) && (
+              <PermissionGate permission="catalog.categories.manage">
+                <Button
+                  onClick={() => setIsEditing(true)}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  <Pencil className="size-3.5" />
+                  Edit
+                </Button>
+              </PermissionGate>
+              <PermissionGate permission="catalog.categories.manage">
                 <Button
                   onClick={() => setIsDeleteDialogOpen(true)}
                   size="sm"
@@ -120,16 +129,7 @@ export function CategoryDetailPageClient({ slug }: { slug: string }) {
                   <Trash2 className="size-3.5" />
                   Delete
                 </Button>
-              )}
-              <Button
-                onClick={() => setIsEditing(true)}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                <Pencil className="size-3.5" />
-                Edit
-              </Button>
+              </PermissionGate>
             </div>
           ) : (
             <Button

@@ -43,5 +43,6 @@ COPY --from=builder --chown=api:nodejs /app/out ./
 USER api
 EXPOSE 4000
 ENV NODE_ENV=production
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 CMD wget -qO- http://127.0.0.1:4000/health || exit 1
 
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/src/index.js"]

@@ -6,6 +6,7 @@ import type {
 } from "@shop/contracts";
 import {
   ALLOWED_MEDIA_MIMES,
+  MAX_DOCUMENT_BYTES,
   MAX_IMAGE_BYTES,
   MAX_VIDEO_BYTES,
 } from "@shop/contracts";
@@ -22,7 +23,7 @@ export type CatalogMediaRepository = {
     heightPx?: number;
     isPrimary: boolean;
     key: string;
-    mediaType: "image" | "video";
+    mediaType: "document" | "image" | "video";
     mimeType: string;
     position: number;
     publicUrl: string;
@@ -69,12 +70,12 @@ export class CatalogMediaService {
         title: "Unsupported media type",
       });
     }
-    const isVideo = input.mimeType.startsWith("video/");
-    const maxBytes = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
+    const mediaType = getMediaType(input.mimeType);
+    const maxBytes = getMaxBytes(mediaType);
     if (input.fileSizeBytes > maxBytes) {
       throw new AppError({
         code: "validation_error",
-        detail: `File exceeds the ${isVideo ? "100 MB video" : "10 MB image"} limit.`,
+        detail: `File exceeds the ${getLimitLabel(mediaType)} limit.`,
         statusCode: 422,
         title: "File too large",
       });
@@ -102,7 +103,7 @@ export class CatalogMediaService {
         title: "File not in storage",
       });
     }
-    const isVideo = payload.mimeType.startsWith("video/");
+    const mediaType = getMediaType(payload.mimeType);
     return this.repository.confirmMedia({
       actorId,
       altText: payload.altText ?? null,
@@ -110,7 +111,7 @@ export class CatalogMediaService {
       entityType: payload.entityType,
       isPrimary: payload.isPrimary,
       key: payload.key,
-      mediaType: isVideo ? "video" : "image",
+      mediaType,
       mimeType: payload.mimeType,
       position: payload.position,
       publicUrl: this.storage.publicUrlForKey(payload.key),
@@ -148,6 +149,24 @@ export class CatalogMediaService {
   ) {
     return this.repository.setPrimary(id, entityType, entitySlug, now);
   }
+}
+
+function getMediaType(mimeType: string): "document" | "image" | "video" {
+  if (mimeType.startsWith("video/")) return "video";
+  if (mimeType.startsWith("image/")) return "image";
+  return "document";
+}
+
+function getMaxBytes(mediaType: "document" | "image" | "video") {
+  if (mediaType === "video") return MAX_VIDEO_BYTES;
+  if (mediaType === "document") return MAX_DOCUMENT_BYTES;
+  return MAX_IMAGE_BYTES;
+}
+
+function getLimitLabel(mediaType: "document" | "image" | "video") {
+  if (mediaType === "video") return "100 MB video";
+  if (mediaType === "document") return "25 MB document";
+  return "10 MB image";
 }
 
 function storageUnavailable() {

@@ -7,6 +7,7 @@ import {
   productVariants,
   roles,
   slugRedirects,
+  suppliers,
   users,
 } from "@shop/database";
 import { and, eq } from "drizzle-orm";
@@ -26,6 +27,7 @@ type SlugTable =
   | typeof locationZones
   | typeof productVariants
   | typeof roles
+  | typeof suppliers
   | typeof users;
 
 export class PostgresSlugRepository implements SlugRepository {
@@ -97,6 +99,8 @@ export class PostgresSlugRepository implements SlugRepository {
         return this.findActiveEntityInTable(productVariants, input.slug);
       case "role":
         return this.findActiveEntityInTable(roles, input.slug);
+      case "supplier":
+        return this.findActiveEntityInTable(suppliers, input.slug);
       case "user":
         return this.findActiveEntityInTable(users, input.slug);
     }

@@ -31,7 +31,7 @@ export function AccessLinkCard({
 }) {
   return (
     <Link
-      className="rounded-2xl border border-border/70 bg-muted/15 p-4 transition-colors hover:border-border hover:bg-muted/30"
+      className="rounded-xl border border-border/70 bg-muted/15 p-4 transition-colors hover:border-border hover:bg-muted/30"
       href={toRoute(href)}
     >
       <p className="text-sm font-semibold text-foreground">{label}</p>

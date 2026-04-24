@@ -18,3 +18,4 @@ Additional supporting documents:
 - `delivery-schema.md`: delivery and delivery-item tables for `E-00C-01`
 - `public-identifier-schema.md`: slug allocation and redirect retention for `E-00D-03`
 - `stock-schema.md`: stock balance and reservation tables for `E-00B-01`
+- `adr/0016-dedicated-messaging-module-and-email-runtime.md`: email and messaging architecture direction for `E-03-05B`

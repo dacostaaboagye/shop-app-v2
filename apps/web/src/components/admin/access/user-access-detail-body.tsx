@@ -12,7 +12,8 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { PageHeader, StatCard } from "@/components/system/page-shell";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PermissionGate } from "@/components/system/permission-gate";
+import { PersonAvatar } from "@/components/system/person-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,7 +21,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   formatAdminDate,
   formatDisplayName,
-  getInitials,
   PASSWORD_RESET_BADGE_CLASS_NAME,
   USER_STATUS_META,
 } from "@/lib/admin-models";
@@ -36,12 +36,10 @@ type DialogState =
   | { kind: "force-password-reset" };
 
 export function UserAccessDetailBody({
-  canManage,
   canManageMedia,
   slug,
   user,
 }: {
-  canManage: boolean;
   canManageMedia: boolean;
   slug: string;
   user: AdminUserAccessDetail;
@@ -61,7 +59,7 @@ export function UserAccessDetailBody({
         eyebrow="Access overview"
         title={displayName}
         actions={
-          canManage ? (
+          <PermissionGate permission="access.assignments.manage">
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 className={buttonVariants({ size: "sm" })}
@@ -89,7 +87,7 @@ export function UserAccessDetailBody({
                 Force reset
               </Button>
             </div>
-          ) : undefined
+          </PermissionGate>
         }
       />
 
@@ -122,11 +120,12 @@ export function UserAccessDetailBody({
 
       <Card className="border-border/70 bg-card shadow-none">
         <CardContent className="flex flex-wrap items-center gap-3 p-4">
-          <Avatar className="size-10">
-            <AvatarFallback>
-              {getInitials(user.firstName, user.lastName)}
-            </AvatarFallback>
-          </Avatar>
+          <PersonAvatar
+            firstName={user.firstName}
+            imageUrl={user.primaryImageUrl}
+            lastName={user.lastName}
+            size="md"
+          />
           <div className="min-w-0">
             <p className="font-medium leading-tight">{displayName}</p>
             <p className="font-mono text-xs text-muted-foreground">
@@ -181,7 +180,7 @@ export function UserAccessDetailBody({
       />
 
       <Tabs defaultValue="effective">
-        <TabsList variant="line">
+        <TabsList>
           <TabsTrigger value="effective">Effective access</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>

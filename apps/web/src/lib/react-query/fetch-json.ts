@@ -1,5 +1,6 @@
 import { getAccessToken, refreshAccessToken } from "@/lib/auth/auth-client";
 import { resolveApiUrl } from "@/lib/auth/resolve-api-url";
+import { toNetworkError } from "@/lib/errors/app-error";
 import { parseProblemDetails } from "@/lib/errors/problem-details";
 import { ApiError } from "@/lib/react-query/query-client";
 
@@ -35,10 +36,16 @@ async function requestJson<T>(
     }
   }
 
-  const response = await fetch(resolveRequestInput(input), {
-    ...init,
-    headers,
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(resolveRequestInput(input), {
+      ...init,
+      headers,
+    });
+  } catch (error) {
+    throw toNetworkError(error);
+  }
 
   if (response.status === 401 && options.auth === "required" && !hasRetried) {
     const session = await refreshAccessToken();

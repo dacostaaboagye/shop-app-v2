@@ -4,11 +4,15 @@ import {
 } from "@shop/contracts";
 
 export interface CurrentUserPermissionResolver {
-  resolvePermissions(input: { userId: string }): Promise<
-    Array<{
-      key: string;
-    }>
-  >;
+  resolveAllPermissions(input: { userId: string }): Promise<{
+    anyActivePermissions: Array<{ key: string }>;
+    locationScopes: Array<{
+      locationId: string;
+      locationName: string;
+      locationSlug: string;
+      permissions: Array<{ key: string }>;
+    }>;
+  }>;
 }
 
 export class CurrentUserPermissionService {
@@ -17,12 +21,17 @@ export class CurrentUserPermissionService {
   ) {}
 
   async getCurrentPermissions(userId: string): Promise<AuthPermissionSet> {
-    const permissions = await this.permissionResolver.resolvePermissions({
-      userId,
-    });
+    const { anyActivePermissions, locationScopes } =
+      await this.permissionResolver.resolveAllPermissions({ userId });
 
     return authPermissionSetSchema.parse({
-      permissions: permissions.map((permission) => permission.key),
+      permissions: anyActivePermissions.map((p) => p.key),
+      locationScopes: locationScopes.map((scope) => ({
+        locationId: scope.locationId,
+        locationName: scope.locationName,
+        locationSlug: scope.locationSlug,
+        permissions: scope.permissions.map((p) => p.key),
+      })),
     });
   }
 }
