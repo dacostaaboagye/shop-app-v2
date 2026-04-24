@@ -1,3 +1,5 @@
+import { escapeHtml } from "./email-html-layout.js";
+
 export function verificationEmailHtml(firstName: string, url: string): string {
   return `<!DOCTYPE html>
 <html>
@@ -97,12 +99,4 @@ export function supplierInviteEmailText(input: {
     "",
     "If the button does not work, copy and paste the full link into your browser.",
   ].join("\n");
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }

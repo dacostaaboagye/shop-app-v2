@@ -11,6 +11,7 @@ import {
   listSupplierInquiries,
   listSupplierProductVariants,
 } from "./postgres-admin-supplier-inquiry-query.js";
+import { listLatestSupplierPortalInvites } from "./postgres-admin-supplier-portal-invite-query.js";
 import { listSupplierProcurementOrders } from "./postgres-admin-supplier-procurement-query.js";
 import {
   getSupplierContactPortalStatus,
@@ -68,17 +69,20 @@ export class PostgresAdminSupplierQueryRepository
 
     if (!row) return null;
 
+    const contacts = await listSupplierContacts(this.db, [row.id]);
+    const contactIds = contacts.map((contact) => contact.id);
+
     const [
-      contacts,
       inquiries,
+      latestInvites,
       productRows,
       productVariants,
       procurementOrders,
       transactionRows,
       primaryImageUrls,
     ] = await Promise.all([
-      listSupplierContacts(this.db, [row.id]),
       listSupplierInquiries(this.db, row.id),
+      listLatestSupplierPortalInvites(this.db, contactIds),
       listSupplierProducts(this.db, row.id),
       listSupplierProductVariants(this.db, row.id),
       listSupplierProcurementOrders(this.db, row.id),
@@ -96,6 +100,7 @@ export class PostgresAdminSupplierQueryRepository
         isPrimary: contact.isPrimary,
         jobTitle: contact.jobTitle,
         lastName: contact.lastName,
+        latestInvite: toLatestInvite(latestInvites.get(contact.id)),
         phone: contact.phone,
         portalStatus: getSupplierContactPortalStatus(contact),
         status: contact.status,
@@ -199,4 +204,36 @@ export class PostgresAdminSupplierQueryRepository
       totalCount: totalCountResult[0]?.count ?? 0,
     };
   }
+}
+
+function toLatestInvite(
+  invite:
+    | {
+        createdAt: Date;
+        deliveryReason: string | null;
+        deliveryStatus:
+          | "bounced"
+          | "complained"
+          | "console_fallback"
+          | "delayed"
+          | "delivered"
+          | "failed"
+          | "sent"
+          | "suppressed";
+        expiresAt: Date;
+        recipientEmail: string;
+      }
+    | undefined,
+) {
+  if (!invite) {
+    return null;
+  }
+
+  return {
+    attemptedAt: invite.createdAt.toISOString(),
+    deliveryReason: invite.deliveryReason,
+    deliveryStatus: invite.deliveryStatus,
+    expiresAt: invite.expiresAt.toISOString(),
+    recipientEmail: invite.recipientEmail,
+  };
 }

@@ -81,4 +81,30 @@ describe("resolveOperatingContext", () => {
     assert.equal(context.kind, "global");
     assert.equal(context.locationScope, null);
   });
+
+  it("returns global context with all selectable scopes when manager has multiple locations and no location is selected", () => {
+    const context = resolveOperatingContext({
+      activeLocationSlug: null,
+      locationScopes: LOCATION_SCOPES,
+      policy: { kind: "global-or-location", permission: "stock.view" },
+      urlLocationSlug: null,
+    });
+
+    assert.equal(context.kind, "global");
+    assert.equal(context.locationScope, null);
+    assert.equal(context.selectableLocationScopes.length, 2);
+  });
+
+  it("returns location context when a multi-location manager selects a specific location", () => {
+    const context = resolveOperatingContext({
+      activeLocationSlug: "downtown-store",
+      locationScopes: LOCATION_SCOPES,
+      policy: { kind: "global-or-location", permission: "stock.view" },
+      urlLocationSlug: "downtown-store",
+    });
+
+    assert.equal(context.kind, "location");
+    assert.equal(context.locationScope?.locationSlug, "downtown-store");
+    assert.equal(context.selectableLocationScopes.length, 2);
+  });
 });

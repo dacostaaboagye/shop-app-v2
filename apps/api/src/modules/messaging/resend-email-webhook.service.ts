@@ -1,6 +1,8 @@
 import { Resend } from "resend";
 import { z } from "zod";
 import { AppError } from "../_core/errors/app-error.js";
+import type { PlatformEventPublisher } from "../events/platform-event.types.js";
+import { createEmailDeliveryIssueEvent } from "./email-delivery-events.js";
 import type { EmailDeliveryStatus } from "./email-service.types.js";
 
 const resendEmailEventSchema = z.object({
@@ -19,6 +21,7 @@ const resendEmailEventSchema = z.object({
 });
 
 type ResendWebhookDependencies = {
+  eventPublisher?: Pick<PlatformEventPublisher, "publish">;
   now: () => Date;
   verifier?: (input: {
     headers: { id: string; signature: string; timestamp: string };
@@ -27,9 +30,12 @@ type ResendWebhookDependencies = {
   }) => unknown;
   webhookSecret?: string;
   statusRepository: {
-    findAttemptIdByProviderMessageId(
-      providerMessageId: string,
-    ): Promise<string | null>;
+    findAttemptByProviderMessageId(providerMessageId: string): Promise<{
+      id: string;
+      messageType: string;
+      recipientEmail: string;
+      subject: string;
+    } | null>;
     recordStatusEvent(input: {
       attemptId: string | null;
       occurredAt: Date;
@@ -45,8 +51,6 @@ type ResendWebhookDependencies = {
 };
 
 export class ResendEmailWebhookService {
-  private readonly resend = new Resend("webhook-verifier");
-
   constructor(private readonly dependencies: ResendWebhookDependencies) {}
 
   async handleWebhook(input: {
@@ -80,13 +84,13 @@ export class ResendEmailWebhookService {
       return { duplicate: false, processed: false };
     }
 
-    const attemptId =
-      await this.dependencies.statusRepository.findAttemptIdByProviderMessageId(
+    const attempt =
+      await this.dependencies.statusRepository.findAttemptByProviderMessageId(
         verifiedPayload.data.email_id,
       );
     const statusReason = deriveStatusReason(verifiedPayload);
     const result = await this.dependencies.statusRepository.recordStatusEvent({
-      attemptId,
+      attemptId: attempt?.id ?? null,
       occurredAt: new Date(verifiedPayload.created_at),
       provider: "resend",
       providerEventId: input.headers.id ?? "",
@@ -96,6 +100,18 @@ export class ResendEmailWebhookService {
       status: mappedStatus,
       ...(statusReason ? { statusReason } : {}),
     });
+
+    if (result.inserted && shouldPublishIssueEvent(mappedStatus)) {
+      await this.dependencies.eventPublisher?.publish(
+        createEmailDeliveryIssueEvent({
+          attempt,
+          occurredAt: this.dependencies.now(),
+          providerMessageId: verifiedPayload.data.email_id,
+          status: mappedStatus,
+          ...(statusReason ? { statusReason } : {}),
+        }),
+      );
+    }
 
     return {
       duplicate: !result.inserted,
@@ -146,8 +162,17 @@ export class ResendEmailWebhookService {
     payload: string;
     webhookSecret: string;
   }) {
-    return this.resend.webhooks.verify(input);
+    return verifyResendWebhook(input);
   }
+}
+
+function shouldPublishIssueEvent(status: EmailDeliveryStatus) {
+  return (
+    status === "bounced" ||
+    status === "complained" ||
+    status === "failed" ||
+    status === "suppressed"
+  );
 }
 
 function mapResendEventTypeToDeliveryStatus(
@@ -188,4 +213,15 @@ function deriveStatusReason(
   return [bounce.type, bounce.subType, bounce.message]
     .filter((part) => Boolean(part && part.trim() !== ""))
     .join(" - ");
+}
+
+function verifyResendWebhook(input: {
+  headers: { id: string; signature: string; timestamp: string };
+  payload: string;
+  webhookSecret: string;
+}): unknown {
+  // Resend SDK requires a constructor argument but webhook verification
+  // uses only the webhookSecret param passed to .verify() — the API key
+  // is irrelevant here and is not used.
+  return new Resend("verify-only").webhooks.verify(input);
 }

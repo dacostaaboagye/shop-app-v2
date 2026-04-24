@@ -119,3 +119,47 @@ Definition of done:
 - webhook handling is idempotent
 - delivery history preserves append-only state transitions
 - future resend logic uses the latest known provider state safely
+
+### `E-03-05B6` suppression-aware send safety
+
+Goal:
+- prevent blind retries to recipients already known as undeliverable or unsafe
+
+Acceptance criteria:
+
+- the messaging runtime checks the latest known provider lifecycle state before
+  sending transactional email
+- sends are blocked when the latest known state for a recipient is `bounced`,
+  `suppressed`, or `complained`
+- blocked sends return structured problem details with enough context for
+  operators to act safely
+
+Definition of done:
+
+- auth resend, supplier invite, password reset, and test-send paths inherit the
+  same runtime policy without route-specific duplication
+- focused tests cover blocked send behavior and the admin test-send route
+- no send path reaches the provider when the delivery policy blocks the
+  recipient
+
+### `E-03-05B7` recipient-state diagnostics in product
+
+Goal:
+- show operators whether a recipient is currently blocked before they retry a
+  send
+
+Acceptance criteria:
+
+- email operations exposes a recipient-state lookup backed by the messaging
+  runtime
+- the email operations UI shows whether the current target address is clear to
+  send or blocked
+- blocked state shows the provider status, timestamp, and latest known reason
+
+Definition of done:
+
+- the UI does not rely on parsing a failed send response to explain recipient
+  state
+- focused API and web checks cover the lookup contract and visible operator
+  state
+- send remains disabled when the recipient is already known as blocked

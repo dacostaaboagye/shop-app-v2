@@ -6,18 +6,30 @@ import { eq } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { EmailDeliveryStatus } from "./email-service.types.js";
 
+export type EmailDeliveryAttemptMatch = {
+  id: string;
+  messageType: string;
+  recipientEmail: string;
+  subject: string;
+};
+
 export class PostgresEmailDeliveryStatusRepository {
   constructor(private readonly db: ApiDatabase) {}
 
-  async findAttemptIdByProviderMessageId(
+  async findAttemptByProviderMessageId(
     providerMessageId: string,
-  ): Promise<string | null> {
+  ): Promise<EmailDeliveryAttemptMatch | null> {
     const row = await this.db.query.emailDeliveryAttempts.findFirst({
-      columns: { id: true },
+      columns: {
+        id: true,
+        messageType: true,
+        recipientEmail: true,
+        subject: true,
+      },
       where: eq(emailDeliveryAttempts.providerMessageId, providerMessageId),
     });
 
-    return row?.id ?? null;
+    return row ?? null;
   }
 
   async recordStatusEvent(input: {

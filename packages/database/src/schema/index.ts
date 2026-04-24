@@ -15,5 +15,6 @@ export * from "./official-documents.js";
 export * from "./sales.js";
 export * from "./stock.js";
 export * from "./stock-supply.js";
+export * from "./supplier-portal-invites.js";
 export * from "./supplier-procurement.js";
 export * from "./suppliers.js";

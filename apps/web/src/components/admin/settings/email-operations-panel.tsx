@@ -2,30 +2,34 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AtSign, FlaskConical, History, MailCheck } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { RecipientStatePanel } from "@/components/admin/settings/email-recipient-state-panel";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { StatCard } from "@/components/system/page-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   emailOperationsQueryKey,
+  emailRecipientStateQueryKey,
   fetchEmailOperations,
+  fetchEmailRecipientState,
   sendTestEmail,
 } from "@/lib/react-query/official-documents";
 
-export function EmailOperationsPanel({
-  defaultTargetEmail,
-  canManage,
-}: {
-  canManage: boolean;
-  defaultTargetEmail: string;
-}) {
+export function EmailOperationsPanel({ canManage }: { canManage: boolean }) {
   const queryClient = useQueryClient();
-  const [targetEmail, setTargetEmail] = useState(defaultTargetEmail);
+  const [targetEmail, setTargetEmail] = useState("");
+  const [debouncedTargetEmail, setDebouncedTargetEmail] = useState("");
   const operationsQuery = useQuery({
     queryFn: fetchEmailOperations,
     queryKey: emailOperationsQueryKey,
+  });
+  const normalizedTargetEmail = debouncedTargetEmail.trim().toLowerCase();
+  const recipientStateQuery = useQuery({
+    enabled: isValidEmail(normalizedTargetEmail),
+    queryFn: () => fetchEmailRecipientState(normalizedTargetEmail),
+    queryKey: emailRecipientStateQueryKey(normalizedTargetEmail),
   });
   const sendMutation = useMutation({
     mutationFn: sendTestEmail,
@@ -34,6 +38,20 @@ export function EmailOperationsPanel({
       void queryClient.invalidateQueries({ queryKey: emailOperationsQueryKey });
     },
   });
+
+  useEffect(() => {
+    if (operationsQuery.data && targetEmail === "") {
+      setTargetEmail(operationsQuery.data.supportEmail);
+    }
+  }, [operationsQuery.data, targetEmail]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedTargetEmail(targetEmail);
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [targetEmail]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -70,7 +88,7 @@ export function EmailOperationsPanel({
             description="Most recent delivery attempts recorded by the API."
             icon={History}
             label="Recent attempts"
-            value={operationsQuery.data.recentAttempts.length}
+            value={`Last ${operationsQuery.data.recentAttempts.length}`}
           />
         </div>
       ) : null}
@@ -94,7 +112,10 @@ export function EmailOperationsPanel({
           />
           <Button
             disabled={
-              !canManage || sendMutation.isPending || targetEmail.trim() === ""
+              !canManage ||
+              sendMutation.isPending ||
+              targetEmail.trim() === "" ||
+              recipientStateQuery.data?.canSend === false
             }
             onClick={() =>
               sendMutation.mutate({ targetEmail: targetEmail.trim() })
@@ -104,6 +125,10 @@ export function EmailOperationsPanel({
             {sendMutation.isPending ? "Sending..." : "Send test email"}
           </Button>
         </div>
+        <RecipientStatePanel
+          email={normalizedTargetEmail}
+          query={recipientStateQuery}
+        />
       </div>
 
       <div className="rounded-xl border border-border/60 bg-card p-6 shadow-sm shadow-black/[0.04]">
@@ -185,4 +210,8 @@ function formatDeliveryStatus(status: string) {
     default:
       return status.replaceAll("_", " ");
   }
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }

@@ -7,6 +7,11 @@ RUN corepack enable
 FROM base AS builder
 WORKDIR /app
 
+ARG API_BASE_URL=
+ARG NEXT_PUBLIC_API_BASE_URL=
+ENV API_BASE_URL=$API_BASE_URL
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+
 # Copy manifests first for layer caching
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY tsconfig.base.json ./
@@ -42,5 +47,6 @@ USER nextjs
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD wget -qO- http://127.0.0.1:3000/health || exit 1
 
 CMD ["node", "apps/web/server.js"]

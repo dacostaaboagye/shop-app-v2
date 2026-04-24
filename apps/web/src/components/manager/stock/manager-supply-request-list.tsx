@@ -16,7 +16,7 @@ type Props = {
   allItems: StockSupplyRequestResponse[];
   counts: SupplyRequestCounts;
   filteredItems: StockSupplyRequestResponse[];
-  manageableLocationId: string | null;
+  manageableLocationIds: string[];
   search: string;
   statusFilter: RequestFilter;
   viewMode: ViewMode;
@@ -33,7 +33,7 @@ export function IncomingRequestList({
   allItems,
   counts,
   filteredItems,
-  manageableLocationId,
+  manageableLocationIds,
   onAction,
   onSearchChange,
   onStatusFilterChange,
@@ -77,7 +77,7 @@ export function IncomingRequestList({
 
       <RequestResults
         filteredItems={filteredItems}
-        manageableLocationId={manageableLocationId}
+        manageableLocationIds={manageableLocationIds}
         onAction={onAction}
         onClearFilters={() => {
           onSearchChange("");
@@ -91,13 +91,13 @@ export function IncomingRequestList({
 
 function RequestResults({
   filteredItems,
-  manageableLocationId,
+  manageableLocationIds,
   onAction,
   onClearFilters,
   viewMode,
 }: {
   filteredItems: StockSupplyRequestResponse[];
-  manageableLocationId: string | null;
+  manageableLocationIds: string[];
   onAction: (
     action: SupplyRequestAction,
     item: StockSupplyRequestResponse,
@@ -124,7 +124,7 @@ function RequestResults({
     return (
       <CompactIncomingRequestList
         items={filteredItems}
-        manageableLocationId={manageableLocationId}
+        manageableLocationIds={manageableLocationIds}
         onAction={onAction}
       />
     );
@@ -134,7 +134,7 @@ function RequestResults({
     <div className="flex flex-col gap-3">
       {filteredItems.map((item) => (
         <SupplyRequestCard
-          canManage={item.sourceLocationId === manageableLocationId}
+          canManage={manageableLocationIds.includes(item.sourceLocationId)}
           item={item}
           key={item.supplyRequestId}
           onAction={(action) => onAction(action, item)}

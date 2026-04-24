@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  adminCreateSupplierContactRequestSchema,
+  adminLinkSupplierContactPortalRequestSchema,
+  adminSupplierContactSchema,
+} from "./admin-supplier-contacts.js";
 import { adminSupplierProcurementOrderSchema } from "./admin-supplier-procurement.js";
 
 export type {
@@ -15,6 +20,11 @@ export {
   adminSupplierProcurementStatusSchema,
   adminSupplierProcurementTransitionRequestSchema,
 } from "./admin-supplier-procurement.js";
+export {
+  adminCreateSupplierContactRequestSchema,
+  adminLinkSupplierContactPortalRequestSchema,
+  adminSupplierContactSchema,
+} from "./admin-supplier-contacts.js";
 
 export const adminSupplierStatusSchema = z.enum(["active", "inactive"]);
 
@@ -52,19 +62,6 @@ export const adminSupplierSummarySchema = z.object({
   status: adminSupplierStatusSchema,
   taxId: z.string().max(120).nullable(),
   website: z.string().max(500).nullable(),
-});
-
-export const adminSupplierContactSchema = z.object({
-  contactReference: z.string().uuid(),
-  email: z.email().nullable(),
-  firstName: z.string().min(1).max(120),
-  isPrimary: z.boolean(),
-  jobTitle: z.string().max(160).nullable(),
-  lastName: z.string().min(1).max(120),
-  phone: z.string().max(80).nullable(),
-  portalStatus: z.enum(["none", "invited", "linked", "inactive"]),
-  status: z.enum(["active", "inactive"]),
-  userSlug: z.string().min(1).max(120).nullable(),
 });
 
 export const adminSupplierProductSchema = z.object({
@@ -153,21 +150,6 @@ export const adminCreateSupplierRequestSchema = z.object({
 
 export const adminUpdateSupplierRequestSchema =
   adminCreateSupplierRequestSchema.partial();
-
-export const adminCreateSupplierContactRequestSchema = z.object({
-  email: z.email().nullable().optional(),
-  firstName: z.string().trim().min(1).max(120),
-  isPrimary: z.boolean().default(false),
-  jobTitle: z.string().trim().max(160).nullable().optional(),
-  lastName: z.string().trim().min(1).max(120),
-  phone: z.string().trim().max(80).nullable().optional(),
-  status: z.enum(["active", "inactive"]).default("active"),
-  userSlug: z.string().trim().max(120).nullable().optional(),
-});
-
-export const adminLinkSupplierContactPortalRequestSchema = z.object({
-  userSlug: z.string().trim().min(1).max(120),
-});
 
 export const adminLinkSupplierProductRequestSchema = z.object({
   isPreferred: z.boolean().default(false),

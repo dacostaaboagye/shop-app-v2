@@ -8,11 +8,11 @@ import { statusMeta } from "./manager-supply-requests.support";
 
 export function CompactIncomingRequestList({
   items,
-  manageableLocationId,
+  manageableLocationIds,
   onAction,
 }: {
   items: StockSupplyRequestResponse[];
-  manageableLocationId: string | null;
+  manageableLocationIds: string[];
   onAction: (
     action: SupplyRequestAction,
     item: StockSupplyRequestResponse,
@@ -26,7 +26,7 @@ export function CompactIncomingRequestList({
           item={item}
           itemCount={items.length}
           key={item.supplyRequestId}
-          manageableLocationId={manageableLocationId}
+          manageableLocationIds={manageableLocationIds}
           onAction={onAction}
         />
       ))}
@@ -38,20 +38,20 @@ function CompactIncomingRequestRow({
   index,
   item,
   itemCount,
-  manageableLocationId,
+  manageableLocationIds,
   onAction,
 }: {
   index: number;
   item: StockSupplyRequestResponse;
   itemCount: number;
-  manageableLocationId: string | null;
+  manageableLocationIds: string[];
   onAction: (
     action: SupplyRequestAction,
     item: StockSupplyRequestResponse,
   ) => void;
 }) {
   const { accent, icon: StatusIcon, label } = statusMeta(item.status);
-  const canManage = item.sourceLocationId === manageableLocationId;
+  const canManage = manageableLocationIds.includes(item.sourceLocationId);
   const canApprove = canManage && item.status === "pending";
   const canDispatch = canManage && item.status === "approved";
 

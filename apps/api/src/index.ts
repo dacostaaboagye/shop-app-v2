@@ -29,18 +29,20 @@ if (!env.databaseUrl) {
 const databaseRuntime = createDatabaseRuntime(env.databaseUrl);
 const storage = createR2StorageService(env);
 const eventBus = new InMemoryPlatformEventBus();
-const messagingRuntime = createMessagingRuntime(databaseRuntime, env);
-const adminDirectoryRuntime = createAdminDirectoryRuntime(databaseRuntime, env);
 const authRuntime = createAuthRuntime(databaseRuntime, env);
-const catalogRuntime = createCatalogRuntime(databaseRuntime, storage);
-const salesRuntime = createSalesRuntime(databaseRuntime);
-const assignmentsRuntime = createAssignmentsRuntime(databaseRuntime);
 const platformEventRuntime = createPlatformEventRuntime({
   databaseRuntime,
   env,
   livePublisher: eventBus,
   permissionService: authRuntime.accessControl.permissionService,
 });
+const messagingRuntime = createMessagingRuntime(databaseRuntime, env, {
+  platformEventPublisher: platformEventRuntime.platformEventPublisher,
+});
+const adminDirectoryRuntime = createAdminDirectoryRuntime(databaseRuntime, env);
+const catalogRuntime = createCatalogRuntime(databaseRuntime, storage);
+const salesRuntime = createSalesRuntime(databaseRuntime);
+const assignmentsRuntime = createAssignmentsRuntime(databaseRuntime);
 const stockRuntime = createStockRuntime(databaseRuntime, {
   platformEventPublisher: platformEventRuntime.platformEventPublisher,
 });

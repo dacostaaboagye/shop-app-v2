@@ -7,16 +7,21 @@ export class PostgresEmailDeliveryRepository implements EmailDeliveryRecorder {
 
   async recordAttempt(
     input: Parameters<EmailDeliveryRecorder["recordAttempt"]>[0],
-  ): Promise<void> {
-    await this.db.insert(emailDeliveryAttempts).values({
-      createdAt: input.createdAt,
-      failureReason: input.failureReason ?? null,
-      messageType: input.messageType,
-      provider: input.provider,
-      providerMessageId: input.providerMessageId ?? null,
-      recipientEmail: input.recipientEmail,
-      status: input.status,
-      subject: input.subject,
-    });
+  ): Promise<{ attemptId: string | null }> {
+    const [row] = await this.db
+      .insert(emailDeliveryAttempts)
+      .values({
+        createdAt: input.createdAt,
+        failureReason: input.failureReason ?? null,
+        messageType: input.messageType,
+        provider: input.provider,
+        providerMessageId: input.providerMessageId ?? null,
+        recipientEmail: input.recipientEmail,
+        status: input.status,
+        subject: input.subject,
+      })
+      .returning({ id: emailDeliveryAttempts.id });
+
+    return { attemptId: row?.id ?? null };
   }
 }

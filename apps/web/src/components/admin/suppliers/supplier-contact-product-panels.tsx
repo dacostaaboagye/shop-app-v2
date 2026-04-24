@@ -6,21 +6,13 @@ import type {
   AdminUserSummary,
 } from "@shop/contracts";
 import { UsersRound } from "lucide-react";
-import { useId, useState } from "react";
+import { useState } from "react";
 import { AppEmptyState } from "@/components/system/app-empty-state";
 import { AppTableWrapper } from "@/components/system/app-table-wrapper";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+import { SupplierContactRow } from "./supplier-contact-row";
 
 export function ContactsPanel(props: {
   contacts: AdminSupplierDetail["contacts"];
@@ -126,7 +118,7 @@ export function ContactsPanel(props: {
         ) : (
           <AppTableWrapper>
             {props.contacts.map((item, index) => (
-              <ContactRow
+              <SupplierContactRow
                 contact={item}
                 index={index}
                 isPending={props.isPending}
@@ -144,201 +136,6 @@ export function ContactsPanel(props: {
       </div>
     </div>
   );
-}
-
-function ContactRow({
-  contact,
-  index,
-  isPending,
-  itemCount,
-  onInvitePortalUser,
-  onLinkPortalUser,
-  onRemove,
-  onUnlinkPortalUser,
-  userOptions,
-}: {
-  contact: AdminSupplierDetail["contacts"][number];
-  index: number;
-  isPending: boolean;
-  itemCount: number;
-  onInvitePortalUser: (contactReference: string) => void;
-  onLinkPortalUser: (contactReference: string, userSlug: string) => void;
-  onRemove: (contactReference: string) => void;
-  onUnlinkPortalUser: (contactReference: string) => void;
-  userOptions: AdminUserSummary[];
-}) {
-  const [selectedUserSlug, setSelectedUserSlug] = useState("");
-  return (
-    <div
-      className={cn(
-        "flex flex-col gap-4 p-4 lg:flex-row lg:items-center lg:justify-between",
-        index !== itemCount - 1 && "border-b border-border/50",
-      )}
-    >
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="font-semibold text-foreground">
-            {contact.firstName} {contact.lastName}
-          </p>
-          {contact.isPrimary ? (
-            <Badge
-              className="rounded-md font-bold uppercase tracking-wider text-[10px]"
-              variant="secondary"
-            >
-              Primary
-            </Badge>
-          ) : null}
-        </div>
-        <p className="mt-0.5 text-xs text-muted-foreground/80">
-          {contact.jobTitle ?? "No job title"}
-        </p>
-        {(contact.email || contact.phone) && (
-          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-            {contact.email && (
-              <span className="underline decoration-border/50 underline-offset-2">
-                {contact.email}
-              </span>
-            )}
-            {contact.phone && <span>{contact.phone}</span>}
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-        {contact.userSlug ? (
-          <div className="flex items-center gap-2 bg-muted/20 p-2 rounded-xl border border-border/50">
-            <div className="px-2">
-              <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/60">
-                Portal User
-              </p>
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-xs font-medium">{contact.userSlug}</p>
-                <Badge variant="secondary">
-                  {portalStatusLabel(contact.portalStatus)}
-                </Badge>
-              </div>
-            </div>
-            <Button
-              className="h-8 rounded-lg"
-              disabled={isPending}
-              onClick={() => onUnlinkPortalUser(contact.contactReference)}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              Unlink
-            </Button>
-          </div>
-        ) : (
-          <PortalUserLinkField
-            disabled={
-              isPending ||
-              userOptions.length === 0 ||
-              contact.portalStatus === "inactive"
-            }
-            hasContactEmail={Boolean(contact.email)}
-            isPending={isPending}
-            portalStatus={contact.portalStatus}
-            onInvite={() => onInvitePortalUser(contact.contactReference)}
-            onLink={() =>
-              onLinkPortalUser(contact.contactReference, selectedUserSlug)
-            }
-            onUserChange={setSelectedUserSlug}
-            selectedUserSlug={selectedUserSlug}
-            userOptions={userOptions}
-          />
-        )}
-        {!contact.isPrimary ? (
-          <Button
-            disabled={isPending}
-            onClick={() => onRemove(contact.contactReference)}
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            Remove
-          </Button>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function PortalUserLinkField(props: {
-  disabled: boolean;
-  hasContactEmail: boolean;
-  isPending: boolean;
-  onInvite: () => void;
-  onLink: () => void;
-  onUserChange: (value: string) => void;
-  portalStatus: AdminSupplierDetail["contacts"][number]["portalStatus"];
-  selectedUserSlug: string;
-  userOptions: AdminUserSummary[];
-}) {
-  const selectId = useId();
-  return (
-    <div className="flex flex-col gap-1.5 sm:min-w-72">
-      <Label
-        className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
-        htmlFor={selectId}
-      >
-        Portal account
-      </Label>
-      <div className="flex gap-2">
-        <Select
-          disabled={props.disabled}
-          onValueChange={props.onUserChange}
-          value={props.selectedUserSlug}
-        >
-          <SelectTrigger
-            className="h-10 rounded-xl border-border/60 bg-muted/20"
-            id={selectId}
-          >
-            <SelectValue placeholder="Select user" />
-          </SelectTrigger>
-          <SelectContent>
-            {props.userOptions.map((user) => (
-              <SelectItem key={user.slug} value={user.slug}>
-                {user.firstName} {user.lastName} ({user.email})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button
-          className="h-10 rounded-xl"
-          disabled={props.disabled || !props.selectedUserSlug}
-          onClick={props.onLink}
-          size="sm"
-          type="button"
-        >
-          Link
-        </Button>
-        <Button
-          className="h-10 rounded-xl"
-          disabled={
-            props.isPending ||
-            !props.hasContactEmail ||
-            props.portalStatus === "inactive"
-          }
-          onClick={props.onInvite}
-          size="sm"
-          type="button"
-          variant="outline"
-        >
-          {props.portalStatus === "invited" ? "Resend invite" : "Invite"}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function portalStatusLabel(
-  status: AdminSupplierDetail["contacts"][number]["portalStatus"],
-) {
-  if (status === "invited") return "Invited";
-  if (status === "linked") return "Linked";
-  if (status === "inactive") return "Inactive";
-  return "No portal access";
 }
 
 function TextInput(props: {

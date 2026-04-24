@@ -10,8 +10,14 @@ export type EmailDeliveryStatus =
   | "sent"
   | "suppressed";
 
+export type EmailMessageType =
+  | "email_test"
+  | "email_verification"
+  | "password_reset"
+  | "supplier_invite";
+
 export type EmailOptions = {
-  messageType: "email_verification" | "password_reset" | "supplier_invite";
+  messageType: EmailMessageType;
   to: string;
   subject: string;
   html: string;
@@ -35,23 +41,36 @@ export type EmailDeliveryRecorder = {
   recordAttempt(input: {
     createdAt: Date;
     failureReason?: string | null;
-    messageType: EmailOptions["messageType"];
+    messageType: EmailMessageType;
     provider: "console" | "resend";
     providerMessageId?: string | null;
     recipientEmail: string;
     status: EmailDeliveryStatus;
     subject: string;
-  }): Promise<void>;
+  }): Promise<{ attemptId: string | null }>;
+};
+
+export type EmailSendResult = {
+  attemptId: string | null;
+  failureReason?: string | null;
+  providerMessageId?: string | null;
+  status: EmailDeliveryStatus;
 };
 
 export type EmailTemplateProvider = {
   getEmailTemplateSettings: () => Promise<ResolvedEmailConfiguration>;
 };
 
+export type EmailDeliveryPolicy = {
+  assertCanSend(recipientEmail: string): Promise<void>;
+};
+
 export type EmailServiceOptions = {
   allowConsoleFallback?: boolean;
+  deliveryPolicy?: EmailDeliveryPolicy;
   deliveryRecorder?: EmailDeliveryRecorder | null;
   logger?: Pick<Console, "error" | "log">;
   templateProvider?: EmailTemplateProvider;
   transport?: EmailTransport | null;
+  webBaseUrl?: string;
 };

@@ -46,7 +46,32 @@ export const sendTestEmailResponseSchema = z.object({
   ok: z.literal(true),
 });
 
+export const blockedEmailDeliveryStatusSchema = z.enum([
+  "bounced",
+  "complained",
+  "suppressed",
+]);
+
+export const emailRecipientStateQuerySchema = z.object({
+  email: z.string().trim().email().max(320),
+});
+
+export const emailRecipientStateResponseSchema = z.object({
+  canSend: z.boolean(),
+  occurredAt: z.iso.datetime().nullable(),
+  recipientEmail: z.string().email(),
+  status: blockedEmailDeliveryStatusSchema.nullable(),
+  statusReason: z.string().nullable(),
+  summary: z.string().min(1),
+});
+
 export type EmailOperationsResponse = z.infer<
   typeof emailOperationsResponseSchema
 >;
 export type SendTestEmailRequest = z.infer<typeof sendTestEmailRequestSchema>;
+export type BlockedEmailDeliveryStatus = z.infer<
+  typeof blockedEmailDeliveryStatusSchema
+>;
+export type EmailRecipientStateResponse = z.infer<
+  typeof emailRecipientStateResponseSchema
+>;

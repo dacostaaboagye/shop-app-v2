@@ -1,5 +1,7 @@
 import {
   emailOperationsResponseSchema,
+  emailRecipientStateQuerySchema,
+  emailRecipientStateResponseSchema,
   sendTestEmailRequestSchema,
   sendTestEmailResponseSchema,
 } from "@shop/contracts";
@@ -11,7 +13,7 @@ import type { EmailOperationsService } from "./email-operations.service.js";
 type EmailAdminRouteDependencies = {
   operationsService: Pick<
     EmailOperationsService,
-    "getOperationsOverview" | "sendTestEmail"
+    "getOperationsOverview" | "getRecipientState" | "sendTestEmail"
   >;
 };
 
@@ -25,6 +27,12 @@ const sendTestEmailRoute: RouteDefinition = {
   access: { kind: "permission", permission: "settings.documents.manage" },
   method: "POST",
   url: "/api/admin/settings/email/test-send",
+};
+
+const getRecipientStateRoute: RouteDefinition = {
+  access: { kind: "permission", permission: "settings.documents.view" },
+  method: "GET",
+  url: "/api/admin/settings/email/recipient-state",
 };
 
 export function registerEmailAdminRoutes(
@@ -47,6 +55,19 @@ export function registerEmailAdminRoutes(
   });
 
   server.route({
+    config: { access: getRecipientStateRoute.access },
+    method: getRecipientStateRoute.method,
+    url: getRecipientStateRoute.url,
+    async handler(request) {
+      const query = emailRecipientStateQuerySchema.parse(request.query);
+      const result = await dependencies.operationsService.getRecipientState({
+        recipientEmail: query.email,
+      });
+      return emailRecipientStateResponseSchema.parse(result);
+    },
+  });
+
+  server.route({
     config: { access: sendTestEmailRoute.access },
     method: sendTestEmailRoute.method,
     url: sendTestEmailRoute.url,
@@ -64,6 +85,9 @@ function createUnavailableDependencies(): EmailAdminRouteDependencies {
   return {
     operationsService: {
       async getOperationsOverview() {
+        throw unavailableMessagingError();
+      },
+      async getRecipientState() {
         throw unavailableMessagingError();
       },
       async sendTestEmail() {

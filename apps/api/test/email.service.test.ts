@@ -11,6 +11,7 @@ describe("EmailService", () => {
       deliveryRecorder: {
         async recordAttempt(input) {
           attempts.push(input);
+          return { attemptId: "attempt_console" };
         },
       },
       logger: {
@@ -49,6 +50,7 @@ describe("EmailService", () => {
       deliveryRecorder: {
         async recordAttempt(input) {
           attempts.push(input);
+          return { attemptId: "attempt_failed" };
         },
       },
       logger: {
@@ -86,6 +88,7 @@ describe("EmailService", () => {
       deliveryRecorder: {
         async recordAttempt(input) {
           attempts.push(input);
+          return { attemptId: "attempt_sent" };
         },
       },
       logger: {
@@ -124,6 +127,7 @@ describe("EmailService", () => {
       deliveryRecorder: {
         async recordAttempt(input) {
           attempts.push(input);
+          return { attemptId: "attempt_supplier" };
         },
       },
       logger: {
@@ -237,5 +241,149 @@ describe("EmailService", () => {
       /If the button does not work, copy and paste the full link into your browser\./,
     );
     assert.equal(delivered[0]?.replyTo, "accounts@example.com");
+  });
+
+  it("records test emails with the email_test message type", async () => {
+    const attempts: unknown[] = [];
+    const service = new EmailService("test-key", "noreply@example.com", {
+      deliveryRecorder: {
+        async recordAttempt(input) {
+          attempts.push(input);
+          return { attemptId: "attempt_test" };
+        },
+      },
+      logger: {
+        error: () => undefined,
+        log: () => undefined,
+      },
+      transport: {
+        async send() {
+          return { data: { id: "msg_test" } };
+        },
+      },
+    });
+
+    await service.sendTestEmail({ to: "ops@example.com" });
+
+    assert.equal(
+      (attempts[0] as { messageType: string }).messageType,
+      "email_test",
+    );
+    assert.equal((attempts[0] as { status: string }).status, "sent");
+    assert.match((attempts[0] as { subject: string }).subject, /^\[Test\]/);
+  });
+
+  it("uses the injected webBaseUrl in the test email action URL", async () => {
+    const delivered: Array<{ html: string; text: string }> = [];
+    const service = new EmailService("test-key", "noreply@example.com", {
+      logger: {
+        error: () => undefined,
+        log: () => undefined,
+      },
+      transport: {
+        async send(options) {
+          delivered.push(options);
+          return { data: { id: "msg_test" } };
+        },
+      },
+      webBaseUrl: "https://myapp.example.com",
+    });
+
+    await service.sendTestEmail({ to: "ops@example.com" });
+
+    assert.match(delivered[0]?.html ?? "", /https:\/\/myapp\.example\.com\//);
+    assert.match(delivered[0]?.text ?? "", /https:\/\/myapp\.example\.com\//);
+  });
+
+  it("falls back to app.example.com in test emails when no webBaseUrl is configured", async () => {
+    const delivered: Array<{ html: string; text: string }> = [];
+    const service = new EmailService("test-key", "noreply@example.com", {
+      logger: {
+        error: () => undefined,
+        log: () => undefined,
+      },
+      transport: {
+        async send(options) {
+          delivered.push(options);
+          return { data: { id: "msg_test" } };
+        },
+      },
+    });
+
+    await service.sendTestEmail({ to: "ops@example.com" });
+
+    assert.match(delivered[0]?.html ?? "", /app\.example\.com/);
+  });
+
+  it("continues sending even when the delivery recorder throws", async () => {
+    const service = new EmailService("test-key", "noreply@example.com", {
+      deliveryRecorder: {
+        async recordAttempt() {
+          throw new Error("DB connection lost");
+        },
+      },
+      logger: {
+        error: () => undefined,
+        log: () => undefined,
+      },
+      transport: {
+        async send() {
+          return { data: { id: "msg_123" } };
+        },
+      },
+    });
+
+    // Must not throw even though the recorder fails
+    await assert.doesNotReject(() =>
+      service.sendVerificationEmail({
+        firstName: "Store",
+        to: "worker@example.com",
+        verificationUrl: "http://localhost:3000/verify-email?token=test",
+      }),
+    );
+  });
+
+  it("blocks sends when the latest provider state is suppressed", async () => {
+    const service = new EmailService("test-key", "noreply@example.com", {
+      deliveryPolicy: {
+        async assertCanSend(recipientEmail) {
+          assert.equal(recipientEmail, "worker@example.com");
+          throw new AppError({
+            code: "conflict",
+            detail:
+              "worker@example.com cannot receive email right now because the provider has suppressed the address.",
+            details: {
+              occurredAt: "2026-04-24T00:00:00.000Z",
+              recipientEmail,
+              status: "suppressed",
+            },
+            statusCode: 409,
+            title: "Email delivery blocked",
+          });
+        },
+      },
+      logger: {
+        error: () => undefined,
+        log: () => undefined,
+      },
+      transport: {
+        async send() {
+          assert.fail("transport.send should not be called for blocked email");
+        },
+      },
+    });
+
+    await assert.rejects(
+      () =>
+        service.sendVerificationEmail({
+          firstName: "Store",
+          to: "worker@example.com",
+          verificationUrl: "http://localhost:3000/verify-email?token=test",
+        }),
+      (error) =>
+        error instanceof AppError &&
+        error.statusCode === 409 &&
+        error.title === "Email delivery blocked",
+    );
   });
 });

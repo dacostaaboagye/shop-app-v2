@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import type { EmailOperationsResponse } from "@shop/contracts";
+import type {
+  EmailOperationsResponse,
+  EmailRecipientStateResponse,
+} from "@shop/contracts";
+import { AppError } from "../src/modules/_core/errors/app-error.js";
 import { issueAccessToken } from "../src/modules/auth/access-token.js";
 import { createServer } from "../src/server/create-server.js";
 
@@ -42,6 +46,63 @@ describe("email admin routes", () => {
     assert.deepEqual(response.json(), { ok: true });
     assert.deepEqual(calls, ["ops@example.com"]);
   });
+
+  it("returns a structured conflict when test send is blocked", async () => {
+    const server = createMessagingServer({
+      async sendTestEmail() {
+        throw new AppError({
+          code: "conflict",
+          detail:
+            "ops@example.com cannot receive email right now because the provider has suppressed the address.",
+          details: {
+            occurredAt: "2026-04-24T00:00:00.000Z",
+            recipientEmail: "ops@example.com",
+            status: "suppressed",
+          },
+          statusCode: 409,
+          title: "Email delivery blocked",
+        });
+      },
+    });
+
+    const response = await server.inject({
+      headers: { authorization: bearerToken() },
+      method: "POST",
+      payload: { targetEmail: "ops@example.com" },
+      url: "/api/admin/settings/email/test-send",
+    });
+
+    assert.equal(response.statusCode, 409);
+    assert.equal(response.json().title, "Email delivery blocked");
+    assert.equal(response.json().code, "conflict");
+  });
+
+  it("returns recipient delivery state for operators", async () => {
+    const server = createMessagingServer({
+      async getRecipientState(input) {
+        assert.equal(input.recipientEmail, "ops@example.com");
+        return {
+          canSend: false,
+          occurredAt: "2026-04-24T00:00:00.000Z",
+          recipientEmail: input.recipientEmail,
+          status: "suppressed",
+          statusReason: "Provider suppression list",
+          summary:
+            "This address is currently suppressed by the provider. Resolve the suppression before retrying.",
+        };
+      },
+    });
+
+    const response = await server.inject({
+      headers: { authorization: bearerToken() },
+      method: "GET",
+      url: "/api/admin/settings/email/recipient-state?email=ops%40example.com",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().status, "suppressed");
+    assert.equal(response.json().canSend, false);
+  });
 });
 
 function createMessagingServer(
@@ -49,6 +110,9 @@ function createMessagingServer(
     getOperationsOverview?: (input: {
       now: Date;
     }) => Promise<EmailOperationsResponse>;
+    getRecipientState?: (input: {
+      recipientEmail: string;
+    }) => Promise<EmailRecipientStateResponse>;
     sendTestEmail?: (input: { targetEmail: string }) => Promise<void>;
   } = {},
 ) {
@@ -108,8 +172,24 @@ function createMessagingServer(
             supportEmail: "accounts@example.com",
           };
         },
+        async getRecipientState(args) {
+          if (input.getRecipientState) {
+            return input.getRecipientState(args);
+          }
+          return {
+            canSend: true,
+            occurredAt: null,
+            recipientEmail: args.recipientEmail,
+            status: null,
+            statusReason: null,
+            summary:
+              "No blocked provider lifecycle state is recorded for this recipient.",
+          };
+        },
         async sendTestEmail(args) {
-          if (input.sendTestEmail) return input.sendTestEmail(args);
+          if (input.sendTestEmail) {
+            return input.sendTestEmail(args);
+          }
         },
       },
     },

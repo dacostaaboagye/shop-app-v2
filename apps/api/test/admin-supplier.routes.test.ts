@@ -377,6 +377,7 @@ function supplierDetail(input: { contactUserSlug: string | null }) {
         isPrimary: true,
         jobTitle: "Procurement lead",
         lastName: "Mensah",
+        latestInvite: null,
         phone: "+233 555 0101",
         portalStatus: input.contactUserSlug
           ? ("linked" as const)

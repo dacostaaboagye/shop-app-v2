@@ -1,5 +1,6 @@
 import type {
   EmailOperationsResponse,
+  EmailRecipientStateResponse,
   EmailTemplatePreviewRequest,
   EmailTemplatePreviewResponse,
   EmailTemplatePreviewType,
@@ -36,6 +37,8 @@ export const emailOperationsQueryKey = [
   "messaging",
   "email-operations",
 ] as const;
+export const emailRecipientStateQueryKey = (email: string) =>
+  ["messaging", "email-recipient-state", email] as const;
 
 export async function fetchOfficialDocumentSettings() {
   return fetchJson<OfficialDocumentSettingsResponse>(
@@ -144,6 +147,14 @@ export async function sendTestEmail(payload: SendTestEmailRequest) {
       headers: { "Content-Type": "application/json" },
       method: "POST",
     },
+    { auth: "required" },
+  );
+}
+
+export async function fetchEmailRecipientState(email: string) {
+  return fetchJson<EmailRecipientStateResponse>(
+    `/api/admin/settings/email/recipient-state?email=${encodeURIComponent(email)}`,
+    undefined,
     { auth: "required" },
   );
 }

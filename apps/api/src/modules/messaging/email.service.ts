@@ -1,10 +1,9 @@
 import type { EmailTemplateSettings } from "@shop/database";
 import { Resend } from "resend";
-import { AppError } from "../_core/errors/app-error.js";
-import { assertValidFromAddress, emailDeliveryError } from "./email-errors.js";
+import { assertValidFromAddress } from "./email-errors.js";
+import { EmailSendExecution } from "./email-send-execution.js";
 import type {
-  EmailDeliveryRecorder,
-  EmailOptions,
+  EmailSendResult,
   EmailServiceOptions,
   EmailTransport,
 } from "./email-service.types.js";
@@ -19,53 +18,62 @@ import {
 } from "./fallback-email-templates.js";
 
 export class EmailService {
-  private readonly allowConsoleFallback: boolean;
-  private readonly deliveryRecorder: EmailDeliveryRecorder | null;
-  private readonly logger: Pick<Console, "error" | "log">;
+  private readonly deliveryPolicy:
+    | NonNullable<EmailServiceOptions["deliveryPolicy"]>
+    | undefined;
+  private readonly execution: EmailSendExecution;
   private readonly templateProvider:
     | NonNullable<EmailServiceOptions["templateProvider"]>
     | undefined;
-  private readonly transport: EmailTransport | null;
+  private readonly webBaseUrl: string;
 
   constructor(
     readonly apiKey: string | undefined,
-    private readonly fromAddress: string,
+    fromAddress: string,
     options: EmailServiceOptions = {},
   ) {
     assertValidFromAddress(fromAddress);
-    this.allowConsoleFallback = options.allowConsoleFallback ?? true;
-    this.deliveryRecorder = options.deliveryRecorder ?? null;
-    this.logger = options.logger ?? console;
+    this.deliveryPolicy = options.deliveryPolicy;
     this.templateProvider = options.templateProvider;
-    this.transport =
+    this.webBaseUrl = options.webBaseUrl ?? "https://app.example.com";
+
+    const transport: EmailTransport | null =
       options.transport ??
       (apiKey
         ? (new Resend(apiKey).emails as unknown as EmailTransport)
         : null);
 
-    if (!this.transport && !this.allowConsoleFallback) {
+    const allowConsoleFallback = options.allowConsoleFallback ?? true;
+
+    if (!transport && !allowConsoleFallback) {
       throw new Error("RESEND_API_KEY must be configured for email delivery.");
     }
+
+    this.execution = new EmailSendExecution({
+      allowConsoleFallback,
+      deliveryRecorder: options.deliveryRecorder ?? null,
+      fromAddress,
+      logger: options.logger ?? console,
+      transport,
+    });
   }
 
   async sendVerificationEmail(input: {
     to: string;
     firstName: string;
     verificationUrl: string;
-  }): Promise<void> {
-    const configured = await this.renderConfiguredTemplate(
-      "emailVerification",
-      {
-        actionUrl: input.verificationUrl,
-        fallback: {
-          html: verificationEmailHtml(input.firstName, input.verificationUrl),
-          subject: "Verify your email address",
-          text: verificationEmailText(input.firstName, input.verificationUrl),
-        },
-        variables: { firstName: input.firstName },
+  }): Promise<EmailSendResult> {
+    await this.assertCanSend(input.to);
+    const configured = await this.resolveTemplate("emailVerification", {
+      actionUrl: input.verificationUrl,
+      fallback: {
+        html: verificationEmailHtml(input.firstName, input.verificationUrl),
+        subject: "Verify your email address",
+        text: verificationEmailText(input.firstName, input.verificationUrl),
       },
-    );
-    await this.send({
+      variables: { firstName: input.firstName },
+    });
+    return this.execution.send({
       messageType: "email_verification",
       ...(configured.replyTo ? { replyTo: configured.replyTo } : {}),
       to: input.to,
@@ -79,8 +87,9 @@ export class EmailService {
     to: string;
     firstName: string;
     resetUrl: string;
-  }): Promise<void> {
-    const configured = await this.renderConfiguredTemplate("passwordReset", {
+  }): Promise<EmailSendResult> {
+    await this.assertCanSend(input.to);
+    const configured = await this.resolveTemplate("passwordReset", {
       actionUrl: input.resetUrl,
       fallback: {
         html: passwordResetEmailHtml(input.firstName, input.resetUrl),
@@ -89,7 +98,7 @@ export class EmailService {
       },
       variables: { firstName: input.firstName },
     });
-    await this.send({
+    return this.execution.send({
       messageType: "password_reset",
       ...(configured.replyTo ? { replyTo: configured.replyTo } : {}),
       to: input.to,
@@ -104,8 +113,9 @@ export class EmailService {
     firstName: string;
     supplierName: string;
     setupUrl: string;
-  }): Promise<void> {
-    const configured = await this.renderConfiguredTemplate("supplierInvite", {
+  }): Promise<EmailSendResult> {
+    await this.assertCanSend(input.to);
+    const configured = await this.resolveTemplate("supplierInvite", {
       actionUrl: input.setupUrl,
       fallback: {
         html: supplierInviteEmailHtml(input),
@@ -117,7 +127,7 @@ export class EmailService {
         supplierName: input.supplierName,
       },
     });
-    await this.send({
+    return this.execution.send({
       messageType: "supplier_invite",
       ...(configured.replyTo ? { replyTo: configured.replyTo } : {}),
       to: input.to,
@@ -127,27 +137,20 @@ export class EmailService {
     });
   }
 
-  async sendTestEmail(input: { to: string }): Promise<void> {
-    const configured = await this.renderConfiguredTemplate(
-      "emailVerification",
-      {
-        actionUrl: "https://app.example.com/email-test",
-        fallback: {
-          html: verificationEmailHtml(
-            "Operator",
-            "https://app.example.com/email-test",
-          ),
-          subject: "Email delivery test",
-          text: verificationEmailText(
-            "Operator",
-            "https://app.example.com/email-test",
-          ),
-        },
-        variables: { firstName: "Operator" },
+  async sendTestEmail(input: { to: string }): Promise<EmailSendResult> {
+    await this.assertCanSend(input.to);
+    const testUrl = `${this.webBaseUrl}/`;
+    const configured = await this.resolveTemplate("emailVerification", {
+      actionUrl: testUrl,
+      fallback: {
+        html: verificationEmailHtml("Operator", testUrl),
+        subject: "Email delivery test",
+        text: verificationEmailText("Operator", testUrl),
       },
-    );
-    await this.send({
-      messageType: "email_verification",
+      variables: { firstName: "Operator" },
+    });
+    return this.execution.send({
+      messageType: "email_test",
       ...(configured.replyTo ? { replyTo: configured.replyTo } : {}),
       to: input.to,
       subject: `[Test] ${configured.subject}`,
@@ -156,7 +159,7 @@ export class EmailService {
     });
   }
 
-  private async renderConfiguredTemplate(
+  private async resolveTemplate(
     templateKey: keyof EmailTemplateSettings,
     input: {
       actionUrl: string;
@@ -185,101 +188,10 @@ export class EmailService {
       template: settings.emailTemplates[templateKey],
       variables: input.variables,
     });
-    return {
-      ...rendered,
-      replyTo: settings.sender.replyToAddress,
-    };
+    return { ...rendered, replyTo: settings.sender.replyToAddress };
   }
 
-  private async send(options: EmailOptions): Promise<void> {
-    if (!this.transport) {
-      this.logger.log(
-        `[EMAIL] To: ${options.to} | Subject: ${options.subject}`,
-      );
-      this.logger.log(`[EMAIL] Text: ${options.text}`);
-      await this.recordDelivery({
-        messageType: options.messageType,
-        provider: "console",
-        recipientEmail: options.to,
-        status: "console_fallback",
-        subject: options.subject,
-      });
-      return;
-    }
-
-    try {
-      const { data, error } = await this.transport.send({
-        from: this.fromAddress,
-        ...(options.replyTo ? { replyTo: options.replyTo } : {}),
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
-        text: options.text,
-      });
-
-      if (error) {
-        await this.recordDelivery({
-          failureReason: error.message ?? "Provider rejected the message.",
-          messageType: options.messageType,
-          provider: "resend",
-          recipientEmail: options.to,
-          status: "failed",
-          subject: options.subject,
-        });
-        this.logger.error("[email] Provider rejected message.", {
-          error: error.message,
-          subject: options.subject,
-          to: options.to,
-        });
-        throw emailDeliveryError();
-      }
-      await this.recordDelivery({
-        messageType: options.messageType,
-        provider: "resend",
-        providerMessageId: data?.id ?? null,
-        recipientEmail: options.to,
-        status: "sent",
-        subject: options.subject,
-      });
-    } catch (error) {
-      if (error instanceof AppError) throw error;
-      await this.recordDelivery({
-        failureReason: error instanceof Error ? error.message : String(error),
-        messageType: options.messageType,
-        provider: "resend",
-        recipientEmail: options.to,
-        status: "failed",
-        subject: options.subject,
-      });
-      this.logger.error("[email] Provider request failed.", {
-        error: error instanceof Error ? error.message : String(error),
-        subject: options.subject,
-        to: options.to,
-      });
-      throw emailDeliveryError();
-    }
-  }
-
-  private async recordDelivery(
-    input: Omit<
-      Parameters<EmailDeliveryRecorder["recordAttempt"]>[0],
-      "createdAt"
-    >,
-  ): Promise<void> {
-    if (!this.deliveryRecorder) return;
-    try {
-      await this.deliveryRecorder.recordAttempt({
-        ...input,
-        createdAt: new Date(),
-      });
-    } catch (error) {
-      this.logger.error("[email] Failed to record delivery attempt.", {
-        error: error instanceof Error ? error.message : String(error),
-        messageType: input.messageType,
-        provider: input.provider,
-        status: input.status,
-        to: input.recipientEmail,
-      });
-    }
+  private async assertCanSend(recipientEmail: string): Promise<void> {
+    await this.deliveryPolicy?.assertCanSend(recipientEmail);
   }
 }

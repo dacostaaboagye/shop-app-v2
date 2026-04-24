@@ -42,6 +42,7 @@ import {
   supplierContacts,
   supplierInquiries,
   supplierInquiryStatusEnum,
+  supplierPortalInvites,
   supplierProcurementOrderLines,
   supplierProcurementOrders,
   supplierProcurementStatusEnum,
@@ -84,6 +85,7 @@ assert.equal(getTableName(stockOwnershipEvents), "stock_ownership_events");
 assert.equal(getTableName(stockReservations), "stock_reservations");
 assert.equal(getTableName(suppliers), "suppliers");
 assert.equal(getTableName(supplierContacts), "supplier_contacts");
+assert.equal(getTableName(supplierPortalInvites), "supplier_portal_invites");
 assert.equal(getTableName(supplierProducts), "supplier_products");
 assert.equal(getTableName(supplierTransactions), "supplier_transactions");
 assert.equal(getTableName(supplierInquiries), "supplier_inquiries");
@@ -231,6 +233,7 @@ assert.equal(stockMovements.quantityDelta.name, "quantity_delta");
 assert.equal(stockReservations.sourceKey.name, "source_key");
 assert.equal(suppliers.paymentTermsDays.name, "payment_terms_days");
 assert.equal(supplierContacts.userId.name, "user_id");
+assert.equal(supplierPortalInvites.contactId.name, "contact_id");
 assert.equal(supplierProducts.productId.name, "product_id");
 assert.equal(supplierTransactions.transactionType.name, "transaction_type");
 assert.equal(supplierInquiries.reference.name, "reference");
@@ -305,6 +308,7 @@ assert.match(migrationSql, /stock_ownership_events_quantity_positive/);
 assert.match(migrationSql, /supplier_status/);
 assert.match(migrationSql, /suppliers_name_unique/);
 assert.match(migrationSql, /supplier_contacts_primary_unique/);
+assert.match(migrationSql, /supplier_portal_invites/);
 assert.match(migrationSql, /supplier_products_supplier_product_unique/);
 assert.match(migrationSql, /supplier_transaction_type/);
 assert.match(migrationSql, /supplier_procurement_status/);
