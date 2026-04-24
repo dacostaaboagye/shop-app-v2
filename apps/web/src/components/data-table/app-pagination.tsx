@@ -2,7 +2,13 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { getPageCount } from "@/lib/url-state";
 import { cn } from "@/lib/utils";
 
@@ -39,18 +45,21 @@ export function AppPagination({
           <div className="flex items-center gap-2 text-sm">
             <span>Rows</span>
             <Select
-              aria-label="Rows per page"
-              className="h-8 min-w-18"
-              onChange={(event) =>
-                onPageSizeChange(Number.parseInt(event.target.value, 10))
+              onValueChange={(value) =>
+                onPageSizeChange(Number.parseInt(value, 10))
               }
               value={String(pageSize)}
             >
-              {pageSizeOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
+              <SelectTrigger className="h-8 min-w-[70px]" size="sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {pageSizeOptions.map((option) => (
+                  <SelectItem key={option} value={String(option)}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </div>
         ) : null}

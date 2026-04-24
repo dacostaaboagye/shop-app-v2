@@ -1,6 +1,6 @@
 import type { AdminMediaRecord } from "@shop/contracts";
-import { Star, Trash2 } from "lucide-react";
-import Image from "next/image";
+import { FileText, Star, Trash2 } from "lucide-react";
+import { PreviewImage } from "@/components/system/preview-image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -35,19 +35,32 @@ export function MediaGallery({
         <div className="flex flex-col gap-1" key={item.assignmentId}>
           <div className="relative aspect-square overflow-hidden rounded-md border border-border/60 bg-muted">
             {item.mediaType === "image" ? (
-              <Image
+              <PreviewImage
                 alt={item.altText ?? item.entitySlug}
-                className="object-cover"
                 fill
+                imageClassName="rounded-md"
+                previewTitle={item.altText ?? item.entitySlug}
+                sizes="(min-width: 768px) 25vw, 50vw"
                 src={item.publicUrl}
-                unoptimized
               />
-            ) : (
+            ) : item.mediaType === "video" ? (
               <video
                 className="size-full object-cover"
                 muted
                 src={item.publicUrl}
               />
+            ) : (
+              <a
+                className="flex size-full flex-col items-center justify-center gap-2 p-3 text-center text-sm"
+                href={item.publicUrl}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <FileText />
+                <span className="line-clamp-2">
+                  {item.altText ?? "Document"}
+                </span>
+              </a>
             )}
             {item.isPrimary ? (
               <Badge

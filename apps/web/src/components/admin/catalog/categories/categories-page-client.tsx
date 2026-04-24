@@ -1,7 +1,6 @@
 "use client";
 import type { AdminCategoryListQuery } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
-import { Search, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -9,21 +8,17 @@ import {
   AppDataTable,
   type AppDataTableSort,
 } from "@/components/data-table/app-data-table";
+import { useAuthorization } from "@/components/providers/authorization-provider";
+import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { PermissionGate } from "@/components/system/permission-gate";
+import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   adminCategoriesQueryKey,
   fetchAdminCategories,
   updateAdminCategory,
 } from "@/lib/react-query/admin-catalog";
-import {
-  currentUserPermissionsQueryKey,
-  fetchCurrentUserPermissions,
-} from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
 import {
   getPageCount,
@@ -40,8 +35,10 @@ import {
   getCategoriesErrorMessage,
   replaceCategoryQuery,
 } from "./categories-page-client.support";
+import { CategoryFilters } from "./category-filters";
 import { categoryTableColumns } from "./category-table-columns";
 export function CategoriesPageClient() {
+  const { can } = useAuthorization();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -92,18 +89,12 @@ export function CategoriesPageClient() {
     queryFn: () => fetchAdminCategories(backendQuery),
     queryKey: adminCategoriesQueryKey(backendQuery),
   });
-  const permissionsQuery = useQuery({
-    queryFn: fetchCurrentUserPermissions,
-    queryKey: currentUserPermissionsQueryKey,
-  });
   const totalCount = categoriesQuery.data?.totalCount ?? 0;
   const totalPages = getPageCount(totalCount, pageSize);
   const safePage = Math.min(page, totalPages);
   const hasFilters = q !== "" || status !== "all";
   const sorting: AppDataTableSort = { columnId: sort, direction: dir };
-  const canManage =
-    permissionsQuery.data?.permissions.includes("catalog.categories.manage") ??
-    false;
+  const canManage = can("catalog.categories.manage");
   useEffect(() => {
     if (!categoriesQuery.data || safePage === page) return;
     replaceCategoryQuery(router, pathname, searchParams, {
@@ -114,64 +105,38 @@ export function CategoriesPageClient() {
     <PageShell>
       <PageHeader
         actions={
-          canManage ? (
+          <PermissionGate permission="catalog.categories.manage">
             <Link
               className={buttonVariants({ size: "sm" })}
               href={toRoute("/admin/products/categories/new")}
             >
               New category
             </Link>
-          ) : null
+          </PermissionGate>
         }
         description="Manage categories used to organise the product catalogue."
         title="Categories"
       />
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative min-w-56 flex-1">
-          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="h-9 pl-9"
-            onChange={(e) => setDraftSearch(e.target.value)}
-            placeholder="Search by name or slug"
-            value={draftSearch}
-          />
-        </div>
-        <Select
-          aria-label="Filter by status"
-          className="h-9"
-          onChange={(e) =>
-            replaceCategoryQuery(router, pathname, searchParams, {
-              page: null,
-              status: e.target.value === "all" ? null : e.target.value,
-            })
-          }
-          value={status}
-        >
-          <option value="all">All status</option>
-          <option value="active">Active</option>
-          <option value="archived">Archived</option>
-        </Select>
-        {hasFilters ? (
-          <Button
-            onClick={() =>
-              replaceCategoryQuery(router, pathname, searchParams, {
-                page: null,
-                q: null,
-                status: null,
-              })
-            }
-            size="sm"
-            type="button"
-            variant="ghost"
-          >
-            <X data-icon="inline-start" />
-            Clear
-          </Button>
-        ) : null}
-        <span className="ml-auto tabular-nums text-sm text-muted-foreground">
-          {totalCount} total
-        </span>
-      </div>
+      <CategoryFilters
+        draftSearch={draftSearch}
+        hasFilters={hasFilters}
+        onClear={() =>
+          replaceCategoryQuery(router, pathname, searchParams, {
+            page: null,
+            q: null,
+            status: null,
+          })
+        }
+        onDraftSearchChange={setDraftSearch}
+        onStatusChange={(val) =>
+          replaceCategoryQuery(router, pathname, searchParams, {
+            page: null,
+            status: val,
+          })
+        }
+        status={status}
+        totalCount={totalCount}
+      />
       {categoriesQuery.isPending && !categoriesQuery.data ? (
         <div className="flex flex-col gap-2">
           {CATEGORY_SKELETON_KEYS.map((key) => (
@@ -181,12 +146,14 @@ export function CategoriesPageClient() {
       ) : (
         <>
           {categoriesQuery.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Unable to load categories</AlertTitle>
-              <AlertDescription>
-                {getCategoriesErrorMessage(categoriesQuery.error)}
-              </AlertDescription>
-            </Alert>
+            <AppErrorBanner
+              detail={getCategoriesErrorMessage(categoriesQuery.error)}
+              error={categoriesQuery.error}
+              onRetry={() => {
+                void categoriesQuery.refetch();
+              }}
+              title="Unable to load categories"
+            />
           ) : null}
           <AppDataTable
             bulkActions={createCatalogBulkActions({

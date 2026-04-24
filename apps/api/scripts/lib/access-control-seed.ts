@@ -115,6 +115,22 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
     description: "View the admin supplier management surface.",
   },
   {
+    key: "suppliers.manage",
+    description: "Create and update supplier organizations and relationships.",
+  },
+  {
+    key: "settings.documents.view",
+    description: "View official document, brand, and money settings.",
+  },
+  {
+    key: "settings.documents.manage",
+    description: "Manage official document, brand, and money settings.",
+  },
+  {
+    key: "settings.location_documents.manage",
+    description: "Manage allowed document overrides for assigned locations.",
+  },
+  {
     key: "stock.view",
     description: "View location stock levels and availability.",
   },
@@ -139,6 +155,14 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
     description: "View the supplier's product catalogue.",
   },
   {
+    key: "supplier.orders.view",
+    description: "View purchase orders issued to the supplier.",
+  },
+  {
+    key: "supplier.inquiries.view",
+    description: "View sourcing inquiries sent to the supplier.",
+  },
+  {
     key: "agent.routes.view",
     description: "View assigned delivery routes for the current agent.",
   },
@@ -151,9 +175,45 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
     description:
       "View transfer requests involving the worker's assigned stock.",
   },
+  {
+    key: "pos.sales.process",
+    description: "Process a POS sale and generate an invoice.",
+  },
+  {
+    key: "pos.sales.view",
+    description: "View own POS sales history and invoices.",
+  },
+  {
+    key: "pos.sales.manage",
+    description: "View all POS sales and invoices for a managed location.",
+  },
+  {
+    key: "stock.assignments.manage",
+    description: "Assign and reassign product variants to workers.",
+  },
+  {
+    key: "stock.assignments.view",
+    description: "View all current stock assignments at a location.",
+  },
+  {
+    key: "stock.assignments.own.view",
+    description: "View own assigned product variants.",
+  },
+  {
+    key: "stock.handovers.manage",
+    description: "Initiate and end stock ownership handovers.",
+  },
+  {
+    key: "stock.supply.request",
+    description: "Create and cancel stock supply requests.",
+  },
+  {
+    key: "stock.supply.manage",
+    description: "View, approve, and reject stock supply requests for a location.",
+  },
 ] as const;
 
-const SYSTEM_ROLES: readonly SystemRole[] = [
+export const SYSTEM_ROLES: readonly SystemRole[] = [
   {
     slug: "basic_user",
     name: "Basic User",
@@ -186,13 +246,27 @@ const SYSTEM_ROLES: readonly SystemRole[] = [
       "orders.view",
       "deliveries.view",
       "suppliers.view",
+      "suppliers.manage",
+      "settings.documents.view",
+      "settings.documents.manage",
+      "settings.location_documents.manage",
       "stock.view",
       "transfers.view",
       "staff.view",
+      "settings.location_documents.manage",
       "worker.assignments.view",
       "worker.handovers.view",
       "worker.stock.view",
       "worker.transfers.view",
+      "pos.sales.process",
+      "pos.sales.view",
+      "pos.sales.manage",
+      "stock.assignments.manage",
+      "stock.assignments.view",
+      "stock.assignments.own.view",
+      "stock.handovers.manage",
+      "stock.supply.request",
+      "stock.supply.manage",
     ],
   },
   {
@@ -202,6 +276,7 @@ const SYSTEM_ROLES: readonly SystemRole[] = [
     permissions: [
       "manager.dashboard.view",
       "inventory.read",
+      "inventory.write",
       "stock.view",
       "transfers.view",
       "staff.view",
@@ -209,6 +284,15 @@ const SYSTEM_ROLES: readonly SystemRole[] = [
       "worker.handovers.view",
       "worker.stock.view",
       "worker.transfers.view",
+      "pos.sales.process",
+      "pos.sales.view",
+      "pos.sales.manage",
+      "stock.assignments.manage",
+      "stock.assignments.view",
+      "stock.assignments.own.view",
+      "stock.handovers.manage",
+      "stock.supply.request",
+      "stock.supply.manage",
     ],
   },
   {
@@ -221,13 +305,23 @@ const SYSTEM_ROLES: readonly SystemRole[] = [
       "worker.handovers.view",
       "worker.stock.view",
       "worker.transfers.view",
+      "pos.sales.process",
+      "pos.sales.view",
+      "stock.assignments.own.view",
+      "stock.handovers.manage",
+      "stock.supply.request",
     ],
   },
   {
     slug: "supplier",
     name: "Supplier",
     description: "Supplier with supplier portal access.",
-    permissions: ["supplier.dashboard.view", "supplier.catalog.view"],
+    permissions: [
+      "supplier.dashboard.view",
+      "supplier.catalog.view",
+      "supplier.orders.view",
+      "supplier.inquiries.view",
+    ],
   },
   {
     slug: "agent",

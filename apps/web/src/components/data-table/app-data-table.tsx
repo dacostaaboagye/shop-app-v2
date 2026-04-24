@@ -1,35 +1,19 @@
 "use client";
 
 import {
-  flexRender,
   getCoreRowModel,
   getSortedRowModel,
   type RowSelectionState,
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { useState } from "react";
 import { AppPagination } from "@/components/data-table/app-pagination";
-import { AppEmptyState } from "@/components/system/app-empty-state";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { cn } from "@/lib/utils";
-import {
-  type AppDataTableProps,
-  getAlignmentClass,
-  getColumnMeta,
-  getNextSortingState,
-} from "./app-data-table.support";
+import { Table, TableCaption } from "@/components/ui/table";
+import type { AppDataTableProps } from "./app-data-table.support";
+import { AppDataTableBody } from "./app-data-table-body";
+import { AppDataTableHead } from "./app-data-table-head";
 import { createSelectionColumn } from "./app-data-table-selection-column";
 
 export type { AppDataTableSort } from "./app-data-table.support";
@@ -44,12 +28,13 @@ export function AppDataTable<TData>({
   emptyState,
   emptyTitle,
   getRowId,
+  noContainer = false,
   onRowClick,
   onSortingChange,
   pagination,
   sorting,
   toolbar,
-}: AppDataTableProps<TData>) {
+}: AppDataTableProps<TData> & { noContainer?: boolean }) {
   const [internalSorting, setInternalSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const controlledSortingState = sorting
@@ -98,11 +83,17 @@ export function AppDataTable<TData>({
   const selectedRows = table
     .getSelectedRowModel()
     .rows.map((row) => row.original);
-  return (
-    <div className="flex flex-col gap-4">
+
+  const tableContent = (
+    <div className="flex flex-col">
       {selectedRows.length > 0 && bulkActions ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/70 bg-muted/20 px-3 py-2">
-          <Badge variant="secondary">{selectedRows.length} selected</Badge>
+        <div className="flex flex-wrap items-center gap-2 border-b border-border/50 bg-muted/50 px-6 py-3">
+          <Badge
+            className="rounded-lg bg-foreground text-background border-0"
+            variant="secondary"
+          >
+            {selectedRows.length} selected
+          </Badge>
           {bulkActions.render({
             clearSelection: () => setRowSelection({}),
             selectedCount: selectedRows.length,
@@ -110,140 +101,51 @@ export function AppDataTable<TData>({
           })}
         </div>
       ) : null}
+
       {toolbar ? (
-        <div className="split-callout">
-          <div />
+        <div className="px-6 py-4 border-b border-border/50">
           <div className="token-row">{toolbar}</div>
         </div>
       ) : null}
 
-      <Table className="rounded-lg border bg-card">
-        {caption ? <TableCaption>{caption}</TableCaption> : null}
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                const meta = getColumnMeta(header.column.columnDef.meta);
-                const label = header.isPlaceholder
-                  ? null
-                  : flexRender(
-                      header.column.columnDef.header,
-                      header.getContext(),
-                    );
-                const sortDirection = header.column.getIsSorted();
-                const sortLabel =
-                  sortDirection === "asc"
-                    ? "Ascending"
-                    : sortDirection === "desc"
-                      ? "Descending"
-                      : "Sort";
+      <div className="relative">
+        <Table className="border-0 bg-transparent">
+          {caption ? (
+            <TableCaption className="pb-4">{caption}</TableCaption>
+          ) : null}
+          <AppDataTableHead
+            {...(onSortingChange ? { onSortingChange } : {})}
+            headClassName={headClassName}
+            sortingState={sortingState}
+            table={table}
+          />
+          <AppDataTableBody
+            {...(emptyState ? { emptyState } : {})}
+            {...(onRowClick ? { onRowClick } : {})}
+            cellClassName={cellClassName}
+            emptyDescription={emptyDescription}
+            emptyTitle={emptyTitle}
+            table={table}
+            visibleColumnCount={visibleColumnCount}
+          />
+        </Table>
+      </div>
 
-                return (
-                  <TableHead
-                    key={header.id}
-                    className={cn(
-                      headClassName,
-                      getAlignmentClass(meta?.align),
-                      meta?.className,
-                    )}
-                  >
-                    {header.column.getCanSort() ? (
-                      <Button
-                        className="h-auto px-0 text-inherit"
-                        onClick={
-                          onSortingChange
-                            ? () =>
-                                onSortingChange(
-                                  getNextSortingState(
-                                    header.column.id,
-                                    sortingState,
-                                  ),
-                                )
-                            : header.column.getToggleSortingHandler()
-                        }
-                        size="sm"
-                        type="button"
-                        variant="ghost"
-                      >
-                        {label}
-                        <span className="sr-only">{sortLabel}</span>
-                        {sortDirection === "asc" ? (
-                          <ArrowUp aria-hidden="true" className="size-3.5" />
-                        ) : sortDirection === "desc" ? (
-                          <ArrowDown aria-hidden="true" className="size-3.5" />
-                        ) : (
-                          <ArrowUpDown
-                            aria-hidden="true"
-                            className="size-3.5"
-                          />
-                        )}
-                      </Button>
-                    ) : (
-                      label
-                    )}
-                  </TableHead>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.length ? (
-            table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                className={onRowClick ? "cursor-pointer" : undefined}
-                onClick={
-                  onRowClick
-                    ? (e) => {
-                        const target = e.target as HTMLElement;
-                        const isInteractive = !!target.closest(
-                          'button, a, input, select, textarea, [role="menuitem"], [data-no-row-click="true"]',
-                        );
-                        if (!isInteractive) {
-                          onRowClick(row.original);
-                        }
-                      }
-                    : undefined
-                }
-              >
-                {row.getVisibleCells().map((cell) => {
-                  const meta = getColumnMeta(cell.column.columnDef.meta);
+      {pagination ? (
+        <div className="border-t border-border/50 bg-white/50 px-6 py-4">
+          <AppPagination {...pagination} />
+        </div>
+      ) : null}
+    </div>
+  );
 
-                  return (
-                    <TableCell
-                      key={cell.id}
-                      className={cn(
-                        cellClassName,
-                        getAlignmentClass(meta?.align),
-                        meta?.className,
-                      )}
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </TableCell>
-                  );
-                })}
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell className="py-8" colSpan={visibleColumnCount}>
-                <AppEmptyState
-                  action={emptyState?.action}
-                  description={emptyState?.description ?? emptyDescription}
-                  title={emptyState?.title ?? emptyTitle}
-                  {...(emptyState?.kind ? { kind: emptyState.kind } : {})}
-                />
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+  if (noContainer) {
+    return tableContent;
+  }
 
-      {pagination ? <AppPagination {...pagination} /> : null}
+  return (
+    <div className="overflow-hidden rounded-xl bg-white shadow-sm border border-border/50">
+      {tableContent}
     </div>
   );
 }

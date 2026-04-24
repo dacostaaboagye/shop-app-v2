@@ -22,20 +22,25 @@ import { MediaUploader } from "./media-uploader";
 function getEntityDetailKey(
   entityType: CatalogMediaEntityType,
   slug: string,
-): unknown[] | null {
+): unknown[][] {
   switch (entityType) {
     case "brand":
-      return ["admin", "catalog", "brands", slug];
+      return [["admin", "catalog", "brands", slug]];
     case "category":
-      return ["admin", "catalog", "categories", slug];
+      return [["admin", "catalog", "categories", slug]];
     case "product":
-      return ["admin", "catalog", "products", slug];
+      return [["admin", "catalog", "products", slug]];
     case "location":
-      return ["admin", "locations", slug];
+      return [["admin", "locations", slug]];
+    case "system":
+      return [
+        ["official-documents", "profile"],
+        ["official-documents", "settings"],
+      ];
     case "user":
-      return ["admin", "access", "users", slug];
+      return [["admin", "access", "users", slug]];
     default:
-      return null;
+      return [];
   }
 }
 
@@ -48,12 +53,12 @@ type Props = {
 export function MediaPanel({ canManage, entitySlug, entityType }: Props) {
   const queryClient = useQueryClient();
   const qKey = adminMediaQueryKey(entityType, entitySlug);
-  const detailKey = getEntityDetailKey(entityType, entitySlug);
+  const detailKeys = getEntityDetailKey(entityType, entitySlug);
 
   function invalidateDetail() {
-    if (detailKey) {
-      void queryClient.invalidateQueries({ queryKey: detailKey });
-    }
+    detailKeys.forEach((queryKey) => {
+      void queryClient.invalidateQueries({ queryKey });
+    });
   }
 
   const mediaQuery = useQuery({

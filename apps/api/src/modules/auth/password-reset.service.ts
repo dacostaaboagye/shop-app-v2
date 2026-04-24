@@ -3,7 +3,7 @@ import { passwordResetTokens, refreshTokens, users } from "@shop/database";
 import { and, eq, gt, isNull } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import { AppError } from "../_core/errors/app-error.js";
-import type { EmailService } from "./email.service.js";
+import type { EmailService } from "../messaging/email.service.js";
 import { hashPassword } from "./password-hash.js";
 
 const TOKEN_TTL_MINUTES = 60;
@@ -63,11 +63,16 @@ export class PasswordResetService {
 
     const resetUrl = `${this.webBaseUrl}/reset-password?token=${token}`;
 
-    await this.emailService.sendPasswordResetEmail({
-      to: user.email,
-      firstName: user.firstName,
-      resetUrl,
-    });
+    try {
+      await this.emailService.sendPasswordResetEmail({
+        to: user.email,
+        firstName: user.firstName,
+        resetUrl,
+      });
+    } catch (error) {
+      // Preserve forgot-password anti-enumeration behavior; operators use logs.
+      console.error("[auth] Failed to send password reset email:", error);
+    }
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {

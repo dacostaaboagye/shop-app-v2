@@ -3,16 +3,14 @@
 import type { AdminPermissionSummary } from "@shop/contracts";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AppFormField } from "@/components/forms/app-form-field";
 import { AppBanner } from "@/components/system/app-banner";
+import { FloatingActionBar } from "@/components/system/floating-action-bar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import {
   adminRoleDetailQueryKey,
@@ -135,6 +133,7 @@ export function RoleEditorForm({
           {(field) => (
             <AppFormField
               errors={field.state.meta.errors}
+              info="Short, descriptive name for the role (e.g. 'Store Manager')."
               inputId={field.name}
               label="Role name"
               showErrors={
@@ -166,6 +165,7 @@ export function RoleEditorForm({
             <AppFormField
               description="Describe the business purpose of this role so audits remain legible."
               errors={field.state.meta.errors}
+              info="Provide context on why this role exists and what responsibilities it covers."
               inputId={field.name}
               label="Description"
               showErrors={
@@ -189,7 +189,7 @@ export function RoleEditorForm({
         {(field) => (
           <section className="flex flex-col gap-3">
             <div>
-              <h2 className="text-base font-semibold">Permission grants</h2>
+              <h2 className="text-base font-bold">Permission grants</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Select the page visibility and action permissions this role
                 should unlock.
@@ -214,33 +214,17 @@ export function RoleEditorForm({
           isSubmitting: state.isSubmitting,
         })}
       >
-        {({ canSubmit, isDirty, isSubmitting }) => (
-          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/70 pt-4">
-            <Button
-              disabled={!isDirty || isSubmitting}
-              onClick={() => {
-                setPermissionSearch("");
-                form.reset();
-              }}
-              type="button"
-              variant="outline"
-            >
-              Reset
-            </Button>
-            <Button disabled={!canSubmit || isSubmitting} type="submit">
-              {isSubmitting ? (
-                <>
-                  <Spinner data-icon="inline-start" />
-                  Saving role...
-                </>
-              ) : (
-                <>
-                  Save role
-                  <Save data-icon="inline-end" />
-                </>
-              )}
-            </Button>
-          </div>
+        {({ isDirty }) => (
+          <FloatingActionBar
+            isSaving={roleMutation.isPending}
+            isVisible={isDirty}
+            onReset={() => {
+              setPermissionSearch("");
+              form.reset();
+            }}
+            onSave={() => void form.handleSubmit()}
+            saveLabel={mode === "create" ? "Create role" : "Save role"}
+          />
         )}
       </form.Subscribe>
     </form>

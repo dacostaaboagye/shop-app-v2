@@ -114,6 +114,7 @@ export function UserAccessManageRolesTab({
             <CardTitle>Role catalogue</CardTitle>
             <CardDescription>
               Assign a role to extend this user's portal access and permissions.
+              Manager and worker roles are always scoped to a location.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">

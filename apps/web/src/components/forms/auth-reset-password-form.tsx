@@ -5,7 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { KeyRound } from "lucide-react";
 import { useState } from "react";
 import { AppFormField } from "@/components/forms/app-form-field";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AppErrorBanner } from "@/components/system/app-error";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -120,10 +120,11 @@ export function AuthResetPasswordForm({
       </FieldGroup>
 
       {authError ? (
-        <Alert variant="destructive">
-          <AlertTitle>{authError.title}</AlertTitle>
-          <AlertDescription>{authError.detail}</AlertDescription>
-        </Alert>
+        <AppErrorBanner
+          detail={authError.detail}
+          error={mutation.error}
+          title={authError.title}
+        />
       ) : null}
 
       <form.Subscribe
@@ -134,7 +135,7 @@ export function AuthResetPasswordForm({
       >
         {({ canSubmit, isSubmitting }) => (
           <Button
-            className="w-full"
+            className="w-full rounded-xl shadow-lg shadow-primary/20"
             disabled={!canSubmit || isSubmitting}
             size="lg"
             type="submit"
@@ -147,7 +148,7 @@ export function AuthResetPasswordForm({
             ) : (
               <>
                 Set new password
-                <KeyRound data-icon="inline-end" />
+                <KeyRound className="ml-2 h-4 w-4" />
               </>
             )}
           </Button>

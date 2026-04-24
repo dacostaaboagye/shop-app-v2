@@ -14,6 +14,7 @@ export type PortalNavItem = {
   href: Route;
   icon: LucideIcon;
   label: string;
+  locationSelectorPermission?: string | null;
   requiredPermission?: string;
 };
 
@@ -22,17 +23,9 @@ export type PortalNavSection = {
   title: string;
 };
 
-export type PortalNotification = {
-  body: string;
-  id: string;
-  timeLabel: string;
-  title: string;
-};
-
 export type ShellMeta = {
   emptyNotificationCopy: string;
   heading: string;
-  notifications: PortalNotification[];
 };
 
 export type NavRegistryEntry = {
@@ -41,6 +34,7 @@ export type NavRegistryEntry = {
   href: Route;
   icon: LucideIcon;
   label: string;
+  locationSelectorPermission?: string | null;
   requiredPermission: string;
   section: string;
   sidebar?: false;

@@ -109,6 +109,13 @@ Notes:
 - `allow` overrides can add a permission even without a role grant
 - revoked role assignments and removed overrides never participate in effective permission resolution
 
+## Route and navigation scope
+
+- contextual route checks use the request location when one is present; without a location they see only global grants
+- session navigation and selected read-only catalogue routes may resolve permissions across any active scope
+- any-active resolution unions effective permissions from global scope and each active location scope after local overrides are applied
+- write routes remain contextual unless they explicitly opt into a broader rule
+
 ## Supporting artifacts
 
 - Schema source: [access-control.ts](/D:/work/personal/shop-app/shop-app-v2/packages/database/src/schema/access-control.ts)

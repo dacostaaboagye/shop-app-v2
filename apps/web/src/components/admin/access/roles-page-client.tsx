@@ -6,12 +6,15 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppDataTable } from "@/components/data-table/app-data-table";
+import { useAuthorization } from "@/components/providers/authorization-provider";
+import { AppErrorBanner } from "@/components/system/app-error";
+import { AppTableWrapper } from "@/components/system/app-table-wrapper";
 import {
   PageHeader,
   PageShell,
   StatCard,
 } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PermissionGate } from "@/components/system/permission-gate";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,10 +22,6 @@ import {
   adminRolesQueryKey,
   fetchAdminRoles,
 } from "@/lib/react-query/admin-access";
-import {
-  currentUserPermissionsQueryKey,
-  fetchCurrentUserPermissions,
-} from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
 import {
   getPageCount,
@@ -38,6 +37,7 @@ import {
 } from "./roles-page-client.support";
 
 export function RolesPageClient() {
+  const { can } = useAuthorization();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -57,13 +57,7 @@ export function RolesPageClient() {
     queryFn: () => fetchAdminRoles({ page, pageSize, q }),
     queryKey: adminRolesQueryKey({ page, pageSize, q }),
   });
-  const currentPermissionsQuery = useQuery({
-    queryFn: fetchCurrentUserPermissions,
-    queryKey: currentUserPermissionsQueryKey,
-  });
-  const canManageRoles =
-    currentPermissionsQuery.data?.permissions.includes("access.roles.manage") ??
-    false;
+  const canManageRoles = can("access.roles.manage");
   const totalPages = getPageCount(rolesQuery.data?.totalCount ?? 0, pageSize);
   const safePage = Math.min(page, totalPages);
   const hasFilters = q !== "";
@@ -108,14 +102,14 @@ export function RolesPageClient() {
     <PageShell>
       <PageHeader
         actions={
-          canManageRoles ? (
+          <PermissionGate permission="access.roles.manage">
             <Link
               className={buttonVariants({ size: "sm" })}
               href={toRoute("/admin/access/roles/new")}
             >
               New role
             </Link>
-          ) : undefined
+          </PermissionGate>
         }
         description="Inspect system and custom roles, permission coverage, and current assignment load."
         title="Roles"
@@ -148,11 +142,11 @@ export function RolesPageClient() {
         />
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative min-w-64 flex-1">
-          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+      <div className="flex flex-wrap items-center gap-4 rounded-xl bg-white p-4 shadow-sm border border-border/50">
+        <div className="relative min-w-[320px] flex-1">
+          <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            className="pl-9"
+            className="h-10 border-0 bg-muted pl-10 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-primary/20 transition-all rounded-xl"
             onChange={(event) => setDraftSearch(event.target.value)}
             placeholder="Search roles by name, slug, or description"
             value={draftSearch}
@@ -160,6 +154,7 @@ export function RolesPageClient() {
         </div>
         {hasFilters ? (
           <Button
+            className="h-10 rounded-xl px-4 text-muted-foreground hover:text-foreground hover:bg-muted"
             onClick={() =>
               replaceRolesQuery(router, pathname, searchParams, {
                 page: null,
@@ -170,74 +165,83 @@ export function RolesPageClient() {
             type="button"
             variant="ghost"
           >
-            <X data-icon="inline-start" />
-            Clear
+            <X className="mr-2 size-4" />
+            Clear filters
           </Button>
         ) : null}
-        <span className="ml-auto text-sm tabular-nums text-muted-foreground">
-          {rolesQuery.data?.totalCount ?? 0} total
-        </span>
+        <div className="ml-auto flex items-center gap-3 pr-2">
+          <div className="h-4 w-px bg-muted" />
+          <span className="text-[0.65rem] font-bold uppercase tracking-wider text-muted-foreground tabular-nums">
+            {rolesQuery.data?.totalCount ?? 0} total
+          </span>
+        </div>
       </div>
 
-      {rolesQuery.isPending && !rolesQuery.data ? (
-        <div className="flex flex-col gap-2">
-          {ROLE_SKELETON_KEYS.map((key) => (
-            <Skeleton key={key} className="h-11 w-full" />
-          ))}
-        </div>
-      ) : (
-        <>
-          {rolesQuery.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Unable to load roles</AlertTitle>
-              <AlertDescription>
-                {getRolesErrorMessage(rolesQuery.error)}
-              </AlertDescription>
-            </Alert>
-          ) : null}
-          <AppDataTable
-            columns={roleTableColumns}
-            data={rolesQuery.data?.items ?? []}
-            density="compact"
-            emptyDescription={
-              hasFilters
-                ? "Try a different search term for role names, slugs, or descriptions."
-                : "No roles have been configured yet."
-            }
-            emptyTitle={hasFilters ? "No roles match" : "No roles available"}
-            getRowId={(row) => row.slug}
-            pagination={{
-              onPageChange: (nextPage) =>
-                replaceRolesQuery(router, pathname, searchParams, {
-                  page: nextPage === 1 ? null : nextPage,
-                }),
-              onPageSizeChange: (nextPageSize) =>
-                replaceRolesQuery(router, pathname, searchParams, {
-                  page: null,
-                  pageSize: nextPageSize === 10 ? null : nextPageSize,
-                }),
-              page: safePage,
-              pageSize,
-              pageSizeOptions: ROLE_PAGE_SIZE_OPTIONS,
-              totalCount: rolesQuery.data?.totalCount ?? 0,
-            }}
-            {...(!hasFilters && canManageRoles
-              ? {
-                  emptyState: {
-                    action: (
-                      <Link
-                        className={buttonVariants({ size: "sm" })}
-                        href={toRoute("/admin/access/roles/new")}
-                      >
-                        Create role
-                      </Link>
-                    ),
-                  },
-                }
-              : {})}
-          />
-        </>
-      )}
+      <AppTableWrapper>
+        {rolesQuery.isPending && !rolesQuery.data ? (
+          <div className="flex flex-col gap-2 p-4">
+            {ROLE_SKELETON_KEYS.map((key) => (
+              <Skeleton key={key} className="h-11 w-full rounded-lg" />
+            ))}
+          </div>
+        ) : (
+          <>
+            {rolesQuery.isError ? (
+              <div className="p-8">
+                <AppErrorBanner
+                  detail={getRolesErrorMessage(rolesQuery.error)}
+                  error={rolesQuery.error}
+                  onRetry={() => {
+                    void rolesQuery.refetch();
+                  }}
+                  title="Unable to load roles"
+                />
+              </div>
+            ) : null}
+            <AppDataTable
+              columns={roleTableColumns}
+              data={rolesQuery.data?.items ?? []}
+              density="compact"
+              emptyDescription={
+                hasFilters
+                  ? "Try a different search term for role names, slugs, or descriptions."
+                  : "No roles have been configured yet."
+              }
+              emptyTitle={hasFilters ? "No roles match" : "No roles available"}
+              getRowId={(row) => row.slug}
+              pagination={{
+                onPageChange: (nextPage) =>
+                  replaceRolesQuery(router, pathname, searchParams, {
+                    page: nextPage === 1 ? null : nextPage,
+                  }),
+                onPageSizeChange: (nextPageSize) =>
+                  replaceRolesQuery(router, pathname, searchParams, {
+                    page: null,
+                    pageSize: nextPageSize === 10 ? null : nextPageSize,
+                  }),
+                page: safePage,
+                pageSize,
+                pageSizeOptions: ROLE_PAGE_SIZE_OPTIONS,
+                totalCount: rolesQuery.data?.totalCount ?? 0,
+              }}
+              {...(!hasFilters && canManageRoles
+                ? {
+                    emptyState: {
+                      action: (
+                        <Link
+                          className={buttonVariants({ size: "sm" })}
+                          href={toRoute("/admin/access/roles/new")}
+                        >
+                          Create role
+                        </Link>
+                      ),
+                    },
+                  }
+                : {})}
+            />
+          </>
+        )}
+      </AppTableWrapper>
     </PageShell>
   );
 }

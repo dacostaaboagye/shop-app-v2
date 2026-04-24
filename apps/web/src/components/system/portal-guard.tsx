@@ -1,13 +1,10 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useEffect } from "react";
+import { useAuthorization } from "@/components/providers/authorization-provider";
+import { AppErrorState } from "@/components/system/app-error";
 import { Spinner } from "@/components/ui/spinner";
-import {
-  fetchCurrentUserPermissions,
-  getCurrentUserPermissionsQueryKey,
-} from "@/lib/react-query/auth";
 import { toRoute } from "@/lib/routes";
 import {
   isAuthSessionPending,
@@ -30,15 +27,11 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const pathname = usePathname();
   const status = useAuthSessionStore((s) => s.status);
   const user = useAuthSessionStore((s) => s.user);
-  const permissionsQuery = useQuery({
-    enabled: status === "authenticated",
-    queryFn: fetchCurrentUserPermissions,
-    queryKey: getCurrentUserPermissionsQueryKey(user?.slug ?? null),
-  });
-  const permissions = permissionsQuery.data?.permissions ?? [];
+  const authorization = useAuthorization();
   const routeItem = getRouteItem(pathname);
   const hasRouteAccess =
-    routeItem === undefined || canAccessPortalItem(routeItem, permissions);
+    routeItem === undefined ||
+    canAccessPortalItem(routeItem, authorization.ability);
 
   useEffect(() => {
     if (isAuthSessionPending(status)) return;
@@ -50,19 +43,42 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
     if (!user) return;
 
-    if (permissionsQuery.isLoading) {
+    if (authorization.isLoading || authorization.isError) {
       return;
     }
 
     if (!hasRouteAccess) {
       router.replace(toRoute("/no-access"));
     }
-  }, [hasRouteAccess, permissionsQuery.isLoading, router, status, user]);
+  }, [
+    authorization.isError,
+    authorization.isLoading,
+    hasRouteAccess,
+    router,
+    status,
+    user,
+  ]);
+
+  if (authorization.isError) {
+    return (
+      <div className="flex min-h-svh items-center justify-center p-6">
+        <AppErrorState
+          className="max-w-xl"
+          detail="Permissions could not be loaded for this session."
+          error={authorization.error}
+          onRetry={() => {
+            void authorization.refetch();
+          }}
+          title="Unable to verify page access"
+        />
+      </div>
+    );
+  }
 
   const isReady =
     status === "authenticated" &&
     user !== null &&
-    !permissionsQuery.isLoading &&
+    !authorization.isLoading &&
     hasRouteAccess;
 
   if (!isReady) {

@@ -1,7 +1,7 @@
 const configuredApiBaseUrl =
   process.env.NEXT_PUBLIC_API_BASE_URL?.trim() ||
   process.env.API_BASE_URL?.trim() ||
-  (process.env.NODE_ENV === "development" ? "http://127.0.0.1:4000" : "");
+  (process.env.NODE_ENV === "development" ? "http://localhost:4000" : "");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

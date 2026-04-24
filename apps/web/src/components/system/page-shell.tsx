@@ -1,18 +1,11 @@
-import type { LucideIcon } from "lucide-react";
 import { ChevronLeft } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { PreviewImage } from "./preview-image";
+
+export { InsightCard, MenuCard, StatCard } from "./page-shell-cards";
 
 type PageShellProps = {
   children: ReactNode;
@@ -28,18 +21,12 @@ type HeroPanelProps = {
   aside?: ReactNode;
 };
 
-type InsightCardProps = {
-  eyebrow: string;
-  title: string;
-  description?: string;
-  children: ReactNode;
-  className?: string;
-};
-
 export function PageShell({ children, className }: PageShellProps) {
   return (
-    <main className={cn("page-shell flex flex-col gap-6", className)}>
-      {children}
+    <main className={cn("px-4 py-4 sm:px-6 lg:px-8", className)}>
+      <div className="mx-auto max-w-[96rem] flex flex-col gap-6">
+        {children}
+      </div>
     </main>
   );
 }
@@ -53,29 +40,35 @@ export function HeroPanel({
   aside,
 }: HeroPanelProps) {
   return (
-    <section className="hero-grid">
-      <Card className="hero-panel border-none py-0">
-        <CardContent className="flex flex-col gap-6 px-6 py-7 sm:px-8 sm:py-9">
-          <div className="eyebrow-block">
-            <p className="editorial-kicker">{eyebrow}</p>
-            <h1 className="max-w-4xl text-5xl leading-none font-medium sm:text-6xl lg:text-7xl">
+    <section className="grid gap-6 lg:grid-cols-[1fr,400px]">
+      <div className="flex flex-col justify-center">
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-3">
+            <p className="font-heading text-[10px] font-black uppercase tracking-[0.4em] text-primary">
+              {eyebrow}
+            </p>
+            <h1 className="font-heading max-w-4xl text-5xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-6xl">
               {title}
             </h1>
+            <p className="max-w-2xl text-lg font-medium leading-relaxed text-muted-foreground/80">
+              {description}
+            </p>
           </div>
-          <p className="hero-copy text-base sm:text-lg">{description}</p>
-          {badges?.length ? (
-            <div className="token-row">
-              {badges.map((badge) => (
-                <Badge key={badge} variant="secondary">
-                  {badge}
-                </Badge>
-              ))}
-            </div>
-          ) : null}
-          {actions ? <div className="token-row">{actions}</div> : null}
-        </CardContent>
-      </Card>
-      {aside}
+
+          <div className="flex flex-wrap items-center gap-4">
+            {badges?.map((badge) => (
+              <div
+                key={badge}
+                className="rounded-full bg-muted px-4 py-1.5 text-xs font-bold text-muted-foreground border border-border/50"
+              >
+                {badge}
+              </div>
+            ))}
+            {actions}
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center">{aside}</div>
     </section>
   );
 }
@@ -106,123 +99,59 @@ export function PageHeader({
   const headerActions = actions ?? action;
 
   return (
-    <section className="rounded-2xl border border-border/70 bg-linear-to-br from-background via-background to-muted/35 px-4 py-4 shadow-xs sm:px-5">
-      {backHref || headerActions ? (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
-          <div className="flex items-center gap-3">
-            {backHref ? (
-              <Link
-                href={backHref}
-                className={cn(
-                  buttonVariants({ size: "sm", variant: "outline" }),
-                  "rounded-full pr-3 text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <ChevronLeft className="size-3.5" />
-                {backLabel}
-              </Link>
+    <section className="relative mb-6">
+      <div className="flex flex-col gap-4">
+        {backHref && (
+          <Link
+            href={backHref}
+            className="group flex w-fit items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ChevronLeft className="size-4 transition-transform group-hover:-translate-x-1" />
+            {backLabel}
+          </Link>
+        )}
+
+        <div className="flex items-start justify-between gap-8">
+          <div className="flex items-start gap-8">
+            {image ? (
+              <PreviewImage
+                alt={`${title} image`}
+                className="size-20 shrink-0 rounded-xl ring-4 ring-muted/50"
+                height={80}
+                imageClassName="rounded-xl"
+                previewTitle={title}
+                src={image}
+                width={80}
+              />
+            ) : avatar ? (
+              <div className="size-20 shrink-0 rounded-xl overflow-hidden ring-4 ring-muted/50">
+                {avatar}
+              </div>
             ) : null}
-            {backHref && headerActions ? (
-              <div className="hidden h-4 w-px bg-border/70 sm:block" />
-            ) : null}
+            <div className="flex-1 pt-0.5 flex flex-col gap-2">
+              {eyebrow && (
+                <p className="font-heading text-[10px] font-black uppercase tracking-[0.4em] text-primary">
+                  {eyebrow}
+                </p>
+              )}
+              <h1 className="font-heading text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+                {title}
+              </h1>
+              {description && (
+                <p className="max-w-3xl text-base font-medium leading-relaxed text-muted-foreground/80">
+                  {description}
+                </p>
+              )}
+            </div>
           </div>
-          {headerActions ? (
-            <div className="flex flex-wrap items-center gap-2">
+
+          {headerActions && (
+            <div className="flex shrink-0 items-center gap-3 pt-1">
               {headerActions}
             </div>
-          ) : null}
-        </div>
-      ) : null}
-      <div className="flex min-w-0 items-center gap-4">
-        {image ? (
-          // biome-ignore lint/performance/noImgElement: This header renders arbitrary media URLs from storage backends that are not constrained to Next image domains.
-          <img
-            alt=""
-            className="h-14 w-14 shrink-0 rounded-xl object-cover ring-1 ring-border/50"
-            src={image}
-          />
-        ) : avatar ? (
-          avatar
-        ) : null}
-        <div className="min-w-0">
-          {eyebrow ? <p className="editorial-kicker mb-1">{eyebrow}</p> : null}
-          <h1 className="text-xl font-semibold sm:text-2xl">{title}</h1>
-          {description ? (
-            <p className="mt-1.5 max-w-3xl text-sm text-muted-foreground sm:text-[0.95rem]">
-              {description}
-            </p>
-          ) : null}
+          )}
         </div>
       </div>
     </section>
-  );
-}
-
-type StatCardProps = {
-  description?: string;
-  href?: Route;
-  icon: LucideIcon;
-  label: string;
-  value: ReactNode;
-};
-
-export function StatCard({
-  description,
-  href,
-  icon: Icon,
-  label,
-  value,
-}: StatCardProps) {
-  const card = (
-    <Card
-      className={cn(
-        "border-border bg-card shadow-none",
-        href && "transition-colors hover:bg-accent/40",
-      )}
-    >
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-medium text-muted-foreground">{label}</p>
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-            <Icon className="size-4" />
-          </div>
-        </div>
-        <p className="mt-3 font-sans text-2xl font-bold tabular-nums">
-          {value}
-        </p>
-        {description ? (
-          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
-        ) : null}
-      </CardContent>
-    </Card>
-  );
-
-  if (href) {
-    return (
-      <Link className="block" href={href}>
-        {card}
-      </Link>
-    );
-  }
-
-  return card;
-}
-
-export function InsightCard({
-  eyebrow,
-  title,
-  description,
-  children,
-  className,
-}: InsightCardProps) {
-  return (
-    <Card className={cn("surface-card gap-0", className)}>
-      <CardHeader className="gap-2">
-        <p className="editorial-kicker">{eyebrow}</p>
-        <CardTitle>{title}</CardTitle>
-        {description ? <CardDescription>{description}</CardDescription> : null}
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
   );
 }

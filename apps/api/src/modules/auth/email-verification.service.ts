@@ -3,7 +3,7 @@ import { emailVerificationTokens, users } from "@shop/database";
 import { and, eq, gt, isNull } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import { AppError } from "../_core/errors/app-error.js";
-import type { EmailService } from "./email.service.js";
+import type { EmailService } from "../messaging/email.service.js";
 
 const TOKEN_TTL_HOURS = 24;
 const TOKEN_BYTES = 32;

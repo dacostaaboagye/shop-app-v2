@@ -1,22 +1,56 @@
 import type {
   AdminLocationListQuery,
   AdminLocationListResponse,
+  AdminStaffListQuery,
+  AdminStaffListResponse,
   AdminUserListQuery,
   AdminUserListResponse,
 } from "@shop/contracts";
 import { fetchJson } from "@/lib/react-query/fetch-json";
+import { buildSearchParams } from "./admin-directory.common";
 
-export const adminUsersQueryKey = (query: AdminUserListQuery) =>
-  ["admin", "users", query] as const;
-
-export const adminLocationsQueryKey = (query: AdminLocationListQuery) =>
-  ["admin", "locations", query] as const;
+export {
+  adminLocationsQueryKey,
+  adminStaffQueryKey,
+  adminSupplierQueryKey,
+  adminSuppliersQueryKey,
+  adminUsersQueryKey,
+} from "./admin-directory.common";
+export {
+  addAdminSupplierContact,
+  createAdminSupplier,
+  createAdminSupplierInquiry,
+  createAdminSupplierProcurementOrder,
+  fetchAdminSupplier,
+  fetchAdminSuppliers,
+  fetchSupplierPortalProfile,
+  inviteAdminSupplierContactPortal,
+  linkAdminSupplierContactPortal,
+  linkAdminSupplierProduct,
+  receiveAdminSupplierProcurementOrder,
+  removeAdminSupplierContact,
+  transitionAdminSupplierProcurementOrder,
+  unlinkAdminSupplierContactPortal,
+  unlinkAdminSupplierProduct,
+  updateAdminSupplier,
+  updateAdminSupplierInquiry,
+} from "./admin-directory-suppliers";
 
 export async function fetchAdminUsers(
   query: AdminUserListQuery,
 ): Promise<AdminUserListResponse> {
   return fetchJson<AdminUserListResponse>(
     `/api/admin/users?${buildSearchParams(query).toString()}`,
+    undefined,
+    { auth: "required" },
+  );
+}
+
+export async function fetchAdminStaff(
+  query: AdminStaffListQuery,
+): Promise<AdminStaffListResponse> {
+  return fetchJson<AdminStaffListResponse>(
+    `/api/admin/staff?${buildSearchParams(query).toString()}`,
     undefined,
     { auth: "required" },
   );
@@ -30,14 +64,4 @@ export async function fetchAdminLocations(
     undefined,
     { auth: "required" },
   );
-}
-
-function buildSearchParams(query: AdminLocationListQuery | AdminUserListQuery) {
-  const searchParams = new URLSearchParams();
-
-  for (const [key, value] of Object.entries(query)) {
-    searchParams.set(key, String(value));
-  }
-
-  return searchParams;
 }

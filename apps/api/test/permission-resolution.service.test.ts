@@ -88,6 +88,78 @@ describe("PermissionResolutionService", () => {
     assert.equal(otherPermissions.length, 0);
   });
 
+  it("resolves navigation permissions across any active scope", async () => {
+    const service = createService([
+      {
+        effect: null,
+        key: "manager.dashboard.view",
+        locationId: "loc_store_1",
+        source: "role",
+      },
+      {
+        effect: null,
+        key: "access.permissions.view",
+        locationId: "loc_store_1",
+        source: "role",
+      },
+      {
+        effect: "deny",
+        key: "access.permissions.view",
+        locationId: "loc_store_2",
+        source: "override",
+      },
+    ]);
+
+    const permissions = await service.resolvePermissionsForAnyScope({
+      userId: "usr_123",
+    });
+
+    assert.deepEqual(
+      permissions.map((permission) => permission.key),
+      ["access.permissions.view", "manager.dashboard.view"],
+    );
+  });
+
+  it("expands global permissions across all active operating locations", async () => {
+    const service = createService(
+      [
+        {
+          effect: null,
+          key: "stock.view",
+          locationId: null,
+          source: "role",
+        },
+      ],
+      {
+        allLocationScopes: [
+          {
+            locationId: "loc_airport",
+            locationName: "Airport Store",
+            locationSlug: "airport-store",
+          },
+          {
+            locationId: "loc_downtown",
+            locationName: "Downtown Store",
+            locationSlug: "downtown-store",
+          },
+        ],
+      },
+    );
+
+    const result = await service.resolveAllPermissions({ userId: "usr_admin" });
+
+    assert.deepEqual(
+      result.locationScopes.map((scope) => ({
+        locationId: scope.locationId,
+        permissions: scope.permissions.map((permission) => permission.key),
+      })),
+      [
+        { locationId: "loc_airport", permissions: ["stock.view"] },
+        { locationId: "loc_downtown", permissions: ["stock.view"] },
+      ],
+    );
+  });
+
   it("throws forbidden when the requested permission is missing", async () => {
     const service = createService([]);
 
@@ -114,8 +186,26 @@ function createService(
     locationId: string | null;
     source: "override" | "role";
   }>,
+  options: {
+    activeLocationScopes?: Array<{
+      locationId: string;
+      locationName: string;
+      locationSlug: string;
+    }>;
+    allLocationScopes?: Array<{
+      locationId: string;
+      locationName: string;
+      locationSlug: string;
+    }>;
+  } = {},
 ) {
   return new PermissionResolutionService({
+    async getAllActiveLocationScopes() {
+      return options.allLocationScopes ?? [];
+    },
+    async getActiveLocationScopes() {
+      return options.activeLocationScopes ?? [];
+    },
     async getPermissionAssignments() {
       return assignments;
     },

@@ -6,7 +6,7 @@ import { UserRoundPlus } from "lucide-react";
 import { useState } from "react";
 import { AppFormField } from "@/components/forms/app-form-field";
 import { AuthGoogleOAuthButton } from "@/components/forms/auth-google-oauth-button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AppErrorBanner } from "@/components/system/app-error";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -54,10 +54,12 @@ export function AuthRegisterForm() {
   return (
     <div className="flex flex-col gap-4">
       <AuthGoogleOAuthButton />
-      <div className="relative flex items-center gap-2">
-        <div className="flex-1 border-t border-border" />
-        <span className="text-xs text-muted-foreground">or</span>
-        <div className="flex-1 border-t border-border" />
+      <div className="relative flex items-center gap-4 py-2">
+        <div className="flex-1 border-t border-border/60" />
+        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">
+          or
+        </span>
+        <div className="flex-1 border-t border-border/60" />
       </div>
 
       <form
@@ -200,10 +202,11 @@ export function AuthRegisterForm() {
         </FieldGroup>
 
         {authError ? (
-          <Alert variant="destructive">
-            <AlertTitle>{authError.title}</AlertTitle>
-            <AlertDescription>{authError.detail}</AlertDescription>
-          </Alert>
+          <AppErrorBanner
+            detail={authError.detail}
+            error={registerMutation.error}
+            title={authError.title}
+          />
         ) : null}
 
         <form.Subscribe
@@ -214,7 +217,7 @@ export function AuthRegisterForm() {
         >
           {({ canSubmit, isSubmitting }) => (
             <Button
-              className="w-full"
+              className="w-full rounded-xl shadow-lg shadow-primary/20"
               disabled={!canSubmit || isSubmitting}
               size="lg"
               type="submit"
@@ -227,7 +230,7 @@ export function AuthRegisterForm() {
               ) : (
                 <>
                   Create account
-                  <UserRoundPlus data-icon="inline-end" />
+                  <UserRoundPlus className="ml-2 h-4 w-4" />
                 </>
               )}
             </Button>

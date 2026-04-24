@@ -9,9 +9,7 @@ import {
   CalendarDays,
   MapPin,
   Pencil,
-  Store,
   Users,
-  Warehouse,
   X,
 } from "lucide-react";
 import {
@@ -19,27 +17,17 @@ import {
   PageShell,
   StatCard,
 } from "@/components/system/page-shell";
-import { Badge } from "@/components/ui/badge";
+import { PermissionGate } from "@/components/system/permission-gate";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  formatAdminDate,
-  LOCATION_STATUS_META,
-  LOCATION_TYPE_META,
-} from "@/lib/admin-models";
+import { formatAdminDate, LOCATION_TYPE_META } from "@/lib/admin-models";
 import { toRoute } from "@/lib/routes";
-import { cn } from "@/lib/utils";
 import { MediaPanel } from "../catalog/media/media-panel";
 import { LocationDetailMapCard } from "./location-detail-map-card";
-import { LocationDetailRow } from "./location-detail-row";
+import { LocationDetailSummaryCard } from "./location-detail-summary-card";
 import { LocationEditForm } from "./location-edit-form";
+import { getAdminStaffLocationHref } from "./location-staff-links";
+import { LocationStaffPanel } from "./location-staff-panel";
 import { LocationZonesPanel } from "./location-zones-panel";
 
 export function LocationDetailView({
@@ -61,9 +49,7 @@ export function LocationDetailView({
   onStartEdit: () => void;
   onSubmit: (values: AdminUpdateLocationRequest) => void;
 }) {
-  const statusMeta = LOCATION_STATUS_META[location.status];
   const typeMeta = LOCATION_TYPE_META[location.type];
-  const TypeIcon = location.type === "store" ? Store : Warehouse;
   const hasCoordinates =
     location.latitude != null && location.longitude != null;
   return (
@@ -77,15 +63,17 @@ export function LocationDetailView({
         title={location.name}
         actions={
           !isEditing ? (
-            <Button
-              onClick={onStartEdit}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <Pencil className="size-3.5" />
-              Edit
-            </Button>
+            <PermissionGate permission="locations.create">
+              <Button
+                onClick={onStartEdit}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                <Pencil className="size-3.5" />
+                Edit
+              </Button>
+            </PermissionGate>
           ) : (
             <Button
               onClick={onCancelEdit}
@@ -103,9 +91,7 @@ export function LocationDetailView({
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           description="Workers and managers at this location."
-          href={toRoute(
-            `/admin/users?locationSlug=${encodeURIComponent(location.slug)}`,
-          )}
+          href={getAdminStaffLocationHref(location.slug)}
           icon={Users}
           label="Staff"
           value={location.staffCount}
@@ -142,94 +128,27 @@ export function LocationDetailView({
         <Tabs className="flex flex-col gap-6" defaultValue="details">
           <TabsList className="w-fit">
             <TabsTrigger value="details">Details & Map</TabsTrigger>
+            <TabsTrigger value="staff">Staff</TabsTrigger>
             <TabsTrigger value="zones">Storage Zones</TabsTrigger>
             <TabsTrigger value="media">Media</TabsTrigger>
           </TabsList>
 
           <TabsContent className="mt-0 flex flex-col gap-6" value="details">
-            <Card className="border-border/70 bg-card shadow-none">
-              <CardHeader>
-                <CardTitle>Location details</CardTitle>
-                <CardDescription>
-                  Configuration and operational status for this location.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-5">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <LocationDetailRow label="Name" value={location.name} />
-                  <LocationDetailRow
-                    label="Type"
-                    value={
-                      <Badge
-                        className={cn("w-fit gap-1.5", typeMeta.className)}
-                        variant="outline"
-                      >
-                        <TypeIcon className="size-3" />
-                        {typeMeta.label}
-                      </Badge>
-                    }
-                  />
-                  <LocationDetailRow
-                    label="Status"
-                    value={
-                      <Badge
-                        className={cn("w-fit", statusMeta.className)}
-                        variant="outline"
-                      >
-                        {statusMeta.label}
-                      </Badge>
-                    }
-                  />
-                  <LocationDetailRow
-                    label="Fulfilment"
-                    value={
-                      location.isFulfilmentEnabled ? (
-                        <Badge className="w-fit gap-1.5" variant="secondary">
-                          <Building2 className="size-3" />
-                          Enabled
-                        </Badge>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">
-                          Disabled
-                        </span>
-                      )
-                    }
-                  />
-                  <LocationDetailRow
-                    label="Slug"
-                    value={
-                      <span className="font-mono text-sm">{location.slug}</span>
-                    }
-                  />
-                  <LocationDetailRow
-                    label="Manager"
-                    value={
-                      location.managerName ?? (
-                        <span className="text-muted-foreground">
-                          Unassigned
-                        </span>
-                      )
-                    }
-                  />
-                  {location.address ? (
-                    <LocationDetailRow
-                      label="Address"
-                      value={
-                        <span className="text-sm">{location.address}</span>
-                      }
-                    />
-                  ) : null}
-                </div>
-              </CardContent>
-            </Card>
+            <div className="grid gap-6 xl:grid-cols-[1fr_0.6fr]">
+              <LocationDetailSummaryCard location={location} />
 
-            {hasCoordinates ? (
-              <LocationDetailMapCard
-                address={location.address}
-                latitude={location.latitude}
-                longitude={location.longitude}
-              />
-            ) : null}
+              {hasCoordinates ? (
+                <LocationDetailMapCard
+                  address={location.address}
+                  latitude={location.latitude}
+                  longitude={location.longitude}
+                />
+              ) : null}
+            </div>
+          </TabsContent>
+
+          <TabsContent className="mt-0" value="staff">
+            <LocationStaffPanel locationSlug={location.slug} />
           </TabsContent>
 
           <TabsContent className="mt-0" value="zones">

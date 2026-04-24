@@ -48,6 +48,19 @@ export function buildStockBalanceColumns(
       ),
     },
     {
+      accessorKey: "inTransitQuantity",
+      header: "In transit",
+      meta: { align: "right" },
+      cell: ({ getValue }) => {
+        const qty = getValue() as number;
+        return (
+          <span className="tabular-nums text-muted-foreground">
+            {qty > 0 ? qty : "-"}
+          </span>
+        );
+      },
+    },
+    {
       accessorKey: "availableQuantity",
       header: "Available",
       meta: { align: "right" },

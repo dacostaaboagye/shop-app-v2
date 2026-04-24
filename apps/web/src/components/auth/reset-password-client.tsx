@@ -39,7 +39,10 @@ export function ResetPasswordClient({ token }: ResetPasswordClientProps) {
           </AlertDescription>
         </Alert>
         <Link
-          className={buttonVariants({ className: "w-full", size: "lg" })}
+          className={buttonVariants({
+            className: "w-full rounded-xl shadow-lg shadow-primary/20",
+            size: "lg",
+          })}
           href={toRoute("/login")}
         >
           Sign in

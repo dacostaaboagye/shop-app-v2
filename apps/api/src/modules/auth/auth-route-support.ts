@@ -5,6 +5,7 @@ import {
 } from "@shop/contracts";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { AppError } from "../_core/errors/app-error.js";
+import type { AuthenticatedActor } from "./access-token-authentication.service.js";
 import type { IssuedSession, LoginCommand } from "./authentication.service.js";
 import { refreshTokenCookieName } from "./refresh-token-cookie.js";
 import type { RegisterCommand } from "./registration.service.js";
@@ -169,6 +170,23 @@ export function getAuthenticatedUserId(request: FastifyRequest): string {
   }
 
   return userId;
+}
+
+export function getAuthenticatedActor(
+  request: FastifyRequest,
+): AuthenticatedActor {
+  const auth = request.auth;
+
+  if (!auth) {
+    throw new AppError({
+      code: "unauthorized",
+      detail: "A valid bearer access token is required for this route.",
+      statusCode: 401,
+      title: "Authentication required",
+    });
+  }
+
+  return auth;
 }
 
 export function toPublicSession(session: IssuedSession) {

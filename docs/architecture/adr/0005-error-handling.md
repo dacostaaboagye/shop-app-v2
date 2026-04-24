@@ -15,10 +15,13 @@ The platform spans admin workflows, worker portals, supplier access, and public 
 - Domain errors expose stable machine-readable codes
 - Frontend routes provide global and route-level fallback UI with safe retry guidance
 - UI consumes the shared error contract rather than parsing ad-hoc strings
+- Frontend transport failures are normalized into shared request-error types before they reach screens
+- Shared error surfaces show calm recovery guidance and request references when available
+- Async screens and forms reuse shared error wrappers instead of bespoke destructive alerts
 
 ## Consequences
 
 - Error handling becomes part of the architecture, not component-level improvisation
 - Logs and support cases can be correlated with request IDs
 - Agents can add new features without inventing new error shapes
-
+- Retry and support guidance become consistent across query pages, forms, and route fallbacks

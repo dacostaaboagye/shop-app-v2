@@ -122,12 +122,14 @@ describe("route authorization", () => {
   it("passes the resolved location scope to permission checks", async () => {
     const state = {
       locationId: "",
+      scope: "contextual" as "any_active" | "contextual",
     };
     const now = new Date("2026-04-08T12:00:00.000Z");
     const server = createProtectedServer({
       now,
       onPermissionCheck(input) {
         state.locationId = input.locationId ?? "";
+        state.scope = input.scope ?? "contextual";
       },
       permissionResult: "allowed",
       user: {
@@ -156,6 +158,45 @@ describe("route authorization", () => {
 
     assert.equal(response.statusCode, 200);
     assert.equal(state.locationId, "loc_store_1");
+    assert.equal(state.scope, "contextual");
+  });
+
+  it("passes any-active scope to permission checks for scope-aware routes", async () => {
+    const state = {
+      scope: "contextual" as "any_active" | "contextual",
+    };
+    const now = new Date("2026-04-08T12:00:00.000Z");
+    const server = createProtectedServer({
+      now,
+      onPermissionCheck(input) {
+        state.scope = input.scope ?? "contextual";
+      },
+      permissionResult: "allowed",
+      user: {
+        id: "usr_123",
+        slug: "store-manager",
+        status: "active",
+      },
+    });
+
+    const response = await server.inject({
+      headers: {
+        authorization: `Bearer ${
+          issueAccessToken({
+            expiresInSeconds: 900,
+            now,
+            secret: "development-access-secret",
+            userId: "usr_123",
+            userSlug: "store-manager",
+          }).token
+        }`,
+      },
+      method: "GET",
+      url: "/scope-any-protected",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(state.scope, "any_active");
   });
 });
 
@@ -163,6 +204,7 @@ function createProtectedServer(input: {
   onPermissionCheck?: (input: {
     locationId?: string;
     permission: string;
+    scope?: "any_active" | "contextual";
   }) => void;
   now: Date;
   permissionResult?: "allowed" | "forbidden";
@@ -198,6 +240,7 @@ function createProtectedServer(input: {
               ? { locationId: inputArgs.locationId }
               : {}),
             permission: inputArgs.permission,
+            ...(inputArgs.scope ? { scope: inputArgs.scope } : {}),
           });
 
           if (input.permissionResult === "forbidden") {
@@ -235,6 +278,21 @@ function createProtectedServer(input: {
     },
     method: "GET",
     url: "/permission-protected",
+    async handler() {
+      return { ok: true };
+    },
+  });
+
+  server.route({
+    config: {
+      access: {
+        kind: "permission",
+        permission: "inventory.read",
+        scope: "any_active",
+      },
+    },
+    method: "GET",
+    url: "/scope-any-protected",
     async handler() {
       return { ok: true };
     },

@@ -12,11 +12,22 @@ import {
   deliveries,
   deliveryItems,
   deliveryStatusEnum,
+  emailDeliveryAttempts,
+  emailDeliveryStatusEnum,
+  emailDeliveryStatusEvents,
+  issuedDocuments,
+  locationDocumentSettings,
   mediaAssets,
+  officialDocumentSettings,
+  officialDocumentTypeEnum,
   permissionAuditActionEnum,
   permissionAuditLog,
   permissionOverrideEffectEnum,
   permissions,
+  platformEventAudienceKindEnum,
+  platformEventAudiences,
+  platformEventDeliveryStatusEnum,
+  platformEvents,
   productVariants,
   rolePermissions,
   roles,
@@ -27,6 +38,21 @@ import {
   stockOwnershipEvents,
   stockReservationStatusEnum,
   stockReservations,
+  supplierContactStatusEnum,
+  supplierContacts,
+  supplierInquiries,
+  supplierInquiryStatusEnum,
+  supplierPortalInvites,
+  supplierProcurementOrderLines,
+  supplierProcurementOrders,
+  supplierProcurementStatusEnum,
+  supplierProducts,
+  supplierStatusEnum,
+  suppliers,
+  supplierTransactions,
+  supplierTransactionTypeEnum,
+  userNotificationStatusEnum,
+  userNotifications,
   userPermissionOverrides,
   userRoles,
   users,
@@ -47,11 +73,42 @@ assert.equal(getTableName(catalogCategories), "catalog_categories");
 assert.equal(getTableName(catalogProducts), "catalog_products");
 assert.equal(getTableName(deliveries), "deliveries");
 assert.equal(getTableName(deliveryItems), "delivery_items");
+assert.equal(getTableName(emailDeliveryAttempts), "email_delivery_attempts");
+assert.equal(
+  getTableName(emailDeliveryStatusEvents),
+  "email_delivery_status_events",
+);
 assert.equal(getTableName(productVariants), "product_variants");
 assert.equal(getTableName(stockBalances), "stock_balances");
 assert.equal(getTableName(stockMovements), "stock_movements");
 assert.equal(getTableName(stockOwnershipEvents), "stock_ownership_events");
 assert.equal(getTableName(stockReservations), "stock_reservations");
+assert.equal(getTableName(suppliers), "suppliers");
+assert.equal(getTableName(supplierContacts), "supplier_contacts");
+assert.equal(getTableName(supplierPortalInvites), "supplier_portal_invites");
+assert.equal(getTableName(supplierProducts), "supplier_products");
+assert.equal(getTableName(supplierTransactions), "supplier_transactions");
+assert.equal(getTableName(supplierInquiries), "supplier_inquiries");
+assert.equal(
+  getTableName(supplierProcurementOrders),
+  "supplier_procurement_orders",
+);
+assert.equal(
+  getTableName(supplierProcurementOrderLines),
+  "supplier_procurement_order_lines",
+);
+assert.equal(getTableName(platformEvents), "platform_events");
+assert.equal(
+  getTableName(officialDocumentSettings),
+  "official_document_settings",
+);
+assert.equal(
+  getTableName(locationDocumentSettings),
+  "location_document_settings",
+);
+assert.equal(getTableName(issuedDocuments), "issued_documents");
+assert.equal(getTableName(platformEventAudiences), "platform_event_audiences");
+assert.equal(getTableName(userNotifications), "user_notifications");
 assert.ok(!("effectiveTo" in stockOwnershipEvents));
 assert.ok(!("productId" in stockOwnershipEvents));
 assert.ok("skuId" in stockOwnershipEvents);
@@ -71,6 +128,16 @@ assert.deepEqual(deliveryStatusEnum.enumValues, [
   "completed",
   "cancelled",
 ]);
+assert.deepEqual(emailDeliveryStatusEnum.enumValues, [
+  "bounced",
+  "complained",
+  "console_fallback",
+  "delayed",
+  "delivered",
+  "failed",
+  "sent",
+  "suppressed",
+]);
 assert.deepEqual(stockReservationStatusEnum.enumValues, [
   "active",
   "confirmed",
@@ -85,6 +152,55 @@ assert.deepEqual(stockMovementTypeEnum.enumValues, [
   "transfer_in",
   "transfer_out",
   "manual_adjustment",
+]);
+assert.deepEqual(platformEventAudienceKindEnum.enumValues, [
+  "user",
+  "permission",
+]);
+assert.deepEqual(platformEventDeliveryStatusEnum.enumValues, [
+  "pending",
+  "processing",
+  "delivered",
+  "failed",
+]);
+assert.deepEqual(userNotificationStatusEnum.enumValues, ["unread", "read"]);
+assert.deepEqual(supplierStatusEnum.enumValues, ["active", "inactive"]);
+assert.deepEqual(supplierContactStatusEnum.enumValues, ["active", "inactive"]);
+assert.deepEqual(supplierTransactionTypeEnum.enumValues, [
+  "purchase_order",
+  "supplier_invoice",
+  "goods_receipt",
+  "payment",
+  "return",
+  "credit_note",
+]);
+assert.deepEqual(supplierInquiryStatusEnum.enumValues, [
+  "sent",
+  "responded",
+  "converted",
+  "cancelled",
+]);
+assert.deepEqual(supplierProcurementStatusEnum.enumValues, [
+  "draft",
+  "submitted",
+  "approved",
+  "ordered",
+  "partially_received",
+  "received",
+  "cancelled",
+  "closed",
+]);
+assert.deepEqual(officialDocumentTypeEnum.enumValues, [
+  "sales_receipt",
+  "sales_invoice",
+  "credit_note",
+  "refund_note",
+  "goods_transfer_note",
+  "dispatch_note",
+  "stock_adjustment",
+  "stock_count",
+  "purchase_order",
+  "supplier_invoice",
 ]);
 
 assert.equal(userPermissionOverrides.removedBy.name, "removed_by");
@@ -110,9 +226,27 @@ assert.equal(
 );
 assert.equal(catalogMediaAssignments.assetId.name, "asset_id");
 assert.equal(catalogMediaAssignments.entitySlug.name, "entity_slug");
+assert.equal(platformEventAudiences.eventId.name, "event_id");
+assert.equal(userNotifications.readAt.name, "read_at");
 assert.equal(stockBalances.skuId.name, "sku_id");
 assert.equal(stockMovements.quantityDelta.name, "quantity_delta");
 assert.equal(stockReservations.sourceKey.name, "source_key");
+assert.equal(suppliers.paymentTermsDays.name, "payment_terms_days");
+assert.equal(supplierContacts.userId.name, "user_id");
+assert.equal(supplierPortalInvites.contactId.name, "contact_id");
+assert.equal(supplierProducts.productId.name, "product_id");
+assert.equal(supplierTransactions.transactionType.name, "transaction_type");
+assert.equal(supplierInquiries.reference.name, "reference");
+assert.equal(
+  supplierInquiries.requestedProductName.name,
+  "requested_product_name",
+);
+assert.equal(supplierInquiries.attachmentUrl.name, "attachment_url");
+assert.equal(
+  supplierProcurementOrders.destinationLocationId.name,
+  "destination_location_id",
+);
+assert.equal(supplierProcurementOrderLines.skuId.name, "sku_id");
 
 const migrationSql = readAllMigrationSql();
 
@@ -129,11 +263,27 @@ assert.match(migrationSql, /product_variants_barcode_unique/);
 assert.match(migrationSql, /product_variants_default_per_product_unique/);
 assert.match(migrationSql, /product_variants_cost_price_nonnegative/);
 assert.match(migrationSql, /media_assets/);
+assert.match(migrationSql, /platform_event_audience_kind/);
+assert.match(migrationSql, /platform_event_delivery_status/);
+assert.match(migrationSql, /user_notification_status/);
+assert.match(migrationSql, /platform_events_resource_idx/);
+assert.match(migrationSql, /platform_events_delivery_idx/);
+assert.match(migrationSql, /platform_events_delivery_attempts_nonnegative/);
+assert.match(migrationSql, /platform_event_audiences_shape_check/);
+assert.match(migrationSql, /user_notifications_user_event_unique/);
+assert.match(migrationSql, /user_notifications_read_at_check/);
+assert.match(migrationSql, /official_document_settings/);
+assert.match(migrationSql, /location_document_settings/);
+assert.match(migrationSql, /official_document_type/);
+assert.match(migrationSql, /issued_documents/);
 assert.match(migrationSql, /catalog_media_assignments/);
 assert.match(migrationSql, /catalog_media_assignments_primary_unique/);
 assert.match(migrationSql, /delivery_status/);
 assert.match(migrationSql, /delivery_items_reference_unique/);
 assert.match(migrationSql, /delivery_items_quantity_positive/);
+assert.match(migrationSql, /email_delivery_status/);
+assert.match(migrationSql, /email_delivery_attempts/);
+assert.match(migrationSql, /email_delivery_status_events/);
 assert.match(migrationSql, /idx_ownership_resolution/);
 assert.match(migrationSql, /idx_ownership_chain/);
 assert.match(migrationSql, /idx_ownership_worker/);
@@ -155,6 +305,16 @@ assert.match(
   /ALTER TABLE "stock_ownership_events" DROP COLUMN "effective_to"/,
 );
 assert.match(migrationSql, /stock_ownership_events_quantity_positive/);
+assert.match(migrationSql, /supplier_status/);
+assert.match(migrationSql, /suppliers_name_unique/);
+assert.match(migrationSql, /supplier_contacts_primary_unique/);
+assert.match(migrationSql, /supplier_portal_invites/);
+assert.match(migrationSql, /supplier_products_supplier_product_unique/);
+assert.match(migrationSql, /supplier_transaction_type/);
+assert.match(migrationSql, /supplier_procurement_status/);
+assert.match(migrationSql, /supplier_procurement_orders_reference_unique/);
+assert.match(migrationSql, /supplier_inquiry_status/);
+assert.match(migrationSql, /supplier_inquiries_reference_unique/);
 
 console.log("database schema foundation assertions passed");
 

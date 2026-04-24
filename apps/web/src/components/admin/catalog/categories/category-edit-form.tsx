@@ -15,7 +15,13 @@ import {
 } from "@/components/ui/card";
 import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type CategoryEditFormProps = {
   category: AdminCategorySummary;
@@ -53,7 +59,10 @@ export function CategoryEditForm({
       onSubmit({
         description: value.description.trim() || null,
         name: value.name.trim(),
-        parentCategorySlug: value.parentCategorySlug.trim() || null,
+        parentCategorySlug:
+          value.parentCategorySlug === "none"
+            ? null
+            : value.parentCategorySlug.trim() || null,
         status: value.status,
       });
     },
@@ -126,16 +135,20 @@ export function CategoryEditForm({
                   showErrors={wasSubmitted}
                 >
                   <Select
-                    id={field.name}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    value={field.state.value}
+                    onValueChange={field.handleChange}
+                    value={field.state.value || "none"}
                   >
-                    <option value="">None (top-level)</option>
-                    {parentOptions.map((cat) => (
-                      <option key={cat.slug} value={cat.slug}>
-                        {cat.name}
-                      </option>
-                    ))}
+                    <SelectTrigger id={field.name}>
+                      <SelectValue placeholder="None (top-level)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None (top-level)</SelectItem>
+                      {parentOptions.map((cat) => (
+                        <SelectItem key={cat.slug} value={cat.slug}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </AppFormField>
               )}
@@ -167,16 +180,18 @@ export function CategoryEditForm({
                   showErrors={wasSubmitted}
                 >
                   <Select
-                    id={field.name}
-                    onChange={(e) =>
-                      field.handleChange(
-                        e.target.value as "active" | "archived",
-                      )
+                    onValueChange={(val) =>
+                      field.handleChange(val as "active" | "archived")
                     }
                     value={field.state.value}
                   >
-                    <option value="active">Active</option>
-                    <option value="archived">Archived</option>
+                    <SelectTrigger id={field.name}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
+                    </SelectContent>
                   </Select>
                 </AppFormField>
               )}

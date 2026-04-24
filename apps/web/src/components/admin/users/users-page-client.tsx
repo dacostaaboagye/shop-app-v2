@@ -2,7 +2,6 @@
 
 import type { AdminUserListQuery } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
-import { Search, X } from "lucide-react";
 import type { Route } from "next";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -10,11 +9,9 @@ import {
   AppDataTable,
   type AppDataTableSort,
 } from "@/components/data-table/app-data-table";
+import { AppErrorBanner } from "@/components/system/app-error";
+import { AppTableWrapper } from "@/components/system/app-table-wrapper";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   adminUsersQueryKey,
@@ -27,6 +24,7 @@ import {
   readPositiveIntParam,
   readStringParam,
 } from "@/lib/url-state";
+import { UserFilters } from "./user-filters";
 import { userTableColumns } from "./user-table-columns";
 import {
   getUsersErrorMessage,
@@ -67,7 +65,6 @@ export function UsersPageClient({
     ? rawPageSize
     : 10;
   const page = readPositiveIntParam(searchParams, "page", 1);
-
   useEffect(() => setDraftSearch(query), [query]);
 
   useEffect(() => {
@@ -109,140 +106,114 @@ export function UsersPageClient({
   return (
     <PageShell>
       <PageHeader description={description} title={title} />
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative min-w-56 flex-1">
-          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="h-9 pl-9"
-            onChange={(event) => setDraftSearch(event.target.value)}
-            placeholder="Search name or email"
-            value={draftSearch}
-          />
-        </div>
-        <Select
-          aria-label="Filter by role"
-          className="h-9"
-          onChange={(event) =>
-            replaceUserQuery(router, pathname, searchParams, {
-              page: null,
-              role: event.target.value || null,
-            })
-          }
-          value={role}
-        >
-          <option value="">All roles</option>
-          {usersQuery.data?.availableRoles.map((roleOption) => (
-            <option key={roleOption.slug} value={roleOption.slug}>
-              {roleOption.name}
-            </option>
-          ))}
-        </Select>
-        <Select
-          aria-label="Filter by status"
-          className="h-9"
-          onChange={(event) =>
-            replaceUserQuery(router, pathname, searchParams, {
-              page: null,
-              status: event.target.value === "all" ? null : event.target.value,
-            })
-          }
-          value={status}
-        >
-          <option value="all">All status</option>
-          <option value="active">Active</option>
-          <option value="suspended">Suspended</option>
-          <option value="deactivated">Deactivated</option>
-        </Select>
-        {hasFilters ? (
-          <Button
-            onClick={() =>
-              replaceUserQuery(router, pathname, searchParams, {
-                locationSlug: null,
-                page: null,
-                q: null,
-                role: null,
-                status: null,
-              })
-            }
-            size="sm"
-            type="button"
-            variant="ghost"
-          >
-            <X data-icon="inline-start" />
-            Clear
-          </Button>
-        ) : null}
-        <span className="ml-auto text-sm tabular-nums text-muted-foreground">
-          {usersQuery.data?.totalCount ?? 0} total
-        </span>
-      </div>
 
-      {usersQuery.isPending && !usersQuery.data ? (
-        <div className="flex flex-col gap-2">
-          {USER_TABLE_SKELETON_KEYS.map((key) => (
-            <Skeleton key={key} className="h-11 w-full" />
-          ))}
-        </div>
-      ) : (
-        <>
-          {usersQuery.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Unable to load users</AlertTitle>
-              <AlertDescription>
-                {getUsersErrorMessage(usersQuery.error)}
-              </AlertDescription>
-            </Alert>
-          ) : null}
-          <AppDataTable
-            columns={userTableColumns}
-            data={usersQuery.data?.items ?? []}
-            density="compact"
-            emptyDescription={
-              hasFilters
-                ? "Try adjusting the current URL filters or search term."
-                : "No users were returned from the current backend dataset."
-            }
-            emptyTitle={hasFilters ? "No users match" : "No users available"}
-            emptyState={{
-              kind: hasFilters ? "no-results" : "no-data",
-            }}
-            getRowId={(row) => row.slug}
-            {...(userDetailBasePath
-              ? {
-                  onRowClick: (row: { slug: string }) =>
-                    router.push(
-                      toRoute(
-                        `${userDetailBasePath}/${encodeURIComponent(row.slug)}` as Route,
-                      ),
-                    ),
+      {/* Sovereign Control Surface */}
+      <div className="flex flex-col gap-4">
+        <UserFilters
+          availableRoles={usersQuery.data?.availableRoles ?? []}
+          draftSearch={draftSearch}
+          hasFilters={hasFilters}
+          onClear={() =>
+            replaceUserQuery(router, pathname, searchParams, {
+              locationSlug: null,
+              page: null,
+              q: null,
+              role: null,
+              status: null,
+            })
+          }
+          onRoleChange={(value) =>
+            replaceUserQuery(router, pathname, searchParams, {
+              page: null,
+              role: value === "all" ? null : value,
+            })
+          }
+          onStatusChange={(value) =>
+            replaceUserQuery(router, pathname, searchParams, {
+              page: null,
+              status: value === "all" ? null : value,
+            })
+          }
+          role={role}
+          setDraftSearch={setDraftSearch}
+          status={status}
+          totalCount={usersQuery.data?.totalCount ?? 0}
+        />
+        <AppTableWrapper>
+          {usersQuery.isPending && !usersQuery.data ? (
+            <div className="flex flex-col gap-1 p-4">
+              {USER_TABLE_SKELETON_KEYS.map((key) => (
+                <Skeleton key={key} className="h-12 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : (
+            <>
+              {usersQuery.isError ? (
+                <div className="p-8">
+                  <AppErrorBanner
+                    detail={getUsersErrorMessage(usersQuery.error)}
+                    error={usersQuery.error}
+                    onRetry={() => {
+                      void usersQuery.refetch();
+                    }}
+                    title="Unable to load users"
+                  />
+                </div>
+              ) : null}
+              <AppDataTable
+                columns={userTableColumns}
+                data={usersQuery.data?.items ?? []}
+                density="compact"
+                emptyDescription={
+                  hasFilters
+                    ? "Try adjusting the current URL filters or search term."
+                    : "No users were returned from the current backend dataset."
                 }
-              : {})}
-            onSortingChange={(nextSorting) =>
-              replaceUserQuery(router, pathname, searchParams, {
-                dir: nextSorting?.direction ?? null,
-                page: null,
-                sort: nextSorting?.columnId ?? null,
-              })
-            }
-            pagination={{
-              onPageChange: (nextPage) =>
-                replaceUserQuery(router, pathname, searchParams, {
-                  page: nextPage === 1 ? null : nextPage,
-                }),
-              onPageSizeChange: (nextPageSize) =>
-                replaceUserQuery(router, pathname, searchParams, {
-                  page: null,
-                  pageSize: nextPageSize === 10 ? null : nextPageSize,
-                }),
-              page: safePage,
-              pageSize,
-              pageSizeOptions: USER_PAGE_SIZE_OPTIONS,
-              totalCount: usersQuery.data?.totalCount ?? 0,
-            }}
-            sorting={sorting}
-          />
-        </>
-      )}
+                emptyTitle={
+                  hasFilters ? "No users match" : "No users available"
+                }
+                emptyState={{
+                  kind: hasFilters ? "no-results" : "no-data",
+                }}
+                getRowId={(row) => row.slug}
+                {...(userDetailBasePath
+                  ? {
+                      onRowClick: (row: { slug: string }) =>
+                        router.push(
+                          toRoute(
+                            `${userDetailBasePath}/${encodeURIComponent(row.slug)}` as Route,
+                          ),
+                        ),
+                    }
+                  : {})}
+                onSortingChange={(nextSorting) =>
+                  replaceUserQuery(router, pathname, searchParams, {
+                    dir: nextSorting?.direction ?? null,
+                    page: null,
+                    sort: nextSorting?.columnId ?? null,
+                  })
+                }
+                pagination={{
+                  onPageChange: (nextPage) =>
+                    replaceUserQuery(router, pathname, searchParams, {
+                      page: nextPage === 1 ? null : nextPage,
+                    }),
+                  onPageSizeChange: (nextPageSize) =>
+                    replaceUserQuery(router, pathname, searchParams, {
+                      page: null,
+                      pageSize: nextPageSize === 10 ? null : nextPageSize,
+                    }),
+                  page: safePage,
+                  pageSize,
+                  pageSizeOptions: USER_PAGE_SIZE_OPTIONS,
+                  totalCount: usersQuery.data?.totalCount ?? 0,
+                }}
+                sorting={sorting}
+              />
+            </>
+          )}
+        </AppTableWrapper>
+      </div>
     </PageShell>
   );
 }

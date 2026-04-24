@@ -22,7 +22,7 @@ export function VariantFormFields({
 
   return (
     <Tabs onValueChange={setTab} value={tab}>
-      <TabsList variant="line">
+      <TabsList>
         <TabsTrigger value="core">Core</TabsTrigger>
         <TabsTrigger value="pricing">Pricing</TabsTrigger>
         <TabsTrigger value="operations">Operations</TabsTrigger>

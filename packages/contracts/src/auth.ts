@@ -80,11 +80,22 @@ export const authSessionSchema = z.object({
   user: authUserSchema,
 });
 
+export const authLocationPermissionScopeSchema = z.object({
+  locationId: z.string().uuid(),
+  locationName: z.string().min(1).max(160),
+  locationSlug: z.string().min(1).max(120),
+  permissions: z.array(z.string().min(1)).default([]),
+});
+
 export const authPermissionSetSchema = z.object({
+  locationScopes: z.array(authLocationPermissionScopeSchema).default([]),
   permissions: z.array(z.string().min(1)).default([]),
 });
 
 export type AuthSession = z.infer<typeof authSessionSchema>;
+export type AuthLocationPermissionScope = z.infer<
+  typeof authLocationPermissionScopeSchema
+>;
 export type AuthPermissionSet = z.infer<typeof authPermissionSetSchema>;
 export type AuthUser = z.infer<typeof authUserSchema>;
 export type AuthUserStatus = z.infer<typeof authUserStatusSchema>;

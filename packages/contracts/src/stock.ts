@@ -26,7 +26,9 @@ export const activeReservationListResponseSchema = z.object({
 });
 
 export const adminStockBalanceQuerySchema = z.object({
-  locationSlug: z.string().trim().min(1).max(120),
+  brandSlug: z.string().trim().max(120).default(""),
+  categorySlug: z.string().trim().max(120).default(""),
+  locationSlug: z.string().trim().max(120).default(""),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(25),
   q: z.string().trim().max(120).default(""),
@@ -34,6 +36,7 @@ export const adminStockBalanceQuerySchema = z.object({
 
 export const adminStockBalanceSummarySchema = z.object({
   availableQuantity: z.number().int(),
+  inTransitQuantity: z.number().int().min(0),
   locationName: z.string(),
   locationSlug: z.string(),
   onHandQuantity: z.number().int(),
@@ -65,8 +68,16 @@ export type ActiveReservationSummary = z.infer<
   typeof activeReservationSummarySchema
 >;
 export const adminReservationQuerySchema = z.object({
+  brandSlug: z.string().trim().max(120).default(""),
+  categorySlug: z.string().trim().max(120).default(""),
   limit: z.coerce.number().int().min(1).max(100).default(50),
-  locationSlug: z.string().trim().min(1).max(120),
+  locationSlug: z.string().trim().max(120).default(""),
+  q: z.string().trim().max(120).default(""),
+});
+
+export const locationReservationQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  locationId: z.string().uuid(),
   q: z.string().trim().max(120).default(""),
 });
 
@@ -117,6 +128,20 @@ export type AdminReservationListResponse = z.infer<
 export type AdminReservationSummary = z.infer<
   typeof adminReservationSummarySchema
 >;
+export type LocationReservationQuery = z.infer<
+  typeof locationReservationQuerySchema
+>;
 export type AdminStockCountRequest = z.infer<
   typeof adminStockCountRequestSchema
+>;
+
+export const locationStockBalanceQuerySchema = z.object({
+  locationId: z.string().uuid(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(50),
+  q: z.string().trim().max(120).default(""),
+});
+
+export type LocationStockBalanceQuery = z.infer<
+  typeof locationStockBalanceQuerySchema
 >;

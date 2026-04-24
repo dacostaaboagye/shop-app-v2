@@ -35,9 +35,13 @@ The first implementation accumulated architectural drift. This repo restarts fro
 ```bash
 pnpm install
 pnpm verify
+pnpm deploy:testing:bootstrap
 pnpm --filter @shop/api dev
 pnpm --filter @shop/web dev
 ```
+
+Testing-environment deployment guidance lives in
+[docs/engineering/testing-environment-deployment.md](./docs/engineering/testing-environment-deployment.md).
 
 ## Branch naming
 

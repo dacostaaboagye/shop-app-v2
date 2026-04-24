@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { ZodError } from "zod";
 import { AppError } from "../modules/_core/errors/app-error.js";
 import {
   toProblemDetails,
@@ -24,6 +25,24 @@ export function registerErrorHandling(server: FastifyInstance) {
     if (error instanceof AppError) {
       const problem = toProblemDetails(error, request);
       return reply.status(problem.status).send(problem);
+    }
+
+    if (error instanceof ZodError) {
+      const detail = error.issues
+        .map((i) =>
+          i.path.length ? `${i.path.join(".")}: ${i.message}` : i.message,
+        )
+        .join("; ");
+      const problem = toProblemDetails(
+        new AppError({
+          code: "validation_error",
+          statusCode: 400,
+          title: "Validation Error",
+          detail,
+        }),
+        request,
+      );
+      return reply.status(400).send(problem);
     }
 
     request.log.error({ err: error }, "Unhandled request failure");

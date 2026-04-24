@@ -1,6 +1,7 @@
 import type {
   AdminCreateLocationRequest,
   AdminCreateLocationResponse,
+  AdminLocationStaffListResponse,
   AdminLocationSummary,
   AdminUpdateLocationRequest,
   AdminUpdateLocationResponse,
@@ -10,11 +11,24 @@ import { fetchJson } from "@/lib/react-query/fetch-json";
 export const adminLocationQueryKey = (slug: string) =>
   ["admin", "locations", slug] as const;
 
+export const adminLocationStaffQueryKey = (slug: string) =>
+  ["admin", "locations", slug, "staff"] as const;
+
 export async function fetchAdminLocation(
   slug: string,
 ): Promise<AdminLocationSummary> {
   return fetchJson<AdminLocationSummary>(
     `/api/admin/locations/${encodeURIComponent(slug)}`,
+    undefined,
+    { auth: "required" },
+  );
+}
+
+export async function fetchAdminLocationStaff(
+  slug: string,
+): Promise<AdminLocationStaffListResponse> {
+  return fetchJson<AdminLocationStaffListResponse>(
+    `/api/admin/locations/${encodeURIComponent(slug)}/staff`,
     undefined,
     { auth: "required" },
   );
