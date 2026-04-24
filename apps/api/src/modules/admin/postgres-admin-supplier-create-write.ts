@@ -6,7 +6,7 @@ import { supplierProducts, suppliers } from "@shop/database";
 import { and, eq } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { SlugAllocator } from "../public-identifiers/slug.service.js";
-import type { PostgresAdminSupplierQueryRepository } from "./postgres-admin-supplier-query.repository.js";
+import { PostgresAdminSupplierQueryRepository } from "./postgres-admin-supplier-query.repository.js";
 import {
   findProduct,
   findSupplier,
