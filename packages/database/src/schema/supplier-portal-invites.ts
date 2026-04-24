@@ -1,13 +1,10 @@
 import { relations } from "drizzle-orm";
-import {
-  index,
-  pgTable,
-  timestamp,
-  uuid,
-  varchar,
-} from "drizzle-orm/pg-core";
+import { index, pgTable, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import { publicUuidColumn } from "./common.js";
-import { emailDeliveryAttempts, emailDeliveryStatusEnum } from "./email-delivery.js";
+import {
+  emailDeliveryAttempts,
+  emailDeliveryStatusEnum,
+} from "./email-delivery.js";
 import { users } from "./identity.js";
 import { supplierContacts } from "./suppliers.js";
 

@@ -9,17 +9,17 @@ import type { EmailService } from "../messaging/email.service.js";
 import type { SlugAllocator } from "../public-identifiers/slug.service.js";
 import type { AdminSupplierWriteRepository } from "./admin-supplier-write.types.js";
 import {
-  createSupplierRecord,
-  linkSupplierProductRecord,
-  unlinkSupplierProductRecord,
-} from "./postgres-admin-supplier-create-write.js";
-import {
   addSupplierContact,
   inviteSupplierContactPortal,
   linkSupplierContactPortal,
   removeSupplierContact,
   unlinkSupplierContactPortal,
 } from "./postgres-admin-supplier-contact-write.js";
+import {
+  createSupplierRecord,
+  linkSupplierProductRecord,
+  unlinkSupplierProductRecord,
+} from "./postgres-admin-supplier-create-write.js";
 import {
   createSupplierInquiry,
   updateSupplierInquiry,
@@ -30,9 +30,7 @@ import {
   transitionSupplierProcurementOrder,
 } from "./postgres-admin-supplier-procurement-write.js";
 import { PostgresAdminSupplierQueryRepository } from "./postgres-admin-supplier-query.repository.js";
-import {
-  updateSupplierProfile,
-} from "./postgres-admin-supplier-write.support.js";
+import { updateSupplierProfile } from "./postgres-admin-supplier-write.support.js";
 
 export class PostgresAdminSupplierWriteRepository
   implements AdminSupplierWriteRepository

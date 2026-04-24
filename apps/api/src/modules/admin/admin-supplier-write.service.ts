@@ -92,7 +92,8 @@ export class AdminSupplierWriteService {
     now: Date,
   ) {
     const reference = await generateSupplierReference({
-      missingDetail: "Reference generation is not configured for supplier orders.",
+      missingDetail:
+        "Reference generation is not configured for supplier orders.",
       missingTitle: "Supplier procurement unavailable",
       now,
       referenceNumberService: this.referenceNumberService,

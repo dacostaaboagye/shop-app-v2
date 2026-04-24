@@ -4,8 +4,8 @@ import type {
   officialDocumentSettingsResponseSchema,
 } from "@shop/contracts";
 import type { z } from "zod";
-import { locationNotFoundError } from "./official-document-settings-errors.js";
 import type { OfficialDocumentSettingsRecord } from "./official-document-settings.types.js";
+import { locationNotFoundError } from "./official-document-settings-errors.js";
 
 type GlobalSettingsResponse = z.infer<
   typeof officialDocumentSettingsResponseSchema

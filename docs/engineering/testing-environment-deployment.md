@@ -1,34 +1,35 @@
 # Testing Environment Deployment
 
-This document is the operator runbook for moving the current `dev` branch into
-the shared testing environment.
+This document is the operator runbook for deploying the shared `testing`
+environment.
 
-## Topology
+## Hosting Model
 
-The testing environment runs three services:
+The testing environment runs on the same platform split intended for production:
 
-- `web`: Next.js standalone server on port `3000`
-- `api`: Fastify API on the private compose network
-- `worker`: platform-event delivery worker, using the same image as the API
+- `apps/web` on Vercel
+- `apps/api` on Fly.io
+- the platform-event delivery worker as a Fly.io process group in the same app
 
-The worker split is required. The platform-event backbone already assumes a
-production-style deployment where API nodes append events and worker nodes own
-delivery and retries.
-
-## Pipeline
-
-GitHub Actions workflow:
+The deployment workflow is:
 
 - `.github/workflows/deploy-testing.yml`
+
+It runs on:
+
+- pushes to the `testing` branch
+- manual workflow dispatch
+
+## Pipeline
 
 Flow:
 
 1. `pnpm verify`
 2. `pnpm deploy:testing:bootstrap`
 3. optional `pnpm deploy:testing:seed-admin`
-4. build and push API and web images to GHCR
-5. SSH to the test host and update `deploy/testing/docker-compose.yml`
-6. pull and restart the stack
+4. sync testing secrets to the Fly app
+5. deploy the Fly app with `api` and `worker` process groups
+6. deploy `apps/web` to the testing Vercel project
 
 ## Required GitHub Environment
 
@@ -37,14 +38,14 @@ Create a GitHub environment named `testing`.
 ### Required secrets
 
 - `TEST_DATABASE_URL`
-- `TEST_DEPLOY_HOST`
-- `TEST_DEPLOY_USER`
-- `TEST_DEPLOY_SSH_KEY`
-- `TEST_DEPLOY_PATH`
-- `TEST_GHCR_USERNAME`
-- `TEST_GHCR_TOKEN`
-- `TEST_AUTH_ACCESS_TOKEN_SECRET`
+- `TEST_FLY_API_TOKEN`
+- `TEST_FLY_APP_NAME`
+- `TEST_VERCEL_TOKEN`
+- `TEST_VERCEL_ORG_ID`
+- `TEST_VERCEL_PROJECT_ID`
+- `TEST_API_BASE_URL`
 - `TEST_WEB_BASE_URL`
+- `TEST_AUTH_ACCESS_TOKEN_SECRET`
 - `TEST_EMAIL_FROM_ADDRESS`
 
 ### Optional secrets
@@ -60,7 +61,6 @@ Create a GitHub environment named `testing`.
 - `TEST_R2_SECRET_ACCESS_KEY`
 - `TEST_R2_BUCKET`
 - `TEST_R2_PUBLIC_URL`
-- `TEST_WEB_PORT`
 
 ### Optional bootstrap-admin secrets
 
@@ -71,48 +71,109 @@ If you want the workflow to keep a deterministic testing admin account seeded:
 - `TEST_SUPER_ADMIN_FIRST_NAME`
 - `TEST_SUPER_ADMIN_LAST_NAME`
 
-## Host Requirements
+## Fly.io Setup
 
-The target host must have:
+Create a Fly app for testing before the first deployment. The workflow deploys
+with:
 
-- Docker Engine with `docker compose`
-- outbound access to `ghcr.io`
-- the path from `TEST_DEPLOY_PATH` writable by `TEST_DEPLOY_USER`
+- `apps/api/fly.testing.toml`
 
-The workflow writes a runtime `.env` file into that path and deploys:
+The workflow overrides the app name using:
 
-- `deploy/testing/docker-compose.yml`
+- `TEST_FLY_APP_NAME`
 
-## Runtime Notes
+### Get the Fly API token
 
-- the API container runs with `PLATFORM_EVENT_DELIVERY_ENABLED=false`
-- the worker container runs with `PLATFORM_EVENT_DELIVERY_ENABLED=true`
-- the web image is built with `API_BASE_URL=http://api:4000`
-- public browser traffic should go to the web service; API requests stay
-  same-origin through Next rewrites
+Use either:
 
-## Health Checks
+- `fly auth token`
 
-- web: `GET /health`
-- api: `GET /health`
-- worker health is indirect:
-  - container status on the host
-  - admin delivery-health endpoint in the app
+or create a token from your Fly account settings, then store it in:
+
+- `TEST_FLY_API_TOKEN`
+
+### Secrets synced to Fly by the workflow
+
+The workflow writes these to Fly on every testing deployment:
+
+- `DATABASE_URL`
+- `AUTH_ACCESS_TOKEN_SECRET`
+- `AUTH_ACCESS_TOKEN_TTL_SECONDS`
+- `AUTH_REFRESH_TOKEN_TTL_SECONDS`
+- `AUTH_COOKIE_SECURE`
+- `WEB_BASE_URL`
+- `EMAIL_FROM_ADDRESS`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_CALLBACK_URL`
+- `RESEND_API_KEY`
+- `RESEND_WEBHOOK_SECRET`
+- `R2_ACCOUNT_ID`
+- `R2_ACCESS_KEY_ID`
+- `R2_SECRET_ACCESS_KEY`
+- `R2_BUCKET`
+- `R2_PUBLIC_URL`
+
+The process-level event-delivery flag is handled by the Fly process commands:
+
+- `api` runs with `PLATFORM_EVENT_DELIVERY_ENABLED=false`
+- `worker` runs with `PLATFORM_EVENT_DELIVERY_ENABLED=true`
+
+## Vercel Setup
+
+Create or import a dedicated Vercel project for the testing web environment.
+Point that project at:
+
+- `apps/web`
+
+The workflow deploys to that Vercel project using:
+
+- `TEST_VERCEL_TOKEN`
+- `TEST_VERCEL_ORG_ID`
+- `TEST_VERCEL_PROJECT_ID`
+
+### Get the Vercel values
+
+- `TEST_VERCEL_TOKEN`:
+  create a Vercel token in your account settings
+- `TEST_VERCEL_ORG_ID`:
+  from the Vercel team or account scope
+- `TEST_VERCEL_PROJECT_ID`:
+  from the project settings for the testing web project
+
+### Web API routing
+
+The workflow injects the Fly API public base URL into the Vercel deployment via:
+
+- `API_BASE_URL`
+- `NEXT_PUBLIC_API_BASE_URL`
+
+Set the public testing API URL in:
+
+- `TEST_API_BASE_URL`
+
+Example:
+
+- `https://shop-api-testing.fly.dev`
 
 ## First Deployment Checklist
 
-1. provision the testing database
-2. set the `testing` environment secrets in GitHub
-3. verify the test host can pull private GHCR images
-4. push to `dev` or trigger `Deploy Testing` manually
-5. sign in with the seeded super admin
-6. verify:
+1. create the Fly testing app
+2. create the Vercel testing project for `apps/web`
+3. create the GitHub `testing` environment
+4. add the required GitHub testing secrets
+5. provision the testing database
+6. merge into `testing` or trigger `Deploy Testing` manually
+7. sign in with the seeded super admin
+8. verify:
+   - authentication flows
    - email operations page
-   - document settings
    - supplier portal invite flow
+   - document settings
    - notification delivery health
 
 ## Promotion Implication
 
-This is intentionally close to the production shape. Promotion later should be
-an environment change, not a deployment model rewrite.
+Testing now uses the intended platform model. Promotion to `stagging` should
+reuse the same split with environment-specific app names, project ids, tokens,
+and URLs.

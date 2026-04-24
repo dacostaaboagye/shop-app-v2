@@ -5,7 +5,9 @@ export async function generateSupplierReference(input: {
   missingDetail: string;
   missingTitle: string;
   now: Date;
-  referenceNumberService: Pick<ReferenceNumberService, "generateReference"> | undefined;
+  referenceNumberService:
+    | Pick<ReferenceNumberService, "generateReference">
+    | undefined;
   sequenceKey: Parameters<
     Pick<ReferenceNumberService, "generateReference">["generateReference"]
   >[0]["sequenceKey"];

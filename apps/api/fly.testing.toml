@@ -1,0 +1,33 @@
+app = "shop-api-testing"
+primary_region = "iad"
+
+[build]
+  dockerfile = "apps/api/Dockerfile"
+
+[env]
+  API_HOST = "0.0.0.0"
+  API_PORT = "4000"
+
+[processes]
+  api = "sh -c 'PLATFORM_EVENT_DELIVERY_ENABLED=false node dist/src/index.js'"
+  worker = "sh -c 'PLATFORM_EVENT_DELIVERY_ENABLED=true node dist/src/workers/platform-event-delivery-worker.js'"
+
+[[services]]
+  internal_port = 4000
+  processes = ["api"]
+  protocol = "tcp"
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [[services.http_checks]]
+    grace_period = "15s"
+    interval = "15s"
+    method = "get"
+    path = "/health"
+    timeout = "5s"
