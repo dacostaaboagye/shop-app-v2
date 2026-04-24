@@ -6,13 +6,8 @@ import type {
   AdminSupplierDetail,
 } from "@shop/contracts";
 import { ALLOWED_MEDIA_MIMES } from "@shop/contracts";
-import { MessageSquareText } from "lucide-react";
 import { useState } from "react";
-import { AppEmptyState } from "@/components/system/app-empty-state";
-import { AppTableWrapper } from "@/components/system/app-table-wrapper";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import {
   FileField,
   NumberField,
@@ -20,6 +15,7 @@ import {
   TextAreaField,
   TextField,
 } from "./supplier-form-controls";
+import { SupplierInquiryList } from "./supplier-inquiry-list";
 import { uploadSupplierInquiryAttachment } from "./supplier-inquiry-upload";
 
 export function SupplierInquiryPanel(props: {
@@ -145,108 +141,11 @@ export function SupplierInquiryPanel(props: {
         <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">
           Managed inquiries
         </h3>
-        {props.inquiries.length === 0 ? (
-          <AppEmptyState
-            description="Ask suppliers if they can source products, confirm availability, quote terms, or suggest alternatives before raising a purchase order."
-            icon={MessageSquareText}
-            kind="no-data"
-            title="No sourcing inquiries"
-          />
-        ) : (
-          <AppTableWrapper>
-            {props.inquiries.map((inquiry, index) => (
-              <InquiryRow
-                index={index}
-                inquiry={inquiry}
-                itemCount={props.inquiries.length}
-                key={inquiry.reference}
-                onUpdateInquiry={props.onUpdateInquiry}
-              />
-            ))}
-          </AppTableWrapper>
-        )}
+        <SupplierInquiryList
+          inquiries={props.inquiries}
+          onUpdateInquiry={props.onUpdateInquiry}
+        />
       </div>
-    </div>
-  );
-}
-
-function InquiryRow({
-  index,
-  inquiry,
-  itemCount,
-  onUpdateInquiry,
-}: {
-  index: number;
-  inquiry: AdminSupplierDetail["inquiries"][number];
-  itemCount: number;
-  onUpdateInquiry: (
-    reference: string,
-    status: "cancelled" | "converted",
-  ) => void;
-}) {
-  return (
-    <div
-      className={cn(
-        "flex flex-col gap-4 p-4",
-        index !== itemCount - 1 && "border-b border-border/50",
-      )}
-    >
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="font-semibold text-foreground">{inquiry.reference}</p>
-            <Badge
-              className="rounded-md font-bold uppercase tracking-wider text-[10px]"
-              variant="secondary"
-            >
-              {inquiry.status}
-            </Badge>
-          </div>
-          <p className="mt-0.5 text-xs font-medium text-muted-foreground">
-            {inquiry.productName ??
-              inquiry.requestedProductName ??
-              "External sourcing request"}
-          </p>
-        </div>
-        {inquiry.status === "sent" ? (
-          <div className="flex flex-wrap gap-2">
-            <Button
-              className="h-8 rounded-lg"
-              onClick={() => onUpdateInquiry(inquiry.reference, "converted")}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              Convert
-            </Button>
-            <Button
-              className="h-8 rounded-lg"
-              onClick={() => onUpdateInquiry(inquiry.reference, "cancelled")}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              Cancel
-            </Button>
-          </div>
-        ) : null}
-      </div>
-      <div className="rounded-xl bg-muted/20 p-3 ring-1 ring-border/10">
-        <p className="text-sm leading-relaxed italic text-muted-foreground/80">
-          "{inquiry.message}"
-        </p>
-      </div>
-      {inquiry.attachmentUrl ? (
-        <a
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-primary underline underline-offset-4 hover:text-primary/80 transition-colors"
-          href={inquiry.attachmentUrl}
-          rel="noreferrer"
-          target="_blank"
-        >
-          <MessageSquareText className="size-3" />
-          {inquiry.attachmentName ?? "Open attachment"}
-        </a>
-      ) : null}
     </div>
   );
 }

@@ -2,11 +2,8 @@
 
 import type { StockSupplyRequestResponse } from "@shop/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, MapPin } from "lucide-react";
 import { useId, useState } from "react";
 import { toast } from "sonner";
-import { AppEmptyState } from "@/components/system/app-empty-state";
-import { AppErrorBanner } from "@/components/system/app-error";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,13 +15,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { getAppErrorMessage } from "@/lib/errors/app-error";
 import {
@@ -34,6 +24,10 @@ import {
   workerSupplyRequestsQueryKey,
 } from "@/lib/react-query/stock-supply";
 import type { SupplyRequestTarget } from "./supply-request-dialog.types";
+import {
+  SourceLocationField,
+  TargetSummary,
+} from "./supply-request-dialog-sections";
 
 type Props = {
   onOpenChange: (open: boolean) => void;
@@ -126,80 +120,15 @@ export function SupplyRequestDialog({ onOpenChange, open, target }: Props) {
 
         {target ? (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-3 rounded-xl border border-border bg-white px-3 py-3 shadow-sm">
-              <div>
-                <p className="font-medium">{target.productName}</p>
-                <p className="text-sm text-muted-foreground">
-                  {target.variantName}
-                </p>
-                <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground/40">
-                  {target.sku}
-                </p>
-              </div>
-
-              <div className="flex items-start gap-2 rounded-lg bg-muted/30 px-2.5 py-2 text-xs text-muted-foreground">
-                <MapPin className="mt-0.5 size-3.5 shrink-0" />
-                <div className="flex flex-col gap-1">
-                  <span className="font-medium text-foreground">
-                    Destination location
-                  </span>
-                  <span>{target.locationName}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor={sourceId}>Request from</Label>
-              {sourceLocationsQuery.isError ? (
-                <AppErrorBanner
-                  detail="Eligible source locations could not be loaded."
-                  error={sourceLocationsQuery.error}
-                  onRetry={() => void sourceLocationsQuery.refetch()}
-                  title="Unable to load source locations"
-                />
-              ) : sourceLocations.length === 0 &&
-                !sourceLocationsQuery.isPending ? (
-                <AppEmptyState
-                  description="No other active locations are currently available as transfer sources for this destination."
-                  icon={Building2}
-                  kind="no-data"
-                  title="No source locations"
-                />
-              ) : (
-                <Select
-                  value={sourceLocationId}
-                  onValueChange={setSourceLocationId}
-                >
-                  <SelectTrigger
-                    id={sourceId}
-                    disabled={sourceLocationsQuery.isPending}
-                    className="w-full"
-                  >
-                    <SelectValue
-                      placeholder={
-                        sourceLocationsQuery.isPending
-                          ? "Loading..."
-                          : "Select a source location"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sourceLocations.map((location) => (
-                      <SelectItem
-                        key={location.locationId}
-                        value={location.locationId}
-                      >
-                        {location.locationName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Only source locations eligible to send stock into{" "}
-                {target.locationName} are shown.
-              </p>
-            </div>
+            <TargetSummary target={target} />
+            <SourceLocationField
+              onValueChange={setSourceLocationId}
+              sourceId={sourceId}
+              sourceLocationId={sourceLocationId}
+              sourceLocations={sourceLocations}
+              sourceLocationsQuery={sourceLocationsQuery}
+              target={target}
+            />
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor={qtyId}>Requested quantity</Label>

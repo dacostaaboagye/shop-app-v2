@@ -1,11 +1,16 @@
 import { z } from "zod";
 import {
-  adminCreateSupplierContactRequestSchema,
-  adminLinkSupplierContactPortalRequestSchema,
+  type adminCreateSupplierContactRequestSchema,
+  type adminLinkSupplierContactPortalRequestSchema,
   adminSupplierContactSchema,
 } from "./admin-supplier-contacts.js";
 import { adminSupplierProcurementOrderSchema } from "./admin-supplier-procurement.js";
 
+export {
+  adminCreateSupplierContactRequestSchema,
+  adminLinkSupplierContactPortalRequestSchema,
+  adminSupplierContactSchema,
+} from "./admin-supplier-contacts.js";
 export type {
   AdminCreateSupplierProcurementOrderRequest,
   AdminSupplierProcurementReceiveRequest,
@@ -20,11 +25,6 @@ export {
   adminSupplierProcurementStatusSchema,
   adminSupplierProcurementTransitionRequestSchema,
 } from "./admin-supplier-procurement.js";
-export {
-  adminCreateSupplierContactRequestSchema,
-  adminLinkSupplierContactPortalRequestSchema,
-  adminSupplierContactSchema,
-} from "./admin-supplier-contacts.js";
 
 export const adminSupplierStatusSchema = z.enum(["active", "inactive"]);
 

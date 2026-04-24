@@ -65,7 +65,6 @@ export function WorkerStockPageClient() {
         description="Product variants currently assigned to you at your location."
         title="My stock"
       />
-
       <LocationScopePanel
         description="Stock loads from the location scope already attached to your worker access."
         emptyDescription="No assigned location is available for your stock view."
@@ -120,7 +119,7 @@ function StockList({
           <Package className="size-6 text-muted-foreground/40" />
         </div>
         <p className="text-sm font-medium">No variants assigned</p>
-        <p className="max-w-[240px] text-xs text-muted-foreground mt-1">
+        <p className="mt-1 max-w-[240px] text-xs text-muted-foreground">
           No variants are currently assigned to you
           {locationName ? ` at ${locationName}` : ""}.
         </p>

@@ -131,7 +131,7 @@ export function EmailOperationsPanel({ canManage }: { canManage: boolean }) {
         />
       </div>
 
-      <div className="rounded-xl border border-border/60 bg-card p-6 shadow-sm shadow-black/[0.04]">
+      <div className="rounded-xl border border-border/60 bg-card p-6 shadow-sm shadow-black/4">
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">
             Recent delivery attempts

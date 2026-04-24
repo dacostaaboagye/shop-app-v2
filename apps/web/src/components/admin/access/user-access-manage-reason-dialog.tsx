@@ -1,5 +1,4 @@
 "use client";
-
 import type { AdminLocationSummary } from "@shop/contracts";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -71,22 +70,16 @@ export function UserAccessManageReasonDialog({
         reason: value.reason,
       }),
   });
-
   if (state.kind === "closed") {
     return null;
   }
-
   const meta = getDialogMeta(state);
   const scopeIsRequired =
     state.kind === "assign-role" && roleRequiresLocationScope(state.roleSlug);
-  const activeLocations = allLocations.filter(
-    (location) => location.status === "active",
-  );
   const isPending = isReasonDialogPending({
     formIsSubmitting: form.state.isSubmitting,
     mutationIsPending: mutation.isPending,
   });
-
   return (
     <Dialog
       open={open}
@@ -111,7 +104,6 @@ export function UserAccessManageReasonDialog({
             <DialogTitle>{meta.title}</DialogTitle>
             <DialogDescription>{meta.description}</DialogDescription>
           </DialogHeader>
-
           {mutation.isError ? (
             <Alert variant="destructive">
               <AlertTitle>Action failed</AlertTitle>
@@ -122,7 +114,6 @@ export function UserAccessManageReasonDialog({
               </AlertDescription>
             </Alert>
           ) : null}
-
           <FieldGroup className="py-2">
             {state.kind === "assign-role" ? (
               <form.Field
@@ -166,11 +157,16 @@ export function UserAccessManageReasonDialog({
                         <SelectItem value="none">
                           {scopeIsRequired ? "Select a location" : "Global"}
                         </SelectItem>
-                        {activeLocations.map((location) => (
-                          <SelectItem key={location.slug} value={location.slug}>
-                            {location.name}
-                          </SelectItem>
-                        ))}
+                        {allLocations
+                          .filter((location) => location.status === "active")
+                          .map((location) => (
+                            <SelectItem
+                              key={location.slug}
+                              value={location.slug}
+                            >
+                              {location.name}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </AppFormField>

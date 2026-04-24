@@ -1,8 +1,6 @@
 import type {
   EmailTemplatePreviewRequest,
   emailTemplatePreviewResponseSchema,
-  locationDocumentSettingsResponseSchema,
-  officialDocumentProfileResponseSchema,
   officialDocumentSettingsResponseSchema,
 } from "@shop/contracts";
 import type { EmailTemplateSettings } from "@shop/database";
@@ -14,7 +12,6 @@ import type {
   LocationDocumentSettingsPatch,
   OfficialDocumentSettings,
   OfficialDocumentSettingsPatch,
-  OfficialDocumentSettingsRecord,
 } from "./official-document-settings.types.js";
 import { locationNotFoundError } from "./official-document-settings-errors.js";
 import {
@@ -25,14 +22,15 @@ import {
   mergeDefined,
   mergeEmailTemplates,
 } from "./official-document-settings-merge.js";
+import {
+  resolveDocumentProfileResponse,
+  serializeGlobalSettings,
+  serializeLocationSettings,
+} from "./official-document-settings-serializers.js";
 
 type GlobalSettingsResponse = z.infer<
   typeof officialDocumentSettingsResponseSchema
 >;
-type LocationSettingsResponse = z.infer<
-  typeof locationDocumentSettingsResponseSchema
->;
-type ProfileResponse = z.infer<typeof officialDocumentProfileResponseSchema>;
 type EmailTemplatePreviewResponse = z.infer<
   typeof emailTemplatePreviewResponseSchema
 >;
@@ -50,7 +48,7 @@ export class OfficialDocumentSettingsService {
   ) {}
 
   async getGlobalSettings(): Promise<GlobalSettingsResponse> {
-    return serializeGlobal(
+    return serializeGlobalSettings(
       await this.repository.getGlobalSettings(),
       await this.resolveLogoImageUrl(),
     );
@@ -113,75 +111,21 @@ export class OfficialDocumentSettingsService {
         scope: "global",
       }),
     );
-    return serializeGlobal(saved, await this.resolveLogoImageUrl());
+    return serializeGlobalSettings(saved, await this.resolveLogoImageUrl());
   }
 
-  async getLocationSettings(
-    locationId: string,
-  ): Promise<LocationSettingsResponse> {
+  async getLocationSettings(locationId: string) {
     const settings = await this.repository.getLocationSettings(locationId);
     if (!settings) throw locationNotFoundError(locationId);
-    return serializeLocation(settings);
+    return serializeLocationSettings(settings);
   }
 
-  async resolveDocumentProfile(input: {
-    locationId?: string;
-  }): Promise<ProfileResponse> {
-    const global = await this.repository.getGlobalSettings();
-    const location = input.locationId
-      ? await this.repository.getLocationSettings(input.locationId)
-      : null;
-
-    if (input.locationId && !location) {
-      throw locationNotFoundError(input.locationId);
-    }
-
-    const policy = global.locationOverridePolicy;
-    const logoImageUrl = await this.resolveLogoImageUrl();
-    return {
-      accentColor: global.brand.accentColor,
-      addressLines:
-        policy.allowLocationAddress && location?.addressLines
-          ? location.addressLines
-          : global.business.addressLines,
-      brandName: global.brand.brandName,
-      currencyCode: global.currency.defaultDisplayCurrencyCode,
-      currencyScale: global.currency.currencyScale,
-      documentPrefix:
-        policy.allowLocationNumberPrefix && location?.documentPrefix
-          ? location.documentPrefix
-          : null,
-      email:
-        policy.allowLocationContact && location?.email
-          ? location.email
-          : global.business.email,
-      footer:
-        policy.allowLocationFooter && location?.receiptFooter
-          ? location.receiptFooter
-          : global.documents.receiptFooter,
-      legalName: global.business.legalName,
-      locale: global.documents.locale,
-      locationId: location?.locationId ?? null,
-      locationName:
-        policy.allowLocationDisplayName && location?.displayName
-          ? location.displayName
-          : (location?.locationName ?? null),
-      logoImageUrl,
-      logoText: global.brand.logoText,
-      paperSize:
-        policy.allowLocationPaperSize && location?.defaultPaperSize
-          ? location.defaultPaperSize
-          : global.documents.defaultPaperSize,
-      phone:
-        policy.allowLocationContact && location?.phone
-          ? location.phone
-          : global.business.phone,
-      primaryColor: global.brand.primaryColor,
-      registrationNumber: global.business.registrationNumber,
-      taxNumber: global.business.taxNumber,
-      timezone: location?.timezone ?? global.documents.timezone,
-      website: global.business.website,
-    };
+  async resolveDocumentProfile(input: { locationId?: string }) {
+    return resolveDocumentProfileResponse({
+      ...input,
+      logoImageUrl: await this.resolveLogoImageUrl(),
+      repository: this.repository,
+    });
   }
 
   async updateLocationSettings(input: {
@@ -190,7 +134,7 @@ export class OfficialDocumentSettingsService {
     patch: LocationDocumentSettingsPatch;
     updatedBy: string;
     now: Date;
-  }): Promise<LocationSettingsResponse> {
+  }) {
     const saved = await this.repository.saveLocationSettings(input);
     if (!saved) throw locationNotFoundError(input.locationId);
     await this.eventPublisher?.publish(
@@ -203,56 +147,10 @@ export class OfficialDocumentSettingsService {
         scope: "location",
       }),
     );
-    return serializeLocation(saved);
+    return serializeLocationSettings(saved);
   }
 
   private resolveLogoImageUrl() {
     return this.brandLogoResolver?.getLogoImageUrl() ?? Promise.resolve(null);
   }
-}
-
-function serializeGlobal(
-  input: OfficialDocumentSettingsRecord,
-  logoImageUrl: string | null,
-): GlobalSettingsResponse {
-  return {
-    brand: { ...input.brand, logoImageUrl },
-    business: input.business,
-    currency: input.currency,
-    documents: input.documents,
-    emailTemplates: input.emailTemplates,
-    locationOverridePolicy: input.locationOverridePolicy,
-    updatedAt: input.updatedAt?.toISOString() ?? null,
-    updatedByUserSlug: input.updatedByUserSlug,
-  };
-}
-
-function serializeLocation(input: {
-  addressLines: string[] | null;
-  defaultPaperSize: LocationSettingsResponse["defaultPaperSize"];
-  displayName: string | null;
-  documentPrefix: string | null;
-  email: string | null;
-  locationId: string;
-  locationName: string;
-  phone: string | null;
-  receiptFooter: string | null;
-  timezone: string | null;
-  updatedAt: Date | null;
-  updatedByUserSlug: string | null;
-}): LocationSettingsResponse {
-  return {
-    addressLines: input.addressLines,
-    defaultPaperSize: input.defaultPaperSize,
-    displayName: input.displayName,
-    documentPrefix: input.documentPrefix,
-    email: input.email,
-    locationId: input.locationId,
-    locationName: input.locationName,
-    phone: input.phone,
-    receiptFooter: input.receiptFooter,
-    timezone: input.timezone,
-    updatedAt: input.updatedAt?.toISOString() ?? null,
-    updatedByUserSlug: input.updatedByUserSlug,
-  };
 }
