@@ -37,7 +37,14 @@ function getBranchName() {
 }
 
 const branch = getBranchName();
-const allowedBranches = new Set(["dev", "develop", "main", "master"]);
+const allowedBranches = new Set([
+  "dev",
+  "develop",
+  "main",
+  "master",
+  "stagging",
+  "testing",
+]);
 const branchPattern =
   /^(feature|fix|chore|docs|refactor|test)\/((e-\d{2}[a-z]?-\d{2})|ops)-[a-z0-9-]+$/;
 
@@ -49,7 +56,7 @@ if (allowedBranches.has(branch) || branchPattern.test(branch)) {
 console.error(
   [
     `Invalid branch name: ${branch || "<detached>"}`,
-    "Use dev/main/master/develop or a ticket-based branch such as feature/e-01-01-auth-foundation.",
+    "Use dev/testing/stagging/main/master/develop or a ticket-based branch such as feature/e-01-01-auth-foundation.",
   ].join("\n"),
 );
 process.exit(1);
