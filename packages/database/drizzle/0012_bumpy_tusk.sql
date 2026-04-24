@@ -1,1 +1,0 @@
-ALTER TABLE "catalog_categories" ADD COLUMN "path" text DEFAULT '' NOT NULL;

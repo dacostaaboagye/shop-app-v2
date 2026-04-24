@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ApiError, NetworkError } from "@/lib/errors/app-error";
-import { createQueryClient, shouldRetryQuery } from "./query-client";
+import { ApiError, createQueryClient, shouldRetryQuery } from "./query-client";
 
 describe("query client", () => {
   it("builds API errors from the shared problem details shape", () => {
@@ -46,7 +45,6 @@ describe("query client", () => {
       ),
       false,
     );
-    assert.equal(shouldRetryQuery(0, new NetworkError()), true);
   });
 
   it("creates the default query client profile", () => {

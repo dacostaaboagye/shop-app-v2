@@ -25,19 +25,8 @@ function readCurrentBranch() {
   return head.replace("ref: refs/heads/", "");
 }
 
-function getBranchName() {
-  const githubBranch =
-    process.env.GITHUB_HEAD_REF?.trim() || process.env.GITHUB_REF_NAME?.trim();
-
-  if (githubBranch) {
-    return githubBranch;
-  }
-
-  return readCurrentBranch();
-}
-
-const branch = getBranchName();
-const allowedBranches = new Set(["dev", "develop", "main", "master"]);
+const branch = readCurrentBranch();
+const allowedBranches = new Set(["main", "master", "develop"]);
 const branchPattern =
   /^(feature|fix|chore|docs|refactor|test)\/((e-\d{2}[a-z]?-\d{2})|ops)-[a-z0-9-]+$/;
 
@@ -49,7 +38,7 @@ if (allowedBranches.has(branch) || branchPattern.test(branch)) {
 console.error(
   [
     `Invalid branch name: ${branch || "<detached>"}`,
-    "Use dev/main/master/develop or a ticket-based branch such as feature/e-01-01-auth-foundation.",
+    "Use main/master/develop or a ticket-based branch such as feature/e-01-01-auth-foundation.",
   ].join("\n"),
 );
 process.exit(1);

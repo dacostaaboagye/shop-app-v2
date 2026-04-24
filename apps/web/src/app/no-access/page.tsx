@@ -10,7 +10,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { toRoute } from "@/lib/routes";
 
 export default function NoAccessPage() {
   return (
@@ -20,20 +19,17 @@ export default function NoAccessPage() {
           <EmptyMedia variant="icon">
             <MailWarning />
           </EmptyMedia>
-          <EmptyTitle>You do not have access to this page.</EmptyTitle>
+          <EmptyTitle>No active portal access.</EmptyTitle>
           <EmptyDescription>
-            Your account may be signed in successfully and still be blocked here
-            if the current route is outside your assigned workspace or you do
-            not have the required view permission for this page.
+            This route is reserved for the backlog scenario where a user
+            authenticates successfully but no longer has any active roles or
+            available portal destinations.
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
           <div className="token-row justify-center">
-            <Link
-              className={buttonVariants({ size: "lg" })}
-              href={toRoute("/")}
-            >
-              Return to account entry
+            <Link className={buttonVariants({ size: "lg" })} href="/">
+              Return Home
             </Link>
             <Button size="lg" variant="outline">
               Contact Support
