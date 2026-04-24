@@ -9,6 +9,10 @@ import {
   register,
   resendVerification,
 } from "./auth-client";
+import {
+  createSessionResponse,
+  createUnauthorizedResponse,
+} from "./auth-client.test.support";
 
 const originalFetch = globalThis.fetch;
 
@@ -282,13 +286,13 @@ describe("auth-client", () => {
           new Headers(init?.headers).get("Authorization"),
           "Bearer expired-token",
         );
-        return unauthorizedResponse();
+        return createUnauthorizedResponse();
       }
 
       if (requestCount === 2) {
         assert.equal(String(input), "http://localhost:4000/api/auth/refresh");
         assert.equal(init?.credentials, "include");
-        return sessionResponse("b".repeat(64));
+        return createSessionResponse("b".repeat(64));
       }
 
       assert.equal(requestCount, 3);
@@ -308,45 +312,3 @@ describe("auth-client", () => {
     assert.equal(requestCount, 3);
   });
 });
-
-function unauthorizedResponse() {
-  return new Response(
-    JSON.stringify({
-      code: "unauthorized",
-      detail: "A valid bearer access token is required for this route.",
-      requestId: "req_401",
-      status: 401,
-      timestamp: "2026-04-08T00:00:00.000Z",
-      title: "Authentication required",
-    }),
-    {
-      status: 401,
-      headers: { "content-type": "application/json" },
-    },
-  );
-}
-
-function sessionResponse(accessToken: string) {
-  return new Response(
-    JSON.stringify({
-      accessToken,
-      accessTokenExpiresAt: "2026-04-08T13:00:00.000Z",
-      user: {
-        availablePortals: ["admin"],
-        email: "manager@example.com",
-        emailVerified: false,
-        firstName: "Store",
-        lastLoginAt: null,
-        lastName: "Manager",
-        preferredPortal: "admin",
-        requiresPasswordChange: false,
-        slug: "store-manager",
-        status: "active",
-      },
-    }),
-    {
-      status: 200,
-      headers: { "content-type": "application/json" },
-    },
-  );
-}

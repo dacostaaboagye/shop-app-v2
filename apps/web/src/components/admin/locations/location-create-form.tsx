@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { AppFormField } from "@/components/forms/app-form-field";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -19,63 +18,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { LocationCreateFormValues } from "./location-create-page.support";
+import type {
+  LocationCreateFormHandle,
+  LocationCreateMutationState,
+  LocationFormState,
+  LocationMapValue,
+} from "./location-create-form.types";
 import {
   LocationFormActions,
   LocationFulfilmentField,
   LocationMapCard,
 } from "./location-form-panels";
-
-type LocationFieldValue = boolean | number | string | undefined;
-
-type LocationField = {
-  handleBlur: () => void;
-  handleChange: (value: LocationFieldValue) => void;
-  name: string;
-  state: {
-    meta: {
-      errors: unknown[];
-      isBlurred: boolean;
-      isDirty: boolean;
-    };
-    value: LocationFieldValue;
-  };
-};
-
-type LocationFormState = {
-  canSubmit: boolean;
-  isSubmitting: boolean;
-};
-
-type LocationCreateFormHandle = {
-  Field: (props: {
-    children: (field: LocationField) => ReactNode;
-    name: string;
-    validators?: unknown;
-  }) => ReactNode;
-  Subscribe: (props: {
-    children: (value: unknown) => ReactNode;
-    selector: (state: LocationFormState) => unknown;
-  }) => ReactNode;
-  getFieldValue: <K extends keyof LocationCreateFormValues>(
-    name: K,
-  ) => LocationCreateFormValues[K];
-  handleSubmit: () => Promise<void> | void;
-  setFieldValue: <K extends keyof LocationCreateFormValues>(
-    name: K,
-    value: LocationCreateFormValues[K],
-  ) => void;
-};
-
-type LocationCreateMutationState = {
-  error: unknown;
-  isError: boolean;
-};
-
-type LocationMapValue = Pick<
-  LocationCreateFormValues,
-  "address" | "latitude" | "longitude"
->;
 
 export function LocationCreateForm({
   form,

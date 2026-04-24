@@ -5,102 +5,13 @@ import type {
   AdminCreateSupplierRequest,
   AdminLinkSupplierContactPortalRequest,
   AdminLinkSupplierProductRequest,
-  AdminSupplierDetail,
   AdminSupplierProcurementReceiveRequest,
   AdminUpdateSupplierInquiryRequest,
   AdminUpdateSupplierRequest,
 } from "@shop/contracts";
-import { AppError } from "../_core/errors/app-error.js";
 import type { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
-
-export type AdminSupplierWriteRepository = {
-  addContact(input: {
-    actorId: string;
-    now: Date;
-    payload: AdminCreateSupplierContactRequest;
-    supplierSlug: string;
-  }): Promise<AdminSupplierDetail | null>;
-  removeContact(input: {
-    contactReference: string;
-    supplierSlug: string;
-  }): Promise<"deleted" | "not_found" | "primary_contact">;
-  linkContactPortal(input: {
-    actorId: string;
-    contactReference: string;
-    now: Date;
-    payload: AdminLinkSupplierContactPortalRequest;
-    supplierSlug: string;
-  }): Promise<AdminSupplierDetail | null>;
-  inviteContactPortal(input: {
-    actorId: string;
-    contactReference: string;
-    now: Date;
-    supplierSlug: string;
-  }): Promise<AdminSupplierDetail | null>;
-  unlinkContactPortal(input: {
-    contactReference: string;
-    now: Date;
-    supplierSlug: string;
-  }): Promise<AdminSupplierDetail | null>;
-  createSupplier(input: {
-    actorId: string;
-    now: Date;
-    payload: AdminCreateSupplierRequest;
-  }): Promise<AdminSupplierDetail>;
-  createProcurementOrder(input: {
-    actorId: string;
-    now: Date;
-    payload: AdminCreateSupplierProcurementOrderRequest;
-    reference: string;
-    supplierSlug: string;
-  }): Promise<AdminSupplierDetail | null>;
-  createInquiry(input: {
-    actorId: string;
-    now: Date;
-    payload: AdminCreateSupplierInquiryRequest;
-    reference: string;
-    supplierSlug: string;
-  }): Promise<AdminSupplierDetail | null>;
-  linkProduct(input: {
-    actorId: string;
-    now: Date;
-    payload: AdminLinkSupplierProductRequest;
-    supplierSlug: string;
-  }): Promise<AdminSupplierDetail | null>;
-  unlinkProduct(input: {
-    productSlug: string;
-    supplierSlug: string;
-  }): Promise<boolean>;
-  transitionProcurementOrder(input: {
-    actorId: string;
-    now: Date;
-    notes: string | null;
-    reference: string;
-    status: "submitted" | "approved" | "ordered" | "cancelled" | "closed";
-    supplierSlug: string;
-  }): Promise<AdminSupplierDetail | null>;
-  receiveProcurementOrder(input: {
-    actorId: string;
-    lines: AdminSupplierProcurementReceiveRequest["lines"];
-    notes: string | null;
-    now: Date;
-    reference: string;
-    supplierSlug: string;
-  }): Promise<AdminSupplierDetail | null>;
-  updateSupplier(input: {
-    actorId: string;
-    now: Date;
-    payload: AdminUpdateSupplierRequest;
-    supplierSlug: string;
-  }): Promise<AdminSupplierDetail | null>;
-  updateInquiry(input: {
-    actorId: string;
-    now: Date;
-    payload: AdminUpdateSupplierInquiryRequest;
-    reference: string;
-    supplierSlug: string;
-  }): Promise<AdminSupplierDetail | null>;
-};
+import { generateSupplierReference } from "./admin-supplier-reference.js";
+import type { AdminSupplierWriteRepository } from "./admin-supplier-write.types.js";
 
 export class AdminSupplierWriteService {
   constructor(
@@ -180,16 +91,11 @@ export class AdminSupplierWriteService {
     payload: AdminCreateSupplierProcurementOrderRequest,
     now: Date,
   ) {
-    if (!this.referenceNumberService) {
-      throw new AppError({
-        code: "internal_error",
-        detail: "Reference generation is not configured for supplier orders.",
-        statusCode: 503,
-        title: "Supplier procurement unavailable",
-      });
-    }
-    const reference = await this.referenceNumberService.generateReference({
+    const reference = await generateSupplierReference({
+      missingDetail: "Reference generation is not configured for supplier orders.",
+      missingTitle: "Supplier procurement unavailable",
       now,
+      referenceNumberService: this.referenceNumberService,
       sequenceKey: "purchase-order",
     });
     return this.repository.createProcurementOrder({
@@ -207,17 +113,12 @@ export class AdminSupplierWriteService {
     payload: AdminCreateSupplierInquiryRequest,
     now: Date,
   ) {
-    if (!this.referenceNumberService) {
-      throw new AppError({
-        code: "internal_error",
-        detail:
-          "Reference generation is not configured for supplier inquiries.",
-        statusCode: 503,
-        title: "Supplier inquiry unavailable",
-      });
-    }
-    const reference = await this.referenceNumberService.generateReference({
+    const reference = await generateSupplierReference({
+      missingDetail:
+        "Reference generation is not configured for supplier inquiries.",
+      missingTitle: "Supplier inquiry unavailable",
       now,
+      referenceNumberService: this.referenceNumberService,
       sequenceKey: "supplier-inquiry",
     });
     return this.repository.createInquiry({
