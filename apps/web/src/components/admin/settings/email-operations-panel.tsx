@@ -1,5 +1,6 @@
 "use client";
 
+import { Separator } from "@base-ui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AtSign, FlaskConical, History, MailCheck } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -157,9 +158,14 @@ export function EmailOperationsPanel({ canManage }: { canManage: boolean }) {
                     <p className="truncate text-sm font-semibold text-foreground">
                       {attempt.subject}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {attempt.recipientEmail} ·{" "}
-                      {attempt.messageType.replaceAll("_", " ")}
+                    <p className="flex gap-1 text-xs text-muted-foreground">
+                      <span className="text-nowrap">
+                        {attempt.recipientEmail}
+                      </span>
+                      <Separator orientation="vertical" className="h-4" />
+                      <span className="text-nowrap">
+                        {attempt.messageType.replaceAll("_", " ")}
+                      </span>
                     </p>
                   </div>
                   <div className="flex flex-col items-start gap-1 text-xs text-muted-foreground md:items-end">

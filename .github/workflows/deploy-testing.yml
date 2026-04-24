@@ -106,6 +106,12 @@ jobs:
             --remote-only \
             --config apps/api/fly.testing.toml \
             --app "$TEST_FLY_APP_NAME"
+      - name: Ensure API and worker process groups are running
+        run: |
+          flyctl scale count \
+            api=1 \
+            worker=1 \
+            --app "$TEST_FLY_APP_NAME"
 
   deploy_web:
     runs-on: ubuntu-latest

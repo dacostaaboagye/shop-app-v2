@@ -29,7 +29,8 @@ Flow:
 3. optional `pnpm deploy:testing:seed-admin`
 4. sync testing secrets to the Fly app
 5. deploy the Fly app with `api` and `worker` process groups
-6. deploy `apps/web` to the testing Vercel project
+6. scale the Fly app to `api=1` and `worker=1`
+7. deploy `apps/web` to the testing Vercel project
 
 ## Required GitHub Environment
 
@@ -154,7 +155,7 @@ Set the public testing API URL in:
 
 Example:
 
-- `https://shop-api-testing.fly.dev`
+- `https://shop-app-testing.fly.dev`
 
 ## First Deployment Checklist
 

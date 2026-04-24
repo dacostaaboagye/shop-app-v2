@@ -2,8 +2,12 @@
   "name": "@shop/database",
   "private": true,
   "type": "module",
+  "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/src/index.js"
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

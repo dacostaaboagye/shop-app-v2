@@ -61,50 +61,52 @@ export function ProductFilters({
   });
 
   return (
-    <div className="flex flex-wrap items-center gap-4 rounded-xl bg-white p-4 shadow-sm border border-border/50">
-      <div className="relative min-w-[320px] flex-1">
+    <div className="flex flex-col items-center gap-4 rounded-xl border border-border/50 bg-white p-4 shadow-sm">
+      <div className="relative min-w-[320px] w-full flex-1">
         <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          className="h-10 border-0 bg-muted pl-10 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-primary/20 transition-all rounded-xl"
+          className="h-10 rounded-xl border-0 bg-muted pl-10 transition-all focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-primary/20"
           onChange={(event) => onDraftSearchChange(event.target.value)}
           placeholder="Search by name or slug"
           value={draftSearch}
         />
       </div>
-      <ProductFilterSelect
-        disabled={brandsQuery.isPending}
-        emptyLabel="All brands"
-        items={brandsQuery.data?.items ?? []}
-        paramName="brandSlug"
-        value={brandSlug}
-        onQueryChange={onQueryChange}
-      />
-      <ProductFilterSelect
-        disabled={categoriesQuery.isPending}
-        emptyLabel="All categories"
-        items={categoriesQuery.data?.items ?? []}
-        paramName="categorySlug"
-        value={categorySlug}
-        onQueryChange={onQueryChange}
-      />
-      <Select
-        onValueChange={(value) =>
-          onQueryChange({
-            page: null,
-            status: value === "all" ? null : value,
-          })
-        }
-        value={status || "all"}
-      >
-        <SelectTrigger className="h-10 min-w-[140px]">
-          <SelectValue placeholder="All status" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All status</SelectItem>
-          <SelectItem value="active">Active</SelectItem>
-          <SelectItem value="archived">Archived</SelectItem>
-        </SelectContent>
-      </Select>
+      <div className="grid w-full gap-2 md:grid-cols-3">
+        <ProductFilterSelect
+          disabled={brandsQuery.isPending}
+          emptyLabel="All brands"
+          items={brandsQuery.data?.items ?? []}
+          onQueryChange={onQueryChange}
+          paramName="brandSlug"
+          value={brandSlug}
+        />
+        <ProductFilterSelect
+          disabled={categoriesQuery.isPending}
+          emptyLabel="All categories"
+          items={categoriesQuery.data?.items ?? []}
+          onQueryChange={onQueryChange}
+          paramName="categorySlug"
+          value={categorySlug}
+        />
+        <Select
+          onValueChange={(value) =>
+            onQueryChange({
+              page: null,
+              status: value === "all" ? null : value,
+            })
+          }
+          value={status || "all"}
+        >
+          <SelectTrigger className="h-10 min-w-[140px]">
+            <SelectValue placeholder="All status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All status</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="archived">Archived</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       {hasFilters ? (
         <Button
           className="h-10 rounded-xl px-4 text-muted-foreground hover:text-foreground hover:bg-muted"
