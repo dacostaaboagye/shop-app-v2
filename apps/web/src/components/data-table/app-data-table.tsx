@@ -108,7 +108,7 @@ export function AppDataTable<TData>({
         </div>
       ) : null}
 
-      <div className="relative">
+      <div className="relative overflow-x-auto">
         <Table className="border-0 bg-transparent">
           {caption ? (
             <TableCaption className="pb-4">{caption}</TableCaption>
@@ -144,7 +144,7 @@ export function AppDataTable<TData>({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl bg-white shadow-sm border border-border/50">
+    <div className="rounded-xl border border-border/50 bg-white shadow-sm">
       {tableContent}
     </div>
   );

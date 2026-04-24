@@ -114,6 +114,19 @@ export const COMMERCE_CATALOG_SUPPLY_NAV_REGISTRY: readonly NavRegistryEntry[] =
       section: "Supply",
     },
     {
+      activeMatchers: [
+        { mode: "descendants", path: "/admin/stock/supply-requests" },
+      ],
+      description:
+        "Review restocking requests for the selected location and manage dispatch decisions.",
+      href: toRoute("/admin/stock/supply-requests"),
+      icon: ClipboardList,
+      label: "Supply requests",
+      locationSelectorPermission: "stock.supply.manage",
+      requiredPermission: "stock.supply.manage",
+      section: "Supply",
+    },
+    {
       activeMatchers: [{ mode: "descendants", path: "/admin/suppliers" }],
       description: "Manage supplier accounts and purchase relationships.",
       href: toRoute("/admin/suppliers"),

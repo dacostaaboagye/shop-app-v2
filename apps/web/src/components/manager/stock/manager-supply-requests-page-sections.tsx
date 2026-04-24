@@ -1,7 +1,6 @@
 "use client";
 
 import { AppErrorBanner } from "@/components/system/app-error";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { IncomingRequestList } from "./manager-supply-request-list";
 import type {
@@ -11,66 +10,13 @@ import type {
 
 const SKELETON_KEYS = [1, 2, 3, 4, 5];
 
-export function LocationFilterChips({
-  locationScopes,
-  onLocationChange,
-  selectedLocationSlug,
-}: {
-  locationScopes: Array<{
-    locationId: string;
-    locationName: string;
-    locationSlug: string;
-  }>;
-  onLocationChange: (slug: string) => void;
-  selectedLocationSlug: string;
-}) {
-  return (
-    <div className="flex flex-wrap items-center gap-2 rounded-xl bg-muted/30 p-3 ring-1 ring-border/50">
-      <span className="text-xs font-medium text-muted-foreground">
-        Location
-      </span>
-      <button
-        type="button"
-        onClick={() => onLocationChange("")}
-        className={[
-          "rounded-lg px-3 py-1 text-xs font-medium transition-colors",
-          !selectedLocationSlug
-            ? "bg-background text-foreground shadow-sm ring-1 ring-border"
-            : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-        ].join(" ")}
-      >
-        All locations
-      </button>
-      {locationScopes.map((scope) => (
-        <button
-          key={scope.locationId}
-          type="button"
-          onClick={() => onLocationChange(scope.locationSlug)}
-          className={[
-            "rounded-lg px-3 py-1 text-xs font-medium transition-colors",
-            selectedLocationSlug === scope.locationSlug
-              ? "bg-background text-foreground shadow-sm ring-1 ring-border"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-          ].join(" ")}
-        >
-          {scope.locationName}
-        </button>
-      ))}
-      {selectedLocationSlug && (
-        <Badge variant="secondary" className="ml-auto text-xs">
-          Filtered
-        </Badge>
-      )}
-    </div>
-  );
-}
-
 export function RequestContent({
   allItems,
   counts,
   filteredItems,
   hasLocations,
   isLoading,
+  locationName,
   manageableLocationIds,
   onAction,
   onRetry,
@@ -88,6 +34,7 @@ export function RequestContent({
   filteredItems: Parameters<typeof IncomingRequestList>[0]["filteredItems"];
   hasLocations: boolean;
   isLoading: boolean;
+  locationName: string | null;
   manageableLocationIds: string[];
   onAction: Parameters<typeof IncomingRequestList>[0]["onAction"];
   onRetry: () => void;
@@ -118,6 +65,7 @@ export function RequestContent({
       allItems={allItems}
       counts={counts}
       filteredItems={filteredItems}
+      locationName={locationName}
       manageableLocationIds={manageableLocationIds}
       onAction={onAction}
       onSearchChange={onSearchChange}

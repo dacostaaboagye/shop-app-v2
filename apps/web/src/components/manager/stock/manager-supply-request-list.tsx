@@ -16,6 +16,7 @@ type Props = {
   allItems: StockSupplyRequestResponse[];
   counts: SupplyRequestCounts;
   filteredItems: StockSupplyRequestResponse[];
+  locationName: string | null;
   manageableLocationIds: string[];
   search: string;
   statusFilter: RequestFilter;
@@ -33,6 +34,7 @@ export function IncomingRequestList({
   allItems,
   counts,
   filteredItems,
+  locationName,
   manageableLocationIds,
   onAction,
   onSearchChange,
@@ -45,10 +47,14 @@ export function IncomingRequestList({
   if (allItems.length === 0) {
     return (
       <AppEmptyState
-        description="No supply requests have been directed to this location yet."
+        description={
+          locationName
+            ? `No supply requests are currently tied to ${locationName}.`
+            : "No supply requests are currently tied to the selected location."
+        }
         icon={ClipboardList}
         kind="no-data"
-        title="No incoming requests"
+        title="No supply requests"
       />
     );
   }
