@@ -69,7 +69,6 @@ export function SalesDocumentWorkspace({
           onPrint={handlePrint}
           profile={profile}
           secondaryAction={secondaryAction}
-          snapshotHash={snapshot?.contentHash ?? null}
         />
         <SalesSummary
           invoice={documentInvoice}

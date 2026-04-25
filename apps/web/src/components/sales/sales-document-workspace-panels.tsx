@@ -14,14 +14,12 @@ export function OfficialDocumentPanel({
   onPrint,
   profile,
   secondaryAction,
-  snapshotHash,
 }: {
   actionsDisabled: boolean;
   invoice: PrintableInvoiceData;
   onPrint: () => void;
   profile: OfficialDocumentProfile;
   secondaryAction?: ReactNode;
-  snapshotHash: string | null;
 }) {
   const isReturn = invoice.type === "credit_note";
 
@@ -55,11 +53,6 @@ export function OfficialDocumentPanel({
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        {snapshotHash ? (
-          <p className="rounded-md border border-border bg-muted/30 px-3 py-2 font-mono text-xs text-muted-foreground">
-            Snapshot evidence: {snapshotHash}
-          </p>
-        ) : null}
         <div className="flex flex-wrap gap-2">
           <SalesDocumentActions
             disabled={actionsDisabled}
