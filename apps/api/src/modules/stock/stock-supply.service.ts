@@ -22,6 +22,7 @@ import {
   cancelMatchingStockSupplyRequest,
   transitionPendingStockSupplyRequest,
 } from "./stock-supply-request-transitions.js";
+import { createRequestedTransfer } from "./stock-transfer-lifecycle.js";
 
 type SupplyRequestRecord = typeof stockSupplyRequests.$inferSelect;
 
@@ -47,6 +48,11 @@ export class StockSupplyService {
     skuSnapshot: SkuSnapshot;
     sourceLocationId: string;
   }): Promise<SupplyRequestRow> {
+    const transferReference =
+      await this.referenceNumberService.generateReference({
+        now: new Date(),
+        sequenceKey: "stock-transfer",
+      });
     const result = await this.db.transaction(async (tx) => {
       const [row] = await tx
         .insert(stockSupplyRequests)
@@ -64,7 +70,13 @@ export class StockSupplyService {
         .returning();
 
       if (!row) throw new Error("Failed to create supply request.");
-      const supplyRequest = toServiceSupplyRequestRow(row);
+      const supplyRequest = toServiceSupplyRequestRow(row, transferReference);
+      await createRequestedTransfer(tx, {
+        actorUserId: input.requesterId,
+        occurredAt: row.createdAt,
+        reference: transferReference,
+        supplyRequest,
+      });
       await appendStockSupplyEventWithinTransaction(
         this.operationContext(),
         tx,
@@ -185,7 +197,24 @@ export class StockSupplyService {
 
 function toServiceSupplyRequestRow(
   row: SupplyRequestRecord,
+  transferReference: string | null = null,
+  sourceReservationStatus:
+    | "active"
+    | "cancelled"
+    | "confirmed"
+    | "expired"
+    | "released"
+    | null = null,
   gtnReference: string | null = null,
 ): SupplyRequestRow {
-  return toSupplyRequestRow(row, null, null, null, null, gtnReference);
+  return toSupplyRequestRow(
+    row,
+    null,
+    null,
+    null,
+    null,
+    transferReference,
+    sourceReservationStatus,
+    gtnReference,
+  );
 }

@@ -1,6 +1,5 @@
 import {
   goodsTransferNotes,
-  stockBalances,
   stockMovements,
   stockSupplyRequests,
 } from "@shop/database";
@@ -19,6 +18,8 @@ import {
   type SkuSnapshot,
   type StockSupplyOperationContext,
 } from "./stock-supply-operation-context.js";
+import { confirmSupplyRequestStockReservation } from "./stock-supply-reservation-sync.js";
+import { syncTransferLifecycle } from "./stock-transfer-lifecycle.js";
 
 export async function dispatchStockSupply(
   input: {
@@ -55,8 +56,23 @@ export async function dispatchStockSupply(
       });
     }
 
+    const supplyRequest = toSupplyRequestRow(
+      request,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+    );
     const quantity = getApprovedQuantity(request.approvedQuantity);
-    await deductSourceStock(tx, {
+    await confirmSupplyRequestStockReservation(tx, {
+      actorUserId: input.dispatchedBy,
+      now: input.now,
+      supplyRequest,
+    });
+    await recordSourceTransferMovement(tx, {
       dispatchedBy: input.dispatchedBy,
       now: input.now,
       quantity,
@@ -90,27 +106,39 @@ export async function dispatchStockSupply(
       .returning();
     if (!updatedRequest) throw new Error("Failed to update supply request.");
 
-    const supplyRequest = toSupplyRequestRow(
+    const updatedSupplyRequestRow = toSupplyRequestRow(
       updatedRequest,
       null,
       null,
       null,
       null,
+      null,
+      "confirmed",
       gtnReference,
     );
+    const transferReference = await syncTransferLifecycle(tx, {
+      actorUserId: input.actor.userId,
+      eventType: "dispatched",
+      occurredAt: input.now,
+      supplyRequest: updatedSupplyRequestRow,
+    });
+    const updatedSupplyRequest = {
+      ...updatedSupplyRequestRow,
+      transferReference,
+    };
     await appendStockSupplyEventWithinTransaction(context, tx, {
       actor: input.actor,
       payload: { gtnReference },
-      supplyRequest,
+      supplyRequest: updatedSupplyRequest,
       summary: formatStockSupplyEventSummary({
         action: "dispatched",
         gtnReference,
-        supplyRequest,
+        supplyRequest: updatedSupplyRequest,
       }),
       type: "transfer.dispatched",
     });
 
-    return { gtnReference, updatedRequest };
+    return { gtnReference, transferReference, updatedRequest };
   });
 
   await notifyStockSupplyEventsCommitted(context);
@@ -127,6 +155,8 @@ export async function dispatchStockSupply(
       null,
       null,
       null,
+      dispatched.transferReference,
+      "confirmed",
       dispatched.gtnReference,
     ),
   };
@@ -145,7 +175,7 @@ function getApprovedQuantity(approvedQuantity: number | null) {
   return approvedQuantity;
 }
 
-async function deductSourceStock(
+async function recordSourceTransferMovement(
   tx: Parameters<
     Parameters<StockSupplyOperationContext["db"]["transaction"]>[0]
   >[0],
@@ -156,46 +186,6 @@ async function deductSourceStock(
     request: typeof stockSupplyRequests.$inferSelect;
   },
 ) {
-  const [balance] = await tx
-    .select()
-    .from(stockBalances)
-    .where(
-      and(
-        eq(stockBalances.skuId, input.request.skuId),
-        eq(stockBalances.locationId, input.request.sourceLocationId),
-      ),
-    )
-    .for("update")
-    .limit(1);
-
-  const available =
-    (balance?.onHandQuantity ?? 0) - (balance?.reservedQuantity ?? 0);
-  if (available < input.quantity) {
-    throw new AppError({
-      code: "conflict",
-      detail: `Source location only has ${available} units available (${input.quantity} approved). Update or cancel this request.`,
-      statusCode: 409,
-      title: "Insufficient stock at source",
-    });
-  }
-  if (!balance) {
-    throw new AppError({
-      code: "conflict",
-      detail:
-        "No stock balance record exists at the source location for this SKU.",
-      statusCode: 409,
-      title: "No stock record",
-    });
-  }
-
-  await tx
-    .update(stockBalances)
-    .set({
-      onHandQuantity: balance.onHandQuantity - input.quantity,
-      updatedAt: input.now,
-    })
-    .where(eq(stockBalances.id, balance.id));
-
   await tx.insert(stockMovements).values({
     createdAt: input.now,
     createdBy: input.dispatchedBy,

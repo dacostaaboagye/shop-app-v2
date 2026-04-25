@@ -1,10 +1,14 @@
-import { goodsTransferNotes } from "@shop/database";
-import { inArray } from "drizzle-orm";
-import type { ApiDatabase } from "../../infrastructure/database.js";
-
 export type SupplyRequestRow = {
   id: string;
   reference: string;
+  transferReference: string | null;
+  sourceReservationStatus:
+    | "active"
+    | "cancelled"
+    | "confirmed"
+    | "expired"
+    | "released"
+    | null;
   requesterId: string;
   requesterName: string | null;
   requesterEmail: string | null;
@@ -78,6 +82,14 @@ export function toSupplyRequestRow(
   requesterEmail: string | null,
   locationName: string | null,
   sourceLocationName: string | null,
+  transferReference: string | null,
+  sourceReservationStatus:
+    | "active"
+    | "cancelled"
+    | "confirmed"
+    | "expired"
+    | "released"
+    | null,
   gtnReference: string | null,
 ): SupplyRequestRow {
   return {
@@ -92,6 +104,8 @@ export function toSupplyRequestRow(
     notes: row.notes,
     receivedAt: row.receivedAt ?? null,
     reference: row.reference,
+    sourceReservationStatus,
+    transferReference,
     requesterEmail,
     requesterId: row.requesterId,
     requesterName,
@@ -155,23 +169,4 @@ export function toGtnRow(gtn: {
     supplyRequestId: gtn.supplyRequestId,
     supplyRequestReference: gtn.supplyRequest?.reference ?? "",
   };
-}
-
-export async function loadGtnReferenceMap(
-  db: ApiDatabase,
-  supplyRequestIds: string[],
-): Promise<Map<string, string>> {
-  if (supplyRequestIds.length === 0) {
-    return new Map();
-  }
-
-  const rows = await db
-    .select({
-      reference: goodsTransferNotes.reference,
-      supplyRequestId: goodsTransferNotes.supplyRequestId,
-    })
-    .from(goodsTransferNotes)
-    .where(inArray(goodsTransferNotes.supplyRequestId, supplyRequestIds));
-
-  return new Map(rows.map((row) => [row.supplyRequestId, row.reference]));
 }

@@ -21,6 +21,9 @@ export function createUnavailableDependencies(): StockSupplyRouteDependencies {
       async assertHasPermission() {
         return unavailable();
       },
+      async resolveAllPermissions() {
+        return unavailable();
+      },
       async resolvePermissionsForAnyScope() {
         return unavailable();
       },
@@ -44,6 +47,9 @@ export function createUnavailableDependencies(): StockSupplyRouteDependencies {
         return unavailable();
       },
       async listByRequester() {
+        return unavailable();
+      },
+      async listBySourceLocations() {
         return unavailable();
       },
       async listBySourceLocation() {

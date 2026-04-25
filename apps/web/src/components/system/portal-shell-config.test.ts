@@ -147,10 +147,7 @@ describe("portal-shell-config", () => {
     assert.equal(reservations?.requiredPermission, "admin.dashboard.view");
     assert.equal(reservations?.locationSelectorPermission, null);
     assert.equal(supplyRequests?.requiredPermission, "stock.supply.manage");
-    assert.equal(
-      supplyRequests?.locationSelectorPermission,
-      "stock.supply.manage",
-    );
+    assert.equal(supplyRequests?.locationSelectorPermission, null);
   });
 
   it("does not show admin Supply stock pages to location-scoped managers", () => {

@@ -9,6 +9,11 @@ import {
   notifyStockSupplyEventsCommitted,
   type StockSupplyOperationContext,
 } from "./stock-supply-operation-context.js";
+import {
+  releaseSupplyRequestStockReservation,
+  reserveApprovedSupplyRequestStock,
+} from "./stock-supply-reservation-sync.js";
+import { syncTransferLifecycle } from "./stock-transfer-lifecycle.js";
 
 type SupplyRequestRecord = typeof stockSupplyRequests.$inferSelect;
 
@@ -37,16 +42,42 @@ export async function transitionPendingStockSupplyRequest(
     if (!row) return null;
 
     const supplyRequest = toServiceSupplyRequestRow(row);
+    if (input.type === "transfer.approved") {
+      await reserveApprovedSupplyRequestStock(tx, {
+        actorUserId: input.actor.userId,
+        now: input.now,
+        supplyRequest,
+      });
+    }
+    if (input.type === "transfer.rejected") {
+      await releaseSupplyRequestStockReservation(tx, {
+        now: input.now,
+        reason: "request_rejected",
+        supplyRequest,
+      });
+    }
+    const transferReference = await syncTransferLifecycle(tx, {
+      actorUserId: input.actor.userId,
+      eventType: toTransferEventType(input.type),
+      occurredAt: input.now,
+      supplyRequest,
+    });
+    const updatedSupplyRequest = {
+      ...supplyRequest,
+      sourceReservationStatus:
+        input.type === "transfer.approved" ? ("active" as const) : null,
+      transferReference,
+    };
     await appendStockSupplyEventWithinTransaction(context, tx, {
       actor: input.actor,
-      supplyRequest,
+      supplyRequest: updatedSupplyRequest,
       summary: formatStockSupplyEventSummary({
         action: toStockSupplyEventAction(input.summaryVerb),
-        supplyRequest,
+        supplyRequest: updatedSupplyRequest,
       }),
       type: input.type,
     });
-    return supplyRequest;
+    return updatedSupplyRequest;
   });
 
   await notifyStockSupplyEventsCommitted(context);
@@ -79,16 +110,32 @@ export async function cancelMatchingStockSupplyRequest(
     if (!row) return null;
 
     const supplyRequest = toServiceSupplyRequestRow(row);
+    await releaseSupplyRequestStockReservation(tx, {
+      now: input.now,
+      reason: "request_cancelled",
+      supplyRequest,
+    });
+    const transferReference = await syncTransferLifecycle(tx, {
+      actorUserId: input.actor.userId,
+      eventType: "cancelled",
+      occurredAt: input.now,
+      supplyRequest,
+    });
+    const updatedSupplyRequest = {
+      ...supplyRequest,
+      sourceReservationStatus: null,
+      transferReference,
+    };
     await appendStockSupplyEventWithinTransaction(context, tx, {
       actor: input.actor,
-      supplyRequest,
+      supplyRequest: updatedSupplyRequest,
       summary: formatStockSupplyEventSummary({
         action: "cancelled",
-        supplyRequest,
+        supplyRequest: updatedSupplyRequest,
       }),
       type: "transfer.cancelled",
     });
-    return supplyRequest;
+    return updatedSupplyRequest;
   });
 
   await notifyStockSupplyEventsCommitted(context);
@@ -96,7 +143,7 @@ export async function cancelMatchingStockSupplyRequest(
 }
 
 function toServiceSupplyRequestRow(row: SupplyRequestRecord): SupplyRequestRow {
-  return toSupplyRequestRow(row, null, null, null, null, null);
+  return toSupplyRequestRow(row, null, null, null, null, null, null, null);
 }
 
 function toStockSupplyEventAction(summaryVerb: string) {
@@ -107,4 +154,15 @@ function toStockSupplyEventAction(summaryVerb: string) {
   throw new Error(
     `Unsupported stock supply event summary verb: ${summaryVerb}`,
   );
+}
+
+function toTransferEventType(type: string) {
+  switch (type) {
+    case "transfer.approved":
+      return "approved" as const;
+    case "transfer.rejected":
+      return "rejected" as const;
+    default:
+      throw new Error(`Unsupported transfer event type: ${type}`);
+  }
 }

@@ -59,6 +59,10 @@ export function SourceLocationField({
   };
   target: SupplyRequestTarget;
 }) {
+  const selectedLocationName =
+    sourceLocations.find((location) => location.locationId === sourceLocationId)
+      ?.locationName ?? null;
+
   return (
     <div className="flex flex-col gap-1.5">
       <Label htmlFor={sourceId}>Request from</Label>
@@ -89,7 +93,9 @@ export function SourceLocationField({
                   ? "Loading..."
                   : "Select a source location"
               }
-            />
+            >
+              {selectedLocationName}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {sourceLocations.map((location) => (

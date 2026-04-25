@@ -41,6 +41,8 @@ function makeSupplyRequestRow(
     notes: null,
     receivedAt: null,
     reference: "SUP-0001",
+    sourceReservationStatus: null,
+    transferReference: "TRF-0001",
     requesterEmail: "worker@example.com",
     requesterId: "33333333-3333-4333-8333-333333333333",
     requesterName: "Worker One",
