@@ -11,6 +11,7 @@ export const referenceSequenceKeys = [
   "purchase-order",
   "supplier-inquiry",
   "supply-request",
+  "stock-transfer",
   "gtn",
 ] as const;
 
@@ -43,6 +44,7 @@ export const referenceSequenceProfiles: Record<
   "purchase-order": createDateProfile("purchase-order", "PO"),
   "supplier-inquiry": createDateProfile("supplier-inquiry", "SINQ"),
   "supply-request": createInvoiceProfile("supply-request", "SUP"),
+  "stock-transfer": createInvoiceProfile("stock-transfer", "TRF"),
   gtn: createInvoiceProfile("gtn", "GTN"),
   "web-order": createDateProfile("web-order", "WEB"),
 };

@@ -50,7 +50,7 @@ export function IncomingRequestList({
         description={
           locationName
             ? `No supply requests are currently tied to ${locationName}.`
-            : "No supply requests are currently tied to the selected location."
+            : "No supply requests are currently tied to your managed locations."
         }
         icon={ClipboardList}
         kind="no-data"

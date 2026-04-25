@@ -17,10 +17,14 @@ export class PostgresStockReservationLifecycleRepository
     callback: (transaction: StockReservationTransaction) => Promise<T>,
   ): Promise<T> {
     return this.db.transaction(async (tx) => {
-      const transaction = new PostgresStockReservationTransaction(tx);
+      const transaction = createPostgresStockReservationTransaction(tx);
       return callback(transaction);
     });
   }
+}
+
+export function createPostgresStockReservationTransaction(tx: ApiDatabase) {
+  return new PostgresStockReservationTransaction(tx);
 }
 
 class PostgresStockReservationTransaction
