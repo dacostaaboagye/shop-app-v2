@@ -6,15 +6,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AppFormField } from "@/components/forms/app-form-field";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,9 +15,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { createAdminBrand } from "@/lib/react-query/admin-catalog";
 import { toRoute } from "@/lib/routes";
 import { toast } from "@/lib/toast";
+import {
+  CatalogFormActions,
+  CatalogFormCard,
+  CatalogFormError,
+} from "../catalog-form-surfaces";
 
 export function BrandCreatePageClient() {
   const router = useRouter();
@@ -71,164 +68,143 @@ export function BrandCreatePageClient() {
         title="New brand"
       />
 
-      <Card className="border-border/70 bg-card shadow-none">
-        <CardHeader>
-          <CardTitle>Brand details</CardTitle>
-          <CardDescription>
-            Brands help group products by manufacturer or label.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form
-            className="flex flex-col gap-5"
-            noValidate
-            onSubmit={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setWasSubmitted(true);
-              void form.handleSubmit();
-            }}
-          >
-            {createMutation.isError ? (
-              <Alert variant="destructive">
-                <AlertTitle>Unable to create brand</AlertTitle>
-                <AlertDescription>
-                  {createMutation.error instanceof Error
-                    ? createMutation.error.message
-                    : "An unexpected error occurred."}
-                </AlertDescription>
-              </Alert>
-            ) : null}
+      <CatalogFormCard
+        description="Brands help group products by manufacturer or label."
+        title="Brand details"
+      >
+        <form
+          className="flex flex-col gap-5"
+          noValidate
+          onSubmit={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            setWasSubmitted(true);
+            void form.handleSubmit();
+          }}
+        >
+          <CatalogFormError
+            error={createMutation.error}
+            title="Unable to create brand"
+          />
 
-            <FieldGroup>
-              <form.Field
-                name="name"
-                validators={{
-                  onBlur: ({ value }) =>
-                    value.trim() ? undefined : "Enter a brand name.",
-                  onSubmit: ({ value }) =>
-                    value.trim() ? undefined : "Enter a brand name.",
-                }}
-              >
-                {(field) => (
-                  <AppFormField
-                    errors={field.state.meta.errors}
-                    inputId={field.name}
-                    label="Name"
-                    showErrors={
-                      (field.state.meta.isDirty &&
-                        field.state.meta.isBlurred) ||
-                      wasSubmitted
-                    }
-                  >
-                    <Input
-                      id={field.name}
-                      maxLength={160}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="Acme Corp"
-                      value={field.state.value}
-                    />
-                  </AppFormField>
-                )}
-              </form.Field>
-
-              <form.Field name="website">
-                {(field) => (
-                  <AppFormField
-                    errors={field.state.meta.errors}
-                    inputId={field.name}
-                    label="Website"
-                    showErrors={wasSubmitted}
-                  >
-                    <Input
-                      id={field.name}
-                      maxLength={500}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="https://example.com"
-                      value={field.state.value}
-                    />
-                  </AppFormField>
-                )}
-              </form.Field>
-
-              <form.Field name="description">
-                {(field) => (
-                  <AppFormField
-                    errors={field.state.meta.errors}
-                    inputId={field.name}
-                    label="Description"
-                    showErrors={wasSubmitted}
-                  >
-                    <Input
-                      id={field.name}
-                      maxLength={2000}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="Optional description"
-                      value={field.state.value}
-                    />
-                  </AppFormField>
-                )}
-              </form.Field>
-
-              <form.Field name="status">
-                {(field) => (
-                  <AppFormField
-                    errors={field.state.meta.errors}
-                    inputId={field.name}
-                    label="Status"
-                    showErrors={wasSubmitted}
-                  >
-                    <Select
-                      onValueChange={(val) =>
-                        field.handleChange(val as "active" | "archived")
-                      }
-                      value={field.state.value}
-                    >
-                      <SelectTrigger id={field.name}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="archived">Archived</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </AppFormField>
-                )}
-              </form.Field>
-            </FieldGroup>
-
-            <form.Subscribe
-              selector={(s) => ({
-                canSubmit: s.canSubmit,
-                isSubmitting: s.isSubmitting,
-              })}
+          <FieldGroup>
+            <form.Field
+              name="name"
+              validators={{
+                onBlur: ({ value }) =>
+                  value.trim() ? undefined : "Enter a brand name.",
+                onSubmit: ({ value }) =>
+                  value.trim() ? undefined : "Enter a brand name.",
+              }}
             >
-              {({ canSubmit, isSubmitting }) => (
-                <div className="flex justify-end gap-3">
-                  <Button
-                    onClick={() => router.back()}
-                    size="sm"
-                    type="button"
-                    variant="ghost"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    disabled={!canSubmit || isSubmitting}
-                    size="sm"
-                    type="submit"
-                  >
-                    {isSubmitting ? "Creating…" : "Create brand"}
-                  </Button>
-                </div>
+              {(field) => (
+                <AppFormField
+                  errors={field.state.meta.errors}
+                  inputId={field.name}
+                  label="Name"
+                  showErrors={
+                    (field.state.meta.isDirty && field.state.meta.isBlurred) ||
+                    wasSubmitted
+                  }
+                >
+                  <Input
+                    id={field.name}
+                    maxLength={160}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                    placeholder="Acme Corp"
+                    value={field.state.value}
+                  />
+                </AppFormField>
               )}
-            </form.Subscribe>
-          </form>
-        </CardContent>
-      </Card>
+            </form.Field>
+
+            <form.Field name="website">
+              {(field) => (
+                <AppFormField
+                  description="Optional public website for the brand."
+                  errors={field.state.meta.errors}
+                  inputId={field.name}
+                  label="Website"
+                  showErrors={wasSubmitted}
+                >
+                  <Input
+                    id={field.name}
+                    maxLength={500}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                    placeholder="https://example.com"
+                    value={field.state.value}
+                  />
+                </AppFormField>
+              )}
+            </form.Field>
+
+            <form.Field name="description">
+              {(field) => (
+                <AppFormField
+                  errors={field.state.meta.errors}
+                  inputId={field.name}
+                  label="Description"
+                  showErrors={wasSubmitted}
+                >
+                  <Textarea
+                    id={field.name}
+                    maxLength={2000}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                    placeholder="Optional description"
+                    value={field.state.value}
+                  />
+                </AppFormField>
+              )}
+            </form.Field>
+
+            <form.Field name="status">
+              {(field) => (
+                <AppFormField
+                  errors={field.state.meta.errors}
+                  inputId={field.name}
+                  label="Status"
+                  showErrors={wasSubmitted}
+                >
+                  <Select
+                    onValueChange={(value) =>
+                      field.handleChange(value as "active" | "archived")
+                    }
+                    value={field.state.value}
+                  >
+                    <SelectTrigger id={field.name}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </AppFormField>
+              )}
+            </form.Field>
+          </FieldGroup>
+
+          <form.Subscribe
+            selector={(state) => ({
+              canSubmit: state.canSubmit,
+              isSubmitting: state.isSubmitting,
+            })}
+          >
+            {({ canSubmit, isSubmitting }) => (
+              <CatalogFormActions
+                canSubmit={canSubmit}
+                isBusy={isSubmitting}
+                onCancel={() => router.back()}
+                submitLabel="Create brand"
+                submittingLabel="Creating..."
+              />
+            )}
+          </form.Subscribe>
+        </form>
+      </CatalogFormCard>
     </PageShell>
   );
 }

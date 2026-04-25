@@ -243,12 +243,14 @@ describe("stock supply routes", () => {
 
   it("allows admin to cancel another worker's pending request", async () => {
     let cancelByIdCalled = false;
+    let overrideReason: string | undefined;
     const server = createStockSupplyServer({
       allowedLocationPermissions: {
         "stock.supply.request": [UUIDS.destinationA],
       },
-      cancelByIdImpl: async () => {
+      cancelByIdImpl: async (input) => {
         cancelByIdCalled = true;
+        overrideReason = input.adminOverrideReason;
         return makeSupplyRequestRow({
           requesterId: UUIDS.otherWorker,
           status: "cancelled",
@@ -268,23 +270,27 @@ describe("stock supply routes", () => {
         authorization: bearerToken(UUIDS.admin, "admin-user"),
       },
       method: "PATCH",
+      payload: { adminOverrideReason: "Inventory issue verified by admin." },
       url: `/api/worker/stock/supply-requests/${UUIDS.request}/cancel`,
     });
 
     assert.equal(response.statusCode, 200);
     assert.equal(cancelByIdCalled, true);
+    assert.equal(overrideReason, "Inventory issue verified by admin.");
     assert.equal(response.json().status, "cancelled");
   });
 
   it("allows admin receipt confirmation for another worker's request", async () => {
     let confirmCalled = false;
+    let overrideReason: string | undefined;
     const server = createStockSupplyServer({
       allowedLocationPermissions: {
         "stock.supply.request": [UUIDS.destinationA],
         "stock.supply.manage": [UUIDS.managerSourceA],
       },
-      confirmReceiptImpl: async () => {
+      confirmReceiptImpl: async (input) => {
         confirmCalled = true;
+        overrideReason = input.adminOverrideReason;
         return {
           gtn: makeGtnRow({
             receivedAt: NOW,
@@ -317,13 +323,74 @@ describe("stock supply routes", () => {
         authorization: bearerToken(UUIDS.admin, "admin-user"),
       },
       method: "PATCH",
-      payload: { notes: "Admin override receipt" },
+      payload: {
+        adminOverrideReason: "Destination worker unavailable for confirmation.",
+        notes: "Admin override receipt",
+      },
       url: `/api/worker/stock/supply-requests/${UUIDS.request}/confirm-receipt`,
     });
 
     assert.equal(response.statusCode, 200);
     assert.equal(confirmCalled, true);
+    assert.equal(
+      overrideReason,
+      "Destination worker unavailable for confirmation.",
+    );
     assert.equal(response.json().status, "received");
+  });
+
+  it("rejects admin cancel without an override reason", async () => {
+    const server = createStockSupplyServer({
+      allowedLocationPermissions: {
+        "stock.supply.request": [UUIDS.destinationA],
+      },
+      globalPermissions: ["admin.dashboard.view", "stock.supply.request"],
+      requestById: makeSupplyRequestRow({
+        requesterId: UUIDS.otherWorker,
+        status: "pending",
+      }),
+      userId: UUIDS.admin,
+      userSlug: "admin-user",
+    });
+
+    const response = await server.inject({
+      headers: {
+        authorization: bearerToken(UUIDS.admin, "admin-user"),
+      },
+      method: "PATCH",
+      url: `/api/worker/stock/supply-requests/${UUIDS.request}/cancel`,
+    });
+
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.json().title, "Admin override reason required");
+  });
+
+  it("rejects admin receipt confirmation without an override reason", async () => {
+    const server = createStockSupplyServer({
+      allowedLocationPermissions: {
+        "stock.supply.request": [UUIDS.destinationA],
+      },
+      globalPermissions: ["admin.dashboard.view", "stock.supply.request"],
+      requestById: makeSupplyRequestRow({
+        locationId: UUIDS.destinationA,
+        requesterId: UUIDS.otherWorker,
+        status: "dispatched",
+      }),
+      userId: UUIDS.admin,
+      userSlug: "admin-user",
+    });
+
+    const response = await server.inject({
+      headers: {
+        authorization: bearerToken(UUIDS.admin, "admin-user"),
+      },
+      method: "PATCH",
+      payload: { notes: "Admin override receipt" },
+      url: `/api/worker/stock/supply-requests/${UUIDS.request}/confirm-receipt`,
+    });
+
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.json().title, "Admin override reason required");
   });
 
   it("rejects GTN access for an uninvolved worker", async () => {
@@ -358,8 +425,10 @@ describe("stock supply routes", () => {
 
 function createStockSupplyServer(input: {
   allowedLocationPermissions: Record<string, string[]>;
-  cancelByIdImpl?: () => Promise<SupplyRequestRow>;
-  confirmReceiptImpl?: () => Promise<{
+  cancelByIdImpl?: (input: {
+    adminOverrideReason?: string;
+  }) => Promise<SupplyRequestRow>;
+  confirmReceiptImpl?: (input: { adminOverrideReason?: string }) => Promise<{
     gtn: GtnRow;
     supplyRequest: SupplyRequestRow;
   }>;
@@ -466,18 +535,26 @@ function createStockSupplyServer(input: {
           publishTestEvent(input, "transfer.cancelled", supplyRequest);
           return supplyRequest;
         },
-        async cancelById() {
+        async cancelById(args) {
           if (input.cancelByIdImpl) {
-            return input.cancelByIdImpl();
+            return input.cancelByIdImpl({
+              ...(args.adminOverrideReason
+                ? { adminOverrideReason: args.adminOverrideReason }
+                : {}),
+            });
           }
 
           const supplyRequest = makeSupplyRequestRow({ status: "cancelled" });
           publishTestEvent(input, "transfer.cancelled", supplyRequest);
           return supplyRequest;
         },
-        async confirmReceipt() {
+        async confirmReceipt(args) {
           if (input.confirmReceiptImpl) {
-            return input.confirmReceiptImpl();
+            return input.confirmReceiptImpl({
+              ...(args.adminOverrideReason
+                ? { adminOverrideReason: args.adminOverrideReason }
+                : {}),
+            });
           }
 
           return {

@@ -3,24 +3,19 @@
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppFormField } from "@/components/forms/app-form-field";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { FieldGroup } from "@/components/ui/field";
-import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import {
   adminUserAccessDetailQueryKey,
   forceAdminUserPasswordReset,
 } from "@/lib/react-query/admin-user-access";
 import { toast } from "@/lib/toast";
+import {
+  UserAccessDialogError,
+  UserAccessDialogHeader,
+  UserAccessDialogSubmit,
+} from "./user-access-dialog-surfaces";
 
 export function ForcePasswordResetDialog({
   onClose,
@@ -40,20 +35,25 @@ export function ForcePasswordResetDialog({
         queryKey: adminUserAccessDetailQueryKey(slug),
       });
       toast.success("Password reset forced");
+      form.reset({ reason: "" });
       onClose();
     },
   });
   const form = useForm({
     defaultValues: { reason: "" },
-    onSubmit: async ({ value }) => mutation.mutate(value),
+    onSubmit: async ({ value }) => mutation.mutateAsync(value),
   });
 
   return (
     <Dialog
-      open={open}
       onOpenChange={(next) => {
-        if (!next) onClose();
+        if (!next) {
+          mutation.reset();
+          form.reset({ reason: "" });
+          onClose();
+        }
       }}
+      open={open}
     >
       <DialogContent className="sm:max-w-md">
         <form
@@ -62,23 +62,14 @@ export function ForcePasswordResetDialog({
             void form.handleSubmit();
           }}
         >
-          <DialogHeader>
-            <DialogTitle>Force password reset</DialogTitle>
-            <DialogDescription>
-              The user must set a new password on next login. All active
-              sessions are revoked immediately.
-            </DialogDescription>
-          </DialogHeader>
-          {mutation.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Failed to force reset</AlertTitle>
-              <AlertDescription>
-                {mutation.error instanceof Error
-                  ? mutation.error.message
-                  : "An unexpected error occurred."}
-              </AlertDescription>
-            </Alert>
-          ) : null}
+          <UserAccessDialogHeader
+            description="The user must set a new password on next login. Active sessions are revoked immediately."
+            title="Force password reset"
+          />
+          <UserAccessDialogError
+            error={mutation.error}
+            title="Failed to force reset"
+          />
           <FieldGroup className="py-2">
             <form.Field
               name="reason"
@@ -107,7 +98,7 @@ export function ForcePasswordResetDialog({
                     maxLength={500}
                     onBlur={field.handleBlur}
                     onChange={(event) => field.handleChange(event.target.value)}
-                    placeholder="Possible credential exposure reported by security team."
+                    placeholder="Possible credential exposure reported by security."
                     rows={3}
                     value={field.state.value}
                   />
@@ -115,31 +106,22 @@ export function ForcePasswordResetDialog({
               )}
             </form.Field>
           </FieldGroup>
-          <DialogFooter showCloseButton>
-            <form.Subscribe
-              selector={(state) => ({
-                canSubmit: state.canSubmit,
-                isSubmitting: state.isSubmitting,
-              })}
-            >
-              {({ canSubmit, isSubmitting }) => (
-                <Button
-                  disabled={!canSubmit || isSubmitting}
-                  type="submit"
-                  variant="destructive"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Spinner data-icon="inline-start" />
-                      Resetting…
-                    </>
-                  ) : (
-                    "Force reset"
-                  )}
-                </Button>
-              )}
-            </form.Subscribe>
-          </DialogFooter>
+          <form.Subscribe
+            selector={(formState) => ({
+              canSubmit: formState.canSubmit,
+              isSubmitting: formState.isSubmitting,
+            })}
+          >
+            {({ canSubmit, isSubmitting }) => (
+              <UserAccessDialogSubmit
+                canSubmit={canSubmit}
+                isBusy={isSubmitting}
+                label="Force reset"
+                pendingLabel="Resetting..."
+                variant="destructive"
+              />
+            )}
+          </form.Subscribe>
         </form>
       </DialogContent>
     </Dialog>

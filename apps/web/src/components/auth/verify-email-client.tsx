@@ -18,7 +18,7 @@ type VerifyEmailClientProps = {
 
 export function VerifyEmailClient({ token }: VerifyEmailClientProps) {
   const mutation = useMutation({
-    mutationFn: (t: string) => verifyEmail(t),
+    mutationFn: (nextToken: string) => verifyEmail(nextToken),
   });
 
   useEffect(() => {
@@ -42,13 +42,14 @@ export function VerifyEmailClient({ token }: VerifyEmailClientProps) {
     return (
       <div className="flex flex-col items-center gap-3 py-6">
         <Spinner className="h-6 w-6" />
-        <p className="text-sm text-muted-foreground">Verifying your email…</p>
+        <p className="text-sm text-muted-foreground">Verifying your email...</p>
       </div>
     );
   }
 
   if (mutation.isError) {
     const error = getAuthErrorMessage(mutation.error);
+
     return (
       <div className="flex flex-col gap-4">
         <AppErrorBanner
@@ -57,13 +58,10 @@ export function VerifyEmailClient({ token }: VerifyEmailClientProps) {
           title={error.title}
         />
         <Link
-          className={buttonVariants({
-            variant: "outline",
-            className: "w-full",
-          })}
+          className={buttonVariants({ variant: "outline" })}
           href={toRoute("/login")}
         >
-          Back to sign in
+          Back to Sign In
         </Link>
       </div>
     );
@@ -79,11 +77,8 @@ export function VerifyEmailClient({ token }: VerifyEmailClientProps) {
           your account.
         </AlertDescription>
       </Alert>
-      <Link
-        className={buttonVariants({ className: "w-full", size: "lg" })}
-        href={toRoute("/login")}
-      >
-        Continue to sign in
+      <Link className={buttonVariants({ size: "lg" })} href={toRoute("/login")}>
+        Continue to Sign In
       </Link>
     </div>
   );

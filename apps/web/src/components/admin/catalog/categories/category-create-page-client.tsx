@@ -6,15 +6,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AppFormField } from "@/components/forms/app-form-field";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   adminCategoriesQueryKey,
   createAdminCategory,
@@ -31,6 +23,11 @@ import {
 } from "@/lib/react-query/admin-catalog";
 import { toRoute } from "@/lib/routes";
 import { toast } from "@/lib/toast";
+import {
+  CatalogFormActions,
+  CatalogFormCard,
+  CatalogFormError,
+} from "../catalog-form-surfaces";
 
 const ACTIVE_QUERY = {
   dir: "asc" as const,
@@ -93,149 +90,146 @@ export function CategoryCreatePageClient() {
         description="Add a category to organise products in the catalogue."
         title="New category"
       />
-      <Card className="border-border/70 bg-card shadow-none">
-        <CardHeader>
-          <CardTitle>Category details</CardTitle>
-          <CardDescription>
-            Categories can be nested using a parent category.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form
-            className="flex flex-col gap-5"
-            noValidate
-            onSubmit={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setWasSubmitted(true);
-              void form.handleSubmit();
-            }}
-          >
-            {createMutation.isError ? (
-              <Alert variant="destructive">
-                <AlertTitle>Unable to create category</AlertTitle>
-                <AlertDescription>
-                  {createMutation.error instanceof Error
-                    ? createMutation.error.message
-                    : "An unexpected error occurred."}
-                </AlertDescription>
-              </Alert>
-            ) : null}
-            <FieldGroup>
-              <form.Field
-                name="name"
-                validators={{
-                  onBlur: ({ value }) =>
-                    value.trim() ? undefined : "Enter a category name.",
-                  onSubmit: ({ value }) =>
-                    value.trim() ? undefined : "Enter a category name.",
-                }}
-              >
-                {(field) => (
-                  <AppFormField
-                    errors={field.state.meta.errors}
-                    inputId={field.name}
-                    label="Name"
-                    showErrors={
-                      (field.state.meta.isDirty &&
-                        field.state.meta.isBlurred) ||
-                      wasSubmitted
-                    }
-                  >
-                    <Input
-                      id={field.name}
-                      maxLength={160}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="Clothing"
-                      value={field.state.value}
-                    />
-                  </AppFormField>
-                )}
-              </form.Field>
-              <form.Field name="parentCategorySlug">
-                {(field) => (
-                  <AppFormField
-                    description="Optional. Makes this a sub-category."
-                    errors={field.state.meta.errors}
-                    inputId={field.name}
-                    label="Parent category"
-                    showErrors={wasSubmitted}
-                  >
-                    <Select
-                      onValueChange={field.handleChange}
-                      value={field.state.value || "none"}
-                    >
-                      <SelectTrigger id={field.name}>
-                        <SelectValue placeholder="None (top-level)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None (top-level)</SelectItem>
-                        {parentOptions.map((cat) => (
-                          <SelectItem key={cat.slug} value={cat.slug}>
-                            {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </AppFormField>
-                )}
-              </form.Field>
-              <form.Field name="status">
-                {(field) => (
-                  <AppFormField
-                    errors={field.state.meta.errors}
-                    inputId={field.name}
-                    label="Status"
-                    showErrors={wasSubmitted}
-                  >
-                    <Select
-                      onValueChange={(val) =>
-                        field.handleChange(val as "active" | "archived")
-                      }
-                      value={field.state.value}
-                    >
-                      <SelectTrigger id={field.name}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="archived">Archived</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </AppFormField>
-                )}
-              </form.Field>
-            </FieldGroup>
-            <form.Subscribe
-              selector={(s) => ({
-                canSubmit: s.canSubmit,
-                isSubmitting: s.isSubmitting,
-              })}
+      <CatalogFormCard
+        description="Categories can be nested using a parent category."
+        title="Category details"
+      >
+        <form
+          className="flex flex-col gap-5"
+          noValidate
+          onSubmit={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            setWasSubmitted(true);
+            void form.handleSubmit();
+          }}
+        >
+          <CatalogFormError
+            error={createMutation.error}
+            title="Unable to create category"
+          />
+          <FieldGroup>
+            <form.Field
+              name="name"
+              validators={{
+                onBlur: ({ value }) =>
+                  value.trim() ? undefined : "Enter a category name.",
+                onSubmit: ({ value }) =>
+                  value.trim() ? undefined : "Enter a category name.",
+              }}
             >
-              {({ canSubmit, isSubmitting }) => (
-                <div className="flex justify-end gap-3">
-                  <Button
-                    onClick={() => router.back()}
-                    size="sm"
-                    type="button"
-                    variant="ghost"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    disabled={!canSubmit || isSubmitting}
-                    size="sm"
-                    type="submit"
-                  >
-                    {isSubmitting ? "Creating…" : "Create category"}
-                  </Button>
-                </div>
+              {(field) => (
+                <AppFormField
+                  errors={field.state.meta.errors}
+                  inputId={field.name}
+                  label="Name"
+                  showErrors={
+                    (field.state.meta.isDirty && field.state.meta.isBlurred) ||
+                    wasSubmitted
+                  }
+                >
+                  <Input
+                    id={field.name}
+                    maxLength={160}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                    placeholder="Clothing"
+                    value={field.state.value}
+                  />
+                </AppFormField>
               )}
-            </form.Subscribe>
-          </form>
-        </CardContent>
-      </Card>
+            </form.Field>
+            <form.Field name="parentCategorySlug">
+              {(field) => (
+                <AppFormField
+                  description="Optional. Makes this a sub-category."
+                  errors={field.state.meta.errors}
+                  inputId={field.name}
+                  label="Parent category"
+                  showErrors={wasSubmitted}
+                >
+                  <Select
+                    onValueChange={field.handleChange}
+                    value={field.state.value || "none"}
+                  >
+                    <SelectTrigger id={field.name}>
+                      <SelectValue placeholder="None (top-level)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None (top-level)</SelectItem>
+                      {parentOptions.map((category) => (
+                        <SelectItem key={category.slug} value={category.slug}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </AppFormField>
+              )}
+            </form.Field>
+            <form.Field name="description">
+              {(field) => (
+                <AppFormField
+                  errors={field.state.meta.errors}
+                  inputId={field.name}
+                  label="Description"
+                  showErrors={wasSubmitted}
+                >
+                  <Textarea
+                    id={field.name}
+                    maxLength={2000}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                    placeholder="Optional description"
+                    value={field.state.value}
+                  />
+                </AppFormField>
+              )}
+            </form.Field>
+            <form.Field name="status">
+              {(field) => (
+                <AppFormField
+                  errors={field.state.meta.errors}
+                  inputId={field.name}
+                  label="Status"
+                  showErrors={wasSubmitted}
+                >
+                  <Select
+                    onValueChange={(value) =>
+                      field.handleChange(value as "active" | "archived")
+                    }
+                    value={field.state.value}
+                  >
+                    <SelectTrigger id={field.name}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </AppFormField>
+              )}
+            </form.Field>
+          </FieldGroup>
+          <form.Subscribe
+            selector={(state) => ({
+              canSubmit: state.canSubmit,
+              isSubmitting: state.isSubmitting,
+            })}
+          >
+            {({ canSubmit, isSubmitting }) => (
+              <CatalogFormActions
+                canSubmit={canSubmit}
+                isBusy={isSubmitting}
+                onCancel={() => router.back()}
+                submitLabel="Create category"
+                submittingLabel="Creating..."
+              />
+            )}
+          </form.Subscribe>
+        </form>
+      </CatalogFormCard>
     </PageShell>
   );
 }

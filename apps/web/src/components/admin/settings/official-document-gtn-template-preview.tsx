@@ -17,7 +17,7 @@ export function OfficialDocumentGtnTemplatePreview({
 
 function TransferRouteCard({ primaryColor }: { primaryColor: string }) {
   return (
-    <div className="rounded-md bg-muted/40 p-4">
+    <div className="rounded-md border border-border bg-muted/30 p-4">
       <div className="grid gap-5 sm:grid-cols-3">
         <RouteValue label="Source" value="Main warehouse" />
         <RouteValue label="Destination" value="Airport branch" />
@@ -27,11 +27,9 @@ function TransferRouteCard({ primaryColor }: { primaryColor: string }) {
         <RouteValue label="Dispatched" value="04/21/2026, 09:30" />
         <RouteValue label="Received" value="Pending receipt" />
         <div className="text-left sm:text-right">
-          <p className="text-xs font-semibold uppercase text-muted-foreground">
-            Status
-          </p>
+          <p className="type-data-label">Status</p>
           <p
-            className="mt-2 text-sm font-semibold uppercase"
+            className="mt-2 text-sm font-semibold"
             style={{ color: primaryColor }}
           >
             In transit
@@ -45,10 +43,8 @@ function TransferRouteCard({ primaryColor }: { primaryColor: string }) {
 function RouteValue({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs font-semibold uppercase text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-2 text-sm text-foreground">{value}</p>
+      <p className="type-data-label">{label}</p>
+      <p className="mt-2 text-pretty text-sm text-foreground">{value}</p>
     </div>
   );
 }
@@ -88,7 +84,7 @@ function TransferredGoodsTable() {
 
 function OperationalHandover({ primaryColor }: { primaryColor: string }) {
   return (
-    <div className="rounded-md border border-border p-4">
+    <div className="rounded-md border border-border bg-muted/15 p-4">
       <p className="text-sm font-semibold" style={{ color: primaryColor }}>
         Operational handover
       </p>
@@ -107,10 +103,8 @@ function OperationalHandover({ primaryColor }: { primaryColor: string }) {
 function SignatureValue({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs font-semibold uppercase text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-3 text-sm text-foreground">{value}</p>
+      <p className="type-data-label">{label}</p>
+      <p className="mt-3 text-pretty text-sm text-foreground">{value}</p>
       <div className="mt-5 border-t border-border" />
     </div>
   );

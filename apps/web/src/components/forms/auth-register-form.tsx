@@ -7,6 +7,7 @@ import { useState } from "react";
 import { AppFormField } from "@/components/forms/app-form-field";
 import { AuthGoogleOAuthButton } from "@/components/forms/auth-google-oauth-button";
 import { AppErrorBanner } from "@/components/system/app-error";
+import { AuthSectionDivider } from "@/components/system/auth-surfaces";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -54,13 +55,7 @@ export function AuthRegisterForm() {
   return (
     <div className="flex flex-col gap-4">
       <AuthGoogleOAuthButton />
-      <div className="relative flex items-center gap-4 py-2">
-        <div className="flex-1 border-t border-border/60" />
-        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">
-          or
-        </span>
-        <div className="flex-1 border-t border-border/60" />
-      </div>
+      <AuthSectionDivider />
 
       <form
         className="flex flex-col gap-4"
@@ -86,7 +81,7 @@ export function AuthRegisterForm() {
                 <AppFormField
                   errors={field.state.meta.errors}
                   inputId={field.name}
-                  label="First name"
+                  label="First Name"
                   showErrors={
                     (field.state.meta.isDirty && field.state.meta.isBlurred) ||
                     wasSubmitted
@@ -97,7 +92,7 @@ export function AuthRegisterForm() {
                     id={field.name}
                     name={field.name}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
+                    onChange={(event) => field.handleChange(event.target.value)}
                     placeholder="Solomon"
                     value={field.state.value}
                   />
@@ -117,7 +112,7 @@ export function AuthRegisterForm() {
                 <AppFormField
                   errors={field.state.meta.errors}
                   inputId={field.name}
-                  label="Last name"
+                  label="Last Name"
                   showErrors={
                     (field.state.meta.isDirty && field.state.meta.isBlurred) ||
                     wasSubmitted
@@ -128,7 +123,7 @@ export function AuthRegisterForm() {
                     id={field.name}
                     name={field.name}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
+                    onChange={(event) => field.handleChange(event.target.value)}
                     placeholder="Aboagye"
                     value={field.state.value}
                   />
@@ -160,7 +155,7 @@ export function AuthRegisterForm() {
                   id={field.name}
                   name={field.name}
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(event) => field.handleChange(event.target.value)}
                   placeholder="name@company.com"
                   type="email"
                   value={field.state.value}
@@ -192,8 +187,8 @@ export function AuthRegisterForm() {
                   id={field.name}
                   name={field.name}
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="Min. 8 characters"
+                  onChange={(event) => field.handleChange(event.target.value)}
+                  placeholder="Minimum 8 characters"
                   value={field.state.value}
                 />
               </AppFormField>
@@ -217,7 +212,7 @@ export function AuthRegisterForm() {
         >
           {({ canSubmit, isSubmitting }) => (
             <Button
-              className="w-full rounded-xl shadow-lg shadow-primary/20"
+              className="w-full"
               disabled={!canSubmit || isSubmitting}
               size="lg"
               type="submit"
@@ -225,11 +220,11 @@ export function AuthRegisterForm() {
               {isSubmitting ? (
                 <>
                   <Spinner data-icon="inline-start" />
-                  Creating account…
+                  Creating Account...
                 </>
               ) : (
                 <>
-                  Create account
+                  Create Account
                   <UserRoundPlus className="ml-2 h-4 w-4" />
                 </>
               )}

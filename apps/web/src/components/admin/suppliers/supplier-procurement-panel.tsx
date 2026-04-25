@@ -7,9 +7,11 @@ import type {
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { SelectField, TextField } from "./supplier-form-controls";
+import {
+  SelectField,
+  TextAreaField,
+  TextField,
+} from "./supplier-form-controls";
 import {
   type ProcurementAction,
   SupplierProcurementList,
@@ -46,9 +48,9 @@ export function ProcurementPanel(props: {
   );
 
   return (
-    <div className="flex flex-col gap-6 rounded-xl border border-border/50 bg-white p-6 shadow-sm">
+    <div className="flex flex-col gap-6 rounded-xl border border-border/50 bg-card p-6 shadow-sm">
       <div className="flex flex-col gap-4">
-        <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">
+        <h3 className="text-sm font-semibold text-muted-foreground">
           Draft purchase order
         </h3>
         <PurchaseOrderForm
@@ -60,7 +62,7 @@ export function ProcurementPanel(props: {
       </div>
 
       <div className="flex flex-col gap-4">
-        <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">
+        <h3 className="text-sm font-semibold text-muted-foreground">
           Managed lifecycle
         </h3>
         <SupplierProcurementList
@@ -99,6 +101,7 @@ function PurchaseOrderForm(props: {
         />
         <TextField
           label="Quantity"
+          inputMode="numeric"
           onChange={(quantity) =>
             props.onChange((value) => ({
               ...value,
@@ -110,25 +113,26 @@ function PurchaseOrderForm(props: {
         />
         <TextField
           label="Unit cost"
+          inputMode="decimal"
           onChange={(unitCost) =>
             props.onChange((value) => ({ ...value, unitCost }))
           }
+          placeholder="0.00"
           value={props.form.unitCost}
         />
       </div>
-      <div className="flex flex-col gap-1.5">
-        <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
-          Purchasing notes
-        </Label>
-        <Textarea
-          className="min-h-20 rounded-xl border-border/60 bg-muted/20 transition-all focus:bg-background focus:ring-primary/20"
-          onChange={(event) =>
-            props.onChange((value) => ({ ...value, notes: event.target.value }))
-          }
-          placeholder="Internal purchasing note or delivery instruction"
-          value={props.form.notes}
-        />
-      </div>
+      <TextAreaField
+        description="Capture the buying rationale, delivery expectation, or internal handoff note."
+        label="Purchasing notes"
+        onChange={(notes) =>
+          props.onChange((value) => ({
+            ...value,
+            notes,
+          }))
+        }
+        placeholder="Internal purchasing note or delivery instruction"
+        value={props.form.notes}
+      />
       <div className="flex justify-start">
         <Button
           className="h-11 rounded-xl px-8"

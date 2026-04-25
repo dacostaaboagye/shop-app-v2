@@ -5,6 +5,7 @@ import { ShoppingCart } from "lucide-react";
 import { ProductThumbnail } from "@/components/system/product-thumbnail";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { formatCount } from "@/lib/display/format";
 import { formatMoney, type MoneyProfile } from "@/lib/money/format-money";
 import { cn } from "@/lib/utils";
 import { getStockStatus } from "./worker-assignments-support";
@@ -45,13 +46,13 @@ export function AssignmentCard({
               {inCartIndicator(item.skuId)}
             </div>
             <div className="min-w-0">
-              <h3 className="font-heading text-base font-bold leading-tight group-hover:text-primary transition-colors">
+              <h3 className="type-data-value text-base leading-tight transition-colors group-hover:text-primary">
                 {item.productName}
               </h3>
-              <p className="mt-1 truncate text-sm text-muted-foreground/80 font-medium">
+              <p className="type-support mt-1 text-pretty text-sm">
                 {item.variantName}
               </p>
-              <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground/50">
+              <p className="type-identifier mt-1 break-all text-[10px]">
                 {item.sku}
               </p>
             </div>
@@ -68,14 +69,11 @@ export function AssignmentCard({
             label="Price"
             value={formatMoney(item.sellingPrice, moneyProfile)}
           />
-          <StatCell
-            label="On Hand"
-            value={item.onHandQuantity.toLocaleString()}
-          />
+          <StatCell label="On Hand" value={formatCount(item.onHandQuantity)} />
           <StatCell
             label="Available"
             tone={isOut ? "danger" : isLow ? "warning" : "success"}
-            value={item.availableQuantity.toLocaleString()}
+            value={formatCount(item.availableQuantity)}
           />
         </div>
 
@@ -109,13 +107,11 @@ function StatCell({
   value: string;
 }) {
   return (
-    <div className="flex flex-col gap-1 rounded-xl bg-white px-3 py-2.5 ring-1 ring-border shadow-sm">
-      <dt className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-        {label}
-      </dt>
+    <div className="flex flex-col gap-1 rounded-xl bg-muted/25 px-3 py-2.5 ring-1 ring-border/70">
+      <dt className="type-data-label">{label}</dt>
       <dd
         className={cn(
-          "truncate text-sm font-bold tabular-nums",
+          "type-data-value text-pretty text-sm tabular-nums",
           toneClass(tone),
         )}
       >
@@ -136,7 +132,7 @@ function StockPill({
   return (
     <Badge
       className={cn(
-        "shrink-0 rounded-lg px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-sm border-none",
+        "shrink-0 rounded-lg border-none px-2.5 py-0.5 text-[10px] font-semibold shadow-sm",
         isOut
           ? "bg-destructive text-destructive-foreground"
           : isLow

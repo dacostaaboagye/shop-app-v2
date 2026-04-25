@@ -11,19 +11,21 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { CatalogFormCard } from "@/components/admin/catalog/catalog-form-surfaces";
 import { PageHeader, StatCard } from "@/components/system/page-shell";
 import { PermissionGate } from "@/components/system/permission-gate";
 import { PersonAvatar } from "@/components/system/person-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   formatAdminDate,
   formatDisplayName,
+  formatPortalLabel,
   PASSWORD_RESET_BADGE_CLASS_NAME,
   USER_STATUS_META,
 } from "@/lib/admin-models";
+import { formatCount } from "@/lib/display/format";
 import { toRoute } from "@/lib/routes";
 import { MediaPanel } from "../catalog/media/media-panel";
 import { ActivityTab, EffectiveAccessTab } from "./user-access-detail-tabs";
@@ -55,7 +57,7 @@ export function UserAccessDetailBody({
       <PageHeader
         backHref={toRoute("/admin/access/users")}
         backLabel="User access"
-        description={user.email}
+        description="Review effective access, current role assignments, portal reach, and recent authentication history."
         eyebrow="Access overview"
         title={displayName}
         actions={
@@ -118,8 +120,11 @@ export function UserAccessDetailBody({
         />
       </div>
 
-      <Card className="border-border/70 bg-card shadow-none">
-        <CardContent className="flex flex-wrap items-center gap-3 p-4">
+      <CatalogFormCard
+        description="Identity, portal reach, account status, and current location scope."
+        title="User summary"
+      >
+        <div className="flex flex-wrap items-center gap-3">
           <PersonAvatar
             firstName={user.firstName}
             imageUrl={user.primaryImageUrl}
@@ -127,8 +132,10 @@ export function UserAccessDetailBody({
             size="md"
           />
           <div className="min-w-0">
-            <p className="font-medium leading-tight">{displayName}</p>
-            <p className="font-mono text-xs text-muted-foreground">
+            <p className="font-medium leading-tight text-foreground">
+              {displayName}
+            </p>
+            <p className="type-identifier text-muted-foreground">
               {user.email}
             </p>
           </div>
@@ -148,8 +155,8 @@ export function UserAccessDetailBody({
             ) : null}
             {user.availablePortals.length > 0 ? (
               user.availablePortals.map((portal) => (
-                <Badge key={portal} className="capitalize" variant="secondary">
-                  {portal}
+                <Badge key={portal} variant="secondary">
+                  {formatPortalLabel(portal)}
                 </Badge>
               ))
             ) : (
@@ -158,20 +165,20 @@ export function UserAccessDetailBody({
               </Badge>
             )}
             {user.assignedLocations.length > 0 ? (
-              <span className="flex items-center gap-1 text-sm text-muted-foreground">
+              <span className="type-support flex items-center gap-1 text-muted-foreground">
                 <MapPin className="size-3.5" />
                 {user.assignedLocations
                   .slice(0, 2)
                   .map((location) => location.locationName)
                   .join(", ")}
                 {user.assignedLocations.length > 2
-                  ? ` +${user.assignedLocations.length - 2} more`
+                  ? ` +${formatCount(user.assignedLocations.length - 2)} more`
                   : ""}
               </span>
             ) : null}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </CatalogFormCard>
 
       <MediaPanel
         canManage={canManageMedia}
@@ -179,15 +186,15 @@ export function UserAccessDetailBody({
         entityType="user"
       />
 
-      <Tabs defaultValue="effective">
+      <Tabs className="flex flex-col gap-4" defaultValue="effective">
         <TabsList>
           <TabsTrigger value="effective">Effective access</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
-        <TabsContent className="pt-3" value="effective">
+        <TabsContent className="mt-0" value="effective">
           <EffectiveAccessTab permissions={user.effectivePermissions} />
         </TabsContent>
-        <TabsContent className="pt-3" value="activity">
+        <TabsContent className="mt-0" value="activity">
           <ActivityTab events={user.recentActivity} />
         </TabsContent>
       </Tabs>

@@ -1,6 +1,11 @@
-import Link from "next/link";
 import { ResetPasswordClient } from "@/components/auth/reset-password-client";
 import { AuthPageShell } from "@/components/system/auth-page-shell";
+import {
+  AuthCard,
+  AuthCardBody,
+  AuthCardHeader,
+  AuthFooterLink,
+} from "@/components/system/auth-surfaces";
 import { toRoute } from "@/lib/routes";
 
 type ResetPasswordPageProps = {
@@ -14,30 +19,20 @@ export default async function ResetPasswordPage({
 
   return (
     <AuthPageShell>
-      <div className="overflow-hidden rounded-[2.5rem] border border-border/40 bg-card/60 p-10 backdrop-blur-xl shadow-2xl shadow-black/5">
-        <div className="mb-10 flex flex-col items-center gap-2 text-center">
-          <h2 className="font-heading text-3xl font-bold tracking-tight text-foreground">
-            New password
-          </h2>
-          <p className="text-base text-muted-foreground">
-            Choose a strong password for your account.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-6">
+      <AuthCard>
+        <AuthCardHeader
+          description="Choose a strong password for your account."
+          title="New Password"
+        />
+        <AuthCardBody>
           <ResetPasswordClient token={token} />
-
-          <div className="mt-4 flex items-center justify-center gap-2 border-t border-border/20 pt-8 text-sm font-medium text-muted-foreground">
-            Back to{" "}
-            <Link
-              className="font-bold text-primary transition-colors hover:text-primary/80"
-              href={toRoute("/login")}
-            >
-              Sign in
-            </Link>
-          </div>
-        </div>
-      </div>
+          <AuthFooterLink
+            href={toRoute("/login")}
+            label="Sign In"
+            prompt="Back to"
+          />
+        </AuthCardBody>
+      </AuthCard>
     </AuthPageShell>
   );
 }

@@ -1,12 +1,6 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowRight,
-  CheckCircle2,
-  ClipboardList,
-  PackageCheck,
-} from "lucide-react";
 import { useMemo, useState } from "react";
 import { ActionDialog } from "@/components/manager/stock/manager-supply-request-action-dialog";
 import type { ResolveTarget } from "@/components/manager/stock/manager-supply-requests.support";
@@ -20,7 +14,6 @@ import {
 import { TransferWorkspaceShell } from "@/components/stock/transfer-workspace-shell";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { StatCard } from "@/components/system/page-shell-cards";
 import { useActiveLocationScopeOptional } from "@/lib/authorization/use-active-location-scope";
 import {
   fetchManagerIncomingSupplyRequests,
@@ -131,33 +124,6 @@ export function ManagerTransfersPageClient() {
         title="Transfer workspace"
       />
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatCard
-          description="Transfers waiting for review."
-          icon={ClipboardList}
-          label="Needs review"
-          value={counts.needs_review ?? 0}
-        />
-        <StatCard
-          description="Approved and reserved at source."
-          icon={CheckCircle2}
-          label="Reserved"
-          value={counts.reserved ?? 0}
-        />
-        <StatCard
-          description="Transfers already on the move."
-          icon={ArrowRight}
-          label="In transit"
-          value={counts.in_transit ?? 0}
-        />
-        <StatCard
-          description="Received, rejected, or cancelled."
-          icon={PackageCheck}
-          label="Completed"
-          value={counts.completed ?? 0}
-        />
-      </div>
-
       <TransferWorkspaceShell
         detail={
           selectedItem ? (
@@ -181,9 +147,13 @@ export function ManagerTransfersPageClient() {
           ) : undefined
         }
         emptyDescription="No transfers match this lane right now."
+        emptyTitle="No transfers in this lane"
         isLoading={isLoading || transfersQuery.isPending}
         items={filteredItems}
+        laneCounts={counts}
+        laneDescription="Switch between review, reserved, in-transit, and completed transfers. Each lane shows its own live count."
         lanes={managerTransferLanes}
+        laneTitle="Transfer lanes"
         onLaneChange={setSelectedLane}
         onRetry={handleRetry}
         onSearchChange={setSearch}
@@ -196,6 +166,8 @@ export function ManagerTransfersPageClient() {
               ? "pending"
               : "success"
         }
+        queueDescription="Transfers in the currently selected lane"
+        queueTitle="Transfer queue"
         search={search}
         selectedItem={selectedItem}
         selectedLane={selectedLane}

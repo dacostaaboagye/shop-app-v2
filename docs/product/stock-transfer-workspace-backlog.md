@@ -28,11 +28,13 @@ Current evidence:
   `apps/api/src/modules/stock/supply-request-access-policy.ts`
 - route tests cover worker scope, manager scope, admin override, and GTN
   visibility in `apps/api/test/supply-request.routes.test.ts`
+- admin override cancellation and receipt confirmation now require an explicit
+  override reason at the API boundary instead of relying on broad admin access
+  alone
 
 Remaining acceptance:
 - stock-assignment-adjacent transfer actions must be reviewed for the same
   resource-scope enforcement pattern
-- admin override actions need explicit reason capture, not only broader access
 
 ### `E-02-01B` source-location eligibility and worker request entry
 
@@ -172,7 +174,7 @@ Goal:
   override actions
 
 Status:
-- pending
+- partially complete
 
 Acceptance criteria:
 - admin can filter globally or by location
@@ -180,6 +182,20 @@ Acceptance criteria:
 - bottlenecks, ageing transfers, and exception states are visible centrally
 - admin sees the same transfer truth as worker and manager views, not a separate
   shadow flow
+
+Current evidence:
+- admin transfer workspace now lives at `/admin/transfers`
+- the admin workspace reuses the same transfer detail and transfer-truth
+  projection as the manager and worker workspaces
+- the control tower exposes dedicated lanes for `Needs review`, `Bottlenecks`,
+  `In transit`, `Exceptions`, and `Completed`
+- the global header stats surface ageing, bottlenecks, and exception counts
+- the legacy `/admin/stock/supply-requests` path now redirects into the admin
+  transfer control tower instead of maintaining a separate shadow flow
+
+Remaining acceptance:
+- the admin control tower still uses supply-request projections rather than a
+  dedicated transfer aggregate query model
 
 ### `E-02-01I` transfer notifications and SSE integration
 

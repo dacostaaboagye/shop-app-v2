@@ -18,9 +18,9 @@ import {
   AppDataTable,
   type AppDataTableSort,
 } from "@/components/data-table/app-data-table";
+import { StockWorkspaceTableSkeleton } from "@/components/stock/stock-workspace-feedback";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   adminLocationsQueryKey,
   adminStaffQueryKey,
@@ -167,14 +167,9 @@ export function AdminStaffPageClient() {
           totalCount={staffQuery.data?.totalCount ?? 0}
         />
 
-        {/* Sovereign Table Surface */}
-        <div className="overflow-hidden rounded-xl bg-white shadow-sm border border-border/50">
+        <div className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm">
           {staffQuery.isPending && !staffQuery.data ? (
-            <div className="flex flex-col gap-1 p-4">
-              {USER_TABLE_SKELETON_KEYS.map((key) => (
-                <Skeleton key={key} className="h-12 w-full rounded-lg" />
-              ))}
-            </div>
+            <StockWorkspaceTableSkeleton keys={USER_TABLE_SKELETON_KEYS} />
           ) : (
             <>
               {staffQuery.isError ? (
@@ -195,12 +190,10 @@ export function AdminStaffPageClient() {
                 density="compact"
                 emptyDescription={
                   hasFilters
-                    ? "Try adjusting the staff filters or search term."
-                    : "No manager or worker accounts were returned."
+                    ? "Try broadening the current search or filters."
+                    : "No manager or worker accounts are available in this scope."
                 }
-                emptyTitle={
-                  hasFilters ? "No staff match" : "No staff available"
-                }
+                emptyTitle={hasFilters ? "No staff match" : "No staff yet"}
                 emptyState={{ kind: hasFilters ? "no-results" : "no-data" }}
                 getRowId={(row) => row.slug}
                 onRowClick={(row: { slug: string }) =>

@@ -1,8 +1,7 @@
 "use client";
 
-import { Search, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { AdminDirectoryFilterPanel } from "@/components/admin/admin-directory-filter-panel";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -10,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatCount } from "@/lib/display/format";
 
 export function SupplierFilters({
   draftSearch,
@@ -29,45 +29,29 @@ export function SupplierFilters({
   totalCount: number;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-4 rounded-xl bg-white p-4 shadow-sm border border-border/50">
-      <div className="relative min-w-[320px] flex-1">
-        <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          className="h-10 border-0 bg-muted pl-10 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-primary/20 transition-all rounded-xl"
-          onChange={(e) => onDraftSearchChange(e.target.value)}
-          placeholder="Search name or email"
-          value={draftSearch}
-        />
-      </div>
-      <Select onValueChange={onStatusChange} value={status}>
-        <SelectTrigger className="h-10 min-w-[140px]">
-          <SelectValue placeholder="All status" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All status</SelectItem>
-          <SelectItem value="active">Active</SelectItem>
-          <SelectItem value="inactive">Inactive</SelectItem>
-        </SelectContent>
-      </Select>
-      {hasFilters ? (
-        <Button
-          className="h-10 rounded-xl px-4 text-muted-foreground hover:text-foreground hover:bg-muted"
-          onClick={onClear}
-          size="sm"
-          type="button"
-          variant="ghost"
-        >
-          <X className="mr-2 size-4" />
-          Clear filters
-        </Button>
-      ) : null}
-      <div className="ml-auto flex items-center gap-3">
-        <div className="h-4 w-px bg-border" />
-        <span className="text-sm tabular-nums text-muted-foreground">
-          <span className="font-medium text-foreground">{totalCount}</span>{" "}
-          suppliers
-        </span>
-      </div>
-    </div>
+    <AdminDirectoryFilterPanel
+      extraControls={
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5 md:min-w-40">
+          <Label htmlFor="supplier-filter-status">Status</Label>
+          <Select onValueChange={onStatusChange} value={status}>
+            <SelectTrigger className="h-10" id="supplier-filter-status">
+              <SelectValue placeholder="All status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      }
+      hasFilters={hasFilters}
+      onClear={onClear}
+      onDraftSearchChange={onDraftSearchChange}
+      placeholder="Supplier name or email"
+      searchId="supplier-filter-search"
+      summary={`${formatCount(totalCount)} supplier${totalCount === 1 ? "" : "s"}${status !== "all" ? ` marked ${status}` : ""}${draftSearch ? " matching the current filters" : " across the workspace"}`}
+      value={draftSearch}
+    />
   );
 }

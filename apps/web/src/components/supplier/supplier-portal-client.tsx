@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import type { LucideIcon } from "lucide-react";
 import { MessageSquareText, PackageSearch, ShoppingCart } from "lucide-react";
 import type { ReactNode } from "react";
 import { AppEmptyState } from "@/components/system/app-empty-state";
@@ -12,9 +13,16 @@ import {
 } from "@/components/system/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  formatCount,
+  formatPublicReference,
+  formatSupportText,
+} from "@/lib/display/format";
 import { fetchSupplierPortalProfile } from "@/lib/react-query/admin-directory";
 
 type SupplierPortalView = "catalogue" | "dashboard" | "inquiries" | "orders";
+
+type SupplierStatusTone = "default" | "secondary";
 
 export function SupplierPortalClient({ view }: { view: SupplierPortalView }) {
   const query = useQuery({
@@ -25,7 +33,10 @@ export function SupplierPortalClient({ view }: { view: SupplierPortalView }) {
   if (query.isPending) {
     return (
       <PageShell>
-        <PageHeader title="Supplier portal" />
+        <PageHeader
+          description="Loading your supplier account workspace."
+          title="Supplier Portal"
+        />
       </PageShell>
     );
   }
@@ -44,127 +55,182 @@ export function SupplierPortalClient({ view }: { view: SupplierPortalView }) {
   }
 
   const supplier = query.data;
+
   return (
     <PageShell>
       <PageHeader
         {...(supplier.legalName || supplier.email
-          ? { description: supplier.legalName ?? supplier.email ?? "" }
+          ? {
+              description: formatSupportText(
+                supplier.legalName ?? supplier.email,
+              ),
+            }
           : {})}
         title={supplier.name}
       />
+
       {view === "dashboard" ? (
         <div className="grid gap-4 sm:grid-cols-3">
           <StatCard
-            description="Products linked to your supplier account."
+            description="Products currently linked to your supplier account."
             icon={PackageSearch}
             label="Products"
-            value={supplier.products.length}
+            value={formatCount(supplier.products.length)}
           />
           <StatCard
-            description="Purchase orders in progress."
+            description="Purchase orders that still need supplier attention."
             icon={ShoppingCart}
             label="Orders"
-            value={supplier.procurementOrders.length}
+            value={formatCount(supplier.procurementOrders.length)}
           />
           <StatCard
-            description="Sourcing questions awaiting attention."
+            description="Sourcing requests shared with your supplier account."
             icon={MessageSquareText}
             label="Inquiries"
-            value={supplier.inquiries.length}
+            value={formatCount(supplier.inquiries.length)}
           />
         </div>
       ) : null}
+
       {view === "catalogue" ? (
-        <SupplierCard title="Catalogue">
+        <SupplierWorkspaceCard
+          description={`${formatCount(supplier.products.length)} linked products`}
+          title="Catalogue"
+        >
           {supplier.products.length === 0 ? (
             <AppEmptyState
               description="No products are linked to your supplier account yet."
               icon={PackageSearch}
               kind="no-data"
-              title="No products"
+              title="No Products"
             />
           ) : (
             supplier.products.map((product) => (
-              <Row
+              <SupplierListRow
                 key={product.productSlug}
-                meta={`${product.variantCount} SKU(s)`}
+                icon={PackageSearch}
+                meta={`${formatCount(product.variantCount)} SKU${product.variantCount === 1 ? "" : "s"}`}
                 title={product.productName}
               />
             ))
           )}
-        </SupplierCard>
+        </SupplierWorkspaceCard>
       ) : null}
+
       {view === "orders" ? (
-        <SupplierCard title="Purchase orders">
+        <SupplierWorkspaceCard
+          description={`${formatCount(supplier.procurementOrders.length)} purchase orders`}
+          title="Purchase Orders"
+        >
           {supplier.procurementOrders.length === 0 ? (
             <AppEmptyState
-              description="Purchase orders issued to your account will appear here."
+              description="Purchase orders issued to your supplier account will appear here."
               icon={ShoppingCart}
               kind="no-data"
-              title="No purchase orders"
+              title="No Purchase Orders"
             />
           ) : (
             supplier.procurementOrders.map((order) => (
-              <Row
+              <SupplierListRow
                 key={order.reference}
-                meta={`${order.lines.length} line(s)`}
-                status={order.status.replaceAll("_", " ")}
-                title={order.reference}
+                icon={ShoppingCart}
+                meta={`${formatCount(order.lines.length)} line${order.lines.length === 1 ? "" : "s"}`}
+                status={formatSupplierStatus(order.status)}
+                statusTone="secondary"
+                title={formatPublicReference(order.reference)}
               />
             ))
           )}
-        </SupplierCard>
+        </SupplierWorkspaceCard>
       ) : null}
+
       {view === "inquiries" ? (
-        <SupplierCard title="Sourcing inquiries">
+        <SupplierWorkspaceCard
+          description={`${formatCount(supplier.inquiries.length)} sourcing inquiries`}
+          title="Sourcing Inquiries"
+        >
           {supplier.inquiries.length === 0 ? (
             <AppEmptyState
               description="Availability and sourcing questions from the business will appear here."
               icon={MessageSquareText}
               kind="no-data"
-              title="No inquiries"
+              title="No Inquiries"
             />
           ) : (
             supplier.inquiries.map((inquiry) => (
-              <Row
+              <SupplierListRow
                 key={inquiry.reference}
-                meta={
+                icon={MessageSquareText}
+                meta={formatSupportText(
                   inquiry.productName ??
-                  inquiry.requestedProductName ??
-                  "External sourcing request"
-                }
-                status={inquiry.status}
-                title={inquiry.reference}
+                    inquiry.requestedProductName ??
+                    "External sourcing request",
+                )}
+                status={formatSupplierStatus(inquiry.status)}
+                title={formatPublicReference(inquiry.reference)}
               />
             ))
           )}
-        </SupplierCard>
+        </SupplierWorkspaceCard>
       ) : null}
     </PageShell>
   );
 }
 
-function SupplierCard(props: { children: ReactNode; title: string }) {
+function SupplierWorkspaceCard(props: {
+  children: ReactNode;
+  description?: string;
+  title: string;
+}) {
   return (
-    <Card>
-      <CardHeader>
+    <Card className="border-none bg-card shadow-sm ring-1 ring-border">
+      <CardHeader className="gap-1 border-b border-border bg-card">
         <CardTitle>{props.title}</CardTitle>
+        {props.description ? (
+          <p className="type-support">{props.description}</p>
+        ) : null}
       </CardHeader>
-      <CardContent className="flex flex-col gap-2">
+      <CardContent className="flex flex-col gap-3 pt-6">
         {props.children}
       </CardContent>
     </Card>
   );
 }
 
-function Row(props: { meta: string; status?: string; title: string }) {
+function SupplierListRow(props: {
+  icon: LucideIcon;
+  meta: string;
+  status?: string;
+  statusTone?: SupplierStatusTone;
+  title: string;
+}) {
+  const Icon = props.icon;
+
   return (
-    <div className="flex items-center justify-between gap-3 rounded-md border border-border p-3">
-      <div>
-        <p className="font-medium">{props.title}</p>
-        <p className="text-sm text-muted-foreground">{props.meta}</p>
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/20 p-3">
+      <div className="flex min-w-0 items-start gap-3">
+        <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+          <Icon className="size-4" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-balance text-sm font-semibold">{props.title}</p>
+          <p className="type-support mt-1 text-pretty">{props.meta}</p>
+        </div>
       </div>
-      {props.status ? <Badge variant="outline">{props.status}</Badge> : null}
+      {props.status ? (
+        <Badge variant={props.statusTone ?? "outline"}>{props.status}</Badge>
+      ) : null}
     </div>
   );
+}
+
+function formatSupplierStatus(value: string) {
+  return value
+    .split("_")
+    .map((segment) =>
+      segment.length > 0
+        ? `${segment.charAt(0).toUpperCase()}${segment.slice(1).toLowerCase()}`
+        : segment,
+    )
+    .join(" ");
 }

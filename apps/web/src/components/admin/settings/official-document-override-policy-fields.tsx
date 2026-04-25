@@ -7,32 +7,38 @@ import type { OfficialDocumentSettingsFormApi } from "./official-document-identi
 
 const OVERRIDE_FIELDS = [
   {
-    info: "Permit managers to set a custom display name for their specific location on documents.",
+    description:
+      "Permit managers to set a custom display name for their specific location on documents.",
     label: "Location display name",
     name: "allowLocationDisplayName",
   },
   {
-    info: "Permit managers to provide a specific branch address instead of the headquarters address.",
+    description:
+      "Permit managers to provide a specific branch address instead of the headquarters address.",
     label: "Location address",
     name: "allowLocationAddress",
   },
   {
-    info: "Permit managers to list branch-specific phone numbers or emails on documents.",
+    description:
+      "Permit managers to list branch-specific phone numbers or emails on documents.",
     label: "Location contact details",
     name: "allowLocationContact",
   },
   {
-    info: "Permit managers to customize the text footer (e.g. return policy) for their specific location.",
+    description:
+      "Permit managers to customize the text footer for their specific location.",
     label: "Location footer",
     name: "allowLocationFooter",
   },
   {
-    info: "Permit managers to choose their preferred paper size (Receipt/A4) based on their local hardware.",
+    description:
+      "Permit managers to choose their preferred paper size based on local printer hardware.",
     label: "Location paper size",
     name: "allowLocationPaperSize",
   },
   {
-    info: "Permit managers to define their own numbering prefix for branch-specific document sequencing.",
+    description:
+      "Permit managers to define their own numbering prefix for branch-specific sequencing.",
     label: "Location document prefix",
     name: "allowLocationNumberPrefix",
   },
@@ -49,25 +55,25 @@ export function OfficialDocumentOverridePolicyFields({
         <form.Field key={item.name} name={item.name}>
           {(field) => (
             <AppFormField
-              info={item.info}
+              description={item.description}
               inputId={field.name}
               label={item.label}
             >
               <div
                 className={cn(
-                  "mt-1.5 flex items-center justify-between rounded-xl border border-border/60 bg-muted/50 p-4 transition-all",
+                  "mt-1.5 flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/30 p-4 transition-all",
                   field.state.value
-                    ? "border-primary/20 bg-primary/[0.02]"
-                    : "border-border/60 bg-muted/50",
+                    ? "border-primary/20 bg-primary/[0.04]"
+                    : "border-border/60 bg-muted/30",
                 )}
               >
                 <div className="flex items-center gap-3">
                   <div
                     className={cn(
-                      "flex size-9 items-center justify-center rounded-xl transition-all",
+                      "flex size-9 items-center justify-center rounded-lg transition-all",
                       field.state.value
                         ? "bg-primary/10 text-primary"
-                        : "bg-muted/50 text-muted-foreground",
+                        : "bg-muted/60 text-muted-foreground",
                     )}
                   >
                     {field.state.value ? (
@@ -79,7 +85,7 @@ export function OfficialDocumentOverridePolicyFields({
                   <div>
                     <p
                       className={cn(
-                        "text-sm font-bold transition-colors",
+                        "text-sm font-medium transition-colors",
                         field.state.value
                           ? "text-primary"
                           : "text-muted-foreground",
@@ -87,7 +93,7 @@ export function OfficialDocumentOverridePolicyFields({
                     >
                       {field.state.value ? "Unlocked" : "Locked"}
                     </p>
-                    <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/80">
+                    <p className="type-support text-muted-foreground/80">
                       Policy status
                     </p>
                   </div>

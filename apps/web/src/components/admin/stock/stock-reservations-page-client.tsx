@@ -1,24 +1,22 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Search, X } from "lucide-react";
 import { useId } from "react";
 import {
   STOCK_BALANCE_LOCATIONS_QUERY,
-  STOCK_BALANCE_SKELETON_KEYS,
   STOCK_CATALOG_FILTER_QUERY,
   useStockBalanceFilter,
 } from "@/app/admin/stock/balances/page.support";
+import {
+  AdminStockFilterPanel,
+  formatAdminStockResultLabel,
+} from "@/components/admin/stock/admin-stock-filter-panel";
 import { reservationColumns } from "@/components/admin/stock/reservation-columns";
-import { StockFilterSelect } from "@/components/admin/stock/stock-filter-select";
 import { AppDataTable } from "@/components/data-table/app-data-table";
+import { StockWorkspaceTableSkeleton } from "@/components/stock/stock-workspace-feedback";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { AppTableWrapper } from "@/components/system/app-table-wrapper";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   adminBrandsQueryKey,
   adminCategoriesQueryKey,
@@ -72,92 +70,39 @@ export function StockReservationsPageClient() {
         title="Reservations"
       />
 
-      <form
-        className="mb-4 flex flex-wrap items-end gap-3 rounded-xl border border-border/50 bg-white p-4 shadow-sm"
+      <AdminStockFilterPanel
+        brands={brandsQuery.data?.items ?? []}
+        brandsLoading={brandsQuery.isPending}
+        categories={categoriesQuery.data?.items ?? []}
+        categoriesLoading={categoriesQuery.isPending}
+        draftFilter={draftFilter}
+        filterId={filterId}
+        hasFilters={hasFilters}
+        locations={locationsQuery.data?.items ?? []}
+        locationsLoading={locationsQuery.isPending}
+        onClear={handleClear}
         onSubmit={handleSubmit}
-      >
-        <StockFilterSelect
-          id={`${filterId}-location`}
-          isLoading={locationsQuery.isPending}
-          label="Location"
-          loadingLabel="Loading locations..."
-          onChange={(locationSlug) => updateDraft({ locationSlug })}
-          options={locationsQuery.data?.items ?? []}
-          placeholder="All locations"
-          value={draftFilter.locationSlug}
-        />
-        <StockFilterSelect
-          id={`${filterId}-brand`}
-          isLoading={brandsQuery.isPending}
-          label="Brand"
-          loadingLabel="Loading brands..."
-          onChange={(brandSlug) => updateDraft({ brandSlug })}
-          options={brandsQuery.data?.items ?? []}
-          placeholder="All brands"
-          value={draftFilter.brandSlug}
-        />
-        <StockFilterSelect
-          id={`${filterId}-category`}
-          isLoading={categoriesQuery.isPending}
-          label="Category"
-          loadingLabel="Loading categories..."
-          onChange={(categorySlug) => updateDraft({ categorySlug })}
-          options={categoriesQuery.data?.items ?? []}
-          placeholder="All categories"
-          value={draftFilter.categorySlug}
-        />
-        <div className="flex min-w-52 flex-1 flex-col gap-1.5">
-          <Label
-            className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
-            htmlFor={`${filterId}-search`}
-          >
-            Search
-          </Label>
-          <Input
-            className="h-11 rounded-xl border-border/60 bg-muted/20 transition-all focus:bg-background focus:ring-primary/20"
-            id={`${filterId}-search`}
-            onChange={(event) => updateDraft({ q: event.target.value })}
-            placeholder="Product name or SKU"
-            value={draftFilter.q}
-          />
-        </div>
-        <div className="flex gap-2">
-          <Button className="h-11 rounded-xl px-6" size="sm" type="submit">
-            <Search data-icon="inline-start" />
-            Query
-          </Button>
-          {hasFilters ? (
-            <Button
-              className="h-11 rounded-xl"
-              onClick={handleClear}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <X data-icon="inline-start" />
-              Clear
-            </Button>
-          ) : null}
-        </div>
-      </form>
-
-      {reservationsQuery.data ? (
-        <p className="mb-4 px-1 text-xs font-bold uppercase tracking-wider text-muted-foreground/60">
-          {reservationsQuery.data.items.length} active reservation
-          {reservationsQuery.data.items.length !== 1 ? "s" : ""}
-          {filter.locationSlug && reservationsQuery.data.locationName
-            ? ` at ${reservationsQuery.data.locationName}`
-            : " across all locations"}
-        </p>
-      ) : null}
+        resultLabel={
+          reservationsQuery.data
+            ? formatAdminStockResultLabel({
+                count: reservationsQuery.data.items.length,
+                emptyLabel: "active reservation",
+                locationName:
+                  filter.locationSlug && reservationsQuery.data.locationName
+                    ? reservationsQuery.data.locationName
+                    : null,
+              })
+            : undefined
+        }
+        updateDraft={updateDraft}
+      />
 
       <AppTableWrapper>
         {reservationsQuery.isFetching && !reservationsQuery.data ? (
-          <div className="flex flex-col gap-1 p-4">
-            {STOCK_BALANCE_SKELETON_KEYS.map((key) => (
-              <Skeleton key={key} className="h-12 w-full rounded-lg" />
-            ))}
-          </div>
+          <StockWorkspaceTableSkeleton
+            keys={["sb-1", "sb-2", "sb-3", "sb-4", "sb-5"]}
+            rowClassName="h-12 w-full rounded-lg"
+          />
         ) : reservationsQuery.isError ? (
           <div className="p-8">
             <AppErrorBanner

@@ -4,6 +4,11 @@ import type { AdminPermissionSummary, AdminRoleDetail } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { KeyRound, ShieldCheck, UserCheck, Users } from "lucide-react";
 import Link from "next/link";
+import {
+  AccessActionBadge,
+  AccessTextCell,
+} from "@/components/admin/access/access-table-cells";
+import { CatalogFormCard } from "@/components/admin/catalog/catalog-form-surfaces";
 import { AppDataTable } from "@/components/data-table/app-data-table";
 import { useAuthorization } from "@/components/providers/authorization-provider";
 import { AppErrorBanner } from "@/components/system/app-error";
@@ -15,13 +20,6 @@ import {
 import { PermissionGate } from "@/components/system/permission-gate";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -131,18 +129,17 @@ function RoleDetailBody({
         />
       </div>
 
-      <Card className="border-border/70 bg-card shadow-none">
-        <CardContent className="flex flex-wrap items-center gap-2 p-4">
+      <div className="rounded-xl border border-border/70 bg-card p-4 shadow-none">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline">
             {role.isSystem ? "System role" : "Custom role"}
           </Badge>
-          <Badge variant="secondary">{role.slug}</Badge>
-          <span className="text-sm text-muted-foreground">
-            {grantedPermissions.length} granted permissions across{" "}
-            {role.assignedUserCount} active assignments.
-          </span>
-        </CardContent>
-      </Card>
+          <AccessActionBadge>{role.slug}</AccessActionBadge>
+          <AccessTextCell
+            value={`${grantedPermissions.length} granted permissions across ${role.assignedUserCount} active assignments.`}
+          />
+        </div>
+      </div>
 
       <Tabs defaultValue="coverage">
         <TabsList>
@@ -163,30 +160,24 @@ function RoleDetailBody({
         </TabsContent>
         <PermissionGate permission="access.roles.manage">
           <TabsContent className="pt-3" value="editor">
-            <Card className="border-border/70 bg-card shadow-none">
-              <CardHeader>
-                <CardTitle>Edit role</CardTitle>
-                <CardDescription>
-                  Adjust page visibility and action grants for this role. The
-                  backend keeps role changes auditable and deterministic.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <RoleEditorForm
-                  initialValues={{
-                    description: role.description,
-                    name: role.name,
-                    permissionKeys: grantedPermissions.map(
-                      (permission) => permission.key,
-                    ),
-                  }}
-                  isSystem={role.isSystem}
-                  mode="edit"
-                  permissionOptions={permissionOptions}
-                  roleSlug={role.slug}
-                />
-              </CardContent>
-            </Card>
+            <CatalogFormCard
+              description="Adjust page visibility and action grants for this role. Role changes remain auditable and deterministic."
+              title="Edit role"
+            >
+              <RoleEditorForm
+                initialValues={{
+                  description: role.description,
+                  name: role.name,
+                  permissionKeys: grantedPermissions.map(
+                    (permission) => permission.key,
+                  ),
+                }}
+                isSystem={role.isSystem}
+                mode="edit"
+                permissionOptions={permissionOptions}
+                roleSlug={role.slug}
+              />
+            </CatalogFormCard>
           </TabsContent>
         </PermissionGate>
       </Tabs>

@@ -2,7 +2,6 @@
 
 import type { StockSupplyRequestResponse } from "@shop/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, ClipboardList, PackageCheck } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { TransferDetailPanel } from "@/components/stock/transfer-detail-panel";
@@ -13,7 +12,6 @@ import {
 } from "@/components/stock/transfer-workspace.support";
 import { TransferWorkspaceShell } from "@/components/stock/transfer-workspace-shell";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { StatCard } from "@/components/system/page-shell-cards";
 import { Button } from "@/components/ui/button";
 import { getAppErrorMessage } from "@/lib/errors/app-error";
 import {
@@ -70,27 +68,6 @@ export function WorkerTransfersPageClient() {
         title="My transfers"
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <StatCard
-          description="Requests still under review or already reserved."
-          icon={ClipboardList}
-          label="Open"
-          value={counts.open ?? 0}
-        />
-        <StatCard
-          description="Transfers currently moving to your location."
-          icon={ArrowRight}
-          label="In transit"
-          value={counts.in_transit ?? 0}
-        />
-        <StatCard
-          description="Received, rejected, or cancelled transfers."
-          icon={PackageCheck}
-          label="Completed"
-          value={counts.completed ?? 0}
-        />
-      </div>
-
       <TransferWorkspaceShell
         detail={
           selectedItem ? (
@@ -109,9 +86,13 @@ export function WorkerTransfersPageClient() {
           ) : undefined
         }
         emptyDescription="No transfers match this lane right now."
+        emptyTitle="No transfers in this lane"
         isLoading={transfersQuery.isPending}
         items={filteredItems}
+        laneCounts={counts}
+        laneDescription="Use the lanes to separate open requests, goods in transit, and finished transfer history."
         lanes={workerTransferLanes}
+        laneTitle="Transfer lanes"
         onLaneChange={setSelectedLane}
         onRetry={handleRetry}
         onSearchChange={setSearch}
@@ -124,6 +105,8 @@ export function WorkerTransfersPageClient() {
               ? "pending"
               : "success"
         }
+        queueDescription="Transfers in the currently selected lane"
+        queueTitle="Transfer queue"
         search={search}
         selectedItem={selectedItem}
         selectedLane={selectedLane}

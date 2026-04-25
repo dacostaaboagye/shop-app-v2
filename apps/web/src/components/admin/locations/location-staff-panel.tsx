@@ -16,6 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatCount } from "@/lib/display/format";
 import {
   adminLocationStaffQueryKey,
   fetchAdminLocationStaff,
@@ -36,7 +37,7 @@ export function LocationStaffPanel({ locationSlug }: { locationSlug: string }) {
       <CardHeader>
         <CardTitle>Assigned staff</CardTitle>
         <CardDescription>
-          Managers and workers currently attached to this location.
+          Managers and workers currently assigned to this location.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -73,6 +74,15 @@ export function LocationStaffPanel({ locationSlug }: { locationSlug: string }) {
 }
 
 function StaffRow({ member }: { member: AdminLocationStaffSummary }) {
+  const statusLabel =
+    member.status === "active"
+      ? "Active"
+      : member.status === "deactivated"
+        ? "Deactivated"
+        : member.status === "suspended"
+          ? "Suspended"
+          : member.status;
+
   return (
     <div className="flex flex-col gap-3 p-4 transition-colors hover:bg-accent/40 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 items-start gap-3">
@@ -84,12 +94,12 @@ function StaffRow({ member }: { member: AdminLocationStaffSummary }) {
         />
         <div className="min-w-0">
           <Link
-            className="block truncate text-sm font-medium hover:text-primary"
+            className="block text-balance text-sm font-medium hover:text-primary"
             href={getAdminStaffUserHref(member.userSlug)}
           >
             {member.firstName} {member.lastName}
           </Link>
-          <p className="truncate text-xs text-muted-foreground">
+          <p className="break-all text-xs text-muted-foreground">
             {member.email}
           </p>
         </div>
@@ -99,10 +109,10 @@ function StaffRow({ member }: { member: AdminLocationStaffSummary }) {
           {member.roleName}
         </Badge>
         <Badge variant={member.status === "active" ? "secondary" : "outline"}>
-          {member.status}
+          {statusLabel}
         </Badge>
-        <span className="text-xs tabular-nums text-muted-foreground">
-          {member.activeAssignmentCount} active assignment
+        <span className="type-support tabular-nums text-muted-foreground">
+          {formatCount(member.activeAssignmentCount)} active assignment
           {member.activeAssignmentCount === 1 ? "" : "s"}
         </span>
       </div>

@@ -3,7 +3,13 @@
 import { AppFormField } from "@/components/forms/app-form-field";
 import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { VariantFormApi } from "./variant-form.api";
 import type { VariantFormField } from "./variant-form.field";
 import { moneyString } from "./variant-form.validators";
@@ -120,15 +126,19 @@ export function VariantFormPricingFields({
             showErrors={showErrors}
           >
             <Select
-              id={field.name}
-              onChange={(e) =>
-                field.handleChange(e.target.value as "inherit" | "yes" | "no")
+              onValueChange={(value) =>
+                field.handleChange(value as "inherit" | "yes" | "no")
               }
               value={field.state.value as string}
             >
-              <option value="inherit">Inherit from product</option>
-              <option value="yes">Yes</option>
-              <option value="no">No</option>
+              <SelectTrigger id={field.name}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="inherit">Inherit from product</SelectItem>
+                <SelectItem value="yes">Yes</SelectItem>
+                <SelectItem value="no">No</SelectItem>
+              </SelectContent>
             </Select>
           </AppFormField>
         )}

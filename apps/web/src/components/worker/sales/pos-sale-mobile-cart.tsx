@@ -8,6 +8,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { formatCount } from "@/lib/display/format";
 import { formatMoney, toNumericAmount } from "@/lib/money/format-money";
 import { CartBody, type CartBodyProps } from "./pos-sale-cart-card";
 
@@ -30,28 +31,28 @@ export function PosSaleMobileCart({
 
   return (
     <>
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background p-3 shadow-lg lg:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 shadow-lg backdrop-blur lg:hidden">
         {cart.length === 0 ? (
-          <p className="text-center text-sm text-muted-foreground">
+          <p className="type-support text-center">
             Tap a variant to add it to your cart
           </p>
         ) : (
           <div className="flex items-center gap-3">
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                {itemCount}
+                {formatCount(itemCount)}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium leading-none">
-                  {cart.length} item{cart.length !== 1 ? "s" : ""}
+                <p className="text-sm font-semibold leading-none">
+                  {formatCount(cart.length)} Item{cart.length !== 1 ? "s" : ""}
                 </p>
-                <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-                  Total: {formatMoney(total, cartProps.moneyProfile)}
+                <p className="type-support mt-0.5 tabular-nums">
+                  Total {formatMoney(total, cartProps.moneyProfile)}
                 </p>
               </div>
             </div>
             <Button
-              className="gap-1.5"
+              className="shrink-0 gap-1.5"
               onClick={() => onOpenChange(true)}
               size="sm"
             >
@@ -70,7 +71,7 @@ export function PosSaleMobileCart({
               Cart
               {cart.length > 0 ? (
                 <span className="ml-1 rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
-                  {cart.length}
+                  {formatCount(cart.length)}
                 </span>
               ) : null}
             </SheetTitle>

@@ -129,7 +129,7 @@ export function AppNotificationsDialog({ onOpenChange, open }: AppDialogProps) {
             {unreadItems.length ? (
               <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium">Needs attention</p>
+                  <p className="type-data-value text-sm">Needs Attention</p>
                   {unreadCount ? (
                     <Button
                       type="button"
@@ -167,9 +167,7 @@ export function AppNotificationsDialog({ onOpenChange, open }: AppDialogProps) {
               <>
                 <Separator />
                 <div className="flex flex-col gap-3">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Earlier
-                  </p>
+                  <p className="type-support text-sm">Earlier</p>
                   {readItems.map((notification) => (
                     <NotificationFeedCard
                       key={notification.notificationKey}

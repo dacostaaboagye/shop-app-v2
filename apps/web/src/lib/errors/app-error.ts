@@ -134,7 +134,15 @@ export function getAppErrorMessage(
 ): string {
   const display = getAppErrorDisplay(error, options);
 
+  if (!shouldExposeErrorReference()) {
+    return display.detail;
+  }
+
   return display.requestId
     ? `${display.detail} Reference ID: ${display.requestId}.`
     : display.detail;
+}
+
+export function shouldExposeErrorReference() {
+  return process.env.NODE_ENV === "development";
 }

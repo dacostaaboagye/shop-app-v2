@@ -59,17 +59,13 @@ export function LocationScopePanel({
 
   if (locationScopes.length === 0) {
     return (
-      <Empty className="rounded-xl border border-dashed border-border bg-white p-10 shadow-sm">
+      <Empty className="rounded-xl border border-dashed border-border bg-card p-10 shadow-sm">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <MapPinned className="size-8 text-muted-foreground/40" />
           </EmptyMedia>
-          <EmptyTitle className="text-sm font-bold uppercase tracking-wider">
-            {title}
-          </EmptyTitle>
-          <EmptyDescription className="text-xs">
-            {emptyDescription}
-          </EmptyDescription>
+          <EmptyTitle>{title}</EmptyTitle>
+          <EmptyDescription>{emptyDescription}</EmptyDescription>
         </EmptyHeader>
       </Empty>
     );
@@ -83,15 +79,15 @@ export function LocationScopePanel({
     }
 
     return (
-      <Card className="rounded-xl border border-border bg-white shadow-sm overflow-hidden py-0">
+      <Card className="overflow-hidden rounded-xl border border-border bg-card py-0 shadow-sm">
         <CardHeader className="p-5">
-          <CardTitle className="flex items-center gap-3 text-sm font-bold uppercase tracking-wider">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <CardTitle className="flex min-w-0 items-center gap-3 text-base">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <MapPin className="size-4.5" />
             </div>
-            {scope.locationName}
+            <span className="min-w-0 text-balance">{scope.locationName}</span>
           </CardTitle>
-          <CardDescription className="text-[11px] font-medium text-muted-foreground/70 mt-1.5 pl-[48px] leading-relaxed">
+          <CardDescription className="mt-1.5 pl-[48px] leading-relaxed">
             {description}
           </CardDescription>
         </CardHeader>
@@ -100,23 +96,14 @@ export function LocationScopePanel({
   }
 
   return (
-    <Card className="rounded-xl border border-border bg-white shadow-sm overflow-hidden py-0">
+    <Card className="overflow-hidden rounded-xl border border-border bg-card py-0 shadow-sm">
       <CardHeader className="p-5 pb-2">
-        <CardTitle className="text-sm font-bold uppercase tracking-wider">
-          {title}
-        </CardTitle>
-        <CardDescription className="text-[11px] font-medium text-muted-foreground/70">
-          {description}
-        </CardDescription>
+        <CardTitle className="text-base">{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="p-5 pt-0">
         <div className="flex flex-col gap-2">
-          <Label
-            htmlFor={selectId}
-            className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
-          >
-            {label}
-          </Label>
+          <Label htmlFor={selectId}>{label}</Label>
           <Select
             value={selectedLocationSlug || allOptionValue}
             onValueChange={(value) =>

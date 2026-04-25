@@ -2,7 +2,12 @@
 
 import type { AdminPermissionSummary } from "@shop/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Badge } from "@/components/ui/badge";
+import {
+  AccessActionBadge,
+  AccessCountCell,
+  AccessNameCell,
+  AccessTextCell,
+} from "@/components/admin/access/access-table-cells";
 import {
   getPermissionActionLabel,
   getPermissionSurfaceLabel,
@@ -16,33 +21,26 @@ export const permissionTableColumns: Array<
     id: "key",
     header: "Permission",
     cell: ({ row }) => (
-      <div className="min-w-0">
-        <p className="font-mono text-sm text-foreground">{row.original.key}</p>
-        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-          {row.original.description}
-        </p>
-      </div>
+      <AccessNameCell
+        description={row.original.description}
+        name={row.original.key}
+      />
     ),
   },
   {
     id: "surface",
     header: "Surface",
     cell: ({ row }) => (
-      <span className="text-sm text-muted-foreground">
-        {getPermissionSurfaceLabel(row.original.key)}
-      </span>
+      <AccessTextCell value={getPermissionSurfaceLabel(row.original.key)} />
     ),
   },
   {
     id: "action",
     header: "Action",
     cell: ({ row }) => (
-      <Badge
-        className="border-border bg-muted/30 text-foreground"
-        variant="outline"
-      >
+      <AccessActionBadge>
         {getPermissionActionLabel(row.original.key)}
-      </Badge>
+      </AccessActionBadge>
     ),
   },
   {
@@ -50,9 +48,7 @@ export const permissionTableColumns: Array<
     id: "assignedRoleCount",
     header: "Assigned roles",
     cell: ({ row }) => (
-      <span className="text-sm tabular-nums text-muted-foreground">
-        {row.original.assignedRoleCount}
-      </span>
+      <AccessCountCell value={row.original.assignedRoleCount} />
     ),
   },
 ];

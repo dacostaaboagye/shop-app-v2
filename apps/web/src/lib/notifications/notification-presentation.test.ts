@@ -5,6 +5,7 @@ import {
   getNotificationActorLabel,
   getNotificationEventLabel,
   getNotificationPresentation,
+  getNotificationStatusLabel,
 } from "./notification-presentation";
 
 describe("notification presentation helpers", () => {
@@ -24,6 +25,11 @@ describe("notification presentation helpers", () => {
       "In transit",
     );
     assert.equal(getNotificationEventLabel("transfer.received"), "Received");
+  });
+
+  it("maps notification status labels to user-facing copy", () => {
+    assert.equal(getNotificationStatusLabel("unread"), "Needs Attention");
+    assert.equal(getNotificationStatusLabel("read"), "Read");
   });
 
   it("formats actor labels", () => {

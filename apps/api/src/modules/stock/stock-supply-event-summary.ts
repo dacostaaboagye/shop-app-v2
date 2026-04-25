@@ -10,6 +10,7 @@ type StockSupplyEventAction =
 
 export function formatStockSupplyEventSummary(input: {
   action: StockSupplyEventAction;
+  adminOverrideReason?: string | null;
   gtnReference?: string | null;
   supplyRequest: SupplyRequestRow;
 }): string {
@@ -18,8 +19,11 @@ export function formatStockSupplyEventSummary(input: {
   const quantity = getActionQuantity(request);
   const route = `${request.sourceLocationName} to ${request.locationName}`;
   const gtn = input.gtnReference ? ` GTN ${input.gtnReference}.` : "";
+  const override = input.adminOverrideReason
+    ? ` Admin override reason: ${input.adminOverrideReason}.`
+    : "";
 
-  return `${request.reference}: ${product} ${input.action} for ${quantity} unit${quantity === 1 ? "" : "s"} from ${route}.${gtn}`;
+  return `${request.reference}: ${product} ${input.action} for ${quantity} unit${quantity === 1 ? "" : "s"} from ${route}.${gtn}${override}`;
 }
 
 function getActionQuantity(request: SupplyRequestRow): number {

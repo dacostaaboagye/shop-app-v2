@@ -2,9 +2,12 @@
 
 import type { LocationAssignmentSummary } from "@shop/contracts";
 import { UserCheck } from "lucide-react";
+import { AppEmptyState } from "@/components/system/app-empty-state";
 import { AppTableWrapper } from "@/components/system/app-table-wrapper";
 import { Badge } from "@/components/ui/badge";
+import { formatCount, formatSupportText } from "@/lib/display/format";
 import { cn } from "@/lib/utils";
+import { formatAssignmentEventLabel } from "./manager-assignments-support";
 
 export function ManagerAssignmentCurrentList({
   items,
@@ -15,67 +18,63 @@ export function ManagerAssignmentCurrentList({
 }) {
   if (items.length === 0) {
     return (
-      <div className="flex flex-col gap-4 rounded-xl border border-dashed border-border/60 bg-muted/5 p-12 text-center shadow-sm">
-        <h3 className="text-lg font-bold text-foreground">No assignments</h3>
-        <p className="mx-auto max-w-sm text-sm text-muted-foreground/80">
-          No variants are currently assigned at{" "}
-          {locationName ?? "this location"}.
-        </p>
-      </div>
+      <AppEmptyState
+        description={`No variants are currently assigned at ${locationName ?? "this location"}.`}
+        icon={UserCheck}
+        title="No assignments yet"
+      />
     );
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">
-        Current assignments ({items.length})
+      <h3 className="type-data-label">
+        Current Assignments ({formatCount(items.length)})
       </h3>
       <AppTableWrapper>
         {items.map((item, index) => (
           <div
             key={`${item.skuId}-${item.workerId}`}
             className={cn(
-              "flex flex-wrap items-center justify-between gap-4 p-4 transition-all hover:bg-muted/30 group",
+              "group flex flex-wrap items-center justify-between gap-4 p-4 transition-all hover:bg-muted/30",
               index !== items.length - 1 && "border-b border-border/50",
             )}
           >
-            <div className="flex items-start gap-4 min-w-0">
+            <div className="flex min-w-0 items-start gap-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/5 text-primary ring-1 ring-primary/10 transition-colors group-hover:bg-primary/10">
                 <UserCheck className="size-5" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-bold text-foreground truncate">
+                <p className="type-data-value text-balance">
                   {item.productName}
                 </p>
-                <p className="mt-0.5 text-xs font-medium text-muted-foreground/80">
-                  {item.variantName}
+                <p className="type-support mt-0.5 text-pretty">
+                  {formatSupportText(item.variantName)}
                 </p>
-                <p className="mt-1 text-[10px] font-mono font-bold uppercase tracking-widest text-muted-foreground/40">
-                  {item.sku}
-                </p>
+                <p className="type-identifier mt-1 break-all">{item.sku}</p>
               </div>
             </div>
-            <div className="flex items-center gap-6 shrink-0">
-              <div className="flex flex-col items-end min-w-[120px]">
-                <p className="text-sm font-bold text-foreground truncate max-w-[150px]">
+            <div className="flex min-w-0 flex-wrap items-center gap-4 sm:gap-6">
+              <div className="flex min-w-0 flex-col sm:items-end">
+                <p className="type-data-value text-balance sm:text-right">
                   {item.workerName}
                 </p>
-                <p className="text-[10px] font-medium text-muted-foreground/60">
-                  {item.workerEmail}
+                <p className="type-support break-all text-xs sm:text-right">
+                  {formatSupportText(item.workerEmail)}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <Badge
-                  className="rounded-md font-bold uppercase tracking-wider text-[10px]"
+                  className="rounded-md text-[10px] font-semibold"
                   variant="secondary"
                 >
-                  QTY {item.quantity}
+                  Qty {formatCount(item.quantity)}
                 </Badge>
                 <Badge
-                  className="rounded-md font-bold uppercase tracking-wider text-[10px]"
+                  className="rounded-md text-[10px] font-semibold"
                   variant="outline"
                 >
-                  {item.eventType.replaceAll("_", " ")}
+                  {formatAssignmentEventLabel(item.eventType)}
                 </Badge>
               </div>
             </div>

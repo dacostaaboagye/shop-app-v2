@@ -1,7 +1,10 @@
 import type { StockSupplyRequestResponse } from "@shop/contracts";
 import { ClipboardList } from "lucide-react";
+import {
+  SupplyRequestFilterSummary,
+  SupplyRequestNoResults,
+} from "@/components/stock/supply-request-list-surfaces";
 import { AppEmptyState } from "@/components/system/app-empty-state";
-import { Button } from "@/components/ui/button";
 import { WorkerSupplyRequestCard } from "./worker-supply-request-card";
 import { CompactWorkerSupplyRequestList } from "./worker-supply-request-compact-list";
 import { WorkerSupplyRequestToolbar } from "./worker-supply-request-toolbar";
@@ -61,11 +64,10 @@ export function WorkerSupplyRequestList({
         viewMode={viewMode}
       />
       {hasActiveFilter ? (
-        <p className="text-xs text-muted-foreground">
-          {filteredItems.length === 0
-            ? "No requests match your filters."
-            : `Showing ${filteredItems.length} of ${allItems.length}`}
-        </p>
+        <SupplyRequestFilterSummary
+          filteredCount={filteredItems.length}
+          totalCount={allItems.length}
+        />
       ) : null}
       <WorkerSupplyRequestResults
         filteredItems={filteredItems}
@@ -92,18 +94,7 @@ function WorkerSupplyRequestResults({
   viewMode: WorkerViewMode;
 }) {
   if (filteredItems.length === 0) {
-    return (
-      <AppEmptyState
-        action={
-          <Button onClick={onClearFilters} size="sm" variant="outline">
-            Clear filters
-          </Button>
-        }
-        description="Try a different search term or status filter."
-        kind="no-results"
-        title="No matching requests"
-      />
-    );
+    return <SupplyRequestNoResults onClearFilters={onClearFilters} />;
   }
 
   if (viewMode === "compact") {

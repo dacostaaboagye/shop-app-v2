@@ -5,10 +5,13 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import {
+  CatalogFormCard,
+  CatalogFormError,
+} from "@/components/admin/catalog/catalog-form-surfaces";
 import { AppFormField } from "@/components/forms/app-form-field";
 import { AppBanner } from "@/components/system/app-banner";
 import { FloatingActionBar } from "@/components/system/floating-action-bar";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -109,16 +112,10 @@ export function RoleEditorForm({
         />
       ) : null}
 
-      {roleMutation.isError ? (
-        <Alert variant="destructive">
-          <AlertTitle>Unable to save role</AlertTitle>
-          <AlertDescription>
-            {roleMutation.error instanceof Error
-              ? roleMutation.error.message
-              : "Failed to save role."}
-          </AlertDescription>
-        </Alert>
-      ) : null}
+      <CatalogFormError
+        error={roleMutation.error}
+        title="Unable to save role"
+      />
 
       <FieldGroup>
         <form.Field
@@ -187,14 +184,10 @@ export function RoleEditorForm({
 
       <form.Field name="permissionKeys">
         {(field) => (
-          <section className="flex flex-col gap-3">
-            <div>
-              <h2 className="text-base font-bold">Permission grants</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Select the page visibility and action permissions this role
-                should unlock.
-              </p>
-            </div>
+          <CatalogFormCard
+            description="Select the page visibility and action permissions this role should unlock."
+            title="Permission grants"
+          >
             <RolePermissionSelector
               disabled={roleMutation.isPending}
               onChange={field.handleChange}
@@ -203,7 +196,7 @@ export function RoleEditorForm({
               selectedKeys={field.state.value}
               setSearchValue={setPermissionSearch}
             />
-          </section>
+          </CatalogFormCard>
         )}
       </form.Field>
 

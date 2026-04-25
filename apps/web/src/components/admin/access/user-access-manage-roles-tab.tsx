@@ -4,19 +4,37 @@ import type {
   AdminRoleSummary,
   AdminUserRoleAssignment,
 } from "@shop/contracts";
-import { MapPin, Search, ShieldCheck, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { MapPin, ShieldCheck, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+  AccessActionBadge,
+  AccessCountCell,
+  AccessNameCell,
+  AccessTextCell,
+} from "@/components/admin/access/access-table-cells";
+import { AdminDirectoryFilterPanel } from "@/components/admin/admin-directory-filter-panel";
+import { CatalogFormCard } from "@/components/admin/catalog/catalog-form-surfaces";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { formatAdminDate, ROLE_SCOPE_BADGE_CLASSES } from "@/lib/admin-models";
+import { formatCount } from "@/lib/display/format";
+
+function AssignmentScope({
+  locationName,
+}: {
+  locationName?: string | null | undefined;
+}) {
+  return locationName ? (
+    <span className="type-support flex items-center gap-1 text-muted-foreground">
+      <MapPin className="size-3" />
+      {locationName}
+    </span>
+  ) : (
+    <Badge className="text-[0.65rem]" variant="secondary">
+      Global
+    </Badge>
+  );
+}
 
 export function UserAccessManageRolesTab({
   allRoles,
@@ -32,8 +50,9 @@ export function UserAccessManageRolesTab({
   roleAssignments: readonly AdminUserRoleAssignment[];
 }) {
   const [roleSearch, setRoleSearch] = useState("");
-  const assignedSlugs = new Set(
-    roleAssignments.map((assignment) => assignment.roleSlug),
+  const assignedSlugs = useMemo(
+    () => new Set(roleAssignments.map((assignment) => assignment.roleSlug)),
+    [roleAssignments],
   );
   const normalizedQuery = roleSearch.trim().toLowerCase();
   const filteredRoles = allRoles.filter((role) =>
@@ -46,87 +65,65 @@ export function UserAccessManageRolesTab({
 
   return (
     <div className="flex flex-col gap-4">
-      <Card className="border-border/70 bg-card shadow-none">
-        <CardHeader>
-          <CardTitle>Current assignments</CardTitle>
-          <CardDescription>
-            Active role assignments for this user. Revocation is immediate and
-            audited.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {roleAssignments.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No roles currently assigned.
-            </p>
-          ) : (
-            <div className="flex flex-col divide-y divide-border/60">
-              {roleAssignments.map((assignment) => (
-                <div
-                  key={`${assignment.roleSlug}:${assignment.locationSlug ?? "global"}`}
-                  className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
-                >
-                  <div className="min-w-0">
-                    <p className="font-medium leading-tight">
-                      {assignment.roleName}
-                    </p>
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <span className="font-mono">{assignment.roleSlug}</span>
-                      {assignment.locationName ? (
-                        <span className="flex items-center gap-1">
-                          <MapPin className="size-3" />
-                          {assignment.locationName}
-                        </span>
-                      ) : (
-                        <Badge className="text-[0.65rem]" variant="secondary">
-                          Global
-                        </Badge>
-                      )}
-                      <span>
-                        Assigned {formatAdminDate(assignment.assignedAt)}
-                        {assignment.assignedByName
-                          ? ` by ${assignment.assignedByName}`
-                          : ""}
-                      </span>
-                    </div>
+      <CatalogFormCard
+        description="Role assignments take effect immediately and every revoke action is audited."
+        title="Current assignments"
+      >
+        {roleAssignments.length === 0 ? (
+          <p className="type-support text-muted-foreground">
+            No roles are currently assigned.
+          </p>
+        ) : (
+          <div className="flex flex-col divide-y divide-border/60">
+            {roleAssignments.map((assignment) => (
+              <div
+                key={`${assignment.roleSlug}:${assignment.locationSlug ?? "global"}`}
+                className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+              >
+                <div className="min-w-0 flex-1">
+                  <AccessNameCell
+                    name={assignment.roleName}
+                    slug={assignment.roleSlug}
+                  />
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <AssignmentScope locationName={assignment.locationName} />
+                    <AccessTextCell
+                      value={`Assigned ${formatAdminDate(assignment.assignedAt)}${assignment.assignedByName ? ` by ${assignment.assignedByName}` : ""}`}
+                    />
                   </div>
-                  {canManage ? (
-                    <Button
-                      onClick={() => onRevokeRole(assignment)}
-                      size="sm"
-                      type="button"
-                      variant="outline"
-                    >
-                      <Trash2 className="size-3.5" />
-                      Revoke
-                    </Button>
-                  ) : null}
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                {canManage ? (
+                  <Button
+                    onClick={() => onRevokeRole(assignment)}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    <Trash2 className="size-3.5" />
+                    Revoke
+                  </Button>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        )}
+      </CatalogFormCard>
 
       {canManage ? (
-        <Card className="border-border/70 bg-card shadow-none">
-          <CardHeader>
-            <CardTitle>Role catalogue</CardTitle>
-            <CardDescription>
-              Assign a role to extend this user's portal access and permissions.
-              Manager and worker roles are always scoped to a location.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="pl-9"
-                onChange={(event) => setRoleSearch(event.target.value)}
-                placeholder="Search roles by name, slug, or description"
-                value={roleSearch}
-              />
-            </div>
+        <CatalogFormCard
+          description="Assign a role to extend this user's portal access. Manager and worker roles remain location-scoped."
+          title="Role catalogue"
+        >
+          <div className="flex flex-col gap-3">
+            <AdminDirectoryFilterPanel
+              hasFilters={normalizedQuery !== ""}
+              onClear={() => setRoleSearch("")}
+              onDraftSearchChange={setRoleSearch}
+              placeholder="Role name, slug, or description"
+              searchId="user-access-role-search"
+              summary={`${formatCount(filteredRoles.length)} of ${formatCount(allRoles.length)} roles visible`}
+              value={roleSearch}
+            />
 
             {filteredRoles.length === 0 ? (
               <p className="py-4 text-center text-sm text-muted-foreground">
@@ -142,11 +139,21 @@ export function UserAccessManageRolesTab({
                       key={role.slug}
                       className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
                     >
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-medium leading-tight">
-                            {role.name}
-                          </p>
+                      <div className="min-w-0 flex-1">
+                        <AccessNameCell
+                          description={role.description}
+                          name={role.name}
+                          slug={role.slug}
+                        />
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <AccessActionBadge>
+                            <AccessCountCell value={role.permissionCount} />{" "}
+                            permissions
+                          </AccessActionBadge>
+                          <AccessActionBadge>
+                            <AccessCountCell value={role.assignedUserCount} />{" "}
+                            users
+                          </AccessActionBadge>
                           {role.isSystem ? (
                             <Badge
                               className="text-[0.65rem]"
@@ -164,13 +171,6 @@ export function UserAccessManageRolesTab({
                             </Badge>
                           ) : null}
                         </div>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {role.description}
-                        </p>
-                        <p className="mt-0.5 font-mono text-xs text-muted-foreground/70">
-                          {role.slug} · {role.permissionCount} permissions ·{" "}
-                          {role.assignedUserCount} users
-                        </p>
                       </div>
                       {!isAssigned ? (
                         <Button
@@ -188,8 +188,8 @@ export function UserAccessManageRolesTab({
                 })}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </CatalogFormCard>
       ) : null}
     </div>
   );

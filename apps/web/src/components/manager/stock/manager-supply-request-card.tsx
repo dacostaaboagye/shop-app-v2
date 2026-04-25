@@ -1,6 +1,11 @@
 import type { StockSupplyRequestResponse } from "@shop/contracts";
+import { ArrowRight, CheckCircle2, XCircle } from "lucide-react";
+import {
+  SupplyRequestDecisionButton,
+  SupplyRequestPrimaryButton,
+  SupplyRequestSplitActions,
+} from "@/components/stock/supply-request-actions";
 import { SupplyRequestSummaryCard } from "@/components/stock/supply-request-summary-card";
-import { Button } from "@/components/ui/button";
 import type { SupplyRequestAction } from "./manager-supply-requests.support";
 import { statusMeta } from "./manager-supply-requests.support";
 
@@ -40,36 +45,32 @@ function ManagerActions({
 }) {
   if (item.status === "pending") {
     return (
-      <div className="flex flex-wrap gap-2">
-        <Button
-          className="min-w-[120px] flex-1 gap-2 border-success text-success"
+      <SupplyRequestSplitActions>
+        <SupplyRequestDecisionButton
+          className="border-success text-success"
           onClick={() => onAction("approve")}
-          size="lg"
           variant="outline"
         >
+          <CheckCircle2 className="size-4" />
           Approve
-        </Button>
-        <Button
-          className="min-w-[120px] flex-1 gap-2"
+        </SupplyRequestDecisionButton>
+        <SupplyRequestDecisionButton
           onClick={() => onAction("reject")}
-          size="lg"
           variant="destructive"
         >
+          <XCircle className="size-4" />
           Reject
-        </Button>
-      </div>
+        </SupplyRequestDecisionButton>
+      </SupplyRequestSplitActions>
     );
   }
 
   if (item.status === "approved") {
     return (
-      <Button
-        className="w-full gap-2"
-        onClick={() => onAction("dispatch")}
-        size="lg"
-      >
+      <SupplyRequestPrimaryButton onClick={() => onAction("dispatch")}>
+        <ArrowRight className="size-4" />
         Dispatch goods
-      </Button>
+      </SupplyRequestPrimaryButton>
     );
   }
 

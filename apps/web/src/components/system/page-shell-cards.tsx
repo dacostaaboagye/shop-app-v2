@@ -23,25 +23,25 @@ export function StatCard({
   const card = (
     <div
       className={cn(
-        "group relative flex h-full min-h-[160px] flex-col justify-between overflow-hidden rounded-xl border border-border/60 bg-white p-8 shadow-sm transition-all hover:border-border/80 hover:shadow-md",
+        "group relative flex h-full min-h-[160px] flex-col justify-between overflow-hidden rounded-xl border border-border/60 bg-card p-6 shadow-sm transition-all hover:border-border/80 hover:shadow-md",
         href && "cursor-pointer active:scale-[0.98]",
       )}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex flex-col gap-4">
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">
-            {label}
-          </p>
-          <h3 className="font-heading text-4xl font-bold tracking-tight tabular-nums text-foreground capitalize">
-            {value}
-          </h3>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
+        <div className="flex min-w-0 flex-col gap-3">
+          <p className="type-kicker text-muted-foreground">{label}</p>
+          <div className="min-w-0 max-w-full overflow-hidden">
+            <h3 className="type-stat-value overflow-wrap-anywhere text-foreground">
+              {value}
+            </h3>
+          </div>
         </div>
-        <div className="flex size-14 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-all group-hover:bg-primary/10 group-hover:text-primary">
-          <Icon className="size-6" />
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-all group-hover:bg-primary/10 group-hover:text-primary">
+          <Icon className="size-5" />
         </div>
       </div>
       {description && (
-        <p className="mt-6 text-xs font-bold text-muted-foreground/80">
+        <p className="type-support mt-5 text-xs overflow-wrap-anywhere">
           {description}
         </p>
       )}
@@ -73,24 +73,18 @@ export function InsightCard({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border border-border/50 bg-white p-10 shadow-sm",
+        "overflow-hidden rounded-xl border border-border/50 bg-card p-10 shadow-sm",
         className,
       )}
     >
-      <div className="mb-10 flex flex-col gap-2">
-        <p className="font-heading text-[10px] font-black uppercase tracking-[0.4em] text-primary">
-          {eyebrow}
-        </p>
-        <h3 className="font-heading text-3xl font-bold tracking-tight text-foreground">
+      <div className="mb-10 min-w-0 flex flex-col gap-2">
+        <p className="type-kicker text-[var(--kicker-foreground)]">{eyebrow}</p>
+        <h3 className="type-section-title overflow-wrap-anywhere text-foreground">
           {title}
         </h3>
-        {description && (
-          <p className="text-base font-medium text-muted-foreground/80">
-            {description}
-          </p>
-        )}
+        {description && <p className="type-page-description">{description}</p>}
       </div>
-      <div className="relative z-10">{children}</div>
+      <div className="relative z-10 min-w-0">{children}</div>
     </div>
   );
 }
@@ -108,21 +102,19 @@ export function MenuCard({
 }) {
   return (
     <Link href={href} className="group block h-full">
-      <Card className="h-full border border-border/50 bg-white p-8 shadow-sm transition-all hover:bg-muted/50">
+      <Card className="h-full border border-border/50 bg-card p-8 shadow-sm transition-all hover:bg-muted/50">
         <CardHeader className="p-0 mb-6">
-          <div className="flex items-center gap-4">
-            <div className="flex size-12 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-all group-hover:bg-primary/10 group-hover:text-primary">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-all group-hover:bg-primary/10 group-hover:text-primary">
               <Icon className="size-5" />
             </div>
-            <CardTitle className="text-xl font-bold tracking-tight text-foreground">
+            <CardTitle className="type-section-title overflow-wrap-anywhere text-xl text-foreground">
               {title}
             </CardTitle>
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <p className="text-sm font-medium leading-relaxed text-muted-foreground/80">
-            {description}
-          </p>
+          <p className="type-support">{description}</p>
         </CardContent>
       </Card>
     </Link>

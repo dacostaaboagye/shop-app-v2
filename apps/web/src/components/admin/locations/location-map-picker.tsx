@@ -229,9 +229,7 @@ export function LocationMapPicker({ onChange, value }: LocationMapPickerProps) {
 
       {address ? (
         <div className="rounded-lg border border-border/70 bg-muted/20 px-3 py-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Address
-          </p>
+          <p className="type-data-label">Address</p>
           <Input
             className="mt-1 h-8 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
             onChange={(event) => handleAddressInputChange(event.target.value)}

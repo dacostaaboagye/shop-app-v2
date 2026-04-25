@@ -10,11 +10,11 @@ import {
   type AppDataTableSort,
 } from "@/components/data-table/app-data-table";
 import { useAuthorization } from "@/components/providers/authorization-provider";
+import { StockWorkspaceTableSkeleton } from "@/components/stock/stock-workspace-feedback";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { PermissionGate } from "@/components/system/permission-gate";
 import { buttonVariants } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   adminBrandsQueryKey,
   fetchAdminBrands,
@@ -139,10 +139,8 @@ export function BrandsPageClient() {
       />
 
       {brandsQuery.isPending && !brandsQuery.data ? (
-        <div className="flex flex-col gap-2">
-          {BRAND_SKELETON_KEYS.map((key) => (
-            <Skeleton key={key} className="h-11 w-full" />
-          ))}
+        <div className="rounded-xl border border-border/60 bg-card shadow-sm">
+          <StockWorkspaceTableSkeleton keys={BRAND_SKELETON_KEYS} />
         </div>
       ) : (
         <>

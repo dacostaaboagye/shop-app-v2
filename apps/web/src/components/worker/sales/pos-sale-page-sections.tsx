@@ -4,6 +4,7 @@ import type { CurrentAssignment } from "@shop/contracts";
 import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import { ProductThumbnail } from "@/components/system/product-thumbnail";
 import { Badge } from "@/components/ui/badge";
+import { formatCount } from "@/lib/display/format";
 import {
   formatMoney,
   type MoneyProfile,
@@ -32,7 +33,7 @@ export function VariantRow({
       className={cn(
         "group relative flex w-full items-center gap-4 p-4 text-left transition-all hover:bg-muted",
         unavailable && "cursor-not-allowed opacity-50",
-        inCart && "bg-white",
+        inCart && "bg-muted/35",
       )}
     >
       <div className="relative size-12 shrink-0 sm:size-14">
@@ -57,16 +58,12 @@ export function VariantRow({
         onClick={onAdd}
         type="button"
       >
-        <div className="min-w-0">
-          <h4 className="truncate text-sm font-bold leading-tight group-hover:text-primary transition-colors">
+        <div className="min-w-0 flex flex-col gap-1">
+          <h4 className="text-balance text-sm font-semibold leading-tight transition-colors group-hover:text-primary">
             {assignment.productName}
           </h4>
-          <p className="mt-1 truncate text-xs font-medium text-muted-foreground/80">
-            {assignment.variantName}
-          </p>
-          <p className="mt-1 font-mono text-[9px] uppercase tracking-wider text-muted-foreground/40">
-            {assignment.sku}
-          </p>
+          <p className="type-support text-pretty">{assignment.variantName}</p>
+          <p className="type-identifier break-all">{assignment.sku}</p>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
           <p className="text-sm font-bold tabular-nums">
@@ -82,7 +79,7 @@ export function VariantRow({
                   : "bg-success text-success-foreground",
             )}
           >
-            {assignment.availableQuantity} avail.
+            {formatCount(assignment.availableQuantity)} Available
           </Badge>
         </div>
       </button>
@@ -108,7 +105,7 @@ export function CartRow({
   const isCustomPrice = item.unitPrice !== item.assignment.sellingPrice;
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-border bg-white p-4 shadow-sm transition-all hover:border-primary/30">
+    <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-primary/30">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-1 items-start gap-3">
           <ProductThumbnail
@@ -117,13 +114,14 @@ export function CartRow({
             productName={item.assignment.productName}
             variantName={item.assignment.variantName}
           />
-          <div className="min-w-0">
-            <h4 className="truncate text-sm font-bold leading-tight">
+          <div className="min-w-0 flex flex-col gap-1">
+            <h4 className="text-balance text-sm font-semibold leading-tight">
               {item.assignment.productName}
             </h4>
-            <p className="mt-0.5 truncate text-xs font-medium text-muted-foreground/80">
+            <p className="type-support text-pretty">
               {item.assignment.variantName}
             </p>
+            <p className="type-identifier break-all">{item.assignment.sku}</p>
           </div>
         </div>
         <button
@@ -137,8 +135,7 @@ export function CartRow({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
-        {/* Quantity stepper */}
-        <div className="flex items-center gap-1 rounded-xl bg-white p-1 ring-1 ring-border shadow-sm">
+        <div className="flex items-center gap-1 rounded-xl bg-background p-1 ring-1 ring-border shadow-sm">
           <button
             aria-label="Decrease quantity"
             className="flex size-8 items-center justify-center rounded-lg bg-background text-muted-foreground transition-all hover:text-foreground active:scale-90 disabled:opacity-30 shadow-sm"
@@ -162,13 +159,10 @@ export function CartRow({
           </button>
         </div>
 
-        {/* Price & Total */}
-        <div className="flex flex-1 items-center justify-end gap-4">
-          <div className="flex flex-col items-end gap-1">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-4">
+          <div className="flex min-w-0 flex-col gap-1 sm:items-end">
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-                Unit Price
-              </span>
+              <span className="type-data-label">Unit Price</span>
               <div className="relative">
                 <input
                   aria-label="Unit price"
@@ -188,7 +182,7 @@ export function CartRow({
             </div>
             {isCustomPrice && (
               <button
-                className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline underline-offset-4"
+                className="type-support text-primary underline-offset-4 hover:underline sm:text-right"
                 onClick={() => onPriceChange(item.assignment.sellingPrice)}
                 title="Reset to catalog price"
                 type="button"
@@ -198,10 +192,8 @@ export function CartRow({
             )}
           </div>
 
-          <div className="flex flex-col items-end gap-0.5 min-w-[80px]">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-              Subtotal
-            </span>
+          <div className="flex min-w-[80px] flex-col gap-0.5 sm:items-end">
+            <span className="type-data-label">Subtotal</span>
             <p className="text-sm font-bold tabular-nums text-primary">
               {formatMoney(lineTotal, moneyProfile)}
             </p>
@@ -215,8 +207,8 @@ export function CartRow({
 export function CartTitleBadge({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
-    <Badge className="ml-auto bg-primary text-primary-foreground border-none rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-sm">
-      {count} item{count !== 1 ? "s" : ""}
+    <Badge className="ml-auto rounded-lg border-none bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground shadow-sm">
+      {formatCount(count)} Item{count !== 1 ? "s" : ""}
     </Badge>
   );
 }

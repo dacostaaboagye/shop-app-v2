@@ -1,9 +1,9 @@
 "use client";
 
 import { Building2, MapPin } from "lucide-react";
+import { AppFormField } from "@/components/forms/app-form-field";
 import { AppEmptyState } from "@/components/system/app-empty-state";
 import { AppErrorBanner } from "@/components/system/app-error";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -18,10 +18,8 @@ export function TargetSummary({ target }: { target: SupplyRequestTarget }) {
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-white px-3 py-3 shadow-sm">
       <div>
         <p className="font-medium">{target.productName}</p>
-        <p className="text-sm text-muted-foreground">{target.variantName}</p>
-        <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground/40">
-          {target.sku}
-        </p>
+        <p className="type-support">{target.variantName}</p>
+        <p className="type-identifier mt-1">{target.sku}</p>
       </div>
       <div className="flex items-start gap-2 rounded-lg bg-muted/30 px-2.5 py-2 text-xs text-muted-foreground">
         <MapPin className="mt-0.5 size-3.5 shrink-0" />
@@ -64,8 +62,11 @@ export function SourceLocationField({
       ?.locationName ?? null;
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={sourceId}>Request from</Label>
+    <AppFormField
+      description={`Only source locations eligible to send stock into ${target.locationName} are shown.`}
+      inputId={sourceId}
+      label="Request from"
+    >
       {sourceLocationsQuery.isError ? (
         <AppErrorBanner
           detail="Eligible source locations could not be loaded."
@@ -106,10 +107,6 @@ export function SourceLocationField({
           </SelectContent>
         </Select>
       )}
-      <p className="text-xs text-muted-foreground">
-        Only source locations eligible to send stock into {target.locationName}{" "}
-        are shown.
-      </p>
-    </div>
+    </AppFormField>
   );
 }

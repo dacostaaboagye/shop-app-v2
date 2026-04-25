@@ -8,6 +8,7 @@ import { useState } from "react";
 import { AppFormField } from "@/components/forms/app-form-field";
 import { AuthGoogleOAuthButton } from "@/components/forms/auth-google-oauth-button";
 import { AppErrorBanner } from "@/components/system/app-error";
+import { AuthSectionDivider } from "@/components/system/auth-surfaces";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -52,14 +53,7 @@ export function AuthLoginForm() {
   return (
     <div className="flex flex-col gap-4">
       <AuthGoogleOAuthButton />
-
-      <div className="relative flex items-center gap-4 py-2">
-        <div className="flex-1 border-t border-border/60" />
-        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">
-          or
-        </span>
-        <div className="flex-1 border-t border-border/60" />
-      </div>
+      <AuthSectionDivider />
 
       <form
         className="flex flex-col gap-4"
@@ -75,7 +69,6 @@ export function AuthLoginForm() {
           <form.Field
             name="email"
             validators={{
-              // only validate on blur if the user has typed something
               onBlur: ({ value }) =>
                 value.trim() ? validateEmail(value) : undefined,
               onSubmit: ({ value }) => validateEmail(value),
@@ -96,7 +89,7 @@ export function AuthLoginForm() {
                   id={field.name}
                   name={field.name}
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(event) => field.handleChange(event.target.value)}
                   placeholder="name@company.com"
                   type="email"
                   value={field.state.value}
@@ -128,7 +121,7 @@ export function AuthLoginForm() {
                   id={field.name}
                   name={field.name}
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(event) => field.handleChange(event.target.value)}
                   placeholder="Enter your password"
                   value={field.state.value}
                 />
@@ -139,8 +132,8 @@ export function AuthLoginForm() {
 
         <div className="flex justify-end -mt-1">
           <Link
-            href={toRoute("/forgot-password")}
             className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            href={toRoute("/forgot-password")}
           >
             Forgot password?
           </Link>
@@ -162,7 +155,7 @@ export function AuthLoginForm() {
         >
           {({ canSubmit, isSubmitting }) => (
             <Button
-              className="w-full rounded-xl shadow-lg shadow-primary/20"
+              className="w-full"
               disabled={!canSubmit || isSubmitting}
               size="lg"
               type="submit"
@@ -170,11 +163,11 @@ export function AuthLoginForm() {
               {isSubmitting ? (
                 <>
                   <Spinner data-icon="inline-start" />
-                  Signing in…
+                  Signing In...
                 </>
               ) : (
                 <>
-                  Sign in
+                  Sign In
                   <LogIn className="ml-2 h-4 w-4" />
                 </>
               )}
@@ -188,8 +181,9 @@ export function AuthLoginForm() {
 
 function validateEmail(value: string) {
   if (!value.trim()) return "Enter your email address.";
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
     return "Enter a valid email address.";
+  }
   return undefined;
 }
 

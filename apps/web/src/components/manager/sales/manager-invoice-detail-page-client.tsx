@@ -5,6 +5,7 @@ import { SalesDocumentWorkspace } from "@/components/sales/sales-document-worksp
 import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatPublicReference } from "@/lib/display/format";
 import {
   fetchManagerInvoice,
   invoiceQueryKey,
@@ -27,8 +28,8 @@ export function ManagerInvoiceDetailPageClient({
       <PageHeader
         backHref={toRoute("/manager/sales")}
         backLabel="Sales"
-        description="Review the sale record, official PDF, evidence, and document actions."
-        title={reference}
+        description="Review the sale record, official PDF, and document actions."
+        title={formatPublicReference(reference)}
       />
 
       {invoiceQuery.isPending ? (

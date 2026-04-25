@@ -25,7 +25,7 @@ export function DocumentErrors({
       ) : null}
       {hasInvalidSnapshot ? (
         <AppErrorBanner
-          detail="This issued document snapshot could not be read safely. Regenerate support action is required before printing or sharing."
+          detail="This issued document snapshot could not be read safely. Printing and sharing stay unavailable until support regenerates it."
           title="Official document snapshot is invalid"
         />
       ) : null}

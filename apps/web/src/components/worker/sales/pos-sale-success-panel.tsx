@@ -95,19 +95,20 @@ export function SaleSuccessPanel({
           <CheckCircle className="size-6" />
         </div>
         <CardTitle className="text-lg">Sale confirmed</CardTitle>
-        <p className="font-mono text-sm text-muted-foreground">
-          {invoice.reference}
-        </p>
+        <p className="type-identifier text-center">{invoice.reference}</p>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <div className="divide-y divide-border rounded-xl border border-border">
           {invoice.lines.map((line) => (
-            <div key={line.skuId} className="flex items-center gap-3 px-3 py-3">
+            <div
+              key={line.skuId}
+              className="flex items-start gap-3 px-3 py-3 sm:items-center"
+            >
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">
+                <p className="text-balance text-sm font-medium">
                   {line.skuSnapshot.productName}
                 </p>
-                <p className="truncate text-xs text-muted-foreground">
+                <p className="type-support text-pretty">
                   {line.skuSnapshot.variantName} &times; {line.quantity} @{" "}
                   {formatMoney(line.unitPrice, moneyProfile)}
                 </p>
@@ -136,7 +137,7 @@ export function SaleSuccessPanel({
         <PosSaleReturnDialog invoice={invoice} moneyProfile={moneyProfile} />
         <Link
           className={buttonVariants({
-            className: "flex-1",
+            className: "min-w-0 flex-1",
             variant: "outline",
           })}
           href={toRoute(
@@ -147,7 +148,7 @@ export function SaleSuccessPanel({
           View PDF
         </Link>
         <Button
-          className="flex-1"
+          className="min-w-0 flex-1"
           disabled={isDocumentPending}
           onClick={() => void handleDownload()}
           variant="outline"
@@ -156,7 +157,7 @@ export function SaleSuccessPanel({
           Download
         </Button>
         <Button
-          className="flex-1"
+          className="min-w-0 flex-1"
           disabled={isDocumentPending}
           onClick={() => void handleShare()}
           variant="outline"

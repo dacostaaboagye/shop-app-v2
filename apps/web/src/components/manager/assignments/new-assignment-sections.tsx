@@ -8,6 +8,7 @@ import { AppErrorBanner } from "@/components/system/app-error";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatCount } from "@/lib/display/format";
 import type { MoneyProfile } from "@/lib/money/format-money";
 import {
   AssignmentQuantityEditor,
@@ -85,7 +86,9 @@ export function AssignmentVariantStep({
           description="Search and check the product variants to include."
           title="2. Select variants"
         />
-        {variantCount > 0 ? <Badge>{variantCount} selected</Badge> : null}
+        {variantCount > 0 ? (
+          <Badge>{formatCount(variantCount)} selected</Badge>
+        ) : null}
       </div>
       <AssignmentVariantList
         locationId={locationId}
@@ -157,7 +160,7 @@ export function AssignmentSubmitPanel({
         />
       ) : null}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="text-sm text-muted-foreground">
+        <p className="type-support">
           {getSubmitSummary(selectedWorker, variantCount)}
         </p>
         <Button disabled={!canSubmit} onClick={onSubmit} type="button">
@@ -176,9 +179,9 @@ function StepHeading({
   title: string;
 }) {
   return (
-    <div>
-      <h2 className="text-base font-semibold">{title}</h2>
-      <p className="text-sm text-muted-foreground">{description}</p>
+    <div className="flex flex-col gap-1">
+      <h2 className="feedback-title">{title}</h2>
+      <p className="feedback-description">{description}</p>
     </div>
   );
 }
@@ -188,7 +191,7 @@ function getSubmitSummary(
   variantCount: number,
 ) {
   if (selectedWorker && variantCount > 0) {
-    return `Assigning ${variantCount} variant${variantCount !== 1 ? "s" : ""} to ${selectedWorker.firstName} ${selectedWorker.lastName}`;
+    return `Assigning ${formatCount(variantCount)} variant${variantCount !== 1 ? "s" : ""} to ${selectedWorker.firstName} ${selectedWorker.lastName}.`;
   }
 
   return selectedWorker

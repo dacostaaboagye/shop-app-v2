@@ -3,6 +3,7 @@
 import { Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -10,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatCount } from "@/lib/display/format";
 
 type LocationsPageToolbarProps = {
   draftSearch: string;
@@ -35,61 +37,75 @@ export function LocationsPageToolbar({
   type,
 }: LocationsPageToolbarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-4 rounded-xl bg-white p-4 shadow-sm border border-border/50">
-      <div className="relative min-w-[320px] flex-1">
-        <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
-        <Input
-          className="h-11 border-border/60 bg-muted/20 pl-11 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-primary/20 transition-all rounded-xl placeholder:text-muted-foreground/40 font-medium"
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search locations by name or slug..."
-          value={draftSearch}
-        />
-      </div>
+    <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
+      <div className="flex flex-col gap-4">
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.5fr)_minmax(0,0.5fr)_auto]">
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <Label htmlFor="locations-filter-search">Search</Label>
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="pl-10"
+                id="locations-filter-search"
+                onChange={(event) => onSearchChange(event.target.value)}
+                placeholder="Name or slug"
+                value={draftSearch}
+              />
+            </div>
+          </div>
 
-      <div className="flex items-center gap-3">
-        <Select onValueChange={onTypeChange} value={type || "all"}>
-          <SelectTrigger className="h-11 min-w-[140px] rounded-xl border-border/60 bg-muted/20 focus:bg-background transition-all">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-border/50 shadow-sm">
-            <SelectItem value="all">All types</SelectItem>
-            <SelectItem value="store">Stores</SelectItem>
-            <SelectItem value="warehouse">Warehouses</SelectItem>
-            <SelectItem value="office">Offices</SelectItem>
-          </SelectContent>
-        </Select>
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <Label htmlFor="locations-filter-type">Type</Label>
+            <Select onValueChange={onTypeChange} value={type}>
+              <SelectTrigger className="h-10" id="locations-filter-type">
+                <SelectValue placeholder="All types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All types</SelectItem>
+                <SelectItem value="store">Store</SelectItem>
+                <SelectItem value="warehouse">Warehouse</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        <Select onValueChange={onStatusChange} value={status || "all"}>
-          <SelectTrigger className="h-11 min-w-[140px] rounded-xl border-border/60 bg-muted/20 focus:bg-background transition-all">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-border/50 shadow-sm">
-            <SelectItem value="all">All status</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="closed">Closed</SelectItem>
-            <SelectItem value="maintenance">Maintenance</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <Label htmlFor="locations-filter-status">Status</Label>
+            <Select onValueChange={onStatusChange} value={status}>
+              <SelectTrigger className="h-10" id="locations-filter-status">
+                <SelectValue placeholder="All status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-      {hasFilters ? (
-        <Button
-          onClick={onClear}
-          size="sm"
-          type="button"
-          variant="ghost"
-          className="h-11 rounded-xl px-5 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
-        >
-          <X className="mr-2 size-4" aria-hidden="true" />
-          Clear
-        </Button>
-      ) : null}
+          <div className="flex min-w-0 items-end">
+            {hasFilters ? (
+              <Button
+                className="w-full sm:w-auto"
+                onClick={onClear}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                <X className="size-3.5" data-icon="inline-start" />
+                Clear
+              </Button>
+            ) : null}
+          </div>
+        </div>
 
-      <div className="ml-auto flex items-center gap-4 pr-2">
-        <div className="h-4 w-px bg-border/60" aria-hidden="true" />
-        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40 tabular-nums">
-          {totalCount} locations
-        </span>
+        <p className="type-support type-inline-metric text-muted-foreground">
+          {formatCount(totalCount)} locations
+          {type !== "all" ? ` in ${type}` : ""}
+          {status !== "all" ? ` marked ${status}` : ""}
+          {draftSearch
+            ? " matching the current filters"
+            : " across the network"}
+        </p>
       </div>
     </div>
   );

@@ -17,7 +17,11 @@ export function OfficialDocumentDocumentFields({
     <FieldGroup>
       <form.Field name="defaultPaperSize">
         {(field) => (
-          <AppFormField inputId={field.name} label="Default paper size">
+          <AppFormField
+            description="Default page size used when locations do not override their printing hardware preferences."
+            inputId={field.name}
+            label="Default paper size"
+          >
             <PaperSizeSelect
               id={field.name}
               onChange={field.handleChange}
@@ -31,14 +35,15 @@ export function OfficialDocumentDocumentFields({
       <TextField form={form} label="GTN prefix" name="gtnPrefix" />
       <TextField
         form={form}
-        info="BCP 47 language tag (e.g. en-GB) used for document formatting and locale-specific translations."
+        description="BCP 47 language tag used for date, number, and wording defaults in generated output."
         label="Locale"
         name="locale"
+        placeholder="en-GB"
       />
       <form.Field name="timezone">
         {(field) => (
           <AppFormField
-            info="The default timezone used for document issue dates and operational timestamps."
+            description="Default timezone used for issue dates and operational timestamps on generated records."
             inputId={field.name}
             label="Timezone"
           >
@@ -52,12 +57,19 @@ export function OfficialDocumentDocumentFields({
       </form.Field>
       <form.Field name="receiptFooter">
         {(field) => (
-          <AppFormField inputId={field.name} label="Footer">
+          <AppFormField
+            description="Reusable footer copy printed on receipts and other short-format output."
+            inputId={field.name}
+            label="Footer"
+          >
             <Textarea
               id={field.name}
               maxLength={500}
               onBlur={field.handleBlur}
               onChange={(event) => field.handleChange(event.target.value)}
+              placeholder={
+                "Thank you for your business.\nGoods sold are subject to store policy."
+              }
               rows={4}
               value={field.state.value}
             />
@@ -70,23 +82,30 @@ export function OfficialDocumentDocumentFields({
 
 function TextField({
   form,
-  info,
+  description,
   label,
   name,
+  placeholder,
 }: {
   form: OfficialDocumentSettingsFormApi;
-  info?: string;
+  description?: string;
   label: string;
   name: "gtnPrefix" | "invoicePrefix" | "locale" | "receiptPrefix";
+  placeholder?: string;
 }) {
   return (
     <form.Field name={name}>
       {(field) => (
-        <AppFormField info={info} inputId={field.name} label={label}>
+        <AppFormField
+          inputId={field.name}
+          label={label}
+          {...(description ? { description } : {})}
+        >
           <Input
             id={field.name}
             onBlur={field.handleBlur}
             onChange={(event) => field.handleChange(event.target.value)}
+            placeholder={placeholder}
             value={field.state.value}
           />
         </AppFormField>
