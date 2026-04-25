@@ -1,4 +1,5 @@
 import type { StockSupplyRequestResponse } from "@shop/contracts";
+import { formatDateTime, formatPublicReference } from "@/lib/display/format";
 
 export type TransferLane = {
   description: string;
@@ -62,6 +63,47 @@ export const workerTransferLanes: readonly TransferLane[] = [
   },
 ];
 
+export const adminTransferLanes: readonly TransferLane[] = [
+  {
+    description: "Transfers still waiting for a source-location decision.",
+    key: "needs_review",
+    label: "Needs review",
+    matches: (item) => item.status === "pending",
+  },
+  {
+    description: "Approved transfers that are reserved and waiting to move.",
+    key: "bottlenecks",
+    label: "Bottlenecks",
+    matches: (item) =>
+      item.status === "approved" &&
+      (item.sourceReservationStatus === "active" ||
+        item.sourceReservationStatus === "confirmed"),
+  },
+  {
+    description: "Transfers currently moving between locations.",
+    key: "in_transit",
+    label: "In transit",
+    matches: (item) => item.status === "dispatched",
+  },
+  {
+    description: "Rejected, cancelled, or structurally inconsistent transfers.",
+    key: "exceptions",
+    label: "Exceptions",
+    matches: (item) =>
+      item.status === "rejected" ||
+      item.status === "cancelled" ||
+      (item.status === "approved" &&
+        item.sourceReservationStatus !== "active" &&
+        item.sourceReservationStatus !== "confirmed"),
+  },
+  {
+    description: "Transfers already confirmed at the destination.",
+    key: "completed",
+    label: "Completed",
+    matches: (item) => item.status === "received",
+  },
+];
+
 export function filterTransfers(
   items: readonly StockSupplyRequestResponse[],
   lanes: readonly TransferLane[],
@@ -80,9 +122,9 @@ export function filterTransfers(
 
   return laneItems.filter((item) =>
     [
-      item.reference,
-      item.transferReference,
-      item.gtnReference,
+      formatPublicReference(item.reference, ""),
+      formatPublicReference(item.transferReference, ""),
+      formatPublicReference(item.gtnReference, ""),
       item.skuSnapshot.productName,
       item.skuSnapshot.variantName,
       item.locationName,
@@ -105,11 +147,21 @@ export function getLaneCounts(
   );
 }
 
+export function countAgeingTransfers(
+  items: readonly StockSupplyRequestResponse[],
+  now = new Date(),
+) {
+  return items.filter(
+    (item) =>
+      !isClosedTransfer(item) && hoursBetween(item.createdAt, now) >= 24,
+  ).length;
+}
+
 export function buildTransferTimeline(item: StockSupplyRequestResponse) {
   return [
     {
       label: "Requested",
-      value: formatDate(item.createdAt),
+      value: formatDateTime(item.createdAt),
     },
     {
       label: "Reserved",
@@ -124,19 +176,26 @@ export function buildTransferTimeline(item: StockSupplyRequestResponse) {
     {
       label: "Dispatched",
       value: item.dispatchedAt
-        ? formatDate(item.dispatchedAt)
+        ? formatDateTime(item.dispatchedAt)
         : "Not dispatched",
     },
     {
       label: "Received",
-      value: item.receivedAt ? formatDate(item.receivedAt) : "Awaiting receipt",
+      value: item.receivedAt
+        ? formatDateTime(item.receivedAt)
+        : "Awaiting receipt",
     },
   ];
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+function isClosedTransfer(item: StockSupplyRequestResponse) {
+  return (
+    item.status === "received" ||
+    item.status === "rejected" ||
+    item.status === "cancelled"
+  );
+}
+
+function hoursBetween(value: string, now: Date) {
+  return (now.getTime() - new Date(value).getTime()) / (1000 * 60 * 60);
 }

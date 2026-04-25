@@ -2,7 +2,7 @@
 
 import type { AdminUpdateCategoryRequest } from "@shop/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, Pencil, Trash2, X } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -12,10 +12,7 @@ import {
   PageShell,
   StatCard,
 } from "@/components/system/page-shell";
-import { PermissionGate } from "@/components/system/permission-gate";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CATALOG_STATUS_META, formatAdminDate } from "@/lib/admin-models";
 import {
   adminCategoriesQueryKey,
@@ -29,6 +26,11 @@ import { toRoute } from "@/lib/routes";
 import { readStringParam } from "@/lib/url-state";
 import { cn } from "@/lib/utils";
 import { CatalogDeleteDialog } from "../catalog-delete-dialog";
+import {
+  CatalogDetailHeaderActions,
+  CatalogDetailRow,
+  CatalogDetailsCard,
+} from "../catalog-detail-surfaces";
 import { MediaPanel } from "../media/media-panel";
 import {
   CATEGORY_PARENT_QUERY,
@@ -99,53 +101,25 @@ export function CategoryDetailPageClient({ slug }: { slug: string }) {
   const category = categoryQuery.data;
   const statusMeta = CATALOG_STATUS_META[category.status];
   const parentOptions = (parentCategoriesQuery.data?.items ?? []).filter(
-    (c) => c.slug !== slug,
+    (item) => item.slug !== slug,
   );
 
   return (
     <PageShell>
       <PageHeader
         actions={
-          !isEditing ? (
-            <div className="flex gap-2">
-              <PermissionGate permission="catalog.categories.manage">
-                <Button
-                  onClick={() => setIsEditing(true)}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  <Pencil className="size-3.5" />
-                  Edit
-                </Button>
-              </PermissionGate>
-              <PermissionGate permission="catalog.categories.manage">
-                <Button
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                  size="sm"
-                  type="button"
-                  variant="outline-destructive"
-                >
-                  <Trash2 className="size-3.5" />
-                  Delete
-                </Button>
-              </PermissionGate>
-            </div>
-          ) : (
-            <Button
-              onClick={() => setIsEditing(false)}
-              size="sm"
-              type="button"
-              variant="ghost"
-            >
-              <X className="size-3.5" />
-              Cancel
-            </Button>
-          )
+          <CatalogDetailHeaderActions
+            isEditing={isEditing}
+            isPending={updateMutation.isPending}
+            onCancel={() => setIsEditing(false)}
+            onDelete={() => setIsDeleteDialogOpen(true)}
+            onEdit={() => setIsEditing(true)}
+            permission="catalog.categories.manage"
+          />
         }
         backHref={toRoute("/admin/products/categories")}
         backLabel="Categories"
-        description={`/${category.slug}`}
+        description="Manage category structure, visibility, and media."
         image={category.primaryImageUrl ?? null}
         title={category.name}
       />
@@ -182,43 +156,27 @@ export function CategoryDetailPageClient({ slug }: { slug: string }) {
           parentOptions={parentOptions}
         />
       ) : (
-        <Card className="border-border/70 bg-card shadow-none">
-          <CardHeader>
-            <CardTitle>Category details</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2 text-sm">
-            <div className="flex flex-col gap-1">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Name
-              </p>
-              <p>{category.name}</p>
-            </div>
-            <div className="flex flex-col gap-1">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Slug
-              </p>
-              <p className="font-mono">{category.slug}</p>
-            </div>
-            <div className="flex flex-col gap-1">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Parent
-              </p>
-              <p className="font-mono">
-                {category.parentCategorySlug ?? (
-                  <span className="text-muted-foreground">—</span>
-                )}
-              </p>
-            </div>
-            {category.description ? (
-              <div className="col-span-2 flex flex-col gap-1">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Description
-                </p>
-                <p className="text-muted-foreground">{category.description}</p>
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
+        <CatalogDetailsCard title="Category details">
+          <CatalogDetailRow label="Name" value={category.name} />
+          <CatalogDetailRow
+            label="Slug"
+            tone="identifier"
+            value={category.slug}
+          />
+          <CatalogDetailRow
+            label="Parent"
+            tone="identifier"
+            value={category.parentCategorySlug ?? "Not set"}
+          />
+          {category.description ? (
+            <CatalogDetailRow
+              className="sm:col-span-2"
+              label="Description"
+              tone="support"
+              value={category.description}
+            />
+          ) : null}
+        </CatalogDetailsCard>
       )}
 
       <MediaPanel
@@ -233,8 +191,8 @@ export function CategoryDetailPageClient({ slug }: { slug: string }) {
         entityType="category"
         isOpen={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}
-        onDelete={async (slug: string) => {
-          await deleteAdminCategory(slug);
+        onDelete={async (nextSlug: string) => {
+          await deleteAdminCategory(nextSlug);
           router.push(toRoute("/admin/products/categories"));
         }}
         onSuccessQueryKeys={[["admin", "catalog", "categories"]]}

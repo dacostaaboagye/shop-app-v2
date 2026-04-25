@@ -3,6 +3,11 @@
 import type { AdminUserAccessDetail } from "@shop/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
 import { MapPin } from "lucide-react";
+import {
+  AccessActionBadge,
+  AccessNameCell,
+  AccessTextCell,
+} from "@/components/admin/access/access-table-cells";
 import { AppDataTable } from "@/components/data-table/app-data-table";
 import { Badge } from "@/components/ui/badge";
 import { formatAdminDate, ROLE_SCOPE_BADGE_CLASSES } from "@/lib/admin-models";
@@ -16,12 +21,10 @@ const effectiveColumns: Array<ColumnDef<EffectivePermission, unknown>> = [
     id: "permission",
     header: "Permission",
     cell: ({ row }) => (
-      <div className="min-w-0">
-        <p className="font-mono text-sm">{row.original.key}</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          {row.original.description}
-        </p>
-      </div>
+      <AccessNameCell
+        description={row.original.description}
+        name={row.original.key}
+      />
     ),
   },
   {
@@ -45,7 +48,7 @@ const effectiveColumns: Array<ColumnDef<EffectivePermission, unknown>> = [
     header: "Scope",
     cell: ({ row }) =>
       row.original.locationName ? (
-        <span className="flex items-center gap-1 text-sm text-muted-foreground">
+        <span className="type-support flex items-center gap-1 text-muted-foreground">
           <MapPin className="size-3.5 shrink-0" />
           {row.original.locationName}
         </span>
@@ -68,34 +71,35 @@ const activityColumns: Array<ColumnDef<ActivityEvent, unknown>> = [
     id: "event",
     header: "Event",
     cell: ({ row }) => (
-      <Badge variant="secondary">
+      <AccessActionBadge>
         {EVENT_TYPE_LABELS[row.original.eventType]}
-      </Badge>
+      </AccessActionBadge>
     ),
   },
   {
     id: "ipAddress",
     header: "IP address",
     cell: ({ row }) => (
-      <span className="font-mono text-sm text-muted-foreground">
-        {row.original.ipAddress ?? "—"}
-      </span>
+      <AccessTextCell
+        tone="identifier"
+        value={row.original.ipAddress ?? "Not set"}
+      />
     ),
   },
   {
     id: "userAgent",
     header: "User agent",
     cell: ({ row }) => (
-      <p className="max-w-xs truncate text-xs text-muted-foreground">
-        {row.original.userAgent ?? "—"}
-      </p>
+      <div className="max-w-xs">
+        <AccessTextCell value={row.original.userAgent ?? "Not set"} />
+      </div>
     ),
   },
   {
     id: "occurredAt",
     header: "Occurred",
     cell: ({ row }) => (
-      <span className="text-sm tabular-nums text-muted-foreground">
+      <span className="type-support tabular-nums text-muted-foreground">
         {formatAdminDate(row.original.occurredAt)}
       </span>
     ),

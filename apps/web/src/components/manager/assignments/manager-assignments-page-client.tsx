@@ -47,24 +47,24 @@ export function ManagerAssignmentsPageClient() {
 
   return (
     <PageShell>
-      <div className="flex items-start justify-between gap-4">
-        <PageHeader
-          description="View current stock ownership and assign variants to workers at this location."
-          title="Stock assignments"
-        />
-        {selectedLocationScope && (
-          <Link
-            className={buttonVariants({
-              variant: "default",
-              className: "shrink-0",
-            })}
-            href={newAssignmentHref}
-          >
-            <Plus className="mr-1.5 size-4" />
-            New assignment
-          </Link>
-        )}
-      </div>
+      <PageHeader
+        actions={
+          selectedLocationScope ? (
+            <Link
+              className={buttonVariants({
+                className: "shrink-0",
+                variant: "default",
+              })}
+              href={newAssignmentHref}
+            >
+              <Plus className="mr-1.5 size-4" />
+              New assignment
+            </Link>
+          ) : null
+        }
+        description="View current stock ownership and assign variants to workers at this location."
+        title="Stock assignments"
+      />
 
       <LocationScopePanel
         description="Assignment visibility follows the managed locations already linked to your access."

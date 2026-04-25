@@ -114,14 +114,12 @@ export const COMMERCE_CATALOG_SUPPLY_NAV_REGISTRY: readonly NavRegistryEntry[] =
       section: "Supply",
     },
     {
-      activeMatchers: [
-        { mode: "descendants", path: "/admin/stock/supply-requests" },
-      ],
+      activeMatchers: [{ mode: "descendants", path: "/admin/transfers" }],
       description:
-        "Monitor restocking requests across the network with an optional location filter for intervention work.",
-      href: toRoute("/admin/stock/supply-requests"),
+        "Monitor transfers, bottlenecks, and exception states across the network.",
+      href: toRoute("/admin/transfers"),
       icon: ClipboardList,
-      label: "Supply requests",
+      label: "Transfers",
       locationSelectorPermission: null,
       requiredPermission: "stock.supply.manage",
       section: "Supply",

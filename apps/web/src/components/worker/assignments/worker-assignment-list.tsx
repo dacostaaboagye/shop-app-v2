@@ -5,6 +5,7 @@ import { AlertCircle, Package } from "lucide-react";
 import { AppEmptyState } from "@/components/system/app-empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { formatCount } from "@/lib/display/format";
 import type { MoneyProfile } from "@/lib/money/format-money";
 import { AssignmentCard } from "./worker-assignment-cards";
 import { AssignmentToolbar } from "./worker-assignment-toolbar";
@@ -13,6 +14,7 @@ import type {
   SupplyTarget,
   ViewMode,
 } from "./worker-assignments-support";
+import { formatStockSummary } from "./worker-assignments-support";
 import { CompactAssignmentList } from "./worker-compact-assignment-list";
 
 type AssignmentListProps = {
@@ -76,10 +78,10 @@ export function AssignmentList({
         viewMode={viewMode}
       />
       {hasActiveFilter ? (
-        <p className="text-xs text-muted-foreground">
+        <p className="type-support text-xs">
           {filteredItems.length === 0
             ? "No assignments match your filters."
-            : `Showing ${filteredItems.length} of ${allItems.length}`}
+            : `Showing ${formatCount(filteredItems.length)} of ${formatCount(allItems.length)}`}
         </p>
       ) : null}
       <AssignmentResults
@@ -109,20 +111,20 @@ function AssignmentSummary({
   return (
     <div className="flex flex-wrap items-center gap-2">
       {locationName ? (
-        <p className="text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">{itemCount}</span>{" "}
-          variant{itemCount !== 1 ? "s" : ""} at{" "}
-          <span className="font-medium text-foreground">{locationName}</span>
+        <p className="type-support">
+          <span className="type-data-value text-sm">
+            {formatStockSummary(itemCount, locationName)}
+          </span>
         </p>
       ) : null}
       {counts.out_of_stock > 0 ? (
         <Badge className="gap-1" variant="destructive">
           <AlertCircle className="size-3" />
-          {counts.out_of_stock} out
+          {formatCount(counts.out_of_stock)} out
         </Badge>
       ) : null}
       {counts.low_stock > 0 ? (
-        <Badge variant="outline">{counts.low_stock} low</Badge>
+        <Badge variant="outline">{formatCount(counts.low_stock)} low</Badge>
       ) : null}
     </div>
   );

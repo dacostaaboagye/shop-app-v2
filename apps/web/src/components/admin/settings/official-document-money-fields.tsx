@@ -23,7 +23,7 @@ export function OfficialDocumentMoneyFields({
       <form.Field name="baseCurrencyCode">
         {(field) => (
           <AppFormField
-            info="The primary currency used for internal accounting and base pricing."
+            description="Primary currency used for internal accounting and base pricing."
             inputId={field.name}
             label="Base currency"
           >
@@ -38,7 +38,7 @@ export function OfficialDocumentMoneyFields({
       <form.Field name="defaultDisplayCurrencyCode">
         {(field) => (
           <AppFormField
-            info="The currency shown to customers by default."
+            description="Currency shown to customers by default."
             inputId={field.name}
             label="Display currency"
           >
@@ -53,7 +53,7 @@ export function OfficialDocumentMoneyFields({
       <form.Field name="currencyScale">
         {(field) => (
           <AppFormField
-            info="Number of decimal places used for prices (standard is 2)."
+            description="Number of decimal places used for prices. Standard retail flows usually use 2."
             inputId={field.name}
             label="Currency scale"
           >
@@ -65,6 +65,7 @@ export function OfficialDocumentMoneyFields({
               onChange={(event) =>
                 field.handleChange(Number(event.target.value))
               }
+              placeholder="2"
               type="number"
               value={field.state.value}
             />
@@ -74,7 +75,7 @@ export function OfficialDocumentMoneyFields({
       <form.Field name="roundingMode">
         {(field) => (
           <AppFormField
-            info="Mathematical strategy for handling decimal rounding in currency calculations."
+            description="Mathematical strategy used when monetary values need rounding."
             inputId={field.name}
             label="Rounding mode"
           >
@@ -100,14 +101,14 @@ export function OfficialDocumentMoneyFields({
         )}
       </form.Field>
       <BooleanField
+        description="Enables processing of orders and receipts in currencies other than the base currency."
         form={form}
-        info="Enables processing of orders and receipts in currencies other than the base currency."
         label="Allow multi-currency sales"
         name="allowMultiCurrencySales"
       />
       <BooleanField
+        description="Enables manual override or automatic fetching of currency exchange rates for multi-currency transactions."
         form={form}
-        info="Enables manual override or automatic fetching of currency exchange rates for multi-currency transactions."
         label="Allow exchange rates"
         name="allowExchangeRates"
       />
@@ -117,19 +118,23 @@ export function OfficialDocumentMoneyFields({
 
 function BooleanField({
   form,
-  info,
+  description,
   label,
   name,
 }: {
   form: OfficialDocumentSettingsFormApi;
-  info?: string;
+  description?: string;
   label: string;
   name: "allowExchangeRates" | "allowMultiCurrencySales";
 }) {
   return (
     <form.Field name={name}>
       {(field) => (
-        <AppFormField info={info} inputId={field.name} label={label}>
+        <AppFormField
+          inputId={field.name}
+          label={label}
+          {...(description ? { description } : {})}
+        >
           <div className="flex h-10 items-center">
             <Switch
               checked={field.state.value}

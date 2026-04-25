@@ -1,4 +1,5 @@
 import {
+  cancelStockSupplyRequestSchema,
   confirmReceiptSchema,
   createStockSupplyRequestSchema,
   stockSupplyRequestListQuerySchema,
@@ -132,6 +133,7 @@ function registerCancelRoute(
       const userId = getAuthenticatedUserId(request);
       const actor = getAuthenticatedActor(request);
       const { id } = request.params as { id: string };
+      const body = cancelStockSupplyRequestSchema.parse(request.body ?? {});
       const existingRequest =
         await dependencies.supplyRequestRepository.findById(id);
       if (!existingRequest) {
@@ -141,6 +143,9 @@ function registerCancelRoute(
       await accessPolicy.assertCanCancelRequest({
         actor,
         supplyRequest: existingRequest,
+        ...(body.adminOverrideReason
+          ? { adminOverrideReason: body.adminOverrideReason }
+          : {}),
       });
       const row =
         existingRequest.requesterId === userId
@@ -149,11 +154,17 @@ function registerCancelRoute(
               id,
               now: new Date(),
               requesterId: userId,
+              ...(body.adminOverrideReason
+                ? { adminOverrideReason: body.adminOverrideReason }
+                : {}),
             })
           : await dependencies.supplyService.cancelById({
               actor,
               id,
               now: new Date(),
+              ...(body.adminOverrideReason
+                ? { adminOverrideReason: body.adminOverrideReason }
+                : {}),
             });
       if (!row) {
         throw cannotCancelError();
@@ -193,6 +204,9 @@ function registerConfirmReceiptRoute(
       await accessPolicy.assertCanConfirmReceipt({
         actor,
         supplyRequest: existingRequest,
+        ...(body.adminOverrideReason
+          ? { adminOverrideReason: body.adminOverrideReason }
+          : {}),
       });
       const { supplyRequest } = await dependencies.supplyService.confirmReceipt(
         {
@@ -201,6 +215,9 @@ function registerConfirmReceiptRoute(
           now: new Date(),
           receivedBy: userId,
           supplyRequestId: id,
+          ...(body.adminOverrideReason
+            ? { adminOverrideReason: body.adminOverrideReason }
+            : {}),
         },
       );
       return stockSupplyRequestResponseSchema.parse(

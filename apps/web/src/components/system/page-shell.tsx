@@ -40,26 +40,24 @@ export function HeroPanel({
   aside,
 }: HeroPanelProps) {
   return (
-    <section className="grid gap-6 lg:grid-cols-[1fr,400px]">
-      <div className="flex flex-col justify-center">
+    <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,25rem)]">
+      <div className="min-w-0 flex flex-col justify-center">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-3">
-            <p className="font-heading text-[10px] font-black uppercase tracking-[0.4em] text-primary">
+            <p className="type-kicker text-[var(--kicker-foreground)]">
               {eyebrow}
             </p>
-            <h1 className="font-heading max-w-4xl text-5xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-6xl">
+            <h1 className="type-page-title max-w-4xl text-foreground">
               {title}
             </h1>
-            <p className="max-w-2xl text-lg font-medium leading-relaxed text-muted-foreground/80">
-              {description}
-            </p>
+            <p className="type-page-description max-w-2xl">{description}</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3">
             {badges?.map((badge) => (
               <div
                 key={badge}
-                className="rounded-full bg-muted px-4 py-1.5 text-xs font-bold text-muted-foreground border border-border/50"
+                className="max-w-full overflow-wrap-anywhere rounded-full border border-border/50 bg-muted px-4 py-1.5 text-xs font-bold text-muted-foreground"
               >
                 {badge}
               </div>
@@ -68,7 +66,7 @@ export function HeroPanel({
           </div>
         </div>
       </div>
-      <div className="flex items-center">{aside}</div>
+      <div className="min-w-0 flex items-center">{aside}</div>
     </section>
   );
 }
@@ -104,15 +102,15 @@ export function PageHeader({
         {backHref && (
           <Link
             href={backHref}
-            className="group flex w-fit items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+            className="group type-kicker flex w-fit items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
           >
             <ChevronLeft className="size-4 transition-transform group-hover:-translate-x-1" />
             {backLabel}
           </Link>
         )}
 
-        <div className="flex items-start justify-between gap-8">
-          <div className="flex items-start gap-8">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0 flex items-start gap-5 sm:gap-8">
             {image ? (
               <PreviewImage
                 alt={`${title} image`}
@@ -128,25 +126,23 @@ export function PageHeader({
                 {avatar}
               </div>
             ) : null}
-            <div className="flex-1 pt-0.5 flex flex-col gap-2">
+            <div className="min-w-0 flex-1 pt-0.5 flex flex-col gap-2">
               {eyebrow && (
-                <p className="font-heading text-[10px] font-black uppercase tracking-[0.4em] text-primary">
+                <p className="type-kicker text-[var(--kicker-foreground)]">
                   {eyebrow}
                 </p>
               )}
-              <h1 className="font-heading text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+              <h1 className="type-page-title text-foreground sm:text-[clamp(2.5rem,4vw,3rem)]">
                 {title}
               </h1>
               {description && (
-                <p className="max-w-3xl text-base font-medium leading-relaxed text-muted-foreground/80">
-                  {description}
-                </p>
+                <p className="type-page-description max-w-3xl">{description}</p>
               )}
             </div>
           </div>
 
           {headerActions && (
-            <div className="flex shrink-0 items-center gap-3 pt-1">
+            <div className="flex flex-wrap items-center gap-3 xl:max-w-[28rem] xl:justify-end xl:pt-1">
               {headerActions}
             </div>
           )}

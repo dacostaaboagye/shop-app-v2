@@ -8,6 +8,13 @@ import { useQuery } from "@tanstack/react-query";
 import { type CSSProperties, useDeferredValue } from "react";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   emailTemplatePreviewQueryKey,
@@ -40,8 +47,8 @@ export function OfficialDocumentEmailTemplatePreview({
   const accentColor = cssColor(values.accentColor);
 
   return (
-    <section
-      className="h-fit overflow-hidden"
+    <Card
+      className="h-fit overflow-hidden border-border/70 bg-card shadow-none"
       style={
         {
           "--email-accent": accentColor,
@@ -49,21 +56,30 @@ export function OfficialDocumentEmailTemplatePreview({
         } as CSSProperties
       }
     >
-      {previewQuery.isError ? (
-        <AppErrorBanner
-          detail="Could not render the server email preview."
-          error={previewQuery.error}
-          title="Preview unavailable"
+      <CardHeader className="border-b border-border/60">
+        <CardTitle>Email preview</CardTitle>
+        <CardDescription>
+          Preview the selected template with current branding and supported
+          variables.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-4 sm:p-5">
+        {previewQuery.isError ? (
+          <AppErrorBanner
+            detail="Could not render the server email preview."
+            error={previewQuery.error}
+            title="Preview unavailable"
+          />
+        ) : null}
+        <EmailClientPreview
+          accentColor={accentColor}
+          primaryColor={primaryColor}
+          serverPreview={previewQuery.data}
+          template={template}
+          isLoading={previewQuery.isLoading || previewQuery.isFetching}
         />
-      ) : null}
-      <EmailClientPreview
-        accentColor={accentColor}
-        primaryColor={primaryColor}
-        serverPreview={previewQuery.data}
-        template={template}
-        isLoading={previewQuery.isLoading || previewQuery.isFetching}
-      />
-    </section>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -89,8 +105,8 @@ function EmailClientPreview({
       <div className="border-b border-border/70 bg-card px-4 py-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">{subject}</p>
-            <p className="truncate text-xs text-muted-foreground">
+            <p className="text-balance text-sm font-semibold">{subject}</p>
+            <p className="text-pretty text-xs text-muted-foreground">
               {previewText}
             </p>
           </div>
@@ -132,13 +148,13 @@ function EmailClientPreview({
           {(serverPreview?.allowedVariables ?? ["firstName"]).map(
             (variable) => (
               <Badge key={variable} variant="secondary">
-                {variable}
+                {`{{${variable}}}`}
               </Badge>
             ),
           )}
           {serverPreview?.unknownVariables.map((variable) => (
             <Badge key={variable} variant="destructive">
-              Unknown: {variable}
+              {`Unknown: {{${variable}}}`}
             </Badge>
           ))}
         </div>

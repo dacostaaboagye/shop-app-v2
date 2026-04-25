@@ -2,6 +2,11 @@
 
 import type { AdminRoleDetail } from "@shop/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
+import {
+  AccessActionBadge,
+  AccessNameCell,
+  AccessTextCell,
+} from "@/components/admin/access/access-table-cells";
 import { Badge } from "@/components/ui/badge";
 import {
   getPermissionActionLabel,
@@ -16,37 +21,36 @@ export const rolePermissionColumns: Array<
     id: "permission",
     header: "Permission",
     cell: ({ row }) => (
-      <div className="min-w-0">
-        <p className="font-mono text-sm text-foreground">{row.original.key}</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {row.original.description}
-        </p>
-      </div>
+      <AccessNameCell
+        description={row.original.description}
+        name={row.original.key}
+      />
     ),
   },
   {
     id: "surface",
     header: "Surface",
     cell: ({ row }) => (
-      <span className="text-sm text-muted-foreground">
-        {getPermissionSurfaceLabel(row.original.key)}
-      </span>
+      <AccessTextCell value={getPermissionSurfaceLabel(row.original.key)} />
     ),
   },
   {
     id: "action",
     header: "Action",
     cell: ({ row }) => (
-      <span className="text-sm text-muted-foreground">
+      <AccessActionBadge>
         {getPermissionActionLabel(row.original.key)}
-      </span>
+      </AccessActionBadge>
     ),
   },
   {
     id: "granted",
     header: "Granted",
     cell: ({ row }) => (
-      <Badge variant={row.original.granted ? "secondary" : "outline"}>
+      <Badge
+        className={row.original.granted ? "" : "text-muted-foreground"}
+        variant={row.original.granted ? "secondary" : "outline"}
+      >
         {row.original.granted ? "Granted" : "Not granted"}
       </Badge>
     ),

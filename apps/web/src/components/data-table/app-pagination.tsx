@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatCount } from "@/lib/display/format";
 import { getPageCount } from "@/lib/url-state";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +40,8 @@ export function AppPagination({
     <div className="flex flex-col gap-3 rounded-lg border bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
         <span className="tabular-nums">
-          Showing {rangeStart}-{rangeEnd} of {totalCount}
+          Showing {formatCount(rangeStart)}-{formatCount(rangeEnd)} of{" "}
+          {formatCount(totalCount)}
         </span>
         {onPageSizeChange ? (
           <div className="flex items-center gap-2 text-sm">
@@ -65,7 +67,7 @@ export function AppPagination({
         ) : null}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
         <Button
           disabled={safePage <= 1}
           onClick={() => onPageChange(safePage - 1)}
@@ -91,7 +93,7 @@ export function AppPagination({
                 key={item.key}
                 aria-current={item.page === safePage ? "page" : undefined}
                 className={cn(
-                  "min-w-9 px-0",
+                  "min-w-9 shrink-0 px-0",
                   item.page === safePage && "shadow-none",
                 )}
                 onClick={() => onPageChange(item.page)}

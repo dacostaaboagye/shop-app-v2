@@ -29,7 +29,7 @@ export function StockFilterSelect({
   value,
 }: StockFilterSelectProps) {
   return (
-    <div className="flex min-w-44 flex-1 flex-col gap-1.5">
+    <div className="flex min-w-0 flex-1 flex-col gap-1.5 md:min-w-44">
       <Label htmlFor={id}>{label}</Label>
       <Select onValueChange={onChange} value={value || "all"}>
         <SelectTrigger id={id}>

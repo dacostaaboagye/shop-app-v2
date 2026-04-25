@@ -165,6 +165,10 @@ export function deriveAvailablePortals(roles: readonly string[]): PortalKey[] {
   return STAFF_ROLE_KEYS.filter((role) => roles.includes(role));
 }
 
+export function formatPortalLabel(portal: PortalKey) {
+  return ROLE_LABELS[portal];
+}
+
 export function normalizePreferredPortal(
   preferredPortal: PortalKey | null,
   roles: readonly string[],

@@ -196,8 +196,12 @@ function OptionRow({
       </div>
       <div className="flex flex-wrap gap-1.5">
         {option.values.map((v) => (
-          <Badge key={v.valueId} className="gap-1 pr-1" variant="secondary">
-            {v.value}
+          <Badge
+            key={v.valueId}
+            className="max-w-full gap-1 overflow-wrap-anywhere pr-1"
+            variant="secondary"
+          >
+            <span className="overflow-wrap-anywhere">{v.value}</span>
             {canManage ? (
               <button
                 className="rounded-sm opacity-60 hover:opacity-100"
@@ -211,7 +215,7 @@ function OptionRow({
         ))}
         {canManage ? (
           <form
-            className="flex gap-1"
+            className="flex min-w-0 gap-1"
             onSubmit={(e) => {
               e.preventDefault();
               const trimmed = newValue.trim();
@@ -222,7 +226,7 @@ function OptionRow({
             }}
           >
             <Input
-              className="h-6 w-20 text-xs"
+              className="h-6 min-w-0 w-20 text-xs"
               onChange={(e) => setNewValue(e.target.value)}
               placeholder="+ value"
               value={newValue}

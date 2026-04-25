@@ -3,8 +3,8 @@
 import type { AdminLocationZoneSummary } from "@shop/contracts";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
+import { CatalogFormError } from "@/components/admin/catalog/catalog-form-surfaces";
 import { AppFormField } from "@/components/forms/app-form-field";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -39,6 +39,10 @@ export function LocationZoneForm({
   zone,
 }: LocationZoneFormProps) {
   const isEditing = !!zone;
+  const dialogTitle = isEditing ? "Edit zone" : "Add zone";
+  const dialogDescription = isEditing
+    ? "Update the name and handling notes for this storage zone."
+    : "Create a new storage zone within this location.";
 
   const mutation = useMutation({
     mutationFn: (values: { description?: string | null; name: string }) =>
@@ -65,10 +69,12 @@ export function LocationZoneForm({
 
   return (
     <Dialog
-      open={open}
       onOpenChange={(next) => {
-        if (!next) onOpenChange(false);
+        if (!next) {
+          onOpenChange(false);
+        }
       }}
+      open={open}
     >
       <DialogContent>
         <form
@@ -78,23 +84,13 @@ export function LocationZoneForm({
           }}
         >
           <DialogHeader>
-            <DialogTitle>{isEditing ? "Edit zone" : "Add zone"}</DialogTitle>
-            <DialogDescription>
-              {isEditing
-                ? "Update storage zone details."
-                : "Create a new storage zone within this location."}
-            </DialogDescription>
+            <DialogTitle>{dialogTitle}</DialogTitle>
+            <DialogDescription>{dialogDescription}</DialogDescription>
           </DialogHeader>
-          {mutation.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Unable to save zone</AlertTitle>
-              <AlertDescription>
-                {mutation.error instanceof Error
-                  ? mutation.error.message
-                  : "An unexpected error occurred."}
-              </AlertDescription>
-            </Alert>
-          ) : null}
+          <CatalogFormError
+            error={mutation.error}
+            title="Unable to save zone"
+          />
           <FieldGroup className="py-2">
             <form.Field
               name="name"
@@ -105,7 +101,7 @@ export function LocationZoneForm({
             >
               {(field) => (
                 <AppFormField
-                  description="e.g. Aisle 4, Cold Storage, Front Store"
+                  description="For example Aisle 4, Cold Storage, or Front Store."
                   errors={field.state.meta.errors}
                   inputId={field.name}
                   label="Name"
@@ -114,11 +110,11 @@ export function LocationZoneForm({
                   <Input
                     id={field.name}
                     maxLength={160}
-                    onBlur={(e) => {
-                      field.setValue(e.target.value.trim());
+                    onBlur={(event) => {
+                      field.setValue(event.target.value.trim());
                       field.handleBlur();
                     }}
-                    onChange={(e) => field.handleChange(e.target.value)}
+                    onChange={(event) => field.handleChange(event.target.value)}
                     value={field.state.value}
                   />
                 </AppFormField>
@@ -127,7 +123,7 @@ export function LocationZoneForm({
             <form.Field name="description">
               {(field) => (
                 <AppFormField
-                  description="Optional context about what is stored here"
+                  description="Optional context about how stock is handled in this area."
                   errors={field.state.meta.errors}
                   inputId={field.name}
                   label="Description"
@@ -137,7 +133,7 @@ export function LocationZoneForm({
                     id={field.name}
                     maxLength={1000}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
+                    onChange={(event) => field.handleChange(event.target.value)}
                     value={field.state.value}
                   />
                 </AppFormField>
@@ -159,7 +155,7 @@ export function LocationZoneForm({
                   {isSubmitting || mutation.isPending ? (
                     <>
                       <Spinner data-icon="inline-start" />
-                      Saving…
+                      Saving...
                     </>
                   ) : (
                     "Save zone"

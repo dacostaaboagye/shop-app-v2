@@ -115,7 +115,7 @@ function TopbarLocationSelector({
 
   if (scopes.length === 1) {
     return (
-      <div className="hidden max-w-52 truncate rounded-md border border-border bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground md:block">
+      <div className="hidden max-w-64 rounded-md border border-border bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground md:block">
         Acting at{" "}
         <span className="font-medium text-foreground">
           {scopes[0]?.locationName}
@@ -125,7 +125,7 @@ function TopbarLocationSelector({
   }
 
   return (
-    <div className="hidden min-w-44 max-w-56 md:block">
+    <div className="hidden min-w-0 max-w-64 md:block md:w-64">
       <Select onValueChange={onLocationChange} value={selectedLocationSlug}>
         <SelectTrigger className="h-9 bg-muted/30 text-xs">
           <SelectValue />

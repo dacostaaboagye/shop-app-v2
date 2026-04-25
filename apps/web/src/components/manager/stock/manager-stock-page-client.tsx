@@ -2,26 +2,27 @@
 
 import type { AdminStockBalanceSummary } from "@shop/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ClipboardList, Search, X } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { buildStockBalanceColumns } from "@/components/admin/stock/stock-balance-columns";
 import { StockCountDialog } from "@/components/admin/stock/stock-count-dialog";
 import { AppDataTable } from "@/components/data-table/app-data-table";
+import { StockWorkspaceTableSkeleton } from "@/components/stock/stock-workspace-feedback";
+import {
+  StockMetricGrid,
+  StockSearchToolbar,
+} from "@/components/stock/stock-workspace-panels";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { AppTableWrapper } from "@/components/system/app-table-wrapper";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
 import {
   fetchManagerStockBalances,
   managerStockBalancesQueryKey,
   postManagerStockCount,
 } from "@/lib/react-query/stock-admin";
-
-const SKELETON_KEYS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 export function ManagerStockPageClient() {
   const queryClient = useQueryClient();
@@ -139,58 +140,37 @@ export function ManagerStockPageClient() {
       />
 
       {selectedLocationScope ? (
-        <form
-          className="flex flex-wrap items-center gap-3 rounded-xl border border-border/50 bg-white p-4 shadow-sm"
+        <StockSearchToolbar
+          activeSearch={activeSearch}
+          onClear={() => {
+            setSearch("");
+            setActiveSearch("");
+          }}
+          onSearchChange={setSearch}
           onSubmit={handleSearch}
-        >
-          <div className="relative min-w-[320px] flex-1">
-            <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="h-11 border-0 bg-muted pl-10 transition-all focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-primary/20 rounded-xl"
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by product or SKU"
-              value={search}
-            />
-          </div>
-          <Button className="h-11 rounded-xl px-6" size="sm" type="submit">
-            <Search className="size-3.5" data-icon="inline-start" />
-            Search
-          </Button>
-          {activeSearch ? (
-            <Button
-              className="h-11 rounded-xl"
-              onClick={() => {
-                setSearch("");
-                setActiveSearch("");
-              }}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <X className="size-3.5" data-icon="inline-start" />
-              Clear
-            </Button>
-          ) : null}
-        </form>
+          placeholder="Search by product or SKU"
+          search={search}
+        />
       ) : null}
 
       {stockQuery.data ? (
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-          <StockMetric label="SKUs" value={stockQuery.data.totalCount} />
-          <StockMetric label="On hand" value={totals.onHand} />
-          <StockMetric label="Reserved" value={totals.reserved} />
-          <StockMetric label="Available" value={totals.available} />
-          <StockMetric label="In transit" value={totals.inTransit} />
-        </div>
+        <StockMetricGrid
+          items={[
+            { label: "SKUs", value: stockQuery.data.totalCount },
+            { label: "On hand", value: totals.onHand },
+            { label: "Reserved", value: totals.reserved },
+            { label: "Available", value: totals.available },
+            { label: "In transit", value: totals.inTransit },
+          ]}
+        />
       ) : null}
 
       <AppTableWrapper>
         {stockQuery.isPending && selectedLocationScope ? (
-          <div className="flex flex-col gap-1 p-4">
-            {SKELETON_KEYS.map((k) => (
-              <Skeleton key={k} className="h-10 w-full rounded-lg" />
-            ))}
-          </div>
+          <StockWorkspaceTableSkeleton
+            keys={[1, 2, 3, 4, 5, 6, 7, 8]}
+            rowClassName="h-10 w-full rounded-lg"
+          />
         ) : stockQuery.isError ? (
           <div className="p-8">
             <AppErrorBanner
@@ -230,18 +210,5 @@ export function ManagerStockPageClient() {
         row={countTarget}
       />
     </PageShell>
-  );
-}
-
-function StockMetric({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-xl border border-border/50 bg-white px-4 py-3 shadow-sm shadow-black/2 transition-all hover:shadow-md">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-        {label}
-      </p>
-      <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
-        {value}
-      </p>
-    </div>
   );
 }

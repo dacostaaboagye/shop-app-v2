@@ -2,7 +2,7 @@
 
 import type { AdminUpdateBrandRequest } from "@shop/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, Pencil, Trash2, X } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -12,12 +12,7 @@ import {
   PageShell,
   StatCard,
 } from "@/components/system/page-shell";
-import { PermissionGate } from "@/components/system/permission-gate";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { CATALOG_STATUS_META, formatAdminDate } from "@/lib/admin-models";
 import {
   adminBrandQueryKey,
@@ -29,6 +24,13 @@ import { toRoute } from "@/lib/routes";
 import { readStringParam } from "@/lib/url-state";
 import { cn } from "@/lib/utils";
 import { CatalogDeleteDialog } from "../catalog-delete-dialog";
+import {
+  CatalogDetailError,
+  CatalogDetailHeaderActions,
+  CatalogDetailRow,
+  CatalogDetailSkeleton,
+  CatalogDetailsCard,
+} from "../catalog-detail-surfaces";
 import { MediaPanel } from "../media/media-panel";
 import { BrandEditForm } from "./brand-edit-form";
 
@@ -70,26 +72,19 @@ export function BrandDetailPageClient({ slug }: { slug: string }) {
   });
 
   if (brandQuery.isPending && !brandQuery.data) {
-    return (
-      <PageShell>
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-48 w-full" />
-      </PageShell>
-    );
+    return <CatalogDetailSkeleton />;
   }
 
   if (brandQuery.isError) {
     return (
-      <PageShell>
-        <Alert variant="destructive">
-          <AlertTitle>Unable to load brand</AlertTitle>
-          <AlertDescription>
-            {brandQuery.error instanceof Error
-              ? brandQuery.error.message
-              : "An unexpected error occurred."}
-          </AlertDescription>
-        </Alert>
-      </PageShell>
+      <CatalogDetailError
+        message={
+          brandQuery.error instanceof Error
+            ? brandQuery.error.message
+            : "An unexpected error occurred."
+        }
+        title="Unable to load brand"
+      />
     );
   }
 
@@ -102,46 +97,18 @@ export function BrandDetailPageClient({ slug }: { slug: string }) {
     <PageShell>
       <PageHeader
         actions={
-          !isEditing ? (
-            <div className="flex gap-2">
-              <PermissionGate permission="catalog.brands.manage">
-                <Button
-                  onClick={() => setIsEditing(true)}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  <Pencil className="size-3.5" />
-                  Edit
-                </Button>
-              </PermissionGate>
-              <PermissionGate permission="catalog.brands.manage">
-                <Button
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                  size="sm"
-                  type="button"
-                  variant="outline-destructive"
-                >
-                  <Trash2 className="size-3.5" />
-                  Delete
-                </Button>
-              </PermissionGate>
-            </div>
-          ) : (
-            <Button
-              onClick={() => setIsEditing(false)}
-              size="sm"
-              type="button"
-              variant="ghost"
-            >
-              <X className="size-3.5" />
-              Cancel
-            </Button>
-          )
+          <CatalogDetailHeaderActions
+            isEditing={isEditing}
+            isPending={updateMutation.isPending}
+            onCancel={() => setIsEditing(false)}
+            onDelete={() => setIsDeleteDialogOpen(true)}
+            onEdit={() => setIsEditing(true)}
+            permission="catalog.brands.manage"
+          />
         }
         backHref={toRoute("/admin/products/brands")}
         backLabel="Brands"
-        description={`/${brand.slug}`}
+        description="Manage brand identity, availability, and media."
         image={brand.primaryImageUrl ?? null}
         title={brand.name}
       />
@@ -177,41 +144,25 @@ export function BrandDetailPageClient({ slug }: { slug: string }) {
           onSubmit={(values) => updateMutation.mutate(values)}
         />
       ) : (
-        <Card className="border-border/70 bg-card shadow-none">
-          <CardHeader>
-            <CardTitle>Brand details</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2 text-sm">
-            <div className="flex flex-col gap-1">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Name
-              </p>
-              <p>{brand.name}</p>
-            </div>
-            <div className="flex flex-col gap-1">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Slug
-              </p>
-              <p className="font-mono">{brand.slug}</p>
-            </div>
-            {brand.website ? (
-              <div className="flex flex-col gap-1">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Website
-                </p>
-                <p>{brand.website}</p>
-              </div>
-            ) : null}
-            {brand.description ? (
-              <div className="col-span-2 flex flex-col gap-1">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Description
-                </p>
-                <p className="text-muted-foreground">{brand.description}</p>
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
+        <CatalogDetailsCard title="Brand details">
+          <CatalogDetailRow label="Name" value={brand.name} />
+          <CatalogDetailRow label="Slug" tone="identifier" value={brand.slug} />
+          {brand.website ? (
+            <CatalogDetailRow
+              label="Website"
+              tone="support"
+              value={brand.website}
+            />
+          ) : null}
+          {brand.description ? (
+            <CatalogDetailRow
+              className="sm:col-span-2"
+              label="Description"
+              tone="support"
+              value={brand.description}
+            />
+          ) : null}
+        </CatalogDetailsCard>
       )}
 
       <MediaPanel
@@ -226,8 +177,8 @@ export function BrandDetailPageClient({ slug }: { slug: string }) {
         entityType="brand"
         isOpen={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}
-        onDelete={async (slug: string) => {
-          await deleteAdminBrand(slug);
+        onDelete={async (nextSlug: string) => {
+          await deleteAdminBrand(nextSlug);
           router.push(toRoute("/admin/products/brands"));
         }}
         onSuccessQueryKeys={[["admin", "catalog", "brands"]]}

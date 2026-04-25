@@ -23,5 +23,8 @@ describe("AppFormField", () => {
     assert.match(markup, /Email/);
     assert.match(markup, /Use your company email\./);
     assert.match(markup, /Enter an email address\./);
+    assert.match(markup, /form-field-label/);
+    assert.match(markup, /form-field-description/);
+    assert.match(markup, /form-field-error/);
   });
 });

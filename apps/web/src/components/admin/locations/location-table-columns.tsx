@@ -9,6 +9,7 @@ import {
   LOCATION_STATUS_META,
   LOCATION_TYPE_META,
 } from "@/lib/admin-models";
+import { formatCount } from "@/lib/display/format";
 import { cn } from "@/lib/utils";
 
 export const locationTableColumns: Array<
@@ -18,11 +19,11 @@ export const locationTableColumns: Array<
     id: "name",
     header: "Name",
     cell: ({ row }) => (
-      <div className="flex flex-col gap-0.5">
-        <p className="text-sm font-bold text-foreground truncate max-w-[240px]">
+      <div className="min-w-0">
+        <p className="text-balance font-medium text-foreground">
           {row.original.name}
         </p>
-        <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
+        <p className="type-identifier mt-1 break-all text-muted-foreground">
           {row.original.slug}
         </p>
       </div>
@@ -57,13 +58,11 @@ export const locationTableColumns: Array<
     header: "Manager",
     cell: ({ row }) =>
       row.original.managerName ? (
-        <span className="text-sm font-bold text-foreground">
+        <span className="block text-pretty text-sm text-foreground">
           {row.original.managerName}
         </span>
       ) : (
-        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/30">
-          Unassigned
-        </span>
+        <span className="type-support text-muted-foreground">Unassigned</span>
       ),
   },
   {
@@ -71,12 +70,12 @@ export const locationTableColumns: Array<
     enableSorting: false,
     header: "Operations",
     cell: ({ row }) => (
-      <div className="flex flex-col gap-1">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
-          {row.original.staffCount} staff assigned
+      <div className="flex flex-col gap-0.5">
+        <span className="type-support text-muted-foreground">
+          {formatCount(row.original.staffCount)} staff assigned
         </span>
-        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
-          {row.original.zoneCount} zones configured
+        <span className="type-support text-muted-foreground">
+          {formatCount(row.original.zoneCount)} zones configured
         </span>
       </div>
     ),
@@ -117,7 +116,7 @@ export const locationTableColumns: Array<
     accessorKey: "createdAt",
     header: "Created",
     cell: ({ row }) => (
-      <span className="tabular-nums text-[11px] font-bold uppercase tracking-widest text-muted-foreground/40">
+      <span className="type-support tabular-nums text-muted-foreground">
         {formatAdminDate(row.original.createdAt)}
       </span>
     ),

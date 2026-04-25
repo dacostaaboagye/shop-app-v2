@@ -3,6 +3,10 @@
 import type { AdminUserSummary } from "@shop/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Clock } from "lucide-react";
+import {
+  AccessCountCell,
+  AccessTextCell,
+} from "@/components/admin/access/access-table-cells";
 import { PreviewImage } from "@/components/system/preview-image";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +14,7 @@ import {
   deriveAvailablePortals,
   formatAdminDate,
   formatDisplayName,
+  formatPortalLabel,
   getInitials,
   PASSWORD_RESET_BADGE_CLASS_NAME,
   ROLE_BADGE_CLASSES,
@@ -45,10 +50,10 @@ export const userTableColumns: Array<ColumnDef<AdminUserSummary, unknown>> = [
             </Avatar>
           )}
           <div className="min-w-0">
-            <p className="font-medium leading-none">
+            <p className="overflow-wrap-anywhere font-medium leading-none text-foreground">
               {formatDisplayName(user.firstName, user.lastName)}
             </p>
-            <p className="mt-1 font-mono text-xs text-muted-foreground">
+            <p className="type-identifier mt-1 text-muted-foreground">
               {user.email}
             </p>
             {user.requiresPasswordChange ? (
@@ -78,7 +83,7 @@ export const userTableColumns: Array<ColumnDef<AdminUserSummary, unknown>> = [
           <Badge
             key={role.slug}
             className={cn(
-              "capitalize text-[0.68rem]",
+              "text-[0.68rem]",
               ROLE_BADGE_CLASSES[role.slug as RoleKey] ??
                 "border-border bg-muted/25",
             )}
@@ -111,20 +116,20 @@ export const userTableColumns: Array<ColumnDef<AdminUserSummary, unknown>> = [
     cell: ({ row }) =>
       row.original.assignedLocations.length ? (
         <div className="flex flex-col gap-1">
-          <span className="text-sm">
+          <span className="text-sm text-foreground">
             {row.original.assignedLocations
               .slice(0, 2)
               .map((location) => location.name)
               .join(", ")}
           </span>
           {row.original.assignedLocations.length > 2 ? (
-            <span className="text-xs text-muted-foreground">
-              +{row.original.assignedLocations.length - 2} more
-            </span>
+            <AccessCountCell
+              value={row.original.assignedLocations.length - 2}
+            />
           ) : null}
         </div>
       ) : (
-        <span className="text-sm text-muted-foreground">No assignments</span>
+        <AccessTextCell value="No assignments" />
       ),
   },
   {
@@ -137,11 +142,11 @@ export const userTableColumns: Array<ColumnDef<AdminUserSummary, unknown>> = [
       );
 
       return portals.length ? (
-        <span className="text-sm capitalize text-muted-foreground">
-          {portals.join(", ")}
+        <span className="text-sm text-muted-foreground">
+          {portals.map((portal) => formatPortalLabel(portal)).join(", ")}
         </span>
       ) : (
-        <span className="text-sm text-muted-foreground">None</span>
+        <AccessTextCell value="None" />
       );
     },
   },
@@ -150,7 +155,7 @@ export const userTableColumns: Array<ColumnDef<AdminUserSummary, unknown>> = [
     accessorKey: "createdAt",
     header: "Joined",
     cell: ({ row }) => (
-      <span className="text-sm tabular-nums text-muted-foreground">
+      <span className="type-support tabular-nums text-muted-foreground">
         {formatAdminDate(row.original.createdAt)}
       </span>
     ),

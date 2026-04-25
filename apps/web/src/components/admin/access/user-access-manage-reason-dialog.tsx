@@ -1,19 +1,11 @@
 "use client";
+
 import type { AdminLocationSummary } from "@shop/contracts";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AppFormField } from "@/components/forms/app-form-field";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { FieldGroup } from "@/components/ui/field";
 import {
   Select,
@@ -22,10 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { adminUserAccessDetailQueryKey } from "@/lib/react-query/admin-user-access";
 import { toast } from "@/lib/toast";
+import {
+  UserAccessDialogError,
+  UserAccessDialogHeader,
+  UserAccessDialogSubmit,
+} from "./user-access-dialog-surfaces";
 import { submitUserAccessReasonAction } from "./user-access-manage-actions";
 import {
   getDialogMeta,
@@ -33,6 +29,8 @@ import {
   type ReasonDialogState,
   roleRequiresLocationScope,
 } from "./user-access-manage-support";
+
+const GLOBAL_SCOPE_VALUE = "__global__";
 
 export function UserAccessManageReasonDialog({
   allLocations,
@@ -49,6 +47,26 @@ export function UserAccessManageReasonDialog({
 }) {
   const queryClient = useQueryClient();
   const [wasSubmitted, setWasSubmitted] = useState(false);
+  const activeLocations = useMemo(
+    () => allLocations.filter((location) => location.status === "active"),
+    [allLocations],
+  );
+
+  const meta = getDialogMeta(state);
+  const scopeIsRequired =
+    state.kind === "assign-role" && roleRequiresLocationScope(state.roleSlug);
+  const form = useForm({
+    defaultValues: {
+      locationSlug: scopeIsRequired ? "" : GLOBAL_SCOPE_VALUE,
+      reason: "",
+    },
+    onSubmit: async ({ value }) =>
+      mutation.mutateAsync({
+        locationSlug:
+          value.locationSlug === GLOBAL_SCOPE_VALUE ? "" : value.locationSlug,
+        reason: value.reason,
+      }),
+  });
   const mutation = useMutation({
     mutationFn: (value: { locationSlug: string; reason: string }) =>
       submitUserAccessReasonAction({ ...value, slug, state }),
@@ -62,27 +80,17 @@ export function UserAccessManageReasonDialog({
       onClose();
     },
   });
-  const form = useForm({
-    defaultValues: { locationSlug: "", reason: "" },
-    onSubmit: async ({ value }) =>
-      mutation.mutateAsync({
-        locationSlug: value.locationSlug.trim(),
-        reason: value.reason,
-      }),
-  });
-  if (state.kind === "closed") {
-    return null;
-  }
-  const meta = getDialogMeta(state);
-  const scopeIsRequired =
-    state.kind === "assign-role" && roleRequiresLocationScope(state.roleSlug);
   const isPending = isReasonDialogPending({
     formIsSubmitting: form.state.isSubmitting,
     mutationIsPending: mutation.isPending,
   });
+
+  if (state.kind === "closed") {
+    return null;
+  }
+
   return (
     <Dialog
-      open={open}
       onOpenChange={(next) => {
         if (!next) {
           mutation.reset();
@@ -91,6 +99,7 @@ export function UserAccessManageReasonDialog({
           onClose();
         }
       }}
+      open={open}
     >
       <DialogContent className="sm:max-w-md">
         <form
@@ -100,20 +109,11 @@ export function UserAccessManageReasonDialog({
             void form.handleSubmit();
           }}
         >
-          <DialogHeader>
-            <DialogTitle>{meta.title}</DialogTitle>
-            <DialogDescription>{meta.description}</DialogDescription>
-          </DialogHeader>
-          {mutation.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Action failed</AlertTitle>
-              <AlertDescription>
-                {mutation.error instanceof Error
-                  ? mutation.error.message
-                  : "An unexpected error occurred."}
-              </AlertDescription>
-            </Alert>
-          ) : null}
+          <UserAccessDialogHeader
+            description={meta.description}
+            title={meta.title}
+          />
+          <UserAccessDialogError error={mutation.error} title="Action failed" />
           <FieldGroup className="py-2">
             {state.kind === "assign-role" ? (
               <form.Field
@@ -133,8 +133,8 @@ export function UserAccessManageReasonDialog({
                   <AppFormField
                     description={
                       scopeIsRequired
-                        ? "Manager and worker access is always scoped to one location."
-                        : "Leave blank to assign this role globally."
+                        ? "Manager and worker access is always scoped to a location."
+                        : "Choose a location only when the role should stay scoped."
                     }
                     errors={field.state.meta.errors}
                     inputId={field.name}
@@ -143,7 +143,7 @@ export function UserAccessManageReasonDialog({
                   >
                     <Select
                       disabled={isPending}
-                      onValueChange={(value) => field.handleChange(value)}
+                      onValueChange={field.handleChange}
                       value={field.state.value}
                     >
                       <SelectTrigger id={field.name}>
@@ -154,19 +154,16 @@ export function UserAccessManageReasonDialog({
                         />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">
-                          {scopeIsRequired ? "Select a location" : "Global"}
-                        </SelectItem>
-                        {allLocations
-                          .filter((location) => location.status === "active")
-                          .map((location) => (
-                            <SelectItem
-                              key={location.slug}
-                              value={location.slug}
-                            >
-                              {location.name}
-                            </SelectItem>
-                          ))}
+                        {!scopeIsRequired ? (
+                          <SelectItem value={GLOBAL_SCOPE_VALUE}>
+                            Global
+                          </SelectItem>
+                        ) : null}
+                        {activeLocations.map((location) => (
+                          <SelectItem key={location.slug} value={location.slug}>
+                            {location.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </AppFormField>
@@ -214,34 +211,25 @@ export function UserAccessManageReasonDialog({
             </form.Field>
           </FieldGroup>
 
-          <DialogFooter showCloseButton>
-            <form.Subscribe
-              selector={(state) => ({
-                canSubmit: state.canSubmit,
-                isSubmitting: state.isSubmitting,
-              })}
-            >
-              {({ canSubmit, isSubmitting }) => (
-                <Button
-                  disabled={!canSubmit || isPending}
-                  type="submit"
-                  variant={meta.destructive ? "destructive" : "default"}
-                >
-                  {isReasonDialogPending({
-                    formIsSubmitting: isSubmitting,
-                    mutationIsPending: mutation.isPending,
-                  }) ? (
-                    <>
-                      <Spinner data-icon="inline-start" />
-                      Saving...
-                    </>
-                  ) : (
-                    meta.submitLabel
-                  )}
-                </Button>
-              )}
-            </form.Subscribe>
-          </DialogFooter>
+          <form.Subscribe
+            selector={(formState) => ({
+              canSubmit: formState.canSubmit,
+              isSubmitting: formState.isSubmitting,
+            })}
+          >
+            {({ canSubmit, isSubmitting }) => (
+              <UserAccessDialogSubmit
+                canSubmit={canSubmit}
+                isBusy={isReasonDialogPending({
+                  formIsSubmitting: isSubmitting,
+                  mutationIsPending: mutation.isPending,
+                })}
+                label={meta.submitLabel}
+                pendingLabel="Saving..."
+                variant={meta.destructive ? "destructive" : "default"}
+              />
+            )}
+          </form.Subscribe>
         </form>
       </DialogContent>
     </Dialog>

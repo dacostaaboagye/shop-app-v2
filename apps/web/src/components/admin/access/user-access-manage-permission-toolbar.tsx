@@ -1,8 +1,8 @@
 "use client";
 
-import { Search, X } from "lucide-react";
+import { AdminDirectoryFilterPanel } from "@/components/admin/admin-directory-filter-panel";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -37,80 +37,74 @@ export function UserAccessManagePermissionToolbar({
   showFilter: "all" | "granted" | "overrides";
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-4 rounded-xl bg-white p-4 shadow-sm border border-border/50">
-      <div className="relative min-w-[320px] flex-1">
-        <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          className="h-10 border-0 bg-muted pl-10 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-primary/20 transition-all rounded-xl"
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search by key or description"
-          value={search}
-        />
-      </div>
-
-      <Select onValueChange={onDomainFilterChange} value={domainFilter}>
-        <SelectTrigger className="h-10">
-          <SelectValue placeholder="All domains" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All domains</SelectItem>
-          {domains.map((domain) => (
-            <SelectItem key={domain.key} value={domain.key}>
-              {domain.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select
-        onValueChange={(value) =>
-          onShowFilterChange(value as "all" | "granted" | "overrides")
-        }
-        value={showFilter}
-      >
-        <SelectTrigger className="h-10">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All permissions</SelectItem>
-          <SelectItem value="granted">Granted only</SelectItem>
-          <SelectItem value="overrides">Overrides only</SelectItem>
-        </SelectContent>
-      </Select>
-
-      {hasFilters ? (
-        <Button
-          className="h-10 rounded-xl px-4 text-muted-foreground hover:text-foreground hover:bg-muted"
-          onClick={onClear}
-          size="sm"
-          type="button"
-          variant="ghost"
-        >
-          <X className="mr-2 size-4" />
-          Clear filters
-        </Button>
-      ) : null}
-
-      <div className="ml-auto flex items-center gap-1">
-        <Button
-          className="h-8 rounded-lg text-xs"
-          onClick={onExpandAll}
-          size="sm"
-          type="button"
-          variant="ghost"
-        >
-          Expand all
-        </Button>
-        <Button
-          className="h-8 rounded-lg text-xs"
-          onClick={onCollapseAll}
-          size="sm"
-          type="button"
-          variant="ghost"
-        >
-          Collapse all
-        </Button>
-      </div>
-    </div>
+    <AdminDirectoryFilterPanel
+      extraControls={
+        <>
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <Label htmlFor="user-access-domain-filter">Domain</Label>
+            <Select onValueChange={onDomainFilterChange} value={domainFilter}>
+              <SelectTrigger className="h-10" id="user-access-domain-filter">
+                <SelectValue placeholder="All domains" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All domains</SelectItem>
+                {domains.map((domain) => (
+                  <SelectItem key={domain.key} value={domain.key}>
+                    {domain.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <Label htmlFor="user-access-state-filter">Show</Label>
+            <Select
+              onValueChange={(value) =>
+                onShowFilterChange(value as "all" | "granted" | "overrides")
+              }
+              value={showFilter}
+            >
+              <SelectTrigger className="h-10" id="user-access-state-filter">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All permissions</SelectItem>
+                <SelectItem value="granted">Granted only</SelectItem>
+                <SelectItem value="overrides">Overrides only</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </>
+      }
+      hasFilters={hasFilters}
+      onClear={onClear}
+      onDraftSearchChange={onSearchChange}
+      placeholder="Permission key or description"
+      searchId="user-access-permission-search"
+      summary="Filter by domain, granted state, or override state."
+      trailingControls={
+        <div className="flex min-w-0 flex-wrap items-center gap-1">
+          <Button
+            className="h-8 rounded-lg text-xs"
+            onClick={onExpandAll}
+            size="sm"
+            type="button"
+            variant="ghost"
+          >
+            Expand all
+          </Button>
+          <Button
+            className="h-8 rounded-lg text-xs"
+            onClick={onCollapseAll}
+            size="sm"
+            type="button"
+            variant="ghost"
+          >
+            Collapse all
+          </Button>
+        </div>
+      }
+      value={search}
+    />
   );
 }

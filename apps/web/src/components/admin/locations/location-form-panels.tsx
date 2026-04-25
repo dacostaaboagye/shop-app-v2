@@ -1,9 +1,9 @@
 "use client";
 
-import { Building2, Save } from "lucide-react";
+import { Building2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
-import { Button } from "@/components/ui/button";
+import { AppFormField } from "@/components/forms/app-form-field";
 import {
   Card,
   CardContent,
@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Spinner } from "@/components/ui/spinner";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
 const LocationMapPicker = dynamic(
@@ -36,30 +36,35 @@ export function LocationFulfilmentField({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <label
+    <AppFormField
+      inputId={id}
+      label="Fulfilment enabled"
+      {...(typeof description === "string" ? { description } : {})}
+    >
+      <div
         className={cn(
-          "flex cursor-pointer items-start gap-3 rounded-lg border border-border/70 bg-muted/20 p-4 transition-colors",
-          "has-[:checked]:border-primary/30 has-[:checked]:bg-primary/5",
+          "flex items-start justify-between gap-4 rounded-xl border border-border/70 bg-muted/20 p-4 transition-colors",
+          checked && "border-primary/30 bg-primary/5",
+          disabled && "opacity-60",
         )}
       >
-        <input
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-sm font-medium leading-tight text-foreground">
+            <Building2 className="size-3.5 shrink-0 text-muted-foreground" />
+            <span>Enable fulfilment routing</span>
+          </div>
+          {typeof description !== "string" ? (
+            <div className="form-field-description mt-1">{description}</div>
+          ) : null}
+        </div>
+        <Switch
           checked={checked}
-          className="mt-0.5 size-4 accent-primary"
           disabled={disabled}
           id={id}
-          onChange={(event) => onChange(event.target.checked)}
-          type="checkbox"
+          onCheckedChange={onChange}
         />
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 text-sm font-medium leading-tight">
-            <Building2 className="size-3.5 shrink-0 text-muted-foreground" />
-            Fulfilment enabled
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-        </div>
-      </label>
-    </div>
+      </div>
+    </AppFormField>
   );
 }
 
@@ -104,47 +109,5 @@ export function LocationMapCard({
         />
       </CardContent>
     </Card>
-  );
-}
-
-export function LocationFormActions({
-  canSubmit,
-  cancelLabel = "Cancel",
-  isBusy,
-  onCancel,
-  submitLabel,
-  submittingLabel,
-}: {
-  canSubmit: boolean;
-  cancelLabel?: string;
-  isBusy: boolean;
-  onCancel: () => void;
-  submitLabel: string;
-  submittingLabel: string;
-}) {
-  return (
-    <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/70 pt-4">
-      <Button
-        disabled={isBusy}
-        onClick={onCancel}
-        type="button"
-        variant="outline"
-      >
-        {cancelLabel}
-      </Button>
-      <Button disabled={!canSubmit || isBusy} type="submit">
-        {isBusy ? (
-          <>
-            <Spinner data-icon="inline-start" />
-            {submittingLabel}
-          </>
-        ) : (
-          <>
-            {submitLabel}
-            <Save data-icon="inline-end" />
-          </>
-        )}
-      </Button>
-    </div>
   );
 }

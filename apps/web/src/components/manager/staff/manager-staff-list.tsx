@@ -4,6 +4,7 @@ import type { LocationStaffSummary } from "@shop/contracts";
 import { AppTableWrapper } from "@/components/system/app-table-wrapper";
 import { PersonAvatar } from "@/components/system/person-avatar";
 import { Badge } from "@/components/ui/badge";
+import { formatCount, formatDateTime } from "@/lib/display/format";
 import { formatMoney, type MoneyProfile } from "@/lib/money/format-money";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +31,7 @@ export function ManagerStaffList({
 
   return (
     <div className="flex flex-col gap-4">
-      <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">
+      <h3 className="type-kicker text-muted-foreground/60">
         {locationName || "Location team"}
       </h3>
       <AppTableWrapper>
@@ -52,11 +53,11 @@ export function ManagerStaffList({
               />
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-base font-bold text-foreground">
+                  <p className="overflow-wrap-anywhere text-base font-bold text-foreground">
                     {member.firstName} {member.lastName}
                   </p>
                   <Badge
-                    className="rounded-md font-bold uppercase tracking-wider text-[10px]"
+                    className="rounded-md font-bold text-[10px]"
                     variant={
                       member.roleSlug === "manager" ? "secondary" : "outline"
                     }
@@ -64,31 +65,32 @@ export function ManagerStaffList({
                     {member.roleName}
                   </Badge>
                   <Badge
-                    className="rounded-md font-bold uppercase tracking-wider text-[10px]"
+                    className="rounded-md font-bold text-[10px]"
                     variant="outline"
                   >
                     {member.status}
                   </Badge>
                 </div>
-                <p className="mt-1 text-sm font-medium text-muted-foreground/80">
+                <p className="type-support mt-1 overflow-wrap-anywhere">
                   {member.email}
                 </p>
-                <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
+                <p className="type-data-label mt-1">
                   Assigned{" "}
-                  {new Date(member.assignedAt).toLocaleDateString("en-GB", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
+                  {formatDateTime(member.assignedAt, {
+                    empty: "Not available",
                   })}
                 </p>
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:min-w-[32rem]">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:min-w-[32rem]">
               <StaffMetric
                 label="Active stock"
-                value={member.activeAssignmentCount}
+                value={formatCount(member.activeAssignmentCount)}
               />
-              <StaffMetric label="Sales" value={member.salesCount} />
+              <StaffMetric
+                label="Sales"
+                value={formatCount(member.salesCount)}
+              />
               <StaffMetric
                 label="Net sales"
                 value={formatMoney(member.netSalesAmount, moneyProfile)}
@@ -97,9 +99,8 @@ export function ManagerStaffList({
                 label="Last sale"
                 value={
                   member.lastSaleAt
-                    ? new Date(member.lastSaleAt).toLocaleDateString("en-GB", {
-                        day: "2-digit",
-                        month: "short",
+                    ? formatDateTime(member.lastSaleAt, {
+                        empty: "Not available",
                       })
                     : "None"
                 }
@@ -121,10 +122,10 @@ function StaffMetric({
 }) {
   return (
     <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-muted/20 px-4 py-3 transition-colors hover:bg-muted/30">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
-        {label}
+      <p className="type-data-label text-muted-foreground/50">{label}</p>
+      <p className="overflow-wrap-anywhere text-sm font-bold tabular-nums text-foreground">
+        {value}
       </p>
-      <p className="text-sm font-bold tabular-nums text-foreground">{value}</p>
     </div>
   );
 }

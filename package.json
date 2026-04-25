@@ -8,6 +8,8 @@
     "dev": "turbo dev",
     "deploy:testing:bootstrap": "pnpm --filter @shop/database db:migrate && pnpm --filter @shop/api db:seed-core",
     "deploy:testing:seed-admin": "pnpm --filter @shop/api db:seed-admin",
+    "deploy:staging:migrate": "pnpm --filter @shop/database db:migrate",
+    "deploy:production:migrate": "pnpm --filter @shop/database db:migrate",
     "enforce:branch-name": "node ./scripts/git/validate-branch-name.mjs",
     "enforce:commit-message": "node ./scripts/git/validate-commit-message.mjs",
     "format": "biome format --write .",

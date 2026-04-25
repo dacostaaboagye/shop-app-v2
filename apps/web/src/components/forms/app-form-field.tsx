@@ -19,7 +19,7 @@ import { getFormFieldMessages } from "@/lib/forms/field-errors";
 
 type AppFormFieldProps = {
   children: ReactNode;
-  description?: string;
+  description?: string | undefined;
   errors?: ReadonlyArray<unknown> | null;
   info?: string | undefined;
   inputId: string;
@@ -40,7 +40,10 @@ export function AppFormField({
 
   return (
     <TooltipProvider>
-      <Field data-invalid={messages.length ? true : undefined}>
+      <Field
+        className="gap-2.5"
+        data-invalid={messages.length ? true : undefined}
+      >
         <div className="flex items-center gap-1.5">
           <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
           {info && (
@@ -60,7 +63,7 @@ export function AppFormField({
             </Tooltip>
           )}
         </div>
-        <FieldContent>
+        <FieldContent className="gap-1.5">
           {children}
           {description ? (
             <FieldDescription>{description}</FieldDescription>

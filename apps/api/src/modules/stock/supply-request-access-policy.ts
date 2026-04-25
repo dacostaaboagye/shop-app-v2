@@ -90,6 +90,7 @@ export class SupplyRequestAccessPolicy {
   }
 
   async assertCanCancelRequest(input: {
+    adminOverrideReason?: string;
     actor: AuthenticatedActor;
     supplyRequest: SupplyRequestRow;
   }): Promise<void> {
@@ -103,6 +104,7 @@ export class SupplyRequestAccessPolicy {
     }
 
     if (await this.isAdmin(input.actor)) {
+      assertAdminOverrideReason(input.adminOverrideReason, "cancel");
       return;
     }
 
@@ -112,6 +114,7 @@ export class SupplyRequestAccessPolicy {
   }
 
   async assertCanConfirmReceipt(input: {
+    adminOverrideReason?: string;
     actor: AuthenticatedActor;
     supplyRequest: SupplyRequestRow;
   }): Promise<void> {
@@ -125,6 +128,7 @@ export class SupplyRequestAccessPolicy {
     }
 
     if (await this.isAdmin(input.actor)) {
+      assertAdminOverrideReason(input.adminOverrideReason, "confirm receipt");
       return;
     }
 
@@ -214,5 +218,21 @@ function forbiddenError(detail: string): AppError {
     detail,
     statusCode: 403,
     title: "Forbidden",
+  });
+}
+
+function assertAdminOverrideReason(
+  reason: string | undefined,
+  action: "cancel" | "confirm receipt",
+) {
+  if (reason && reason.trim() !== "") {
+    return;
+  }
+
+  throw new AppError({
+    code: "validation_error",
+    detail: `Admin override reason is required to ${action} a transfer on behalf of another user.`,
+    statusCode: 400,
+    title: "Admin override reason required",
   });
 }

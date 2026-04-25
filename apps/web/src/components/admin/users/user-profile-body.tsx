@@ -141,8 +141,10 @@ export function UserProfileBody({
                 </Avatar>
               )}
               <div className="min-w-0">
-                <p className="font-semibold leading-tight">{displayName}</p>
-                <p className="font-mono text-sm text-muted-foreground">
+                <p className="overflow-wrap-anywhere font-semibold leading-tight">
+                  {displayName}
+                </p>
+                <p className="type-identifier text-sm text-muted-foreground">
                   {user.email}
                 </p>
               </div>
@@ -180,7 +182,7 @@ export function UserProfileBody({
 
             {user.availablePortals.length > 0 ? (
               <div className="flex flex-col gap-1.5">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <p className="type-data-label text-muted-foreground">
                   Portal access
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -203,17 +205,19 @@ export function UserProfileBody({
 
             {user.assignedLocations.length > 0 ? (
               <div className="flex flex-col gap-1.5">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <p className="type-data-label text-muted-foreground">
                   Assigned locations
                 </p>
                 <div className="flex flex-col gap-1">
                   {user.assignedLocations.map((location) => (
                     <span
                       key={location.locationSlug}
-                      className="flex items-center gap-1.5 text-sm text-muted-foreground"
+                      className="flex items-start gap-1.5 text-sm text-muted-foreground"
                     >
                       <MapPin className="size-3.5 shrink-0 text-muted-foreground/60" />
-                      {location.locationName}
+                      <span className="overflow-wrap-anywhere">
+                        {location.locationName}
+                      </span>
                     </span>
                   ))}
                 </div>

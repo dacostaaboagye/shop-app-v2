@@ -48,12 +48,17 @@ export function AppBanner({
 
   return (
     <Alert
-      className={cn("rounded-xl border border-border/50 shadow-sm", className)}
+      className={cn(
+        "rounded-xl border border-border/60 bg-card/85 shadow-sm backdrop-blur-sm",
+        className,
+      )}
       variant={meta.variant}
     >
       <Icon />
-      <AlertTitle>{title}</AlertTitle>
-      <AlertDescription>{description}</AlertDescription>
+      <AlertTitle className="feedback-title">{title}</AlertTitle>
+      <AlertDescription className="feedback-description">
+        {description}
+      </AlertDescription>
       {action ? <AlertAction>{action}</AlertAction> : null}
     </Alert>
   );

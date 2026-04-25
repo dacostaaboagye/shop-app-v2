@@ -3,9 +3,11 @@
 import type { StockSupplyRequestResponse } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { AppErrorBanner } from "@/components/system/app-error";
+import {
+  StockWorkspaceError,
+  StockWorkspaceListSkeleton,
+} from "@/components/stock/stock-workspace-feedback";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   fetchWorkerSupplyRequests,
   workerSupplyRequestsQueryKey,
@@ -20,7 +22,6 @@ import {
 } from "./worker-supply-requests.support";
 
 const QUERY = { page: 1, pageSize: 50 };
-const SKELETON_KEYS = [1, 2, 3, 4, 5];
 
 export function WorkerSupplyRequestsPageClient() {
   const [confirmTarget, setConfirmTarget] =
@@ -110,10 +111,10 @@ function WorkerRequestContent({
   statusFilter: WorkerRequestFilter;
   viewMode: WorkerViewMode;
 }) {
-  if (queryState === "pending") return <WorkerRequestSkeleton />;
+  if (queryState === "pending") return <StockWorkspaceListSkeleton />;
   if (queryState === "error") {
     return (
-      <AppErrorBanner
+      <StockWorkspaceError
         detail="Could not load your supply requests."
         error={queryError}
         onRetry={onRetry}
@@ -135,15 +136,5 @@ function WorkerRequestContent({
       statusFilter={statusFilter}
       viewMode={viewMode}
     />
-  );
-}
-
-function WorkerRequestSkeleton() {
-  return (
-    <div className="flex flex-col gap-3">
-      {SKELETON_KEYS.map((key) => (
-        <Skeleton className="h-44 w-full rounded-xl" key={key} />
-      ))}
-    </div>
   );
 }

@@ -94,7 +94,7 @@ export function SalesDocumentActions({
         variant="outline"
       >
         <Download data-icon="inline-start" />
-        {isFilePending ? "Preparing" : "Download"}
+        {isFilePending ? "Preparing..." : "Download"}
       </Button>
       <Button
         disabled={actionsDisabled}

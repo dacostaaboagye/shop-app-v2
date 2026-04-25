@@ -17,7 +17,7 @@ export function OfficialDocumentSettingsCard({
   title: string;
 }) {
   return (
-    <Card>
+    <Card className="border-border/70 bg-card shadow-none">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>

@@ -3,10 +3,12 @@
 import { Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { formatCount } from "@/lib/display/format";
 import { cn } from "@/lib/utils";
 import { ViewModeToggle } from "./worker-assignment-view-mode-toggle";
 import {
   FILTER_OPTIONS,
+  formatStockFilterLabel,
   type StockFilter,
   type ViewMode,
 } from "./worker-assignments-support";
@@ -103,7 +105,7 @@ function StockFilterChips({
           onClick={() => onStockFilterChange(option.value)}
           type="button"
         >
-          {option.label}
+          {formatStockFilterLabel(option.value)}
           {counts[option.value] > 0 ? (
             <span
               className={cn(
@@ -113,7 +115,7 @@ function StockFilterChips({
                   : "bg-muted text-muted-foreground/60",
               )}
             >
-              {counts[option.value]}
+              {formatCount(counts[option.value])}
             </span>
           ) : null}
         </button>

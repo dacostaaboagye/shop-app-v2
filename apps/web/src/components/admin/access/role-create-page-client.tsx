@@ -1,15 +1,9 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { CatalogFormCard } from "@/components/admin/catalog/catalog-form-surfaces";
+import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchAdminPermissions } from "@/lib/react-query/admin-access";
 import { toRoute } from "@/lib/routes";
@@ -32,35 +26,33 @@ export function RoleCreatePageClient() {
       {permissionOptionsQuery.isPending && !permissionOptionsQuery.data ? (
         <Skeleton className="h-96 w-full" />
       ) : permissionOptionsQuery.isError ? (
-        <Alert variant="destructive">
-          <AlertTitle>Unable to load permissions</AlertTitle>
-          <AlertDescription>
-            {permissionOptionsQuery.error instanceof Error
+        <AppErrorBanner
+          detail={
+            permissionOptionsQuery.error instanceof Error
               ? permissionOptionsQuery.error.message
-              : "Failed to load permissions."}
-          </AlertDescription>
-        </Alert>
+              : "Failed to load permissions."
+          }
+          error={permissionOptionsQuery.error}
+          onRetry={() => {
+            void permissionOptionsQuery.refetch();
+          }}
+          title="Unable to load permissions"
+        />
       ) : (
-        <Card className="border-border/70 bg-card shadow-none">
-          <CardHeader>
-            <CardTitle>Create role</CardTitle>
-            <CardDescription>
-              Start with the minimum required permissions and expand only where
-              the workflow needs it.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <RoleEditorForm
-              initialValues={{
-                description: "",
-                name: "",
-                permissionKeys: [],
-              }}
-              mode="create"
-              permissionOptions={permissionOptionsQuery.data?.items ?? []}
-            />
-          </CardContent>
-        </Card>
+        <CatalogFormCard
+          description="Start with the minimum required permissions and expand only where the workflow needs it."
+          title="Create role"
+        >
+          <RoleEditorForm
+            initialValues={{
+              description: "",
+              name: "",
+              permissionKeys: [],
+            }}
+            mode="create"
+            permissionOptions={permissionOptionsQuery.data?.items ?? []}
+          />
+        </CatalogFormCard>
       )}
     </PageShell>
   );

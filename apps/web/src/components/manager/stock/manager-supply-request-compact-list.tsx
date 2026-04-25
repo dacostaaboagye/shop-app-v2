@@ -1,8 +1,7 @@
 import type { StockSupplyRequestResponse } from "@shop/contracts";
 import { ArrowRight, CheckCircle2, XCircle } from "lucide-react";
-import { AppTableWrapper } from "@/components/system/app-table-wrapper";
+import { SupplyRequestCompactList } from "@/components/stock/supply-request-compact-row";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import type { SupplyRequestAction } from "./manager-supply-requests.support";
 import { statusMeta } from "./manager-supply-requests.support";
 
@@ -19,112 +18,36 @@ export function CompactIncomingRequestList({
   ) => void;
 }) {
   return (
-    <AppTableWrapper>
-      {items.map((item, index) => (
-        <CompactIncomingRequestRow
-          index={index}
+    <SupplyRequestCompactList
+      items={items}
+      renderActions={(item) => (
+        <RowActions
           item={item}
-          itemCount={items.length}
-          key={item.supplyRequestId}
           manageableLocationIds={manageableLocationIds}
           onAction={onAction}
         />
-      ))}
-    </AppTableWrapper>
+      )}
+      statusPresentation={(item) => statusMeta(item.status)}
+    />
   );
 }
 
-function CompactIncomingRequestRow({
-  index,
+function RowActions({
   item,
-  itemCount,
   manageableLocationIds,
   onAction,
 }: {
-  index: number;
   item: StockSupplyRequestResponse;
-  itemCount: number;
   manageableLocationIds: string[];
   onAction: (
     action: SupplyRequestAction,
     item: StockSupplyRequestResponse,
   ) => void;
 }) {
-  const { accent, icon: StatusIcon, label } = statusMeta(item.status);
   const canManage = manageableLocationIds.includes(item.sourceLocationId);
   const canApprove = canManage && item.status === "pending";
   const canDispatch = canManage && item.status === "approved";
 
-  return (
-    <div
-      className={cn(
-        "relative flex items-center gap-3 px-4 py-3",
-        index !== itemCount - 1 && "border-b border-border",
-      )}
-    >
-      <div
-        aria-hidden
-        className={cn("absolute left-0 top-0 h-full w-0.5", accent.bar)}
-      />
-      <div className="min-w-0 flex-1 pl-1">
-        <p className="truncate text-sm font-medium leading-tight">
-          {item.skuSnapshot.productName}
-        </p>
-        <div className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
-          <span>{item.sourceLocationName ?? "Source"}</span>
-          <span className="opacity-40">to</span>
-          <span>{item.locationName ?? "Destination"}</span>
-        </div>
-        <p className="mt-0.5 font-mono text-[10px] text-muted-foreground/70">
-          {item.reference}
-        </p>
-      </div>
-      <div className="hidden items-center gap-6 text-right sm:flex">
-        <div>
-          <p className="text-[10px] text-muted-foreground">Qty</p>
-          <p className="text-xs font-semibold tabular-nums">
-            {item.approvedQuantity ?? item.requestedQuantity}
-          </p>
-        </div>
-        <div className="min-w-[80px]">
-          <p className="text-center text-[10px] text-muted-foreground">
-            Status
-          </p>
-          <div
-            className={cn(
-              "mt-0.5 flex items-center justify-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium",
-              accent.badge,
-            )}
-          >
-            <StatusIcon className="size-2.5" />
-            {label}
-          </div>
-        </div>
-      </div>
-      <RowActions
-        canApprove={canApprove}
-        canDispatch={canDispatch}
-        item={item}
-        onAction={onAction}
-      />
-    </div>
-  );
-}
-
-function RowActions({
-  canApprove,
-  canDispatch,
-  item,
-  onAction,
-}: {
-  canApprove: boolean;
-  canDispatch: boolean;
-  item: StockSupplyRequestResponse;
-  onAction: (
-    action: SupplyRequestAction,
-    item: StockSupplyRequestResponse,
-  ) => void;
-}) {
   return (
     <div className="flex items-center gap-2">
       {canApprove ? (

@@ -17,6 +17,8 @@ export const sourceReservationStatusSchema = z.enum([
   "cancelled",
 ]);
 
+export const adminOverrideReasonSchema = z.string().trim().min(8).max(500);
+
 export const gtnStatusSchema = z.enum(["dispatched", "received", "cancelled"]);
 
 // Worker creates a request specifying source location and what they need
@@ -44,8 +46,13 @@ export const dispatchStockSupplyRequestSchema = z.object({
   notes: z.string().trim().max(500).optional(),
 });
 
+export const cancelStockSupplyRequestSchema = z.object({
+  adminOverrideReason: adminOverrideReasonSchema.optional(),
+});
+
 // Worker at destination confirms receipt (updates destination stock)
 export const confirmReceiptSchema = z.object({
+  adminOverrideReason: adminOverrideReasonSchema.optional(),
   notes: z.string().trim().max(500).optional(),
 });
 
@@ -162,6 +169,9 @@ export type RejectStockSupplyRequest = z.infer<
 >;
 export type DispatchStockSupplyRequest = z.infer<
   typeof dispatchStockSupplyRequestSchema
+>;
+export type CancelStockSupplyRequest = z.infer<
+  typeof cancelStockSupplyRequestSchema
 >;
 export type ConfirmReceipt = z.infer<typeof confirmReceiptSchema>;
 export type StockSupplyRequestResponse = z.infer<

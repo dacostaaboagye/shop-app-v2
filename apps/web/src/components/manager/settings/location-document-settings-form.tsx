@@ -46,13 +46,13 @@ export function LocationDocumentSettingsForm({
       <Tabs className="w-full" defaultValue="location-profile">
         <TabsList className="h-12 mb-6">
           <TabsTrigger
-            className="px-6 py-2 text-xs font-bold uppercase tracking-widest"
+            className="px-6 py-2 text-sm font-semibold"
             value="location-profile"
           >
             Location profile
           </TabsTrigger>
           <TabsTrigger
-            className="px-6 py-2 text-xs font-bold uppercase tracking-widest"
+            className="px-6 py-2 text-sm font-semibold"
             value="receipt"
           >
             Receipt behavior

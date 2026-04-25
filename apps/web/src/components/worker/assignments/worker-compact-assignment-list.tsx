@@ -4,6 +4,7 @@ import type { CurrentAssignment } from "@shop/contracts";
 import { ShoppingCart } from "lucide-react";
 import { ProductThumbnail } from "@/components/system/product-thumbnail";
 import { Button } from "@/components/ui/button";
+import { formatCount } from "@/lib/display/format";
 import { formatMoney, type MoneyProfile } from "@/lib/money/format-money";
 import { cn } from "@/lib/utils";
 import {
@@ -27,21 +28,11 @@ export function CompactAssignmentList({
   return (
     <div className="overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm">
       <div className="hidden border-b border-border/50 bg-muted px-4 py-3 sm:grid sm:grid-cols-[1fr_120px_100px_100px_120px] sm:gap-4">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-          Product
-        </span>
-        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 text-right">
-          Price
-        </span>
-        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 text-right">
-          On Hand
-        </span>
-        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 text-right">
-          Available
-        </span>
-        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 text-right">
-          Actions
-        </span>
+        <span className="type-data-label">Product</span>
+        <span className="type-data-label text-right">Price</span>
+        <span className="type-data-label text-right">On Hand</span>
+        <span className="type-data-label text-right">Available</span>
+        <span className="type-data-label text-right">Actions</span>
       </div>
       <div className="divide-y divide-border/50">
         {items.map((item) => (
@@ -90,13 +81,13 @@ function CompactAssignmentRow({
           variantName={item.variantName}
         />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold leading-tight group-hover:text-primary transition-colors">
+          <p className="type-data-value text-balance text-sm leading-tight transition-colors group-hover:text-primary">
             {item.productName}
           </p>
-          <p className="truncate text-[11px] font-medium text-muted-foreground/80">
+          <p className="type-support text-pretty text-[11px]">
             {item.variantName}
           </p>
-          <p className="mt-0.5 font-mono text-[9px] uppercase tracking-wider text-muted-foreground/40">
+          <p className="type-identifier mt-0.5 break-all text-[9px]">
             {item.sku}
           </p>
         </div>
@@ -104,32 +95,26 @@ function CompactAssignmentRow({
 
       <div className="flex items-center justify-between gap-4 sm:contents">
         <div className="flex flex-col sm:items-end">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 sm:hidden">
-            Price
-          </span>
+          <span className="type-data-label sm:hidden">Price</span>
           <p className="text-sm font-bold tabular-nums">
             {formatMoney(item.sellingPrice, moneyProfile)}
           </p>
         </div>
         <div className="flex flex-col sm:items-end">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 sm:hidden">
-            On Hand
-          </span>
+          <span className="type-data-label sm:hidden">On Hand</span>
           <p className="text-sm font-bold tabular-nums">
-            {item.onHandQuantity.toLocaleString()}
+            {formatCount(item.onHandQuantity)}
           </p>
         </div>
         <div className="flex flex-col sm:items-end">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 sm:hidden">
-            Available
-          </span>
+          <span className="type-data-label sm:hidden">Available</span>
           <p
             className={cn(
               "text-sm font-bold tabular-nums",
               toneClass(isOut ? "danger" : isLow ? "warning" : "success"),
             )}
           >
-            {item.availableQuantity.toLocaleString()}
+            {formatCount(item.availableQuantity)}
           </p>
         </div>
         <div className="flex sm:justify-end">

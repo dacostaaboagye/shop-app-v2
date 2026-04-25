@@ -3,6 +3,11 @@
 import type { AdminSupplierSummary } from "@shop/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Building2 } from "lucide-react";
+import {
+  AccessCountCell,
+  AccessNameCell,
+  AccessTextCell,
+} from "@/components/admin/access/access-table-cells";
 import { PreviewImage } from "@/components/system/preview-image";
 import { Badge } from "@/components/ui/badge";
 import { formatAdminDate } from "@/lib/admin-models";
@@ -31,12 +36,11 @@ export const supplierColumns: ColumnDef<AdminSupplierSummary>[] = [
               <Building2 className="size-4" />
             </div>
           )}
-          <div className="min-w-0">
-            <p className="font-medium leading-none">{supplier.name}</p>
-            <p className="mt-1 truncate text-xs text-muted-foreground">
-              {supplier.legalName ?? supplier.email ?? "No legal name recorded"}
-            </p>
-          </div>
+          <AccessNameCell
+            description={supplier.legalName ?? supplier.email}
+            name={supplier.name}
+            slug={supplier.slug}
+          />
         </div>
       );
     },
@@ -50,15 +54,15 @@ export const supplierColumns: ColumnDef<AdminSupplierSummary>[] = [
 
       return contact ? (
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium">
+          <p className="text-balance text-sm font-medium text-foreground">
             {contact.firstName} {contact.lastName}
           </p>
-          <p className="truncate text-xs text-muted-foreground">
+          <p className="type-support mt-1 break-all text-muted-foreground">
             {contact.email ?? contact.phone ?? "No contact detail"}
           </p>
         </div>
       ) : (
-        <span className="text-sm text-muted-foreground">Not assigned</span>
+        <AccessTextCell value="Not assigned" />
       );
     },
   },
@@ -79,12 +83,15 @@ export const supplierColumns: ColumnDef<AdminSupplierSummary>[] = [
     enableSorting: false,
     header: "Contacts",
     cell: ({ row }) => (
-      <div className="text-sm tabular-nums text-muted-foreground">
-        {row.original.contactCount} contact
-        {row.original.contactCount === 1 ? "" : "s"}
-        {row.original.linkedUserCount > 0
-          ? `, ${row.original.linkedUserCount} portal`
-          : ""}
+      <div className="flex flex-col gap-1">
+        <AccessCountCell value={row.original.contactCount} />
+        <AccessTextCell
+          value={
+            row.original.linkedUserCount > 0
+              ? `${row.original.linkedUserCount} portal user${row.original.linkedUserCount === 1 ? "" : "s"}`
+              : "No linked users"
+          }
+        />
       </div>
     ),
   },
@@ -93,7 +100,7 @@ export const supplierColumns: ColumnDef<AdminSupplierSummary>[] = [
     enableSorting: false,
     header: "Terms",
     cell: ({ row }) => (
-      <span className="text-sm tabular-nums text-muted-foreground">
+      <span className="type-support tabular-nums text-muted-foreground">
         {row.original.paymentTermsDays > 0
           ? `${row.original.paymentTermsDays} days`
           : "Due on receipt"}
@@ -105,7 +112,7 @@ export const supplierColumns: ColumnDef<AdminSupplierSummary>[] = [
     accessorKey: "createdAt",
     header: "Created",
     cell: ({ row }) => (
-      <span className="tabular-nums text-sm text-muted-foreground">
+      <span className="type-support tabular-nums text-muted-foreground">
         {formatAdminDate(row.original.createdAt)}
       </span>
     ),

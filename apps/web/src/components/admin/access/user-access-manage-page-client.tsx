@@ -4,9 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuthorization } from "@/components/providers/authorization-provider";
-import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   fetchAdminPermissions,
   fetchAdminRoles,
@@ -22,6 +20,10 @@ import {
 import { toRoute } from "@/lib/routes";
 import { UserAccessManageBody } from "./user-access-manage-body";
 import { getQueryErrorMessage } from "./user-access-manage-support";
+import {
+  UserAccessDetailSkeleton,
+  UserAccessLoadError,
+} from "./user-access-surfaces";
 
 export function UserAccessManagePageClient({ slug }: { slug: string }) {
   const router = useRouter();
@@ -88,35 +90,15 @@ export function UserAccessManagePageClient({ slug }: { slug: string }) {
       />
 
       {isLoading && !detailQuery.data ? (
-        <div className="flex flex-col gap-3">
-          <Skeleton className="h-48 w-full" />
-          <Skeleton className="h-96 w-full" />
-        </div>
+        <UserAccessDetailSkeleton />
       ) : isError ? (
-        <AppErrorBanner
-          detail={getQueryErrorMessage(
+        <UserAccessLoadError
+          message={getQueryErrorMessage(
             detailQuery.isError ? detailQuery.error : null,
             permissionsQuery.isError ? permissionsQuery.error : null,
             rolesQuery.isError ? rolesQuery.error : null,
             locationsQuery.isError ? locationsQuery.error : null,
           )}
-          error={
-            detailQuery.isError
-              ? detailQuery.error
-              : permissionsQuery.isError
-                ? permissionsQuery.error
-                : rolesQuery.isError
-                  ? rolesQuery.error
-                  : locationsQuery.isError
-                    ? locationsQuery.error
-                    : undefined
-          }
-          onRetry={() => {
-            void detailQuery.refetch();
-            void permissionsQuery.refetch();
-            void rolesQuery.refetch();
-            void locationsQuery.refetch();
-          }}
           title="Unable to load access data"
         />
       ) : detailQuery.data &&

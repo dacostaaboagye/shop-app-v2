@@ -53,10 +53,12 @@ export function DocumentMetaRow({
 }) {
   return (
     <div className="grid grid-cols-[minmax(130px,1fr)_1.15fr] overflow-hidden rounded-sm">
-      <dt className="bg-[var(--document-primary)] px-3 py-2 font-semibold uppercase text-primary-foreground">
+      <dt className="bg-[var(--document-primary)] px-3 py-2 text-xs font-semibold text-primary-foreground">
         {label}
       </dt>
-      <dd className="bg-muted/35 px-3 py-2 tabular-nums">{value}</dd>
+      <dd className="bg-muted/35 px-3 py-2 text-pretty text-sm tabular-nums text-foreground">
+        {value}
+      </dd>
     </div>
   );
 }
@@ -72,8 +74,8 @@ export function DocumentTotalRow({
 }) {
   return (
     <div className="flex items-center justify-between text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="tabular-nums">
+      <span className="type-support text-muted-foreground">{label}</span>
+      <span className="tabular-nums text-foreground">
         {values.defaultDisplayCurrencyCode} {value}
       </span>
     </div>

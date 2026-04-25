@@ -9,6 +9,41 @@ existing backlog slice or become one before work starts.
 
 ## Main Findings
 
+### Frontend System Quality Is Not Yet Enforced End To End
+
+Current symptoms:
+
+- design-system usage is inconsistent across portals and page families
+- some screens still expose technical or low-value information to users
+- money, quantity, status, and date rendering are not uniformly standardized
+- resilience, accessibility, responsiveness, and content-growth handling are
+  uneven across the app
+- testing environment exposed backend request IDs directly in normal user error
+  cards
+
+Root cause:
+
+- the frontend grew through delivery slices without one enforced rewrite plan
+- semantic tokens exist, but runtime brand mapping and shared display rules are
+  not yet the only supported path
+- shared error rendering still treats internal request references as normal
+  user-facing content
+
+Backlog owner:
+
+- `FE-01` frontend overhaul workstream
+
+Definition of done:
+
+- all rewritten screens follow one shared system for layout, formatting, and
+  resilience
+- design tokens resolve from a constrained runtime brand-theme map
+- internal request IDs and similar support/debug references are hidden from
+  normal user-facing production UI by default
+- money, quantity, date, and status presentation uses shared helpers
+- content growth is handled intentionally across narrow and wide layouts
+- rewritten pages satisfy accessibility, responsiveness, and performance checks
+
 ### Operating Location Is Not Yet First-Class
 
 Current symptoms:

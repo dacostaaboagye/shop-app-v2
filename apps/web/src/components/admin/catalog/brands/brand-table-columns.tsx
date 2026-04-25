@@ -5,11 +5,6 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import {
-  ImagePreviewPlaceholder,
-  PreviewImage,
-} from "@/components/system/preview-image";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -17,41 +12,34 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CATALOG_STATUS_META, formatAdminDate } from "@/lib/admin-models";
 import { deleteAdminBrand } from "@/lib/react-query/admin-catalog";
 import { toRoute } from "@/lib/routes";
 import { CatalogDeleteDialog } from "../catalog-delete-dialog";
+import {
+  CatalogDateCell,
+  CatalogImageCell,
+  CatalogNameCell,
+  CatalogStatusCell,
+  CatalogTextCell,
+} from "../catalog-table-cells";
 
 export const brandTableColumns: Array<ColumnDef<AdminBrandSummary, unknown>> = [
   {
     id: "image",
     header: "",
     size: 56,
-    cell: ({ row }) =>
-      row.original.primaryImageUrl ? (
-        <PreviewImage
-          alt={row.original.name}
-          className="size-10"
-          height={40}
-          imageClassName="rounded-md"
-          previewTitle={row.original.name}
-          src={row.original.primaryImageUrl}
-          width={40}
-        />
-      ) : (
-        <ImagePreviewPlaceholder className="size-10" />
-      ),
+    cell: ({ row }) => (
+      <CatalogImageCell
+        imageUrl={row.original.primaryImageUrl}
+        title={row.original.name}
+      />
+    ),
   },
   {
     id: "name",
     header: "Name",
     cell: ({ row }) => (
-      <div>
-        <p className="font-medium leading-none">{row.original.name}</p>
-        <p className="mt-0.5 font-mono text-[0.68rem] text-muted-foreground">
-          {row.original.slug}
-        </p>
-      </div>
+      <CatalogNameCell name={row.original.name} slug={row.original.slug} />
     ),
   },
   {
@@ -59,38 +47,19 @@ export const brandTableColumns: Array<ColumnDef<AdminBrandSummary, unknown>> = [
     enableSorting: false,
     header: "Website",
     id: "website",
-    cell: ({ row }) =>
-      row.original.website ? (
-        <span className="text-sm text-muted-foreground">
-          {row.original.website}
-        </span>
-      ) : (
-        <span className="text-sm text-muted-foreground">—</span>
-      ),
+    cell: ({ row }) => <CatalogTextCell value={row.original.website} />,
   },
   {
     accessorKey: "status",
     header: "Status",
     id: "status",
-    cell: ({ row }) => {
-      const meta = CATALOG_STATUS_META[row.original.status];
-
-      return (
-        <Badge className={meta.className} variant="outline">
-          {meta.label}
-        </Badge>
-      );
-    },
+    cell: ({ row }) => <CatalogStatusCell status={row.original.status} />,
   },
   {
     accessorKey: "createdAt",
     header: "Created",
     id: "createdAt",
-    cell: ({ row }) => (
-      <span className="tabular-nums text-sm text-muted-foreground">
-        {formatAdminDate(row.original.createdAt)}
-      </span>
-    ),
+    cell: ({ row }) => <CatalogDateCell value={row.original.createdAt} />,
   },
   {
     id: "actions",
@@ -105,7 +74,7 @@ function BrandActions({ brand }: { brand: AdminBrandSummary }) {
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" />}>
+        <DropdownMenuTrigger render={<Button size="icon-sm" variant="ghost" />}>
           <MoreVertical className="size-4" />
           <span className="sr-only">Open menu</span>
         </DropdownMenuTrigger>
@@ -121,8 +90,8 @@ function BrandActions({ brand }: { brand: AdminBrandSummary }) {
             Edit
           </DropdownMenuItem>
           <DropdownMenuItem
-            variant="destructive"
             onClick={() => setIsDeleteDialogOpen(true)}
+            variant="destructive"
           >
             <Trash2 className="mr-2 size-4" />
             Delete

@@ -3,6 +3,11 @@ import type { LucideIcon } from "lucide-react";
 import { ArrowRight, ClipboardList } from "lucide-react";
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
+import {
+  formatCount,
+  formatPublicReference,
+  formatSupportText,
+} from "@/lib/display/format";
 import { cn } from "@/lib/utils";
 import { GtnDocumentActions } from "./gtn-document-actions";
 
@@ -39,7 +44,7 @@ export function SupplyRequestSummaryCard({
   return (
     <article
       className={cn(
-        "relative overflow-hidden rounded-xl border border-border/50 bg-white shadow-sm",
+        "relative overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm",
         accent.border,
       )}
     >
@@ -56,41 +61,13 @@ export function SupplyRequestSummaryCard({
               <ClipboardList className="size-5" />
             </div>
             <div className="min-w-0">
-              <p className="font-semibold leading-tight">
+              <p className="text-sm font-semibold leading-tight text-foreground">
                 {item.skuSnapshot.productName}
               </p>
-              <p className="mt-0.5 text-sm text-muted-foreground">
+              <p className="type-support mt-0.5">
                 {item.skuSnapshot.variantName}
               </p>
-              <div className="mt-1 flex flex-wrap items-center gap-2">
-                <span className="font-mono text-xs text-muted-foreground">
-                  {item.reference}
-                </span>
-                {item.transferReference ? (
-                  <Badge
-                    className="h-4 px-1.5 font-mono text-[10px] uppercase"
-                    variant="outline"
-                  >
-                    Transfer: {item.transferReference}
-                  </Badge>
-                ) : null}
-                {item.sourceReservationStatus === "active" ? (
-                  <Badge
-                    className="h-4 px-1.5 text-[10px] uppercase"
-                    variant="outline"
-                  >
-                    Reserved at source
-                  </Badge>
-                ) : null}
-                {item.gtnReference ? (
-                  <Badge
-                    className="h-4 px-1.5 font-mono text-[10px] uppercase"
-                    variant="outline"
-                  >
-                    GTN: {item.gtnReference}
-                  </Badge>
-                ) : null}
-              </div>
+              <SummaryBadges item={item} />
             </div>
           </div>
           <span
@@ -116,7 +93,7 @@ export function SupplyRequestSummaryCard({
           />
         </div>
 
-        <dl className="grid grid-cols-2 divide-x divide-border/50 rounded-xl border border-border bg-white shadow-xs">
+        <dl className="grid grid-cols-2 divide-x divide-border/50 rounded-xl border border-border/60 bg-card/70">
           <QuantityValue
             label="Requested"
             value={String(item.requestedQuantity)}
@@ -143,20 +120,20 @@ export function SupplyRequestSummaryCard({
 
 function InfoLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-      <p className="font-medium text-foreground">{label}</p>
-      <p>{value}</p>
+    <div className="flex flex-col gap-1">
+      <p className="type-data-label">{label}</p>
+      <p className="type-data-value break-words">{value}</p>
     </div>
   );
 }
 
 function RouteLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-      <p className="font-medium text-foreground">{label}</p>
+    <div className="flex flex-col gap-1">
+      <p className="type-data-label">{label}</p>
       <div className="flex items-center gap-1.5">
-        <ArrowRight className="size-3 shrink-0" />
-        <span>{value}</span>
+        <ArrowRight className="size-3 shrink-0 text-muted-foreground" />
+        <span className="type-data-value break-words">{value}</span>
       </div>
     </div>
   );
@@ -165,9 +142,55 @@ function RouteLine({ label, value }: { label: string; value: string }) {
 function QuantityValue({ label, value }: { label: string; value: string }) {
   return (
     <div className="px-4 py-2.5 text-center">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="mt-1 text-sm font-semibold tabular-nums">{value}</dd>
+      <dt className="type-data-label">{label}</dt>
+      <dd className="type-inline-metric mt-1 text-sm font-semibold">
+        {value === "-" ? value : formatCount(Number(value))}
+      </dd>
     </div>
+  );
+}
+
+function SummaryBadges({ item }: { item: StockSupplyRequestResponse }) {
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-2">
+      <span className="type-identifier">
+        {formatPublicReference(item.reference)}
+      </span>
+      {item.transferReference ? (
+        <MetaBadge tone="neutral">
+          Transfer {formatPublicReference(item.transferReference)}
+        </MetaBadge>
+      ) : null}
+      {item.gtnReference ? (
+        <MetaBadge tone="neutral">
+          GTN {formatPublicReference(item.gtnReference)}
+        </MetaBadge>
+      ) : null}
+      {item.sourceReservationStatus === "active" ? (
+        <MetaBadge tone="success">Reserved at source</MetaBadge>
+      ) : null}
+    </div>
+  );
+}
+
+function MetaBadge({
+  children,
+  tone,
+}: {
+  children: ReactNode;
+  tone: "neutral" | "success";
+}) {
+  return (
+    <Badge
+      className={cn(
+        "h-5 px-1.5 text-[10px] uppercase",
+        tone === "neutral" && "font-mono",
+        tone === "success" && "border-success/20 bg-success/10 text-success",
+      )}
+      variant="outline"
+    >
+      {children}
+    </Badge>
   );
 }
 
@@ -175,21 +198,22 @@ function RequestNotes({ item }: { item: StockSupplyRequestResponse }) {
   if (!item.notes && !item.resolutionNotes) return null;
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl bg-muted/20 px-3 py-2.5 text-xs italic leading-relaxed text-muted-foreground ring-1 ring-border/10">
-      {item.notes ? (
-        <p>
-          <span className="font-semibold not-italic opacity-80">Worker:</span> "
-          {item.notes}"
-        </p>
-      ) : null}
+    <div className="grid gap-2 rounded-xl bg-muted/20 px-3 py-3 ring-1 ring-border/10">
+      {item.notes ? <NoteLine label="Worker note" value={item.notes} /> : null}
       {item.resolutionNotes ? (
-        <p>
-          <span className="font-semibold not-italic opacity-80">
-            Resolution:
-          </span>{" "}
-          "{item.resolutionNotes}"
-        </p>
+        <NoteLine label="Resolution note" value={item.resolutionNotes} />
       ) : null}
+    </div>
+  );
+}
+
+function NoteLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid gap-1">
+      <p className="type-data-label">{label}</p>
+      <p className="type-support leading-relaxed text-foreground">
+        {formatSupportText(value)}
+      </p>
     </div>
   );
 }

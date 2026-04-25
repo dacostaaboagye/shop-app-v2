@@ -1,7 +1,6 @@
 "use client";
 
 import { ShieldAlert } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AuthLoginForm } from "@/components/forms/auth-login-form";
 import { AuthRegisterForm } from "@/components/forms/auth-register-form";
@@ -9,6 +8,12 @@ import { getPortalHref, getPrimaryPortal } from "@/lib/portals";
 import { toRoute } from "@/lib/routes";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
 import { AppBanner } from "./app-banner";
+import {
+  AuthCard,
+  AuthCardBody,
+  AuthCardHeader,
+  AuthFooterLink,
+} from "./auth-surfaces";
 import {
   type AuthWorkspaceMode,
   anonymousCopy,
@@ -50,15 +55,9 @@ export function AuthWorkspace({ mode = "login" }: AuthWorkspaceProps) {
   const content = anonymousCopy[mode];
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border/50 bg-card p-10 shadow-panel">
-      <div className="mb-10 flex flex-col items-center gap-2 text-center">
-        <h2 className="font-heading text-3xl font-bold tracking-tight text-foreground">
-          {content.title}
-        </h2>
-        <p className="text-base text-muted-foreground">{content.description}</p>
-      </div>
-
-      <div className="flex flex-col gap-6">
+    <AuthCard>
+      <AuthCardHeader description={content.description} title={content.title} />
+      <AuthCardBody>
         {sessionNotice ? (
           <AppBanner
             description={sessionNotice}
@@ -70,16 +69,12 @@ export function AuthWorkspace({ mode = "login" }: AuthWorkspaceProps) {
 
         {mode === "login" ? <AuthLoginForm /> : <AuthRegisterForm />}
 
-        <div className="mt-4 flex items-center justify-center gap-2 border-t border-border/20 pt-8 text-sm font-medium text-muted-foreground">
-          {content.linkPrompt}{" "}
-          <Link
-            className="font-bold text-primary transition-colors hover:text-primary/80"
-            href={content.alternateHref}
-          >
-            {content.alternateLabel}
-          </Link>
-        </div>
-      </div>
-    </div>
+        <AuthFooterLink
+          href={content.alternateHref}
+          label={content.alternateLabel}
+          prompt={content.linkPrompt}
+        />
+      </AuthCardBody>
+    </AuthCard>
   );
 }

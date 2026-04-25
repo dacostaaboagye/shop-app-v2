@@ -87,6 +87,7 @@ export async function transitionPendingStockSupplyRequest(
 export async function cancelMatchingStockSupplyRequest(
   context: StockSupplyOperationContext,
   input: {
+    adminOverrideReason?: string;
     actor: AuthenticatedActor;
     id: string;
     now: Date;
@@ -128,9 +129,13 @@ export async function cancelMatchingStockSupplyRequest(
     };
     await appendStockSupplyEventWithinTransaction(context, tx, {
       actor: input.actor,
+      payload: {
+        adminOverrideReason: input.adminOverrideReason ?? null,
+      },
       supplyRequest: updatedSupplyRequest,
       summary: formatStockSupplyEventSummary({
         action: "cancelled",
+        adminOverrideReason: input.adminOverrideReason ?? null,
         supplyRequest: updatedSupplyRequest,
       }),
       type: "transfer.cancelled",

@@ -1,6 +1,7 @@
-import { PageShell } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
+import {
+  CatalogDetailError,
+  CatalogDetailSkeleton,
+} from "../catalog-detail-surfaces";
 
 export const CATEGORY_PARENT_QUERY = {
   dir: "asc" as const,
@@ -11,22 +12,10 @@ export const CATEGORY_PARENT_QUERY = {
   status: "active" as const,
 };
 
-export function CategoryDetailSkeleton() {
-  return (
-    <PageShell>
-      <Skeleton className="h-20 w-full" />
-      <Skeleton className="h-48 w-full" />
-    </PageShell>
-  );
-}
+export { CatalogDetailSkeleton as CategoryDetailSkeleton };
 
 export function CategoryDetailError({ message }: { message: string }) {
   return (
-    <PageShell>
-      <Alert variant="destructive">
-        <AlertTitle>Unable to load category</AlertTitle>
-        <AlertDescription>{message}</AlertDescription>
-      </Alert>
-    </PageShell>
+    <CatalogDetailError message={message} title="Unable to load category" />
   );
 }

@@ -14,33 +14,29 @@ export function EffectiveProfilePreview({
 
   return (
     <div className="flex flex-col gap-4">
-      <h3 className="px-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
+      <h3 className="px-1 text-sm font-semibold text-muted-foreground">
         Current print profile
       </h3>
-      <div className="rounded-xl border border-border/50 bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
         <div className="mb-6 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/5 text-primary ring-1 ring-primary/10">
             <FileText className="size-5" />
           </div>
           <div>
             <h4 className="text-sm font-bold text-foreground">Print profile</h4>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
-              Active document configuration
-            </p>
+            <p className="type-support">Active document configuration</p>
           </div>
         </div>
 
         <div className="flex flex-col gap-5 text-sm">
           <div className="flex flex-col gap-1">
             <p className="font-bold text-foreground">{profile.brandName}</p>
-            <p className="text-xs font-medium text-muted-foreground/80">
+            <p className="text-pretty text-xs font-medium text-muted-foreground/80">
               {profile.legalName}
             </p>
           </div>
           <div className="flex flex-col gap-1">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
-              Address
-            </p>
+            <p className="type-data-label">Address</p>
             <div className="text-xs font-medium leading-relaxed text-muted-foreground/80">
               {profile.addressLines.map((line) => (
                 <p key={line}>{line}</p>
@@ -49,12 +45,10 @@ export function EffectiveProfilePreview({
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <PreviewValue label="Phone" value={profile.phone} />
-            <PreviewValue label="Email" truncate value={profile.email} />
+            <PreviewValue label="Email" value={profile.email} />
           </div>
           <div className="flex flex-col gap-1">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
-              Footer
-            </p>
+            <p className="type-data-label">Footer</p>
             <div className="rounded-xl border border-border/50 bg-muted/20 p-4 text-[11px] font-medium italic leading-relaxed text-muted-foreground/80">
               "{profile.footer}"
             </div>
@@ -85,29 +79,11 @@ export function EffectiveProfilePreview({
   );
 }
 
-function PreviewValue({
-  label,
-  truncate = false,
-  value,
-}: {
-  label: string;
-  truncate?: boolean;
-  value: string;
-}) {
+function PreviewValue({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-1">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
-        {label}
-      </p>
-      <p
-        className={
-          truncate
-            ? "truncate text-xs font-bold text-foreground"
-            : "text-xs font-bold text-foreground"
-        }
-      >
-        {value}
-      </p>
+      <p className="type-data-label">{label}</p>
+      <p className="break-all text-xs font-bold text-foreground">{value}</p>
     </div>
   );
 }

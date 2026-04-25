@@ -7,9 +7,15 @@ import type {
 } from "@shop/contracts";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
+import {
+  AccessActionBadge,
+  AccessNameCell,
+  AccessTextCell,
+} from "@/components/admin/access/access-table-cells";
 import { Badge } from "@/components/ui/badge";
 import { buildPermissionGroups } from "@/lib/access-control";
 import { OVERRIDE_BADGE_CLASS_NAMES } from "@/lib/admin-models";
+import { formatCount } from "@/lib/display/format";
 import {
   PermissionActions,
   PermissionStateBadge,
@@ -92,17 +98,21 @@ export function UserAccessManagePermissionGroups({
               }
               type="button"
             >
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-medium">{group.label}</span>
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <span className="text-sm font-medium text-foreground">
+                  {group.label}
+                </span>
                 <Badge className="text-[0.65rem]" variant="secondary">
-                  {grantedCount}/{group.items.length} granted
+                  {formatCount(grantedCount)}/{formatCount(group.items.length)}{" "}
+                  granted
                 </Badge>
                 {overrideCount > 0 ? (
                   <Badge
                     className={`${OVERRIDE_BADGE_CLASS_NAMES.summary} text-[0.65rem]`}
                     variant="outline"
                   >
-                    {overrideCount} override{overrideCount > 1 ? "s" : ""}
+                    {formatCount(overrideCount)} override
+                    {overrideCount === 1 ? "" : "s"}
                   </Badge>
                 ) : null}
               </div>
@@ -130,22 +140,25 @@ export function UserAccessManagePermissionGroups({
                       className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-mono text-xs text-foreground">
-                            {permission.key}
-                          </p>
+                        <AccessNameCell
+                          description={permission.description}
+                          name={permission.key}
+                        />
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
                           <PermissionStateBadge state={state} />
+                          {override ? (
+                            <AccessActionBadge>
+                              Override by{" "}
+                              {override.setByName ?? "Unknown actor"}
+                            </AccessActionBadge>
+                          ) : null}
                         </div>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {permission.description}
-                        </p>
                         {override ? (
-                          <p className="mt-1 text-xs italic text-muted-foreground/70">
-                            Override reason: {override.reason}
-                            {override.setByName
-                              ? ` - ${override.setByName}`
-                              : ""}
-                          </p>
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <AccessTextCell
+                              value={`Reason: ${override.reason}`}
+                            />
+                          </div>
                         ) : null}
                       </div>
                       {canManage ? (

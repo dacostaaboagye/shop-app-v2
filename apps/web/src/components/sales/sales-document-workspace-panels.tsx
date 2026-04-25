@@ -3,6 +3,11 @@ import type { ReactNode } from "react";
 import { SalesDocumentActions } from "@/components/sales/sales-document-actions";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  formatDateTime,
+  formatPublicReference,
+  formatSupportText,
+} from "@/lib/display/format";
 import type { OfficialDocumentProfile } from "@/lib/documents/official-document-profile";
 import type { PrintableInvoiceData } from "@/lib/documents/sales-document";
 import { formatMoney } from "@/lib/money/format-money";
@@ -22,22 +27,23 @@ export function OfficialDocumentPanel({
   secondaryAction?: ReactNode;
 }) {
   const isReturn = invoice.type === "credit_note";
+  const statusLabel = formatDocumentStatus(invoice.status);
 
   return (
     <Card className="hero-panel border-border/80">
       <CardHeader>
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          <div className="min-w-0">
+            <p className="type-kicker text-muted-foreground">
               Official document
             </p>
-            <h2 className="mt-1 font-mono text-2xl font-semibold">
-              {invoice.reference}
+            <h2 className="type-section-title mt-1 text-foreground sm:text-3xl">
+              {formatPublicReference(invoice.reference)}
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {new Date(
-                invoice.confirmedAt ?? invoice.createdAt,
-              ).toLocaleString()}
+            <p className="type-support mt-1">
+              {formatDateTime(invoice.confirmedAt ?? invoice.createdAt, {
+                locale: profile.locale,
+              })}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -47,7 +53,7 @@ export function OfficialDocumentPanel({
             <Badge
               variant={invoice.status === "voided" ? "destructive" : "outline"}
             >
-              {invoice.status}
+              {statusLabel}
             </Badge>
           </div>
         </div>
@@ -82,7 +88,9 @@ export function SalesSummary({
   return (
     <Card>
       <CardHeader className="pb-0">
-        <p className="text-base font-semibold">Sale details</p>
+        <p className="type-section-title text-xl text-foreground">
+          Sale details
+        </p>
       </CardHeader>
       <CardContent className="grid grid-cols-2 gap-3 pt-4 text-sm sm:grid-cols-3">
         <SummaryItem
@@ -104,8 +112,8 @@ export function SalesSummary({
         ) : null}
         {invoice.notes ? (
           <div className="col-span-full">
-            <p className="text-xs text-muted-foreground">Notes</p>
-            <p>{invoice.notes}</p>
+            <p className="type-data-label">Notes</p>
+            <p className="type-data-value">{invoice.notes}</p>
           </div>
         ) : null}
       </CardContent>
@@ -123,32 +131,35 @@ export function InvoiceLineItems({
   return (
     <Card>
       <CardHeader className="pb-0">
-        <p className="text-base font-semibold">Line items</p>
+        <p className="type-section-title text-xl text-foreground">Line items</p>
       </CardHeader>
       <CardContent className="p-0 pt-3">
         <div className="divide-y divide-border">
           {invoice.lines.map((line) => (
-            <div key={line.skuId} className="flex items-center gap-3 px-5 py-3">
+            <div
+              key={line.skuId}
+              className="flex items-start gap-3 px-5 py-3 sm:items-center"
+            >
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">
+                <p className="type-data-value text-balance">
                   {line.skuSnapshot.productName}
                 </p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {line.skuSnapshot.variantName} &middot; {line.skuSnapshot.sku}
+                <p className="type-support text-pretty">
+                  {line.skuSnapshot.variantName} | {line.skuSnapshot.sku}
                 </p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {formatMoney(line.unitPrice, profile)} &times; {line.quantity}
+                <p className="type-support mt-0.5">
+                  {formatMoney(line.unitPrice, profile)} x {line.quantity}
                 </p>
               </div>
-              <p className="shrink-0 font-semibold tabular-nums">
+              <p className="type-inline-metric shrink-0 font-semibold">
                 {formatMoney(line.lineTotal, profile)}
               </p>
             </div>
           ))}
         </div>
         <div className="flex items-center justify-between border-t border-border bg-muted/30 px-5 py-3">
-          <span className="text-sm font-medium">Total</span>
-          <span className="font-bold tabular-nums">
+          <span className="type-data-value text-sm">Total</span>
+          <span className="type-inline-metric font-bold">
             {formatMoney(invoice.totalAmount, profile)}
           </span>
         </div>
@@ -160,17 +171,21 @@ export function InvoiceLineItems({
 function WorkerAttribution({ invoice }: { invoice: PrintableInvoiceData }) {
   return (
     <div className="col-span-full">
-      <p className="text-xs text-muted-foreground">Attributed worker</p>
+      <p className="type-data-label">Attributed worker</p>
       {invoice.attributedWorkerName ? (
-        <p className="font-medium">{invoice.attributedWorkerName}</p>
+        <p className="type-data-value text-balance">
+          {invoice.attributedWorkerName}
+        </p>
       ) : null}
       {invoice.attributedWorkerEmail ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="type-support break-all">
           {invoice.attributedWorkerEmail}
         </p>
       ) : null}
       {!invoice.attributedWorkerName && !invoice.attributedWorkerEmail ? (
-        <p className="font-mono text-xs">{invoice.attributedWorkerId}</p>
+        <p className="type-support">
+          {formatSupportText(null, "Worker attribution pending")}
+        </p>
       ) : null}
     </div>
   );
@@ -189,7 +204,7 @@ function SummaryItem({
 }) {
   return (
     <div>
-      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="type-data-label">{label}</p>
       <p className={summaryValueClassName({ mono, prominent })}>{value}</p>
     </div>
   );
@@ -199,13 +214,17 @@ function summaryValueClassName(input: {
   mono: boolean | undefined;
   prominent: boolean | undefined;
 }) {
-  if (input.prominent) return "text-base font-bold tabular-nums";
-  if (input.mono) return "font-medium tabular-nums";
-  return "font-medium";
+  if (input.prominent) return "type-inline-metric text-base font-bold";
+  if (input.mono) return "type-inline-metric font-medium";
+  return "type-data-value";
 }
 
 function formatPaymentMethod(value: string | null): string {
   if (value === "mobile_money") return "Mobile money";
   if (!value) return "Not recorded";
+  return value.charAt(0).toUpperCase() + value.slice(1).replace(/_/g, " ");
+}
+
+function formatDocumentStatus(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1).replace(/_/g, " ");
 }

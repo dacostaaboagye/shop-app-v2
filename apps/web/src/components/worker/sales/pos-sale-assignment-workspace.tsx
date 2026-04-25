@@ -5,8 +5,10 @@ import type {
   CurrentAssignment,
 } from "@shop/contracts";
 import { useMemo, useState } from "react";
+import { AppEmptyState } from "@/components/system/app-empty-state";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatCount } from "@/lib/display/format";
 import type { MoneyProfile } from "@/lib/money/format-money";
 import { PosSaleAssignmentFilters } from "./pos-sale-assignment-filters";
 import {
@@ -101,19 +103,21 @@ export function PosSaleAssignmentWorkspace({
 
   if (assignments.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-        No variants are currently assigned to you at this location.
-      </div>
+      <AppEmptyState
+        description="No sale-ready variants are currently assigned to you at this location."
+        title="No assigned variants"
+      />
     );
   }
 
   return (
     <>
       <div className="pb-24 lg:pb-0">
-        <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
-          <div className="flex flex-col gap-3">
-            <p className="text-sm font-medium text-muted-foreground">
-              Your assigned variants
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="min-w-0 flex flex-col gap-3">
+            <p className="type-support">
+              {formatCount(filteredAssignments.length)} of{" "}
+              {formatCount(assignments.length)} assigned variants
             </p>
             <PosSaleAssignmentFilters
               brandOptions={brandOptions}
@@ -149,13 +153,16 @@ export function PosSaleAssignmentWorkspace({
                   />
                 ))
               ) : (
-                <div className="p-8 text-center text-sm text-muted-foreground">
-                  No assigned variants match the current filters.
+                <div className="p-6">
+                  <AppEmptyState
+                    description="Try changing the search, brand, or category filters."
+                    title="No assigned variants match"
+                  />
                 </div>
               )}
             </div>
           </div>
-          <div className="hidden lg:block">
+          <div className="hidden min-w-0 lg:block">
             <PosSaleCartCard {...cartProps} />
           </div>
         </div>

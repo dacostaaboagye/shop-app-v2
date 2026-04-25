@@ -4,6 +4,7 @@ import type { AdminSupplierDetail } from "@shop/contracts";
 import { ReceiptText } from "lucide-react";
 import { AppEmptyState } from "@/components/system/app-empty-state";
 import { AppTableWrapper } from "@/components/system/app-table-wrapper";
+import { formatDateTime } from "@/lib/display/format";
 import { cn } from "@/lib/utils";
 import type { SupplierFormValues } from "./supplier-form";
 
@@ -13,10 +14,16 @@ export function TransactionsPanel({
   transactions: AdminSupplierDetail["recentTransactions"];
 }) {
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-border/50 bg-white p-6 shadow-sm">
-      <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">
-        Supplier transactions
-      </h3>
+    <div className="flex flex-col gap-4 rounded-xl border border-border/70 bg-card p-6 shadow-none">
+      <div className="flex flex-col gap-1">
+        <h3 className="text-base font-semibold text-foreground">
+          Supplier transactions
+        </h3>
+        <p className="type-support text-muted-foreground">
+          Review recent purchase orders, receipts, credits, returns, and payment
+          activity recorded against this supplier.
+        </p>
+      </div>
       {transactions.length === 0 ? (
         <AppEmptyState
           description="Purchase orders, supplier invoices, receipts, returns, credits, and payments will appear here."
@@ -36,15 +43,13 @@ export function TransactionsPanel({
               key={`${item.reference}-${item.transactionType}`}
             >
               <p className="font-semibold text-foreground">{item.reference}</p>
-              <p className="text-xs text-muted-foreground/80">
-                <span className="capitalize">
+              <p className="type-support text-muted-foreground">
+                <span className="capitalize text-foreground">
                   {item.transactionType.replaceAll("_", " ")}
-                </span>{" "}
-                •{" "}
-                {new Date(item.occurredAt).toLocaleDateString("en-GB", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
+                </span>
+                {" | "}
+                {formatDateTime(item.occurredAt, {
+                  empty: "Date unavailable",
                 })}
               </p>
             </div>

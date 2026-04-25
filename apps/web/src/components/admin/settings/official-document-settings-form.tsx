@@ -5,10 +5,8 @@ import type {
   UpdateOfficialDocumentSettingsRequest,
 } from "@shop/contracts";
 import { useForm } from "@tanstack/react-form";
-import { Save } from "lucide-react";
 import { useState } from "react";
 import { FloatingActionBar } from "@/components/system/floating-action-bar";
-import { Button } from "@/components/ui/button";
 import { OfficialDocumentBusinessFields } from "./official-document-business-fields";
 import { OfficialDocumentDocumentFields } from "./official-document-document-fields";
 import {
@@ -71,13 +69,6 @@ export function OfficialDocumentSettingsForm({
           setActiveEmailTemplate,
         })}
       </OfficialDocumentSettingsCard>
-
-      <div className="flex justify-end">
-        <Button disabled={!canManage || isSaving} type="submit">
-          <Save data-icon="inline-start" />
-          {isSaving ? "Saving..." : config.saveLabel}
-        </Button>
-      </div>
     </div>
   );
 

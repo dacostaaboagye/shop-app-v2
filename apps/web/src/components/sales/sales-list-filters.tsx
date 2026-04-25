@@ -2,9 +2,9 @@
 
 import { formatISO, parseISO } from "date-fns";
 import { CalendarDays, X } from "lucide-react";
+import { AppFormField } from "@/components/forms/app-form-field";
 import { Button } from "@/components/ui/button";
 import { DatePickerSimple } from "@/components/ui/date-picker";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -40,84 +40,73 @@ export function SalesListFilters({
   const toDate = dateTo ? parseISO(dateTo) : undefined;
 
   return (
-    <div className="rounded-xl border border-border/50 bg-white p-6 shadow-sm">
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-        <div className="grid gap-6 sm:grid-cols-3 flex-1">
-          <div className="flex flex-col gap-1.5 w-full">
-            <Label
-              htmlFor="sales-date-from"
-              className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
-            >
-              From
-            </Label>
-            <DatePickerSimple
-              {...(fromDate ? { date: fromDate } : {})}
-              id="sales-date-from"
-              onSelect={(date) =>
-                onDateFromChange(
-                  date ? formatISO(date, { representation: "date" }) : "",
-                )
-              }
-              placeholder="From date"
-              className="h-11 rounded-xl border-border/60 bg-muted/20 focus:bg-background transition-all"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5 w-full">
-            <Label
-              htmlFor="sales-date-to"
-              className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
-            >
-              To
-            </Label>
-            <DatePickerSimple
-              {...(toDate ? { date: toDate } : {})}
-              id="sales-date-to"
-              onSelect={(date) =>
-                onDateToChange(
-                  date ? formatISO(date, { representation: "date" }) : "",
-                )
-              }
-              placeholder="To date"
-              className="h-11 rounded-xl border-border/60 bg-muted/20 focus:bg-background transition-all"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
-              Document type
-            </Label>
-            <Select
-              value={documentType}
-              onValueChange={(value) =>
-                onDocumentTypeChange(value as SalesDocumentTypeFilter)
-              }
-            >
-              <SelectTrigger
-                id="sales-document-type"
-                className="h-11 w-full rounded-xl border-border/60 bg-muted/20 focus:bg-background transition-all"
+    <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
+      <div className="flex flex-col gap-6">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <div className="grid min-w-0 gap-6 sm:grid-cols-3">
+            <AppFormField inputId="sales-date-from" label="From">
+              <DatePickerSimple
+                {...(fromDate ? { date: fromDate } : {})}
+                className="h-11 border-border/60 bg-muted/20 transition-all focus:bg-background"
+                id="sales-date-from"
+                onSelect={(date) =>
+                  onDateFromChange(
+                    date ? formatISO(date, { representation: "date" }) : "",
+                  )
+                }
+                placeholder="From date"
+              />
+            </AppFormField>
+            <AppFormField inputId="sales-date-to" label="To">
+              <DatePickerSimple
+                {...(toDate ? { date: toDate } : {})}
+                className="h-11 border-border/60 bg-muted/20 transition-all focus:bg-background"
+                id="sales-date-to"
+                onSelect={(date) =>
+                  onDateToChange(
+                    date ? formatISO(date, { representation: "date" }) : "",
+                  )
+                }
+                placeholder="To date"
+              />
+            </AppFormField>
+            <AppFormField inputId="sales-document-type" label="Document Type">
+              <Select
+                value={documentType}
+                onValueChange={(value) =>
+                  onDocumentTypeChange(value as SalesDocumentTypeFilter)
+                }
               >
-                <SelectValue placeholder="All documents" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All documents</SelectItem>
-                <SelectItem value="invoice">Invoices</SelectItem>
-                <SelectItem value="credit_note">Credit notes</SelectItem>
-              </SelectContent>
-            </Select>
+                <SelectTrigger
+                  className="h-11 w-full border-border/60 bg-muted/20 transition-all focus:bg-background"
+                  id="sales-document-type"
+                >
+                  <SelectValue placeholder="All documents" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All documents</SelectItem>
+                  <SelectItem value="invoice">Invoices</SelectItem>
+                  <SelectItem value="credit_note">Credit notes</SelectItem>
+                </SelectContent>
+              </Select>
+            </AppFormField>
           </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-4">
-          <Button
-            disabled={!hasFilters}
-            onClick={onClear}
-            variant="outline"
-            className="h-11 rounded-xl border-border/60 bg-white hover:bg-muted font-bold text-xs px-6"
-          >
-            <X className="size-4 mr-2" />
-            Clear
-          </Button>
-          <div className="flex items-center gap-2 rounded-xl bg-muted/20 border border-border/50 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 shadow-sm">
-            <CalendarDays className="size-4 text-primary/60" />
-            Filters apply to transaction date.
+          <div className="flex min-w-0 flex-wrap items-center gap-4 lg:justify-end">
+            <Button
+              disabled={!hasFilters}
+              className="h-11 border-border/60 bg-background px-6 text-xs font-bold hover:bg-muted"
+              onClick={onClear}
+              variant="outline"
+            >
+              <X className="mr-2 size-4" />
+              Clear
+            </Button>
+            <div className="type-support flex min-w-0 items-center gap-2 rounded-xl border border-border/50 bg-muted/20 px-4 py-3 shadow-sm">
+              <CalendarDays className="size-4 shrink-0 text-primary/60" />
+              <span className="min-w-0 text-pretty">
+                Filters apply to transaction date.
+              </span>
+            </div>
           </div>
         </div>
       </div>

@@ -5,6 +5,7 @@ import { type ReactNode, useState } from "react";
 import { Toaster } from "sonner";
 import { AuthSessionBootstrap } from "@/components/providers/auth-session-bootstrap";
 import { AuthorizationProvider } from "@/components/providers/authorization-provider";
+import { BrandingProvider } from "@/components/system/branding-provider";
 import { createQueryClient } from "@/lib/react-query/query-client";
 
 type AppProvidersProps = {
@@ -17,7 +18,9 @@ export function AppProviders({ children }: AppProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthSessionBootstrap />
-      <AuthorizationProvider>{children}</AuthorizationProvider>
+      <BrandingProvider>
+        <AuthorizationProvider>{children}</AuthorizationProvider>
+      </BrandingProvider>
       <Toaster closeButton position="bottom-right" richColors />
     </QueryClientProvider>
   );

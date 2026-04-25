@@ -22,6 +22,7 @@ import { syncTransferLifecycle } from "./stock-transfer-lifecycle.js";
 
 export async function confirmStockSupplyReceipt(
   input: {
+    adminOverrideReason?: string;
     actor: AuthenticatedActor;
     notes: string | null;
     now: Date;
@@ -103,10 +104,14 @@ export async function confirmStockSupplyReceipt(
     };
     await appendStockSupplyEventWithinTransaction(context, tx, {
       actor: input.actor,
-      payload: { gtnReference: existingGtn?.reference ?? null },
+      payload: {
+        adminOverrideReason: input.adminOverrideReason ?? null,
+        gtnReference: existingGtn?.reference ?? null,
+      },
       supplyRequest: updatedSupplyRequest,
       summary: formatStockSupplyEventSummary({
         action: "received",
+        adminOverrideReason: input.adminOverrideReason ?? null,
         gtnReference: existingGtn?.reference ?? null,
         supplyRequest: updatedSupplyRequest,
       }),

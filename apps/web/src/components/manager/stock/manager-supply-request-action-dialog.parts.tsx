@@ -1,5 +1,5 @@
+import { AppFormField } from "@/components/forms/app-form-field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getAppErrorMessage } from "@/lib/errors/app-error";
 import type { ResolveTarget } from "./manager-supply-requests.support";
@@ -14,8 +14,11 @@ export function ApprovedQuantityField({
   setApprovedQty: (value: string) => void;
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={approvedQtyId}>Quantity you can send</Label>
+    <AppFormField
+      description="Confirm the actual quantity the source location can release for this transfer."
+      inputId={approvedQtyId}
+      label="Quantity you can send"
+    >
       <Input
         id={approvedQtyId}
         inputMode="numeric"
@@ -25,7 +28,7 @@ export function ApprovedQuantityField({
         type="number"
         value={approvedQty}
       />
-    </div>
+    </AppFormField>
   );
 }
 
@@ -41,12 +44,19 @@ export function NotesField({
   setNotes: (value: string) => void;
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={notesId}>
-        {action === "dispatch"
+    <AppFormField
+      description={
+        action === "dispatch"
+          ? "Record anything the receiving location should know about this shipment."
+          : "Keep the note brief and operational so the requester can act on it."
+      }
+      inputId={notesId}
+      label={
+        action === "dispatch"
           ? "Dispatch notes (optional)"
-          : "Note to worker (optional)"}
-      </Label>
+          : "Note to worker (optional)"
+      }
+    >
       <Textarea
         id={notesId}
         maxLength={500}
@@ -59,7 +69,7 @@ export function NotesField({
         rows={3}
         value={notes}
       />
-    </div>
+    </AppFormField>
   );
 }
 

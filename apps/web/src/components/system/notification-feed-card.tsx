@@ -7,6 +7,7 @@ import {
   formatNotificationTimeLabel,
   getNotificationEventLabel,
   getNotificationPresentation,
+  getNotificationStatusLabel,
 } from "@/lib/notifications/notification-presentation";
 import type { fetchNotifications } from "@/lib/react-query/notifications";
 import { cn } from "@/lib/utils";
@@ -36,20 +37,23 @@ export function NotificationFeedCard({
       className={cn(
         "border border-border bg-muted/35 p-4",
         isPage ? "rounded-xl bg-card/80 shadow-sm" : "rounded-lg",
+        notification.status === "unread"
+          ? "border-primary/15 bg-primary/5"
+          : "",
         notification.status === "read" && !isPage ? "opacity-75" : "",
       )}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-medium">{presentation.title}</p>
+            <p className="type-data-value">{presentation.title}</p>
             {showStatus ? (
               <Badge
                 variant={
                   notification.status === "unread" ? "default" : "outline"
                 }
               >
-                {notification.status === "unread" ? "Unread" : "Read"}
+                {getNotificationStatusLabel(notification.status)}
               </Badge>
             ) : null}
             <Badge variant="outline">
@@ -61,17 +65,11 @@ export function NotificationFeedCard({
               </Badge>
             ) : null}
           </div>
-          <p
-            className={
-              isPage
-                ? "text-sm text-muted-foreground"
-                : "text-xs text-muted-foreground"
-            }
-          >
+          <p className={isPage ? "type-support" : "type-support text-xs"}>
             {presentation.detail}
           </p>
           {isPage ? (
-            <p className="text-xs text-muted-foreground">
+            <p className="type-support text-xs">
               {formatNotificationTimeLabel(notification.occurredAt)}
             </p>
           ) : null}
