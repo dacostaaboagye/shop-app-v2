@@ -13,6 +13,7 @@ describe("PostgresSupplyRequestRepository", () => {
       selectResults: [
         [{ count: 1 }],
         [{ reference: "GTN-00001", supplyRequestId: row.id }],
+        [{ reference: "TRF-00001", supplyRequestId: row.id }],
       ],
     });
 
@@ -27,6 +28,7 @@ describe("PostgresSupplyRequestRepository", () => {
     assert.equal(result.items[0]?.locationName, "Accra Mall");
     assert.equal(result.items[0]?.sourceLocationName, "East Legon Warehouse");
     assert.equal(result.items[0]?.gtnReference, "GTN-00001");
+    assert.equal(result.items[0]?.transferReference, "TRF-00001");
     assert.deepEqual(state.findManyCalls[0]?.with, {
       location: { columns: { name: true } },
       sourceLocation: { columns: { name: true } },
@@ -48,6 +50,7 @@ describe("PostgresSupplyRequestRepository", () => {
       selectResults: [
         [{ count: 1 }],
         [{ reference: "GTN-00002", supplyRequestId: row.id }],
+        [{ reference: "TRF-00002", supplyRequestId: row.id }],
       ],
     });
 
@@ -64,6 +67,7 @@ describe("PostgresSupplyRequestRepository", () => {
     assert.equal(result.items[0]?.locationName, "Osu Flagship");
     assert.equal(result.items[0]?.sourceLocationName, "Airport Warehouse");
     assert.equal(result.items[0]?.gtnReference, "GTN-00002");
+    assert.equal(result.items[0]?.transferReference, "TRF-00002");
     assert.deepEqual(state.findManyCalls[0]?.with, {
       requester: { columns: { email: true, firstName: true, lastName: true } },
       location: { columns: { name: true } },

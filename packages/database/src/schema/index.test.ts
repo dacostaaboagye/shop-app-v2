@@ -38,10 +38,6 @@ import {
   stockOwnershipEvents,
   stockReservationStatusEnum,
   stockReservations,
-  stockTransferEvents,
-  stockTransferEventTypeEnum,
-  stockTransferStatusEnum,
-  stockTransfers,
   supplierContactStatusEnum,
   supplierContacts,
   supplierInquiries,
@@ -87,8 +83,6 @@ assert.equal(getTableName(stockBalances), "stock_balances");
 assert.equal(getTableName(stockMovements), "stock_movements");
 assert.equal(getTableName(stockOwnershipEvents), "stock_ownership_events");
 assert.equal(getTableName(stockReservations), "stock_reservations");
-assert.equal(getTableName(stockTransfers), "stock_transfers");
-assert.equal(getTableName(stockTransferEvents), "stock_transfer_events");
 assert.equal(getTableName(suppliers), "suppliers");
 assert.equal(getTableName(supplierContacts), "supplier_contacts");
 assert.equal(getTableName(supplierPortalInvites), "supplier_portal_invites");
@@ -158,22 +152,6 @@ assert.deepEqual(stockMovementTypeEnum.enumValues, [
   "transfer_in",
   "transfer_out",
   "manual_adjustment",
-]);
-assert.deepEqual(stockTransferStatusEnum.enumValues, [
-  "requested",
-  "approved",
-  "in_transit",
-  "received",
-  "rejected",
-  "cancelled",
-]);
-assert.deepEqual(stockTransferEventTypeEnum.enumValues, [
-  "requested",
-  "approved",
-  "dispatched",
-  "received",
-  "rejected",
-  "cancelled",
 ]);
 assert.deepEqual(platformEventAudienceKindEnum.enumValues, [
   "user",
@@ -253,8 +231,6 @@ assert.equal(userNotifications.readAt.name, "read_at");
 assert.equal(stockBalances.skuId.name, "sku_id");
 assert.equal(stockMovements.quantityDelta.name, "quantity_delta");
 assert.equal(stockReservations.sourceKey.name, "source_key");
-assert.equal(stockTransfers.supplyRequestId.name, "supply_request_id");
-assert.equal(stockTransferEvents.transferId.name, "transfer_id");
 assert.equal(suppliers.paymentTermsDays.name, "payment_terms_days");
 assert.equal(supplierContacts.userId.name, "user_id");
 assert.equal(supplierPortalInvites.contactId.name, "contact_id");

@@ -196,7 +196,6 @@ export async function releaseReservationInTransaction(
   },
 ): Promise<ReleaseReservationResult> {
   assertReleaseReason(input.reason);
-
   const reservation = await requireReservation(
     transaction,
     input.reservationId,
@@ -224,7 +223,6 @@ export async function releaseReservationInTransaction(
       reservationId: reservation.id,
     });
   }
-
   const now = input.now ?? new Date();
   const balanceUpdated = await transaction.adjustStockBalance({
     locationId: reservation.locationId,

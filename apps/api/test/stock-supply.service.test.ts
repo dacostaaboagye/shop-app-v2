@@ -25,7 +25,7 @@ describe("StockSupplyService", () => {
       } as never,
       {
         async generateReference() {
-          return "unused";
+          return "TRF-00001";
         },
       } as never,
       {

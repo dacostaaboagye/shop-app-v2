@@ -1,18 +1,27 @@
 import { stockSupplyRequests } from "@shop/database";
-import { and, eq, inArray, or, type SQLWrapper, sql } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import {
-  loadGtnReferenceMap,
-  loadReservationStatusMap,
-  loadTransferReferenceMap,
-  toGtnRow,
-  toSupplyRequestRow,
-} from "./postgres-supply-request-mappers.js";
+  countSupplyRequests,
+  formatRequesterName,
+  inArrayCondition,
+  loadSupplyRequestDecorations,
+} from "./postgres-supply-request.repository-support.js";
+import {
+  findGtnById,
+  findGtnByReference,
+  findGtnBySupplyRequest,
+  findGtnReferenceForRequest,
+  findTransferReferenceForRequest,
+} from "./postgres-supply-request-gtn.repository.js";
 
 export type {
   GtnRow,
   SupplyRequestRow,
 } from "./postgres-supply-request-mappers.js";
+
+import { toSupplyRequestRow } from "./postgres-supply-request-mappers.js";
+
 export class PostgresSupplyRequestRepository {
   constructor(private readonly db: ApiDatabase) {}
 
@@ -32,14 +41,11 @@ export class PostgresSupplyRequestRepository {
     const requesterName = row.requester
       ? `${row.requester.firstName} ${row.requester.lastName}`.trim()
       : null;
-    const [
-      gtnReference,
-      transferReference,
-      sourceReservationStatusByRequestId,
-    ] = await Promise.all([
-      this.findGtnReferenceForRequest(row.id, row.status),
-      this.findTransferReferenceForRequest(row.id),
-      loadReservationStatusMap(this.db, [row.id]),
+    const { sourceReservationStatusByRequestId } =
+      await loadSupplyRequestDecorations(this.db, [row.id]);
+    const [gtnReference, transferReference] = await Promise.all([
+      findGtnReferenceForRequest(this.db, row.id, row.status),
+      findTransferReferenceForRequest(this.db, row.id),
     ]);
 
     return toSupplyRequestRow(
@@ -65,7 +71,7 @@ export class PostgresSupplyRequestRepository {
       conditions.push(eq(stockSupplyRequests.status, input.status));
     }
 
-    const total = await this.countRequests(conditions);
+    const total = await countSupplyRequests(this.db, conditions);
     const rows = await this.db.query.stockSupplyRequests.findMany({
       limit: input.pageSize,
       offset: (input.page - 1) * input.pageSize,
@@ -77,15 +83,11 @@ export class PostgresSupplyRequestRepository {
       },
     });
     const supplyRequestIds = rows.map((row) => row.id);
-    const [
+    const {
       gtnReferenceBySupplyRequestId,
       transferReferenceBySupplyRequestId,
       sourceReservationStatusByRequestId,
-    ] = await Promise.all([
-      loadGtnReferenceMap(this.db, supplyRequestIds),
-      loadTransferReferenceMap(this.db, supplyRequestIds),
-      loadReservationStatusMap(this.db, supplyRequestIds),
-    ]);
+    } = await loadSupplyRequestDecorations(this.db, supplyRequestIds);
 
     return {
       items: rows.map((row) =>
@@ -122,7 +124,7 @@ export class PostgresSupplyRequestRepository {
       conditions.push(eq(stockSupplyRequests.status, input.status));
     }
 
-    const total = await this.countRequests(conditions);
+    const total = await countSupplyRequests(this.db, conditions);
     const rows = await this.db.query.stockSupplyRequests.findMany({
       limit: input.pageSize,
       offset: (input.page - 1) * input.pageSize,
@@ -137,15 +139,11 @@ export class PostgresSupplyRequestRepository {
       },
     });
     const supplyRequestIds = rows.map((row) => row.id);
-    const [
+    const {
       gtnReferenceBySupplyRequestId,
       transferReferenceBySupplyRequestId,
       sourceReservationStatusByRequestId,
-    ] = await Promise.all([
-      loadGtnReferenceMap(this.db, supplyRequestIds),
-      loadTransferReferenceMap(this.db, supplyRequestIds),
-      loadReservationStatusMap(this.db, supplyRequestIds),
-    ]);
+    } = await loadSupplyRequestDecorations(this.db, supplyRequestIds);
 
     return {
       items: rows.map((row) =>
@@ -198,7 +196,7 @@ export class PostgresSupplyRequestRepository {
       conditions.push(eq(stockSupplyRequests.status, input.status));
     }
 
-    const total = await this.countRequests(conditions);
+    const total = await countSupplyRequests(this.db, conditions);
     const rows = await this.db.query.stockSupplyRequests.findMany({
       limit: input.pageSize,
       offset: (input.page - 1) * input.pageSize,
@@ -213,15 +211,11 @@ export class PostgresSupplyRequestRepository {
       },
     });
     const supplyRequestIds = rows.map((row) => row.id);
-    const [
+    const {
       gtnReferenceBySupplyRequestId,
       transferReferenceBySupplyRequestId,
       sourceReservationStatusByRequestId,
-    ] = await Promise.all([
-      loadGtnReferenceMap(this.db, supplyRequestIds),
-      loadTransferReferenceMap(this.db, supplyRequestIds),
-      loadReservationStatusMap(this.db, supplyRequestIds),
-    ]);
+    } = await loadSupplyRequestDecorations(this.db, supplyRequestIds);
 
     return {
       items: rows.map((row) => {
@@ -241,87 +235,14 @@ export class PostgresSupplyRequestRepository {
   }
 
   async findGtnBySupplyRequest(supplyRequestId: string) {
-    const gtn = await this.db.query.goodsTransferNotes.findFirst({
-      where: (table, { eq }) => eq(table.supplyRequestId, supplyRequestId),
-      with: gtnRelations,
-    });
-    return gtn ? toGtnRow(gtn) : null;
+    return findGtnBySupplyRequest(this.db, supplyRequestId);
   }
 
   async findGtnById(id: string) {
-    const gtn = await this.db.query.goodsTransferNotes.findFirst({
-      where: (table, { eq }) => eq(table.id, id),
-      with: gtnRelations,
-    });
-    return gtn ? toGtnRow(gtn) : null;
+    return findGtnById(this.db, id);
   }
 
   async findGtnByReference(reference: string) {
-    const gtn = await this.db.query.goodsTransferNotes.findFirst({
-      where: (table, { eq }) => eq(table.reference, reference),
-      with: gtnRelations,
-    });
-    return gtn ? toGtnRow(gtn) : null;
+    return findGtnByReference(this.db, reference);
   }
-
-  private async countRequests(conditions: SQLWrapper[]) {
-    const countRows = await this.db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(stockSupplyRequests)
-      .where(and(...conditions));
-
-    return countRows[0]?.count ?? 0;
-  }
-
-  private async findGtnReferenceForRequest(id: string, status: string) {
-    if (status !== "dispatched" && status !== "received") {
-      return null;
-    }
-
-    const gtn = await this.db.query.goodsTransferNotes.findFirst({
-      columns: { reference: true },
-      where: (table, { eq }) => eq(table.supplyRequestId, id),
-    });
-    return gtn?.reference ?? null;
-  }
-
-  private async findTransferReferenceForRequest(id: string) {
-    const transfer = await this.db.query.stockTransfers.findFirst({
-      columns: { reference: true },
-      where: (table, { eq }) => eq(table.supplyRequestId, id),
-    });
-    return transfer?.reference ?? null;
-  }
-}
-
-function inArrayCondition(
-  column: typeof stockSupplyRequests.sourceLocationId,
-  values: string[],
-) {
-  if (values.length === 1) {
-    const [value] = values;
-    if (!value) {
-      throw new Error("Expected one source location id.");
-    }
-
-    return eq(column, value);
-  }
-
-  return inArray(column, values);
-}
-
-const gtnRelations = {
-  destinationLocation: { columns: { name: true } },
-  dispatchedByUser: { columns: { firstName: true, lastName: true } },
-  receivedByUser: { columns: { firstName: true, lastName: true } },
-  sourceLocation: { columns: { name: true } },
-  supplyRequest: { columns: { reference: true } },
-} as const;
-
-function formatRequesterName(
-  requester: { firstName: string; lastName: string } | null,
-) {
-  return requester
-    ? `${requester.firstName} ${requester.lastName}`.trim() || null
-    : null;
 }

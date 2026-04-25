@@ -1,6 +1,5 @@
 "use client";
 
-import type { StockSupplyRequestResponse } from "@shop/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
@@ -10,10 +9,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ActionDialog } from "@/components/manager/stock/manager-supply-request-action-dialog";
-import type {
-  ResolveTarget,
-  SupplyRequestAction,
-} from "@/components/manager/stock/manager-supply-requests.support";
+import type { ResolveTarget } from "@/components/manager/stock/manager-supply-requests.support";
 import { statusMeta } from "@/components/manager/stock/manager-supply-requests.support";
 import { TransferDetailPanel } from "@/components/stock/transfer-detail-panel";
 import {
@@ -25,7 +21,6 @@ import { TransferWorkspaceShell } from "@/components/stock/transfer-workspace-sh
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { StatCard } from "@/components/system/page-shell-cards";
-import { Button } from "@/components/ui/button";
 import { useActiveLocationScopeOptional } from "@/lib/authorization/use-active-location-scope";
 import {
   fetchManagerIncomingSupplyRequests,
@@ -33,6 +28,10 @@ import {
   managerIncomingSupplyRequestsQueryKey,
   managerSupplyRequestsQueryKey,
 } from "@/lib/react-query/stock-supply";
+import {
+  formatTransferRequester,
+  ManagerTransferActions,
+} from "./manager-transfers-page-actions";
 
 const DEFAULT_MANAGER_TRANSFER_LANE =
   managerTransferLanes[0]?.key ?? "needs_review";
@@ -176,7 +175,7 @@ export function ManagerTransfersPageClient() {
               }
               item={selectedItem}
               requesterLabel="Requester"
-              requesterValue={formatRequester(selectedItem)}
+              requesterValue={formatTransferRequester(selectedItem)}
               status={statusMeta(selectedItem.status)}
             />
           ) : undefined
@@ -215,54 +214,4 @@ export function ManagerTransfersPageClient() {
       />
     </PageShell>
   );
-}
-
-function ManagerTransferActions({
-  canManage,
-  item,
-  onAction,
-}: {
-  canManage: boolean;
-  item: StockSupplyRequestResponse;
-  onAction: (action: SupplyRequestAction) => void;
-}) {
-  if (!canManage) {
-    return undefined;
-  }
-
-  if (item.status === "pending") {
-    return (
-      <div className="flex flex-wrap gap-2">
-        <Button
-          className="flex-1"
-          onClick={() => onAction("approve")}
-          size="lg"
-        >
-          Approve
-        </Button>
-        <Button
-          onClick={() => onAction("reject")}
-          size="lg"
-          variant="destructive"
-        >
-          Reject
-        </Button>
-      </div>
-    );
-  }
-
-  if (item.status === "approved") {
-    return (
-      <Button onClick={() => onAction("dispatch")} size="lg">
-        Dispatch goods
-      </Button>
-    );
-  }
-
-  return undefined;
-}
-
-function formatRequester(item: StockSupplyRequestResponse) {
-  const name = item.requesterName ?? "Requester";
-  return item.requesterEmail ? `${name} - ${item.requesterEmail}` : name;
 }
