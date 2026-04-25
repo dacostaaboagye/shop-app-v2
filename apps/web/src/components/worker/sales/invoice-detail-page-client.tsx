@@ -8,6 +8,7 @@ import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatPublicReference } from "@/lib/display/format";
 import { DEFAULT_OFFICIAL_DOCUMENT_PROFILE } from "@/lib/documents/official-document-profile";
 import {
   fetchOfficialDocumentProfile,
@@ -43,8 +44,8 @@ export function WorkerInvoiceDetailPageClient({
       <PageHeader
         backHref={toRoute("/worker/sales/history")}
         backLabel="Sales history"
-        description="View the official PDF, receipt evidence, and sale details."
-        title={reference}
+        description="View the official PDF and sale details."
+        title={formatPublicReference(reference)}
       />
 
       {invoiceQuery.isPending ? (

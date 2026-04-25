@@ -3,6 +3,10 @@
 import type { AdminRoleSummary } from "@shop/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
+import {
+  AccessCountCell,
+  AccessNameCell,
+} from "@/components/admin/access/access-table-cells";
 import { Badge } from "@/components/ui/badge";
 import { ROLE_SCOPE_BADGE_CLASSES } from "@/lib/admin-models";
 import { toRoute } from "@/lib/routes";
@@ -13,20 +17,16 @@ export const roleTableColumns: Array<ColumnDef<AdminRoleSummary, unknown>> = [
     id: "name",
     header: "Role",
     cell: ({ row }) => (
-      <div className="min-w-0">
-        <Link
-          className="font-medium hover:text-primary"
-          href={toRoute(`/admin/access/roles/${row.original.slug}`)}
-        >
-          {row.original.name}
-        </Link>
-        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-          {row.original.description}
-        </p>
-        <p className="mt-1 font-mono text-xs text-muted-foreground">
-          {row.original.slug}
-        </p>
-      </div>
+      <Link
+        className="block transition-colors hover:text-primary"
+        href={toRoute(`/admin/access/roles/${row.original.slug}`)}
+      >
+        <AccessNameCell
+          description={row.original.description}
+          name={row.original.name}
+          slug={row.original.slug}
+        />
+      </Link>
     ),
   },
   {
@@ -50,20 +50,14 @@ export const roleTableColumns: Array<ColumnDef<AdminRoleSummary, unknown>> = [
     accessorKey: "permissionCount",
     id: "permissionCount",
     header: "Permissions",
-    cell: ({ row }) => (
-      <span className="text-sm tabular-nums text-muted-foreground">
-        {row.original.permissionCount}
-      </span>
-    ),
+    cell: ({ row }) => <AccessCountCell value={row.original.permissionCount} />,
   },
   {
     accessorKey: "assignedUserCount",
     id: "assignedUserCount",
     header: "Assigned users",
     cell: ({ row }) => (
-      <span className="text-sm tabular-nums text-muted-foreground">
-        {row.original.assignedUserCount}
-      </span>
+      <AccessCountCell value={row.original.assignedUserCount} />
     ),
   },
 ];

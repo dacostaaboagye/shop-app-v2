@@ -2,11 +2,10 @@ import type {
   AdminProductDetail,
   AdminUpdateProductRequest,
 } from "@shop/contracts";
-import { Pencil, Trash2, X } from "lucide-react";
-import { PageShell } from "@/components/system/page-shell";
-import { PermissionGate } from "@/components/system/permission-gate";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import {
+  CatalogDetailHeaderActions,
+  CatalogDetailSkeleton,
+} from "../catalog-detail-surfaces";
 import type { ProductEditValues } from "./product-edit-form";
 
 export const PRODUCT_DETAIL_QUERY = {
@@ -34,57 +33,18 @@ export function ProductHeaderActions({
   onEdit,
 }: ProductHeaderActionsProps) {
   return (
-    <div className="flex items-center gap-2">
-      {!isEditing ? (
-        <>
-          <PermissionGate permission="catalog.products.manage">
-            <Button
-              disabled={isPending}
-              onClick={onEdit}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <Pencil className="size-3.5" />
-              Edit
-            </Button>
-          </PermissionGate>
-          <PermissionGate permission="catalog.products.manage">
-            <Button
-              disabled={isPending}
-              onClick={onDelete}
-              size="sm"
-              type="button"
-              variant="outline-destructive"
-            >
-              <Trash2 className="size-3.5" />
-              Delete
-            </Button>
-          </PermissionGate>
-        </>
-      ) : (
-        <Button onClick={onCancel} size="sm" type="button" variant="ghost">
-          <X className="size-3.5" />
-          Cancel
-        </Button>
-      )}
-    </div>
+    <CatalogDetailHeaderActions
+      isEditing={isEditing}
+      isPending={isPending}
+      onCancel={onCancel}
+      onDelete={onDelete}
+      onEdit={onEdit}
+      permission="catalog.products.manage"
+    />
   );
 }
 
-export function ProductDetailSkeleton() {
-  return (
-    <PageShell>
-      <Skeleton className="h-20 w-full" />
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {["s1", "s2", "s3", "s4"].map((key) => (
-          <Skeleton key={key} className="h-24" />
-        ))}
-      </div>
-      <Skeleton className="h-64 w-full" />
-    </PageShell>
-  );
-}
+export { CatalogDetailSkeleton as ProductDetailSkeleton };
 
 export function toProductEditValues(
   product: AdminProductDetail,

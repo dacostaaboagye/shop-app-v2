@@ -3,16 +3,7 @@
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppFormField } from "@/components/forms/app-form-field";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { FieldGroup } from "@/components/ui/field";
 import {
   Select,
@@ -21,13 +12,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import {
   adminUserAccessDetailQueryKey,
   updateAdminUserStatus,
 } from "@/lib/react-query/admin-user-access";
 import { toast } from "@/lib/toast";
+import {
+  UserAccessDialogError,
+  UserAccessDialogHeader,
+  UserAccessDialogSubmit,
+} from "./user-access-dialog-surfaces";
 
 const USER_STATUS_OPTIONS = [
   { label: "Active", value: "active" },
@@ -58,20 +53,25 @@ export function UpdateStatusDialog({
         queryKey: adminUserAccessDetailQueryKey(slug),
       });
       toast.success("Status updated");
+      form.reset({ reason: "", status: currentStatus });
       onClose();
     },
   });
   const form = useForm({
     defaultValues: { reason: "", status: currentStatus },
-    onSubmit: async ({ value }) => mutation.mutate(value),
+    onSubmit: async ({ value }) => mutation.mutateAsync(value),
   });
 
   return (
     <Dialog
-      open={open}
       onOpenChange={(next) => {
-        if (!next) onClose();
+        if (!next) {
+          mutation.reset();
+          form.reset({ reason: "", status: currentStatus });
+          onClose();
+        }
       }}
+      open={open}
     >
       <DialogContent className="sm:max-w-md">
         <form
@@ -80,22 +80,14 @@ export function UpdateStatusDialog({
             void form.handleSubmit();
           }}
         >
-          <DialogHeader>
-            <DialogTitle>Update account status</DialogTitle>
-            <DialogDescription>
-              Suspending or deactivating immediately revokes all refresh tokens.
-            </DialogDescription>
-          </DialogHeader>
-          {mutation.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Failed to update status</AlertTitle>
-              <AlertDescription>
-                {mutation.error instanceof Error
-                  ? mutation.error.message
-                  : "An unexpected error occurred."}
-              </AlertDescription>
-            </Alert>
-          ) : null}
+          <UserAccessDialogHeader
+            description="Suspending or deactivating immediately revokes active refresh tokens."
+            title="Update account status"
+          />
+          <UserAccessDialogError
+            error={mutation.error}
+            title="Failed to update status"
+          />
           <FieldGroup className="py-2">
             <form.Field
               name="status"
@@ -113,7 +105,7 @@ export function UpdateStatusDialog({
                 >
                   <Select
                     disabled={form.state.isSubmitting}
-                    onValueChange={(value) => field.handleChange(value)}
+                    onValueChange={field.handleChange}
                     value={field.state.value}
                   >
                     <SelectTrigger id={field.name}>
@@ -165,27 +157,21 @@ export function UpdateStatusDialog({
               )}
             </form.Field>
           </FieldGroup>
-          <DialogFooter showCloseButton>
-            <form.Subscribe
-              selector={(state) => ({
-                canSubmit: state.canSubmit,
-                isSubmitting: state.isSubmitting,
-              })}
-            >
-              {({ canSubmit, isSubmitting }) => (
-                <Button disabled={!canSubmit || isSubmitting} type="submit">
-                  {isSubmitting ? (
-                    <>
-                      <Spinner data-icon="inline-start" />
-                      Updating…
-                    </>
-                  ) : (
-                    "Update status"
-                  )}
-                </Button>
-              )}
-            </form.Subscribe>
-          </DialogFooter>
+          <form.Subscribe
+            selector={(formState) => ({
+              canSubmit: formState.canSubmit,
+              isSubmitting: formState.isSubmitting,
+            })}
+          >
+            {({ canSubmit, isSubmitting }) => (
+              <UserAccessDialogSubmit
+                canSubmit={canSubmit}
+                isBusy={isSubmitting}
+                label="Update status"
+                pendingLabel="Updating..."
+              />
+            )}
+          </form.Subscribe>
         </form>
       </DialogContent>
     </Dialog>

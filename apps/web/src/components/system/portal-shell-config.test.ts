@@ -140,14 +140,14 @@ describe("portal-shell-config", () => {
   it("keeps global admin stock pages out of the topbar location selector", () => {
     const stockLevels = getRouteItem("/admin/stock/balances");
     const reservations = getRouteItem("/admin/stock/reservations");
-    const supplyRequests = getRouteItem("/admin/stock/supply-requests");
+    const transfers = getRouteItem("/admin/transfers");
 
     assert.equal(stockLevels?.requiredPermission, "admin.dashboard.view");
     assert.equal(stockLevels?.locationSelectorPermission, null);
     assert.equal(reservations?.requiredPermission, "admin.dashboard.view");
     assert.equal(reservations?.locationSelectorPermission, null);
-    assert.equal(supplyRequests?.requiredPermission, "stock.supply.manage");
-    assert.equal(supplyRequests?.locationSelectorPermission, null);
+    assert.equal(transfers?.requiredPermission, "stock.supply.manage");
+    assert.equal(transfers?.locationSelectorPermission, null);
   });
 
   it("does not show admin Supply stock pages to location-scoped managers", () => {

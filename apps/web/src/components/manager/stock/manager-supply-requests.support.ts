@@ -1,11 +1,5 @@
 import type { StockSupplyRequestResponse } from "@shop/contracts";
-import {
-  ArrowRight,
-  CheckCircle2,
-  Clock,
-  type LucideIcon,
-  XCircle,
-} from "lucide-react";
+import { getSupplyRequestStatusPresentation } from "@/components/stock/stock-status";
 
 export type ViewMode = "card" | "compact";
 export type RequestFilter =
@@ -68,74 +62,12 @@ export function getSupplyRequestCounts(
   };
 }
 
-export function statusMeta(status: string): {
-  accent: {
-    badge: string;
-    bar: string;
-    border: string;
-    icon: string;
-  };
-  icon: LucideIcon;
+export function statusMeta(status: StockSupplyRequestResponse["status"]): {
+  accent: ReturnType<typeof getSupplyRequestStatusPresentation>["accent"];
+  icon: ReturnType<typeof getSupplyRequestStatusPresentation>["icon"];
   label: string;
 } {
-  switch (status) {
-    case "approved":
-      return {
-        accent: successAccent(),
-        icon: CheckCircle2,
-        label: "Approved",
-      };
-    case "dispatched":
-      return {
-        accent: {
-          badge: "bg-primary/10 text-primary",
-          bar: "bg-primary",
-          border: "border-primary/30",
-          icon: "bg-primary/10 text-primary",
-        },
-        icon: ArrowRight,
-        label: "In transit",
-      };
-    case "received":
-      return {
-        accent: successAccent(),
-        icon: Clock,
-        label: "Received",
-      };
-    case "rejected":
-      return {
-        accent: {
-          badge: "bg-destructive/10 text-destructive",
-          bar: "bg-destructive",
-          border: "border-destructive/30 dark:border-destructive/20",
-          icon: "bg-destructive/10 text-destructive",
-        },
-        icon: XCircle,
-        label: "Rejected",
-      };
-    case "cancelled":
-      return {
-        accent: {
-          badge: "bg-muted text-muted-foreground dark:bg-muted/30",
-          bar: "bg-muted-foreground/40",
-          border: "border-border",
-          icon: "bg-muted text-muted-foreground dark:bg-muted/30",
-        },
-        icon: XCircle,
-        label: "Cancelled",
-      };
-    default:
-      return {
-        accent: {
-          badge: "bg-warning/20 text-warning-foreground",
-          bar: "bg-warning",
-          border: "border-warning/30",
-          icon: "bg-warning/20 text-warning-foreground",
-        },
-        icon: Clock,
-        label: "Pending",
-      };
-  }
+  return getSupplyRequestStatusPresentation(status);
 }
 
 function filterByStatus(
@@ -153,13 +85,4 @@ function isClosedStatus(status: string) {
   return (
     status === "received" || status === "rejected" || status === "cancelled"
   );
-}
-
-function successAccent() {
-  return {
-    badge: "bg-success/10 text-success",
-    bar: "bg-success",
-    border: "border-success/30",
-    icon: "bg-success/10 text-success",
-  };
 }

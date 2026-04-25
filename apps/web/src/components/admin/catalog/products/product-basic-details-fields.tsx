@@ -74,6 +74,7 @@ export function ProductBasicDetailsFields({
               maxLength={200}
               onBlur={field.handleBlur}
               onChange={(e) => field.handleChange(e.target.value)}
+              placeholder="Omaya 1819 Backpack"
               value={field.state.value}
             />
           </AppFormField>

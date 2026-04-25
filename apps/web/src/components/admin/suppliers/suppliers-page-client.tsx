@@ -5,21 +5,15 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
-  getUsersErrorMessage,
-  replaceUserQuery,
-  USER_PAGE_SIZE_OPTIONS,
-  USER_TABLE_SKELETON_KEYS,
-} from "@/components/admin/users/users-page-client.support";
-import {
   AppDataTable,
   type AppDataTableSort,
 } from "@/components/data-table/app-data-table";
+import { StockWorkspaceTableSkeleton } from "@/components/stock/stock-workspace-feedback";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { AppTableWrapper } from "@/components/system/app-table-wrapper";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { PermissionGate } from "@/components/system/permission-gate";
 import { buttonVariants } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   adminSuppliersQueryKey,
   fetchAdminSuppliers,
@@ -33,7 +27,13 @@ import {
 } from "@/lib/url-state";
 import { SupplierFilters } from "./supplier-filters";
 import { supplierColumns } from "./suppliers-columns";
-import { createSupplierQuery } from "./suppliers-page-client.support";
+import {
+  createSupplierQuery,
+  getSuppliersErrorMessage,
+  replaceSuppliersQuery,
+  SUPPLIER_PAGE_SIZE_OPTIONS,
+  SUPPLIER_TABLE_SKELETON_KEYS,
+} from "./suppliers-page-client.support";
 
 const SORT_OPTIONS = ["name", "status", "createdAt"] as const;
 const SUPPLIER_STATUS_FILTER_OPTIONS = ["all", "active", "inactive"] as const;
@@ -56,8 +56,8 @@ export function SuppliersPageClient() {
   const sort = readEnumParam(searchParams, "sort", SORT_OPTIONS, "name");
   const dir = readEnumParam(searchParams, "dir", ["asc", "desc"], "asc");
   const rawPageSize = readPositiveIntParam(searchParams, "pageSize", 10);
-  const pageSize = USER_PAGE_SIZE_OPTIONS.includes(
-    rawPageSize as (typeof USER_PAGE_SIZE_OPTIONS)[number],
+  const pageSize = SUPPLIER_PAGE_SIZE_OPTIONS.includes(
+    rawPageSize as (typeof SUPPLIER_PAGE_SIZE_OPTIONS)[number],
   )
     ? rawPageSize
     : 10;
@@ -68,7 +68,7 @@ export function SuppliersPageClient() {
   useEffect(() => {
     if (draftSearch === query) return;
     const id = window.setTimeout(() => {
-      replaceUserQuery(router, pathname, searchParams, {
+      replaceSuppliersQuery(router, pathname, searchParams, {
         page: null,
         q: draftSearch || null,
       });
@@ -105,7 +105,7 @@ export function SuppliersPageClient() {
 
   useEffect(() => {
     if (!suppliersQuery.data || safePage === page) return;
-    replaceUserQuery(router, pathname, searchParams, {
+    replaceSuppliersQuery(router, pathname, searchParams, {
       page: safePage === 1 ? null : safePage,
     });
   }, [page, pathname, router, safePage, searchParams, suppliersQuery.data]);
@@ -130,7 +130,7 @@ export function SuppliersPageClient() {
         draftSearch={draftSearch}
         hasFilters={hasFilters}
         onClear={() =>
-          replaceUserQuery(router, pathname, searchParams, {
+          replaceSuppliersQuery(router, pathname, searchParams, {
             page: null,
             q: null,
             status: null,
@@ -138,7 +138,7 @@ export function SuppliersPageClient() {
         }
         onDraftSearchChange={setDraftSearch}
         onStatusChange={(val) =>
-          replaceUserQuery(router, pathname, searchParams, {
+          replaceSuppliersQuery(router, pathname, searchParams, {
             page: null,
             status: val === "all" ? null : val,
           })
@@ -149,17 +149,13 @@ export function SuppliersPageClient() {
 
       <AppTableWrapper>
         {suppliersQuery.isPending && !suppliersQuery.data ? (
-          <div className="flex flex-col gap-2 p-4">
-            {USER_TABLE_SKELETON_KEYS.map((key) => (
-              <Skeleton key={key} className="h-11 w-full" />
-            ))}
-          </div>
+          <StockWorkspaceTableSkeleton keys={SUPPLIER_TABLE_SKELETON_KEYS} />
         ) : (
           <>
             {suppliersQuery.isError ? (
               <div className="p-8">
                 <AppErrorBanner
-                  detail={getUsersErrorMessage(suppliersQuery.error)}
+                  detail={getSuppliersErrorMessage(suppliersQuery.error)}
                   error={suppliersQuery.error}
                   onRetry={() => {
                     void suppliersQuery.refetch();
@@ -186,7 +182,7 @@ export function SuppliersPageClient() {
                 )
               }
               onSortingChange={(next) =>
-                replaceUserQuery(router, pathname, searchParams, {
+                replaceSuppliersQuery(router, pathname, searchParams, {
                   dir: next?.direction ?? null,
                   page: null,
                   sort: next?.columnId ?? null,
@@ -194,17 +190,17 @@ export function SuppliersPageClient() {
               }
               pagination={{
                 onPageChange: (next) =>
-                  replaceUserQuery(router, pathname, searchParams, {
+                  replaceSuppliersQuery(router, pathname, searchParams, {
                     page: next === 1 ? null : next,
                   }),
                 onPageSizeChange: (next) =>
-                  replaceUserQuery(router, pathname, searchParams, {
+                  replaceSuppliersQuery(router, pathname, searchParams, {
                     page: null,
                     pageSize: next === 10 ? null : next,
                   }),
                 page: safePage,
                 pageSize,
-                pageSizeOptions: USER_PAGE_SIZE_OPTIONS,
+                pageSizeOptions: SUPPLIER_PAGE_SIZE_OPTIONS,
                 totalCount: suppliersQuery.data?.totalCount ?? 0,
               }}
               sorting={sorting}

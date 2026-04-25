@@ -125,7 +125,7 @@ export function NotificationCenterPageClient({
 
       <section className="grid gap-4 md:grid-cols-3">
         <StatCard
-          description="Items still awaiting acknowledgement."
+          description="Items still waiting for acknowledgement."
           icon={Bell}
           label="Unread"
           value={unreadCount}
@@ -137,9 +137,9 @@ export function NotificationCenterPageClient({
           value={readCount}
         />
         <StatCard
-          description="Recent platform events currently retained in the UI feed."
+          description="Recent platform events currently loaded in this workspace."
           icon={Bell}
-          label="Loaded"
+          label="In Feed"
           value={items.length}
         />
       </section>
@@ -148,7 +148,7 @@ export function NotificationCenterPageClient({
         value={filter}
         onValueChange={(value) => setFilter(value as NotificationFilter)}
       >
-        <TabsList>
+        <TabsList className="h-auto flex-wrap">
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="unread">Unread</TabsTrigger>
           <TabsTrigger value="read">Read</TabsTrigger>
@@ -210,8 +210,8 @@ export function NotificationCenterPageClient({
                   {filter === "unread"
                     ? "Everything in the current feed has already been acknowledged."
                     : filter === "read"
-                      ? "Read notifications will appear here after you acknowledge updates."
-                      : "Operational updates will appear here as platform events are delivered."}
+                      ? "Acknowledged notifications will appear here after you review updates."
+                      : "Operational updates will appear here as new platform events arrive."}
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>

@@ -43,6 +43,17 @@ export function getNotificationEventLabel(eventType: string) {
   }
 }
 
+export function getNotificationStatusLabel(
+  status: NotificationListItem["status"],
+) {
+  switch (status) {
+    case "unread":
+      return "Needs Attention";
+    case "read":
+      return "Read";
+  }
+}
+
 export function getNotificationActorLabel(notification: NotificationListItem) {
   return `By ${toHumanLabel(notification.actorUserSlug)}`;
 }

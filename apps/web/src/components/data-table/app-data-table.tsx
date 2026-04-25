@@ -132,7 +132,7 @@ export function AppDataTable<TData>({
       </div>
 
       {pagination ? (
-        <div className="border-t border-border/50 bg-white/50 px-6 py-4">
+        <div className="border-t border-border/50 bg-card/80 px-6 py-4">
           <AppPagination {...pagination} />
         </div>
       ) : null}
@@ -144,7 +144,7 @@ export function AppDataTable<TData>({
   }
 
   return (
-    <div className="rounded-xl border border-border/50 bg-white shadow-sm">
+    <div className="rounded-xl border border-border/50 bg-card shadow-sm">
       {tableContent}
     </div>
   );

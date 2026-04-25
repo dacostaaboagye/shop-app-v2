@@ -2,11 +2,16 @@
 
 import { APPLICATION_BRAND_MEDIA_ENTITY } from "@shop/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { MediaPanel } from "@/components/admin/catalog/media/media-panel";
 import { useAuthorization } from "@/components/providers/authorization-provider";
 import { AppErrorBanner } from "@/components/system/app-error";
-import { PageHeader, PageShell } from "@/components/system/page-shell";
+import {
+  PageHeader,
+  PageShell,
+  StatCard,
+} from "@/components/system/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -59,6 +64,27 @@ export function OfficialDocumentSettingsPageClient({
         description={description}
         title={title}
       />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <StatCard
+          description="This workspace edits one configuration surface at a time."
+          icon={Settings2}
+          label="Current section"
+          value={title}
+        />
+        <StatCard
+          description="Configuration state currently in use across generated output."
+          icon={Settings2}
+          label="Status"
+          value="Live"
+        />
+        <StatCard
+          description="Changes are saved centrally and applied to future generated output."
+          icon={Settings2}
+          label="Change model"
+          value="Central"
+        />
+      </div>
 
       {settingsQuery.isPending ? (
         <div className="flex flex-col gap-3">

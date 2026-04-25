@@ -11,10 +11,10 @@ export const reservationColumns: ColumnDef<AdminReservationSummary>[] = [
     header: "Product / Variant",
     cell: ({ row }) => (
       <div className="flex flex-col gap-0.5">
-        <p className="text-sm font-bold text-foreground truncate max-w-[240px]">
+        <p className="text-balance text-sm font-bold text-foreground">
           {row.original.productName}
         </p>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
+        <p className="type-support text-muted-foreground">
           {row.original.variantName}
         </p>
       </div>
@@ -35,7 +35,7 @@ export const reservationColumns: ColumnDef<AdminReservationSummary>[] = [
     enableSorting: false,
     header: "SKU",
     cell: ({ getValue }) => (
-      <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
+      <span className="type-identifier break-all text-muted-foreground">
         {getValue() as string}
       </span>
     ),
@@ -56,7 +56,7 @@ export const reservationColumns: ColumnDef<AdminReservationSummary>[] = [
     header: "Source",
     cell: ({ getValue }) => (
       <Badge
-        className="rounded-md font-bold uppercase tracking-wider text-[10px]"
+        className="rounded-md text-[10px] font-semibold"
         variant="secondary"
       >
         {(getValue() as string).replaceAll("_", " ")}
@@ -68,7 +68,7 @@ export const reservationColumns: ColumnDef<AdminReservationSummary>[] = [
     enableSorting: false,
     header: "Source key",
     cell: ({ getValue }) => (
-      <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground/30">
+      <span className="type-identifier break-all text-muted-foreground">
         {getValue() as string}
       </span>
     ),
@@ -80,7 +80,7 @@ export const reservationColumns: ColumnDef<AdminReservationSummary>[] = [
     cell: ({ getValue }) => {
       const value = getValue() as string | null;
       return value ? (
-        <span className="tabular-nums text-[11px] font-bold uppercase tracking-widest text-muted-foreground/50">
+        <span className="type-support tabular-nums text-muted-foreground">
           {new Date(value).toLocaleDateString("en-GB", {
             day: "2-digit",
             month: "short",
@@ -89,9 +89,7 @@ export const reservationColumns: ColumnDef<AdminReservationSummary>[] = [
           })}
         </span>
       ) : (
-        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/20">
-          -
-        </span>
+        <span className="type-support text-muted-foreground">Not set</span>
       );
     },
   },

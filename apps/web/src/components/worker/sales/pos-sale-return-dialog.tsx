@@ -117,10 +117,10 @@ export function PosSaleReturnDialog({
                 key={line.skuId}
               >
                 <div className="min-w-0">
-                  <p className="truncate font-medium">
+                  <p className="text-balance font-medium">
                     {line.skuSnapshot.productName}
                   </p>
-                  <p className="truncate text-xs text-muted-foreground">
+                  <p className="text-pretty text-xs text-muted-foreground">
                     {line.skuSnapshot.variantName} - {line.skuSnapshot.sku}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">

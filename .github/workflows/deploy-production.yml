@@ -1,0 +1,154 @@
+name: Deploy Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm verify
+
+  migrate_database:
+    runs-on: ubuntu-latest
+    needs: verify
+    environment: production
+    env:
+      DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm deploy:production:migrate
+
+  deploy_api:
+    runs-on: ubuntu-latest
+    needs: migrate_database
+    environment: production
+    env:
+      FLY_API_TOKEN: ${{ secrets.PROD_FLY_API_TOKEN }}
+      PROD_FLY_APP_NAME: ${{ secrets.PROD_FLY_APP_NAME }}
+      PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+      PROD_AUTH_ACCESS_TOKEN_SECRET: ${{ secrets.PROD_AUTH_ACCESS_TOKEN_SECRET }}
+      PROD_WEB_BASE_URL: ${{ secrets.PROD_WEB_BASE_URL }}
+      PROD_AUTH_COOKIE_SECURE: ${{ secrets.PROD_AUTH_COOKIE_SECURE }}
+      PROD_GOOGLE_CLIENT_ID: ${{ secrets.PROD_GOOGLE_CLIENT_ID }}
+      PROD_GOOGLE_CLIENT_SECRET: ${{ secrets.PROD_GOOGLE_CLIENT_SECRET }}
+      PROD_GOOGLE_CALLBACK_URL: ${{ secrets.PROD_GOOGLE_CALLBACK_URL }}
+      PROD_RESEND_API_KEY: ${{ secrets.PROD_RESEND_API_KEY }}
+      PROD_EMAIL_FROM_ADDRESS: ${{ secrets.PROD_EMAIL_FROM_ADDRESS }}
+      PROD_RESEND_WEBHOOK_SECRET: ${{ secrets.PROD_RESEND_WEBHOOK_SECRET }}
+      PROD_R2_ACCOUNT_ID: ${{ secrets.PROD_R2_ACCOUNT_ID }}
+      PROD_R2_ACCESS_KEY_ID: ${{ secrets.PROD_R2_ACCESS_KEY_ID }}
+      PROD_R2_SECRET_ACCESS_KEY: ${{ secrets.PROD_R2_SECRET_ACCESS_KEY }}
+      PROD_R2_BUCKET: ${{ secrets.PROD_R2_BUCKET }}
+      PROD_R2_PUBLIC_URL: ${{ secrets.PROD_R2_PUBLIC_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Sync production secrets to Fly
+        run: |
+          cat <<EOF > fly.production.secrets
+          NODE_ENV=production
+          DATABASE_URL=${PROD_DATABASE_URL}
+          AUTH_ACCESS_TOKEN_SECRET=${PROD_AUTH_ACCESS_TOKEN_SECRET}
+          AUTH_ACCESS_TOKEN_TTL_SECONDS=900
+          AUTH_REFRESH_TOKEN_TTL_SECONDS=604800
+          AUTH_COOKIE_SECURE=${PROD_AUTH_COOKIE_SECURE:-true}
+          WEB_BASE_URL=${PROD_WEB_BASE_URL}
+          EMAIL_FROM_ADDRESS=${PROD_EMAIL_FROM_ADDRESS}
+          GOOGLE_CLIENT_ID=${PROD_GOOGLE_CLIENT_ID}
+          GOOGLE_CLIENT_SECRET=${PROD_GOOGLE_CLIENT_SECRET}
+          GOOGLE_CALLBACK_URL=${PROD_GOOGLE_CALLBACK_URL:-${PROD_WEB_BASE_URL%/}/api/auth/oauth/google/callback}
+          RESEND_API_KEY=${PROD_RESEND_API_KEY}
+          RESEND_WEBHOOK_SECRET=${PROD_RESEND_WEBHOOK_SECRET}
+          R2_ACCOUNT_ID=${PROD_R2_ACCOUNT_ID}
+          R2_ACCESS_KEY_ID=${PROD_R2_ACCESS_KEY_ID}
+          R2_SECRET_ACCESS_KEY=${PROD_R2_SECRET_ACCESS_KEY}
+          R2_BUCKET=${PROD_R2_BUCKET}
+          R2_PUBLIC_URL=${PROD_R2_PUBLIC_URL}
+          EOF
+          flyctl secrets import --app "$PROD_FLY_APP_NAME" < fly.production.secrets
+      - name: Deploy API and worker to Fly
+        run: |
+          flyctl deploy \
+            --remote-only \
+            --config apps/api/fly.production.toml \
+            --app "$PROD_FLY_APP_NAME"
+      - name: Ensure API and worker process groups are running
+        run: |
+          flyctl scale count \
+            api=1 \
+            worker=1 \
+            --app "$PROD_FLY_APP_NAME"
+
+  deploy_web:
+    runs-on: ubuntu-latest
+    needs: deploy_api
+    environment: production
+    env:
+      VERCEL_ORG_ID: ${{ secrets.PROD_VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.PROD_VERCEL_PROJECT_ID }}
+      PROD_VERCEL_TOKEN: ${{ secrets.PROD_VERCEL_TOKEN }}
+      PROD_API_BASE_URL: ${{ secrets.PROD_API_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Validate required secrets
+        run: |
+          missing=""
+          [ -z "$PROD_VERCEL_TOKEN" ] && missing="$missing PROD_VERCEL_TOKEN"
+          [ -z "$VERCEL_ORG_ID" ] && missing="$missing PROD_VERCEL_ORG_ID"
+          [ -z "$VERCEL_PROJECT_ID" ] && missing="$missing PROD_VERCEL_PROJECT_ID"
+          [ -z "$PROD_API_BASE_URL" ] && missing="$missing PROD_API_BASE_URL"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing required secrets:$missing"
+            exit 1
+          fi
+      - name: Pull Vercel project settings
+        run: |
+          pnpm dlx vercel@latest pull \
+            --yes \
+            --environment=production \
+            --token "$PROD_VERCEL_TOKEN"
+      - name: Deploy web to Vercel production project
+        run: |
+          pnpm dlx vercel@latest deploy \
+            --prod \
+            --token "$PROD_VERCEL_TOKEN" \
+            --archive=tgz \
+            --build-env API_BASE_URL="$PROD_API_BASE_URL" \
+            --build-env NEXT_PUBLIC_API_BASE_URL="$PROD_API_BASE_URL" \
+            --env API_BASE_URL="$PROD_API_BASE_URL" \
+            --env NEXT_PUBLIC_API_BASE_URL="$PROD_API_BASE_URL"

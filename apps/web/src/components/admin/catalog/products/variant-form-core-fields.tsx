@@ -3,7 +3,14 @@
 import { AppFormField } from "@/components/forms/app-form-field";
 import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { VariantFormApi } from "./variant-form.api";
 import type { VariantFormField } from "./variant-form.field";
@@ -99,10 +106,8 @@ export function VariantFormCoreFields({
             showErrors={showErrors}
           >
             <Select
-              id={field.name}
-              onChange={(event) => {
-                const status = event.target
-                  .value as VariantFormValues["status"];
+              onValueChange={(value) => {
+                const status = value as VariantFormValues["status"];
                 field.handleChange(status);
                 if (status === "archived") {
                   form.setFieldValue("isDefault", false);
@@ -110,8 +115,13 @@ export function VariantFormCoreFields({
               }}
               value={String(field.state.value)}
             >
-              <option value="active">Active</option>
-              <option value="archived">Archived</option>
+              <SelectTrigger id={field.name}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
+              </SelectContent>
             </Select>
           </AppFormField>
         )}
@@ -120,14 +130,15 @@ export function VariantFormCoreFields({
       <form.Field name="isDefault">
         {(field: VariantFormField) => (
           <div className="flex flex-col gap-1.5">
-            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/70 bg-muted/20 p-4 transition-colors has-[:checked]:border-primary/30 has-[:checked]:bg-primary/5">
-              <input
+            <label
+              className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/70 bg-muted/20 p-4 transition-colors has-[[data-checked]]:border-primary/30 has-[[data-checked]]:bg-primary/5"
+              htmlFor={field.name}
+            >
+              <Switch
                 checked={Boolean(field.state.value)}
-                className="mt-0.5 size-4 accent-primary"
                 disabled={form.getFieldValue("status") === "archived"}
                 id={field.name}
-                onChange={(event) => field.handleChange(event.target.checked)}
-                type="checkbox"
+                onCheckedChange={(checked) => field.handleChange(checked)}
               />
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground">

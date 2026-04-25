@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Building2, Package, ReceiptText, UsersRound } from "lucide-react";
+import { CatalogFormCard } from "@/components/admin/catalog/catalog-form-surfaces";
 import { AppErrorBanner } from "@/components/system/app-error";
 import {
   PageHeader,
@@ -113,11 +114,11 @@ export function SupplierDetailPageClient({ slug }: { slug: string }) {
   const supplier = supplierQuery.data;
 
   return (
-    <PageShell className="rounded-[2rem] bg-linear-to-b from-muted/35 via-background to-background">
+    <PageShell>
       <PageHeader
         backHref={toRoute("/admin/suppliers")}
         backLabel="Suppliers"
-        description={supplier.legalName ?? supplier.email ?? "Supplier profile"}
+        description="Manage supplier details, linked contacts, supply activity, and transaction history."
         title={supplier.name}
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -148,7 +149,7 @@ export function SupplierDetailPageClient({ slug }: { slug: string }) {
       </div>
 
       <Tabs defaultValue="overview">
-        <TabsList>
+        <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="contacts">Contacts</TabsTrigger>
           <TabsTrigger value="products">Products</TabsTrigger>
@@ -157,10 +158,10 @@ export function SupplierDetailPageClient({ slug }: { slug: string }) {
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
         </TabsList>
         <TabsContent className="pt-3" value="overview">
-          <div className="rounded-xl border border-border/50 bg-white p-6 shadow-sm">
-            <h3 className="mb-6 text-sm font-bold uppercase tracking-widest text-muted-foreground/60">
-              Organization details
-            </h3>
+          <CatalogFormCard
+            description="Keep the supplier profile current before linking contacts, products, and procurement activity."
+            title="Organization details"
+          >
             <SupplierForm
               defaultValues={toSupplierFormValues(supplier)}
               error={actions.updateMutation.error}
@@ -168,7 +169,7 @@ export function SupplierDetailPageClient({ slug }: { slug: string }) {
               onSubmit={(values) => actions.updateMutation.mutate(values)}
               submitLabel="Save changes"
             />
-          </div>
+          </CatalogFormCard>
         </TabsContent>
         <TabsContent className="pt-3" value="contacts">
           <ContactsPanel

@@ -6,6 +6,7 @@ import { AtSign, FlaskConical, History, MailCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { RecipientStatePanel } from "@/components/admin/settings/email-recipient-state-panel";
+import { AppEmptyState } from "@/components/system/app-empty-state";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { StatCard } from "@/components/system/page-shell";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,11 @@ import {
   fetchEmailRecipientState,
   sendTestEmail,
 } from "@/lib/react-query/official-documents";
+import {
+  EmailDeliveryStatusBadge,
+  formatEmailTimestamp,
+  isValidEmail,
+} from "./email-operations-support";
 
 export function EmailOperationsPanel({ canManage }: { canManage: boolean }) {
   const queryClient = useQueryClient();
@@ -96,10 +102,10 @@ export function EmailOperationsPanel({ canManage }: { canManage: boolean }) {
 
       <div className="rounded-xl border border-border/60 bg-card p-6 shadow-sm shadow-black/[0.04]">
         <div className="flex flex-col gap-2">
-          <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">
+          <h3 className="text-base font-semibold text-foreground">
             Test delivery
           </h3>
-          <p className="text-sm text-muted-foreground">
+          <p className="type-support text-muted-foreground">
             Send a live branded test email through the current messaging
             configuration.
           </p>
@@ -134,10 +140,10 @@ export function EmailOperationsPanel({ canManage }: { canManage: boolean }) {
 
       <div className="rounded-xl border border-border/60 bg-card p-6 shadow-sm shadow-black/4">
         <div className="flex flex-col gap-2">
-          <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">
+          <h3 className="text-base font-semibold text-foreground">
             Recent delivery attempts
           </h3>
-          <p className="text-sm text-muted-foreground">
+          <p className="type-support text-muted-foreground">
             Latest transactional email activity, including provider lifecycle
             updates.
           </p>
@@ -155,69 +161,42 @@ export function EmailOperationsPanel({ canManage }: { canManage: boolean }) {
                   key={`${attempt.createdAt}-${attempt.recipientEmail}-${attempt.subject}`}
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-foreground">
+                    <p className="text-balance text-sm font-semibold text-foreground">
                       {attempt.subject}
                     </p>
-                    <p className="flex gap-1 text-xs text-muted-foreground">
-                      <span className="text-nowrap">
+                    <p className="flex flex-wrap gap-1 text-xs text-muted-foreground">
+                      <span className="break-all">
                         {attempt.recipientEmail}
                       </span>
                       <Separator orientation="vertical" className="h-4" />
-                      <span className="text-nowrap">
+                      <span className="text-pretty">
                         {attempt.messageType.replaceAll("_", " ")}
                       </span>
                     </p>
                   </div>
-                  <div className="flex flex-col items-start gap-1 text-xs text-muted-foreground md:items-end">
-                    <span className="font-semibold text-foreground">
-                      {formatDeliveryStatus(attempt.status)}
-                    </span>
+                  <div className="flex min-w-0 flex-col items-start gap-1 text-xs text-muted-foreground md:items-end">
+                    <EmailDeliveryStatusBadge status={attempt.status} />
                     <span>
-                      {new Date(attempt.statusRecordedAt).toLocaleString(
-                        "en-GB",
-                      )}
+                      {formatEmailTimestamp(attempt.statusRecordedAt)}
                     </span>
                     {attempt.failureReason ? (
-                      <span>{attempt.failureReason}</span>
+                      <span className="text-pretty md:text-right">
+                        {attempt.failureReason}
+                      </span>
                     ) : null}
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="p-4 text-sm text-muted-foreground">
-              No delivery attempts recorded yet.
-            </div>
+            <AppEmptyState
+              className="m-4"
+              description="No transactional email attempts have been recorded yet."
+              title="No delivery attempts"
+            />
           )}
         </div>
       </div>
     </div>
   );
-}
-
-function formatDeliveryStatus(status: string) {
-  switch (status) {
-    case "sent":
-      return "Accepted by provider";
-    case "delivered":
-      return "Delivered";
-    case "delayed":
-      return "Delivery delayed";
-    case "bounced":
-      return "Bounced";
-    case "complained":
-      return "Complained";
-    case "suppressed":
-      return "Suppressed";
-    case "console_fallback":
-      return "Console fallback";
-    case "failed":
-      return "Failed";
-    default:
-      return status.replaceAll("_", " ");
-  }
-}
-
-function isValidEmail(value: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }

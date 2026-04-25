@@ -6,6 +6,7 @@ import { AppEmptyState } from "@/components/system/app-empty-state";
 import { AppTableWrapper } from "@/components/system/app-table-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { formatCount, formatPublicReference } from "@/lib/display/format";
 import { cn } from "@/lib/utils";
 
 export type ProcurementAction =
@@ -70,24 +71,24 @@ function OrderRow(props: {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <p className="font-semibold text-foreground">
-              {props.order.reference}
+            <p className="type-data-value">
+              {formatPublicReference(props.order.reference)}
             </p>
             <Badge
-              className="rounded-md font-bold uppercase tracking-wider text-[10px]"
+              className="rounded-md text-[10px] font-semibold"
               variant="secondary"
             >
-              {props.order.status.replaceAll("_", " ")}
+              {formatProcurementStatus(props.order.status)}
             </Badge>
           </div>
-          <p className="mt-0.5 text-xs text-muted-foreground/80">
-            {props.order.destinationLocationName ?? "Direct shipment"} •{" "}
-            {props.order.lines.length} line item
+          <p className="type-support mt-0.5">
+            {props.order.destinationLocationName ?? "Direct shipment"} |{" "}
+            {formatCount(props.order.lines.length)} line item
             {props.order.lines.length === 1 ? "" : "s"}
           </p>
         </div>
         <Badge variant="outline">
-          {props.order.status.replaceAll("_", " ")}
+          {formatProcurementStatus(props.order.status)}
         </Badge>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
@@ -99,7 +100,7 @@ function OrderRow(props: {
             type="button"
             variant="outline"
           >
-            {action}
+            {formatActionLabel(action)}
           </Button>
         ))}
         {props.order.status === "ordered" ||
@@ -137,4 +138,42 @@ function nextActions(
     return ["close"] as const;
   }
   return [] as const;
+}
+
+function formatProcurementStatus(
+  status: AdminSupplierDetail["procurementOrders"][number]["status"],
+) {
+  switch (status) {
+    case "draft":
+      return "Draft";
+    case "submitted":
+      return "Submitted";
+    case "approved":
+      return "Approved";
+    case "ordered":
+      return "Ordered";
+    case "partially_received":
+      return "Partially received";
+    case "received":
+      return "Received";
+    case "closed":
+      return "Closed";
+    case "cancelled":
+      return "Cancelled";
+  }
+}
+
+function formatActionLabel(action: ProcurementAction) {
+  switch (action) {
+    case "approve":
+      return "Approve";
+    case "cancel":
+      return "Cancel";
+    case "close":
+      return "Close";
+    case "order":
+      return "Place order";
+    case "submit":
+      return "Submit";
+  }
 }

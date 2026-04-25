@@ -3,8 +3,14 @@
 import type { InvoiceListResponse } from "@shop/contracts";
 import { Receipt } from "lucide-react";
 import Link from "next/link";
+import { AppEmptyState } from "@/components/system/app-empty-state";
 import { AppTableWrapper } from "@/components/system/app-table-wrapper";
 import { Badge } from "@/components/ui/badge";
+import {
+  formatCount,
+  formatDateTime,
+  formatPublicReference,
+} from "@/lib/display/format";
 import { formatMoney, type MoneyProfile } from "@/lib/money/format-money";
 import { toRoute } from "@/lib/routes";
 import { cn } from "@/lib/utils";
@@ -15,20 +21,18 @@ export function ManagerSalesList(props: {
 }) {
   if (props.response.items.length === 0) {
     return (
-      <div className="flex flex-col gap-4 rounded-xl border border-dashed border-border/60 bg-muted/5 p-12 text-center shadow-sm">
-        <h3 className="text-lg font-bold text-foreground">No sales recorded</h3>
-        <p className="mx-auto max-w-sm text-sm text-muted-foreground/80">
-          No transactions have been recorded at this location for the selected
-          period.
-        </p>
-      </div>
+      <AppEmptyState
+        description="No transactions have been recorded at this location for the selected period."
+        icon={Receipt}
+        title="No sales recorded"
+      />
     );
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">
-        Transaction history ({props.response.total})
+      <h3 className="type-data-label">
+        Transaction History ({formatCount(props.response.total)})
       </h3>
       <AppTableWrapper>
         {props.response.items.map((invoice, index) => {
@@ -44,7 +48,7 @@ export function ManagerSalesList(props: {
             <Link
               key={invoice.reference}
               className={cn(
-                "group flex items-center justify-between gap-4 p-4 transition-all hover:bg-muted/30",
+                "group flex flex-col gap-4 p-4 transition-all hover:bg-muted/30 sm:flex-row sm:items-center sm:justify-between",
                 index !== props.response.items.length - 1 &&
                   "border-b border-border/50",
               )}
@@ -57,41 +61,38 @@ export function ManagerSalesList(props: {
                   <Receipt className="size-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate font-mono text-sm font-bold text-foreground">
-                    {invoice.reference}
+                  <p className="type-data-value text-balance text-sm">
+                    {formatPublicReference(invoice.reference)}
                   </p>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
-                    {new Date(invoice.createdAt).toLocaleDateString("en-GB", {
-                      day: "2-digit",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                  <p className="type-support text-xs">
+                    {formatDateTime(invoice.createdAt)}
                   </p>
                 </div>
               </div>
-              <div className="flex shrink-0 items-center gap-4">
-                <div className="hidden flex-col items-end sm:flex">
+
+              <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto sm:justify-end sm:flex-nowrap sm:gap-4">
+                <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-end sm:gap-1">
                   <Badge
-                    className="rounded-md font-bold uppercase tracking-wider text-[10px]"
+                    className="rounded-md font-bold text-[10px]"
                     variant={
                       invoice.type === "credit_note"
                         ? "destructive"
                         : "secondary"
                     }
                   >
-                    {invoice.type === "credit_note" ? "Return" : "Sale"}
+                    {invoice.type === "credit_note" ? "Credit Note" : "Sale"}
                   </Badge>
-                  <span className="mt-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
+                  <span className="type-data-label text-[10px]">
                     {paymentLabel}
                   </span>
                 </div>
-                <div className="flex flex-col items-end">
-                  <span className="text-sm font-bold tabular-nums text-foreground">
+
+                <div className="flex min-w-0 flex-col sm:items-end">
+                  <span className="type-data-value text-sm tabular-nums">
                     {formatMoney(invoice.totalAmount, props.moneyProfile)}
                   </span>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-primary/60 transition-colors group-hover:text-primary">
-                    Details →
+                  <span className="type-data-label text-[10px] text-primary/70 transition-colors group-hover:text-primary">
+                    Details -&gt;
                   </span>
                 </div>
               </div>

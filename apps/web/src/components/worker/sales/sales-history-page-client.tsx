@@ -9,12 +9,19 @@ import {
   type SalesDocumentTypeFilter,
   SalesListFilters,
 } from "@/components/sales/sales-list-filters";
+import { AppEmptyState } from "@/components/system/app-empty-state";
 import { AppErrorBanner } from "@/components/system/app-error";
+import { AppTableWrapper } from "@/components/system/app-table-wrapper";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
+import {
+  formatCount,
+  formatDateTime,
+  formatPublicReference,
+} from "@/lib/display/format";
 import { DEFAULT_OFFICIAL_DOCUMENT_PROFILE } from "@/lib/documents/official-document-profile";
 import { formatMoney, type MoneyProfile } from "@/lib/money/format-money";
 import {
@@ -26,8 +33,9 @@ import {
   workerSalesQueryKey,
 } from "@/lib/react-query/pos-sales";
 import { toRoute } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 
-const SKELETON_KEYS = [1, 2, 3, 4, 5];
+const SKELETON_KEYS = [1, 2, 3, 4, 5] as const;
 
 export function SalesHistoryPageClient() {
   const [dateFrom, setDateFrom] = useState("");
@@ -99,8 +107,8 @@ export function SalesHistoryPageClient() {
 
       {salesQuery.isPending && selectedLocationScope ? (
         <div className="flex flex-col gap-2">
-          {SKELETON_KEYS.map((k) => (
-            <Skeleton key={k} className="h-14 w-full" />
+          {SKELETON_KEYS.map((key) => (
+            <Skeleton key={key} className="h-14 w-full" />
           ))}
         </div>
       ) : salesQuery.isError ? (
@@ -129,68 +137,75 @@ function SalesList({
 }) {
   if (response.items.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border bg-white p-12 text-center text-sm text-muted-foreground shadow-sm">
-        No sales recorded yet at this location.
-      </div>
+      <AppEmptyState
+        description="No sales have been recorded at this location yet."
+        icon={Receipt}
+        title="No sales recorded"
+      />
     );
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground/60 px-1">
-        {response.total} record{response.total !== 1 ? "s" : ""} found
+      <p className="type-data-label px-1">
+        {formatCount(response.total)} record{response.total !== 1 ? "s" : ""}{" "}
+        found
       </p>
-      <div className="divide-y divide-border/50 rounded-xl border border-border bg-white shadow-sm overflow-hidden">
-        {response.items.map((invoice) => {
+      <AppTableWrapper>
+        {response.items.map((invoice, index) => {
           const paymentLabel =
             invoice.paymentMethod === "mobile_money"
               ? "Mobile money"
               : invoice.paymentMethod
                 ? invoice.paymentMethod.charAt(0).toUpperCase() +
                   invoice.paymentMethod.slice(1)
-                : "-";
+                : "Other";
 
           return (
             <Link
               key={invoice.reference}
-              className="flex items-center justify-between gap-3 p-5 transition-all hover:bg-muted active:bg-muted/80"
+              className={cn(
+                "flex flex-col gap-3 p-5 transition-all hover:bg-muted/30 active:bg-muted/80 sm:flex-row sm:items-center sm:justify-between",
+                index !== response.items.length - 1 &&
+                  "border-b border-border/50",
+              )}
               href={toRoute(
                 `/worker/sales/${encodeURIComponent(invoice.reference)}`,
               )}
             >
-              <div className="flex items-center gap-4">
+              <div className="flex min-w-0 items-center gap-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-sm">
                   <Receipt className="size-5" />
                 </div>
-                <div>
-                  <p className="font-mono text-sm font-bold tracking-tight">
-                    {invoice.reference}
+                <div className="min-w-0">
+                  <p className="type-data-value text-sm">
+                    {formatPublicReference(invoice.reference)}
                   </p>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 mt-0.5">
-                    {new Date(invoice.createdAt).toLocaleString()}
+                  <p className="type-support mt-0.5 text-xs">
+                    {formatDateTime(invoice.createdAt)}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-4 text-sm">
+              <div className="flex w-full flex-wrap items-center gap-3 text-sm sm:w-auto sm:justify-end sm:flex-nowrap sm:gap-4">
                 <Badge
+                  className="rounded-lg border-none px-2 py-0.5 text-[10px] font-bold shadow-sm"
                   variant={
                     invoice.type === "credit_note" ? "destructive" : "secondary"
                   }
-                  className="rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border-none shadow-sm"
                 >
-                  {invoice.type === "credit_note" ? "Return" : "Sale"}
+                  {invoice.type === "credit_note" ? "Credit Note" : "Sale"}
                 </Badge>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                <span className="type-data-label text-[10px]">
                   {paymentLabel}
                 </span>
-                <span className="font-heading text-base font-bold tabular-nums">
+                <span className="type-data-value text-base tabular-nums">
                   {formatMoney(invoice.totalAmount, moneyProfile)}
                 </span>
               </div>
             </Link>
           );
         })}
-      </div>
+      </AppTableWrapper>
     </div>
   );
 }

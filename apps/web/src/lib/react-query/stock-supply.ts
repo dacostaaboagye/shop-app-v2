@@ -1,5 +1,6 @@
 import type {
   ApproveStockSupplyRequest,
+  CancelStockSupplyRequest,
   ConfirmReceipt,
   CreateStockSupplyRequest,
   DispatchStockSupplyRequest,
@@ -122,10 +123,19 @@ export async function postWorkerSupplyRequest(
 
 export async function patchWorkerCancelSupplyRequest(
   id: string,
+  body?: CancelStockSupplyRequest,
 ): Promise<StockSupplyRequestResponse> {
   return fetchJson<StockSupplyRequestResponse>(
     `/api/worker/stock/supply-requests/${encodeURIComponent(id)}/cancel`,
-    { method: "PATCH" },
+    {
+      ...(body
+        ? {
+            body: JSON.stringify(body),
+            headers: { "Content-Type": "application/json" },
+          }
+        : {}),
+      method: "PATCH",
+    },
     { auth: "required" },
   );
 }

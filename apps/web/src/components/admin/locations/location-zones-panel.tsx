@@ -2,10 +2,11 @@
 
 import type { AdminLocationZoneSummary } from "@shop/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Archive, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
+import type { MouseEvent } from "react";
 import { useState } from "react";
-import { AppDataTable } from "@/components/data-table/app-data-table";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { StockWorkspaceTableSkeleton } from "@/components/stock/stock-workspace-feedback";
+import { AppErrorBanner } from "@/components/system/app-error";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,16 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Skeleton } from "@/components/ui/skeleton";
-import { formatAdminDate } from "@/lib/admin-models";
+import { formatCount } from "@/lib/display/format";
 import {
   adminLocationZonesQueryKey,
   deleteAdminLocationZone,
@@ -31,6 +23,10 @@ import {
 } from "@/lib/react-query/admin-location-zones";
 import { toast } from "@/lib/toast";
 import { LocationZoneForm } from "./location-zone-form";
+import {
+  DeleteZoneDialog,
+  LocationZonesTable,
+} from "./location-zones-panel.support";
 
 export function LocationZonesPanel({ locationSlug }: { locationSlug: string }) {
   const queryClient = useQueryClient();
@@ -61,11 +57,13 @@ export function LocationZonesPanel({ locationSlug }: { locationSlug: string }) {
     return (
       <Card className="border-border/70 bg-card shadow-none">
         <CardHeader>
-          <Skeleton className="h-6 w-32" />
-          <Skeleton className="h-4 w-64" />
+          <CardTitle>Storage zones</CardTitle>
+          <CardDescription>
+            Configure aisles, shelves, and handling areas within this location.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <Skeleton className="h-64 w-full" />
+          <StockWorkspaceTableSkeleton />
         </CardContent>
       </Card>
     );
@@ -73,14 +71,26 @@ export function LocationZonesPanel({ locationSlug }: { locationSlug: string }) {
 
   if (zonesQuery.isError) {
     return (
-      <Alert variant="destructive">
-        <AlertTitle>Unable to load zones</AlertTitle>
-        <AlertDescription>
-          {zonesQuery.error instanceof Error
-            ? zonesQuery.error.message
-            : "An unexpected error occurred."}
-        </AlertDescription>
-      </Alert>
+      <Card className="border-border/70 bg-card shadow-none">
+        <CardHeader>
+          <CardTitle>Storage zones</CardTitle>
+          <CardDescription>
+            Configure aisles, shelves, and handling areas within this location.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AppErrorBanner
+            detail={
+              zonesQuery.error instanceof Error
+                ? zonesQuery.error.message
+                : "An unexpected error occurred."
+            }
+            error={zonesQuery.error}
+            onRetry={() => void zonesQuery.refetch()}
+            title="Unable to load zones"
+          />
+        </CardContent>
+      </Card>
     );
   }
 
@@ -89,11 +99,12 @@ export function LocationZonesPanel({ locationSlug }: { locationSlug: string }) {
   return (
     <>
       <Card className="border-border/70 bg-card shadow-none">
-        <CardHeader className="flex flex-row items-start justify-between">
+        <CardHeader className="flex flex-row items-start justify-between gap-3">
           <div className="flex flex-col gap-1.5">
-            <CardTitle>Storage Zones</CardTitle>
+            <CardTitle>Storage zones</CardTitle>
             <CardDescription>
-              Configure aisles, shelves, or specific areas within this location.
+              Configure aisles, shelves, and handling areas within this
+              location.
             </CardDescription>
           </div>
           <Button onClick={() => setIsCreateOpen(true)} size="sm" type="button">
@@ -102,68 +113,25 @@ export function LocationZonesPanel({ locationSlug }: { locationSlug: string }) {
           </Button>
         </CardHeader>
         <CardContent>
-          <AppDataTable
-            density="compact"
-            columns={[
-              {
-                id: "name",
-                header: () => "Name",
-                cell: (ctx) => (
-                  <div className="font-medium">{ctx.row.original.name}</div>
-                ),
-              },
-              {
-                id: "description",
-                header: () => "Description",
-                cell: (ctx) => (
-                  <div className="text-muted-foreground truncate max-w-[300px]">
-                    {ctx.row.original.description || "—"}
-                  </div>
-                ),
-              },
-              {
-                id: "createdAt",
-                header: () => "Created",
-                cell: (ctx) => (
-                  <div className="tabular-nums text-muted-foreground">
-                    {formatAdminDate(ctx.row.original.createdAt)}
-                  </div>
-                ),
-              },
-              {
-                id: "actions",
-                header: () => <span className="sr-only">Actions</span>,
-                cell: (ctx) => (
-                  <div className="flex justify-end relative">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeletingZone(ctx.row.original);
-                      }}
-                      title="Delete zone"
-                    >
-                      <Archive className="size-4" />
-                    </Button>
-                  </div>
-                ),
-              },
-            ]}
-            data={zones}
-            getRowId={(row) => row.slug}
-            onRowClick={(row) => setEditingZone(row)}
-            emptyTitle="No zones configured"
-            emptyDescription="Add a zone to start tracking stock across specific areas."
-            emptyState={{ kind: "no-data" }}
+          <div className="mb-4">
+            <p className="type-support type-inline-metric text-muted-foreground">
+              {formatCount(zones.length)} zone{zones.length === 1 ? "" : "s"}{" "}
+              configured
+            </p>
+          </div>
+          <LocationZonesTable
+            onDelete={(zone, event) => {
+              event.stopPropagation();
+              setDeletingZone(zone);
+            }}
+            onEdit={(zone) => setEditingZone(zone)}
+            zones={zones}
           />
         </CardContent>
       </Card>
 
       <LocationZoneForm
         locationSlug={locationSlug}
-        open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
         onSuccess={() => {
           setIsCreateOpen(false);
@@ -172,12 +140,11 @@ export function LocationZonesPanel({ locationSlug }: { locationSlug: string }) {
           });
           toast.success("Zone created");
         }}
+        open={isCreateOpen}
       />
 
       <LocationZoneForm
         locationSlug={locationSlug}
-        zone={editingZone}
-        open={!!editingZone}
         onOpenChange={(open: boolean) => !open && setEditingZone(null)}
         onSuccess={() => {
           setEditingZone(null);
@@ -186,41 +153,21 @@ export function LocationZonesPanel({ locationSlug }: { locationSlug: string }) {
           });
           toast.success("Zone saved");
         }}
+        open={!!editingZone}
+        zone={editingZone}
       />
 
-      <Dialog
-        open={!!deletingZone}
+      <DeleteZoneDialog
+        deletingZone={deletingZone}
+        isPending={deleteMutation.isPending}
+        onConfirm={(event: MouseEvent<HTMLButtonElement>) => {
+          event.preventDefault();
+          if (deletingZone) {
+            deleteMutation.mutate(deletingZone.slug);
+          }
+        }}
         onOpenChange={(open: boolean) => !open && setDeletingZone(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete zone?</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete the zone{" "}
-              <strong>{deletingZone?.name}</strong>? This action cannot be
-              undone. Zones containing active stock assignments cannot be
-              deleted.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeletingZone(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault();
-                if (deletingZone) {
-                  deleteMutation.mutate(deletingZone.slug);
-                }
-              }}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? "Deleting..." : "Delete zone"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      />
     </>
   );
 }

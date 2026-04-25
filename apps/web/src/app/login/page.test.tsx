@@ -16,8 +16,8 @@ describe("LoginPage", () => {
       </AppProviders>,
     );
 
-    assert.match(markup, /Sign in/);
-    assert.match(markup, /No account\?/);
-    assert.match(markup, /Create account/);
+    assert.match(markup, /Sign In/);
+    assert.match(markup, /No account\?/i);
+    assert.match(markup, /Create Account/);
   });
 });

@@ -6,6 +6,11 @@ import { AppEmptyState } from "@/components/system/app-empty-state";
 import { AppTableWrapper } from "@/components/system/app-table-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  formatDateTime,
+  formatPublicReference,
+  formatSupportText,
+} from "@/lib/display/format";
 import { cn } from "@/lib/utils";
 
 export function SupplierInquiryList(props: {
@@ -60,20 +65,24 @@ function InquiryRow(props: {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <p className="font-semibold text-foreground">
-              {props.inquiry.reference}
+            <p className="type-data-value">
+              {formatPublicReference(props.inquiry.reference)}
             </p>
             <Badge
-              className="rounded-md font-bold uppercase tracking-wider text-[10px]"
+              className="rounded-md text-[10px] font-semibold"
               variant="secondary"
             >
-              {props.inquiry.status}
+              {formatInquiryStatus(props.inquiry.status)}
             </Badge>
           </div>
-          <p className="mt-0.5 text-xs font-medium text-muted-foreground">
-            {props.inquiry.productName ??
-              props.inquiry.requestedProductName ??
-              "External sourcing request"}
+          <p className="type-support mt-0.5">
+            {formatSupportText(
+              props.inquiry.productName ?? props.inquiry.requestedProductName,
+              "External sourcing request",
+            )}
+          </p>
+          <p className="type-support mt-1">
+            Raised {formatDateTime(props.inquiry.createdAt)}
           </p>
         </div>
         {props.inquiry.status === "sent" ? (
@@ -104,8 +113,8 @@ function InquiryRow(props: {
         ) : null}
       </div>
       <div className="rounded-xl bg-muted/20 p-3 ring-1 ring-border/10">
-        <p className="text-sm italic leading-relaxed text-muted-foreground/80">
-          "{props.inquiry.message}"
+        <p className="type-support text-foreground">
+          {formatSupportText(props.inquiry.message)}
         </p>
       </div>
       {props.inquiry.attachmentUrl ? (
@@ -121,4 +130,17 @@ function InquiryRow(props: {
       ) : null}
     </div>
   );
+}
+
+function formatInquiryStatus(
+  status: AdminSupplierDetail["inquiries"][number]["status"],
+) {
+  switch (status) {
+    case "sent":
+      return "Sent";
+    case "converted":
+      return "Converted";
+    case "cancelled":
+      return "Cancelled";
+  }
 }

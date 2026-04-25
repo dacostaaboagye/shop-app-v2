@@ -13,7 +13,10 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { getAppErrorDisplay } from "@/lib/errors/app-error";
+import {
+  getAppErrorDisplay,
+  shouldExposeErrorReference,
+} from "@/lib/errors/app-error";
 import { cn } from "@/lib/utils";
 
 type AppErrorSurfaceProps = {
@@ -43,7 +46,7 @@ export function AppErrorBanner({
       description={
         <ErrorDescription
           detail={detail ?? display.detail}
-          requestId={display.requestId}
+          requestId={shouldExposeErrorReference() ? display.requestId : null}
         />
       }
       title={title ?? display.title}
@@ -80,7 +83,7 @@ export function AppErrorState({
         <EmptyDescription>
           <ErrorDescription
             detail={detail ?? display.detail}
-            requestId={display.requestId}
+            requestId={shouldExposeErrorReference() ? display.requestId : null}
           />
         </EmptyDescription>
       </EmptyHeader>

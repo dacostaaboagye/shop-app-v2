@@ -4,6 +4,7 @@ import type { AdminSupplierDetail, AdminUserSummary } from "@shop/contracts";
 import { useId, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { formatDateTime, formatSupportText } from "@/lib/display/format";
 import { cn } from "@/lib/utils";
 import { SupplierContactPortalAccess } from "./supplier-contact-portal-access";
 
@@ -40,23 +41,23 @@ export function SupplierContactRow({
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <p className="font-semibold text-foreground">
+          <p className="type-data-value">
             {contact.firstName} {contact.lastName}
           </p>
           {contact.isPrimary ? (
             <Badge
-              className="rounded-md text-[10px] font-bold uppercase tracking-wider"
+              className="rounded-md text-[10px] font-semibold"
               variant="secondary"
             >
               Primary
             </Badge>
           ) : null}
         </div>
-        <p className="mt-0.5 text-xs text-muted-foreground/80">
-          {contact.jobTitle ?? "No job title"}
+        <p className="type-support mt-0.5">
+          {formatSupportText(contact.jobTitle, "No job title")}
         </p>
         {(contact.email || contact.phone) && (
-          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <div className="type-support mt-1 flex flex-wrap gap-x-3 gap-y-1">
             {contact.email && (
               <span className="underline decoration-border/50 underline-offset-2">
                 {contact.email}
@@ -67,15 +68,13 @@ export function SupplierContactRow({
         )}
       </div>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
         {contact.userSlug ? (
           <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-muted/20 p-2">
             <div className="px-2">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
-                Portal User
-              </p>
+              <p className="type-data-label">Portal Account</p>
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-xs font-medium">{contact.userSlug}</p>
+                <p className="type-data-value text-sm">Linked portal account</p>
                 <Badge variant="secondary">
                   {portalStatusLabel(contact.portalStatus)}
                 </Badge>
@@ -126,22 +125,22 @@ export function SupplierContactRow({
         ) : null}
       </div>
       {contact.latestInvite ? (
-        <div className="flex flex-col gap-1 text-xs text-muted-foreground lg:ml-auto lg:min-w-56">
-          <div className="flex items-center gap-2">
+        <div className="type-support flex min-w-0 flex-col gap-1 lg:ml-auto lg:min-w-56">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge
               variant={inviteBadgeVariant(contact.latestInvite.deliveryStatus)}
             >
               {formatInviteStatus(contact.latestInvite.deliveryStatus)}
             </Badge>
-            <span>
-              {new Date(contact.latestInvite.attemptedAt).toLocaleString(
-                "en-GB",
-              )}
-            </span>
+            <span>{formatDateTime(contact.latestInvite.attemptedAt)}</span>
           </div>
-          <p>{contact.latestInvite.recipientEmail}</p>
+          <p className="overflow-wrap-anywhere">
+            {contact.latestInvite.recipientEmail}
+          </p>
           {contact.latestInvite.deliveryReason ? (
-            <p>{contact.latestInvite.deliveryReason}</p>
+            <p className="overflow-wrap-anywhere">
+              {contact.latestInvite.deliveryReason}
+            </p>
           ) : null}
         </div>
       ) : null}

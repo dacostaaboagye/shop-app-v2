@@ -7,6 +7,7 @@ import type {
   AdminUserAccessDetail,
 } from "@shop/contracts";
 import { useState } from "react";
+import { CatalogFormCard } from "@/components/admin/catalog/catalog-form-surfaces";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserAccessManagePermissionsTab } from "./user-access-manage-permissions-tab";
 import { UserAccessManageReasonDialog } from "./user-access-manage-reason-dialog";
@@ -35,42 +36,47 @@ export function UserAccessManageBody({
 
   return (
     <>
-      <Tabs defaultValue="roles">
-        <TabsList>
-          <TabsTrigger value="roles">Roles</TabsTrigger>
-          <TabsTrigger value="permissions">Permissions</TabsTrigger>
-        </TabsList>
-        <TabsContent className="pt-4" value="roles">
-          <UserAccessManageRolesTab
-            allRoles={allRoles}
-            canManage={canManage}
-            onAssignRole={(roleSlug, roleName) =>
-              setDialog({ kind: "assign-role", roleName, roleSlug })
-            }
-            onRevokeRole={(assignment) =>
-              setDialog({ kind: "revoke-role", assignment })
-            }
-            roleAssignments={user.roleAssignments}
-          />
-        </TabsContent>
-        <TabsContent className="pt-4" value="permissions">
-          <UserAccessManagePermissionsTab
-            allPermissions={allPermissions}
-            canManage={canManage}
-            effectivePermissions={user.effectivePermissions}
-            onAllow={(permissionKey) =>
-              setDialog({ kind: "allow-override", permissionKey })
-            }
-            onDeny={(permissionKey) =>
-              setDialog({ kind: "deny-override", permissionKey })
-            }
-            onRemoveOverride={(override) =>
-              setDialog({ kind: "remove-override", override })
-            }
-            userOverrides={user.userOverrides}
-          />
-        </TabsContent>
-      </Tabs>
+      <CatalogFormCard
+        description={`Adjust role assignments and user-specific permission overrides for ${user.firstName} ${user.lastName}. Every change requires an audit reason.`}
+        title="Access management"
+      >
+        <Tabs className="flex flex-col gap-4" defaultValue="roles">
+          <TabsList>
+            <TabsTrigger value="roles">Roles</TabsTrigger>
+            <TabsTrigger value="permissions">Permissions</TabsTrigger>
+          </TabsList>
+          <TabsContent className="mt-0" value="roles">
+            <UserAccessManageRolesTab
+              allRoles={allRoles}
+              canManage={canManage}
+              onAssignRole={(roleSlug, roleName) =>
+                setDialog({ kind: "assign-role", roleName, roleSlug })
+              }
+              onRevokeRole={(assignment) =>
+                setDialog({ kind: "revoke-role", assignment })
+              }
+              roleAssignments={user.roleAssignments}
+            />
+          </TabsContent>
+          <TabsContent className="mt-0" value="permissions">
+            <UserAccessManagePermissionsTab
+              allPermissions={allPermissions}
+              canManage={canManage}
+              effectivePermissions={user.effectivePermissions}
+              onAllow={(permissionKey) =>
+                setDialog({ kind: "allow-override", permissionKey })
+              }
+              onDeny={(permissionKey) =>
+                setDialog({ kind: "deny-override", permissionKey })
+              }
+              onRemoveOverride={(override) =>
+                setDialog({ kind: "remove-override", override })
+              }
+              userOverrides={user.userOverrides}
+            />
+          </TabsContent>
+        </Tabs>
+      </CatalogFormCard>
 
       <UserAccessManageReasonDialog
         key={getReasonDialogKey(dialog)}

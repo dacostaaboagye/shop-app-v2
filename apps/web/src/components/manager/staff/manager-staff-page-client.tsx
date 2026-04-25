@@ -12,6 +12,7 @@ import {
 } from "@/components/system/page-shell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
+import { formatCount } from "@/lib/display/format";
 import { DEFAULT_OFFICIAL_DOCUMENT_PROFILE } from "@/lib/documents/official-document-profile";
 import { formatMoney, toNumericAmount } from "@/lib/money/format-money";
 import {
@@ -113,19 +114,19 @@ export function ManagerStaffPageClient() {
               description="Workers assigned to this location."
               icon={UserCheck}
               label="Workers"
-              value={workerCount}
+              value={formatCount(workerCount)}
             />
             <StatCard
               description="Managers assigned to this location."
               icon={ShieldCheck}
               label="Managers"
-              value={managerCount}
+              value={formatCount(managerCount)}
             />
             <StatCard
               description="Active staff records loaded for this location."
               icon={UserCheck}
               label="Total staff"
-              value={staff.length}
+              value={formatCount(staff.length)}
             />
             <StatCard
               description="Confirmed sales minus returns by assigned staff."

@@ -1,4 +1,11 @@
 import type { CSSProperties } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OfficialDocumentGtnTemplatePreview } from "./official-document-gtn-template-preview";
 import type { OfficialDocumentSettingsFormValues } from "./official-document-settings-form.support";
@@ -37,31 +44,40 @@ export function OfficialDocumentTemplatePreview({
   } as CSSProperties;
 
   return (
-    <section
-      className="h-fit overflow-hidden rounded-lg border border-border bg-card shadow-sm"
+    <Card
+      className="h-fit overflow-hidden border-border/70 bg-card shadow-none"
       style={style}
     >
-      <Tabs defaultValue="sales_receipt">
-        <PreviewToolbar />
-        <div className="bg-muted/45 p-4 sm:p-6">
-          {OFFICIAL_DOCUMENT_TEMPLATE_PREVIEWS.map((template) => (
-            <TabsContent
-              className="mt-0"
-              key={template.key}
-              value={template.key}
-            >
-              <DocumentPaper
-                accentColor={accentColor}
-                logoImageUrl={logoImageUrl}
-                primaryColor={primaryColor}
-                templateKey={template.key}
-                values={values}
-              />
-            </TabsContent>
-          ))}
-        </div>
-      </Tabs>
-    </section>
+      <CardHeader className="border-b border-border/60">
+        <CardTitle>Document preview</CardTitle>
+        <CardDescription>
+          Review live brand and document defaults against receipt, invoice,
+          credit note, and GTN layouts.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-0">
+        <Tabs defaultValue="sales_receipt">
+          <PreviewToolbar />
+          <div className="bg-muted/45 p-4 sm:p-6">
+            {OFFICIAL_DOCUMENT_TEMPLATE_PREVIEWS.map((template) => (
+              <TabsContent
+                className="mt-0"
+                key={template.key}
+                value={template.key}
+              >
+                <DocumentPaper
+                  accentColor={accentColor}
+                  logoImageUrl={logoImageUrl}
+                  primaryColor={primaryColor}
+                  templateKey={template.key}
+                  values={values}
+                />
+              </TabsContent>
+            ))}
+          </div>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -71,7 +87,7 @@ function PreviewToolbar() {
       <div>
         <p className="text-sm font-semibold">Template preview</p>
         <p className="text-xs text-background/70">
-          Brand colors, logo, and document layout
+          Brand, recipient, and layout preview
         </p>
       </div>
       <TabsList className="h-auto max-w-full flex-wrap justify-start">
@@ -216,7 +232,7 @@ function DocumentHero({
             {textOrPlaceholder(values.legalName, "Legal business name")}
           </p>
           <p className="text-xs text-muted-foreground">
-            {values.locale} - {values.timezone}
+            {values.locale} | {values.timezone}
           </p>
           <p className="mt-3 text-xs text-muted-foreground">
             VAT: {textOrPlaceholder(values.taxNumber, "Tax number")}

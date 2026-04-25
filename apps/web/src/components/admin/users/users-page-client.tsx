@@ -9,10 +9,10 @@ import {
   AppDataTable,
   type AppDataTableSort,
 } from "@/components/data-table/app-data-table";
+import { StockWorkspaceTableSkeleton } from "@/components/stock/stock-workspace-feedback";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { AppTableWrapper } from "@/components/system/app-table-wrapper";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   adminUsersQueryKey,
   fetchAdminUsers,
@@ -106,8 +106,6 @@ export function UsersPageClient({
   return (
     <PageShell>
       <PageHeader description={description} title={title} />
-
-      {/* Sovereign Control Surface */}
       <div className="flex flex-col gap-4">
         <UserFilters
           availableRoles={usersQuery.data?.availableRoles ?? []}
@@ -141,11 +139,7 @@ export function UsersPageClient({
         />
         <AppTableWrapper>
           {usersQuery.isPending && !usersQuery.data ? (
-            <div className="flex flex-col gap-1 p-4">
-              {USER_TABLE_SKELETON_KEYS.map((key) => (
-                <Skeleton key={key} className="h-12 w-full rounded-lg" />
-              ))}
-            </div>
+            <StockWorkspaceTableSkeleton keys={USER_TABLE_SKELETON_KEYS} />
           ) : (
             <>
               {usersQuery.isError ? (
@@ -166,12 +160,10 @@ export function UsersPageClient({
                 density="compact"
                 emptyDescription={
                   hasFilters
-                    ? "Try adjusting the current URL filters or search term."
-                    : "No users were returned from the current backend dataset."
+                    ? "Try broadening the current search or filters."
+                    : "No users are available in the current directory scope."
                 }
-                emptyTitle={
-                  hasFilters ? "No users match" : "No users available"
-                }
+                emptyTitle={hasFilters ? "No users match" : "No users yet"}
                 emptyState={{
                   kind: hasFilters ? "no-results" : "no-data",
                 }}

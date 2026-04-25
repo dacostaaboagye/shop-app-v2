@@ -64,7 +64,7 @@ export function MediaGallery({
             )}
             {item.isPrimary ? (
               <Badge
-                className="absolute left-1 top-1 px-1 py-0 text-[0.6rem]"
+                className="absolute left-1 top-1 max-w-[calc(100%-0.5rem)] overflow-wrap-anywhere px-1 py-0 text-[0.6rem]"
                 variant="default"
               >
                 Primary
@@ -72,10 +72,10 @@ export function MediaGallery({
             ) : null}
           </div>
           {canManage ? (
-            <div className="flex gap-1">
+            <div className="flex flex-wrap gap-1">
               {!item.isPrimary ? (
                 <Button
-                  className="h-6 flex-1 px-2 text-xs"
+                  className="h-6 min-w-0 flex-1 px-2 text-xs"
                   disabled={isPendingSetPrimary}
                   onClick={() => onSetPrimary(item.assignmentId)}
                   size="sm"

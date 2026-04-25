@@ -6,6 +6,7 @@ import {
   getAppErrorMessage,
   isRetryableAppError,
   NetworkError,
+  shouldExposeErrorReference,
 } from "./app-error";
 
 describe("app error helpers", () => {
@@ -34,7 +35,7 @@ describe("app error helpers", () => {
     });
   });
 
-  it("adds request references to inline error messages", () => {
+  it("keeps request references out of inline error messages outside development", () => {
     const message = getAppErrorMessage(
       new ApiError({
         problem: {
@@ -49,10 +50,11 @@ describe("app error helpers", () => {
       }),
     );
 
-    assert.equal(
-      message,
-      "The record has changed since you loaded it. Reference ID: req_456.",
-    );
+    assert.equal(message, "The record has changed since you loaded it.");
+  });
+
+  it("does not expose error references in test mode", () => {
+    assert.equal(shouldExposeErrorReference(), false);
   });
 
   it("treats network failures as retryable with calm copy", () => {

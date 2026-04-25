@@ -41,9 +41,9 @@ export function SupplierInquiryPanel(props: {
   const isExternalInquiry = !form.productSlug;
 
   return (
-    <div className="flex flex-col gap-6 rounded-xl border border-border/50 bg-white p-6 shadow-sm">
+    <div className="flex flex-col gap-6 rounded-xl border border-border/50 bg-card p-6 shadow-sm">
       <div className="flex flex-col gap-4">
-        <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">
+        <h3 className="text-sm font-semibold text-muted-foreground">
           Create sourcing inquiry
         </h3>
         <div className="grid gap-4 md:grid-cols-3">
@@ -86,6 +86,7 @@ export function SupplierInquiryPanel(props: {
           {isExternalInquiry ? (
             <FileField
               accept={ALLOWED_MEDIA_MIMES.join(",")}
+              description="Attach a spec sheet, image, or requirement brief when the item is not in the catalogue."
               disabled={uploading}
               file={attachment}
               label="Attachment"
@@ -94,8 +95,10 @@ export function SupplierInquiryPanel(props: {
           ) : null}
         </div>
         <TextAreaField
+          description="Tell the supplier what you need, the expected standard, and any urgency."
           label="Message"
           onChange={(message) => setForm((value) => ({ ...value, message }))}
+          placeholder="Share the sourcing need, expected quality, and any delivery constraints"
           value={form.message}
         />
         <div className="flex justify-start">
@@ -138,7 +141,7 @@ export function SupplierInquiryPanel(props: {
       </div>
 
       <div className="flex flex-col gap-4">
-        <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">
+        <h3 className="text-sm font-semibold text-muted-foreground">
           Managed inquiries
         </h3>
         <SupplierInquiryList

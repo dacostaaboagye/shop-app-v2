@@ -16,8 +16,8 @@ describe("RegisterPage", () => {
       </AppProviders>,
     );
 
-    assert.match(markup, /Create account/);
-    assert.match(markup, /Already have an account\?/);
-    assert.match(markup, /Sign in/);
+    assert.match(markup, /Create Account/);
+    assert.match(markup, /Already have an account\?/i);
+    assert.match(markup, /Sign In/);
   });
 });

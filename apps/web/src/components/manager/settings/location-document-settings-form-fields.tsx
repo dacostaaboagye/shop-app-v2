@@ -39,12 +39,7 @@ export function LocationProfileFields({
       <form.Field name="displayName">
         {(field) => (
           <div className="flex flex-col gap-2">
-            <Label
-              htmlFor={field.name}
-              className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
-            >
-              Display name
-            </Label>
+            <Label htmlFor={field.name}>Display Name</Label>
             <Input
               id={field.name}
               className="h-11 rounded-xl border-border/60 bg-muted/20 font-medium transition-all focus:bg-background"
@@ -61,13 +56,8 @@ export function LocationProfileFields({
         {(field) => (
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <Label
-                htmlFor={field.name}
-                className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
-              >
-                Printed address
-              </Label>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/30">
+              <Label htmlFor={field.name}>Printed Address</Label>
+              <span className="type-support text-right">
                 One line per printed address line
               </span>
             </div>
@@ -88,12 +78,7 @@ export function LocationProfileFields({
         <form.Field name="phone">
           {(field) => (
             <div className="flex flex-col gap-2">
-              <Label
-                htmlFor={field.name}
-                className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
-              >
-                Printed phone
-              </Label>
+              <Label htmlFor={field.name}>Printed Phone</Label>
               <Input
                 id={field.name}
                 className="h-11 rounded-xl border-border/60 bg-muted/20 font-medium transition-all focus:bg-background"
@@ -108,12 +93,7 @@ export function LocationProfileFields({
         <form.Field name="email">
           {(field) => (
             <div className="flex flex-col gap-2">
-              <Label
-                htmlFor={field.name}
-                className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
-              >
-                Printed email
-              </Label>
+              <Label htmlFor={field.name}>Printed Email</Label>
               <Input
                 id={field.name}
                 className="h-11 rounded-xl border-border/60 bg-muted/20 font-medium transition-all focus:bg-background"
@@ -142,12 +122,7 @@ export function ReceiptBehaviorFields({
         <form.Field name="documentPrefix">
           {(field) => (
             <div className="flex flex-col gap-2">
-              <Label
-                htmlFor={field.name}
-                className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
-              >
-                Number prefix
-              </Label>
+              <Label htmlFor={field.name}>Number Prefix</Label>
               <Input
                 id={field.name}
                 className="h-11 rounded-xl border-border/60 bg-muted/20 font-medium transition-all focus:bg-background"
@@ -163,12 +138,7 @@ export function ReceiptBehaviorFields({
         <form.Field name="defaultPaperSize">
           {(field) => (
             <div className="flex flex-col gap-2">
-              <Label
-                htmlFor={field.name}
-                className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
-              >
-                Paper size
-              </Label>
+              <Label htmlFor={field.name}>Paper Size</Label>
               <Select
                 value={String(field.state.value ?? "inherit")}
                 onValueChange={(value) =>
@@ -193,12 +163,7 @@ export function ReceiptBehaviorFields({
         <form.Field name="timezone">
           {(field) => (
             <div className="flex flex-col gap-2">
-              <Label
-                htmlFor={field.name}
-                className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
-              >
-                Timezone
-              </Label>
+              <Label htmlFor={field.name}>Timezone</Label>
               <TimeZoneSelect
                 allowInherit
                 id={field.name}
@@ -213,12 +178,7 @@ export function ReceiptBehaviorFields({
       <form.Field name="receiptFooter">
         {(field) => (
           <div className="flex flex-col gap-2">
-            <Label
-              htmlFor={field.name}
-              className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50"
-            >
-              Receipt footer
-            </Label>
+            <Label htmlFor={field.name}>Receipt Footer</Label>
             <Textarea
               id={field.name}
               className="min-h-[100px] resize-none rounded-xl border-border/60 bg-muted/20 font-medium leading-relaxed transition-all focus:bg-background"

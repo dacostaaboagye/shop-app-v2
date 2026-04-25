@@ -1,5 +1,6 @@
-import { AdminSupplyRequestsPageClient } from "@/components/admin/stock/admin-supply-requests-page-client";
+import { redirect } from "next/navigation";
+import { toRoute } from "@/lib/routes";
 
 export default function AdminSupplyRequestsPage() {
-  return <AdminSupplyRequestsPageClient />;
+  redirect(toRoute("/admin/transfers"));
 }

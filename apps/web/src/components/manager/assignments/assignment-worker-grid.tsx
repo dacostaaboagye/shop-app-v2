@@ -2,8 +2,10 @@
 
 import type { LocationStaffSummary } from "@shop/contracts";
 import { Check } from "lucide-react";
+import { AppEmptyState } from "@/components/system/app-empty-state";
 import { PersonAvatar } from "@/components/system/person-avatar";
 import { cn } from "@/lib/utils";
+import { formatActiveItemLabel } from "./manager-assignments-support";
 
 type Props = {
   onSelect: (worker: LocationStaffSummary) => void;
@@ -14,10 +16,10 @@ type Props = {
 export function AssignmentWorkerGrid({ onSelect, selected, workers }: Props) {
   if (workers.length === 0) {
     return (
-      <div className="rounded-md border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-        No active workers are assigned to this location. Add workers from Staff
-        first.
-      </div>
+      <AppEmptyState
+        description="No active workers are assigned to this location yet. Add workers from Staff first."
+        title="No workers available"
+      />
     );
   }
 
@@ -54,12 +56,11 @@ export function AssignmentWorkerGrid({ onSelect, selected, workers }: Props) {
               size="lg"
             />
             <div className="min-w-0 w-full">
-              <p className="truncate text-sm font-medium leading-snug">
+              <p className="type-data-value text-balance text-sm leading-snug">
                 {worker.firstName} {worker.lastName}
               </p>
-              <p className="text-xs text-muted-foreground">
-                {worker.activeAssignmentCount} active{" "}
-                {worker.activeAssignmentCount === 1 ? "item" : "items"}
+              <p className="type-support text-xs">
+                {formatActiveItemLabel(worker.activeAssignmentCount)}
               </p>
             </div>
           </button>

@@ -3,6 +3,7 @@
 import type { VariantSearchResult } from "@shop/contracts";
 import { Minus, Plus, X } from "lucide-react";
 import { ProductThumbnail } from "@/components/system/product-thumbnail";
+import { formatCount } from "@/lib/display/format";
 import { cn } from "@/lib/utils";
 
 export type SelectedVariantEntry = {
@@ -31,7 +32,7 @@ export function AssignmentQuantityEditor({
 
         return (
           <div
-            className="flex items-center gap-3 px-4 py-3"
+            className="flex flex-wrap items-center gap-3 px-4 py-3"
             key={variant.variantId}
           >
             <ProductThumbnail
@@ -41,13 +42,13 @@ export function AssignmentQuantityEditor({
               variantName={variant.name}
             />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium leading-snug">
+              <p className="type-data-value text-balance text-sm leading-snug">
                 {variant.productName}
               </p>
-              <p className="truncate text-xs text-muted-foreground">
-                {variant.name} &middot; {variant.sku} &middot;{" "}
+              <p className="type-support text-pretty text-xs">
+                {variant.name} | {variant.sku} |{" "}
                 <span className={cn(atMax ? "text-warning-foreground" : "")}>
-                  {max} available
+                  {formatCount(max)} available
                 </span>
               </p>
             </div>

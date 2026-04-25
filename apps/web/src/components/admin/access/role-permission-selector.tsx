@@ -3,6 +3,10 @@
 import type { AdminPermissionSummary } from "@shop/contracts";
 import { Check, ChevronDown, ChevronRight } from "lucide-react";
 import { useState } from "react";
+import {
+  AccessActionBadge,
+  AccessNameCell,
+} from "@/components/admin/access/access-table-cells";
 import { AppEmptyState } from "@/components/system/app-empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -169,30 +173,33 @@ export function RolePermissionSelector({
                           key={permission.key}
                           className={cn(
                             "flex flex-wrap items-center justify-between gap-3 px-4 py-3",
-                            isGranted && "bg-primary/5 dark:bg-primary/10",
+                            isGranted && "bg-primary/5",
                           )}
                         >
                           <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="font-mono text-xs text-foreground">
-                                {permission.key}
-                              </p>
-                              {isGranted ? (
-                                <Badge
-                                  className={cn(
-                                    "text-[0.65rem]",
-                                    OVERRIDE_BADGE_CLASS_NAMES.allow,
-                                  )}
-                                  variant="outline"
-                                >
-                                  <Check className="size-2.5" />
-                                  Granted
-                                </Badge>
-                              ) : null}
+                            <div className="flex min-w-0 flex-col gap-2">
+                              <AccessNameCell
+                                description={permission.description}
+                                name={permission.key}
+                              />
+                              <div className="flex flex-wrap items-center gap-2">
+                                {isGranted ? (
+                                  <Badge
+                                    className={cn(
+                                      "text-[0.65rem]",
+                                      OVERRIDE_BADGE_CLASS_NAMES.allow,
+                                    )}
+                                    variant="outline"
+                                  >
+                                    <Check className="size-2.5" />
+                                    Granted
+                                  </Badge>
+                                ) : null}
+                                <AccessActionBadge>
+                                  {group.label}
+                                </AccessActionBadge>
+                              </div>
                             </div>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {permission.description}
-                            </p>
                           </div>
 
                           <Button

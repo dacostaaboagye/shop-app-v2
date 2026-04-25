@@ -2,7 +2,11 @@
 
 import type { AdminAuditEntry } from "@shop/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Badge } from "@/components/ui/badge";
+import {
+  AccessActionBadge,
+  AccessNameCell,
+  AccessTextCell,
+} from "@/components/admin/access/access-table-cells";
 import { formatAdminDate } from "@/lib/admin-models";
 
 const ACTION_META: Record<AdminAuditEntry["action"], string> = {
@@ -18,49 +22,36 @@ export const auditTableColumns: Array<ColumnDef<AdminAuditEntry, unknown>> = [
     id: "action",
     header: "Action",
     cell: ({ row }) => (
-      <Badge
-        className="border-border bg-muted/30 text-foreground"
-        variant="outline"
-      >
-        {ACTION_META[row.original.action]}
-      </Badge>
+      <AccessActionBadge>{ACTION_META[row.original.action]}</AccessActionBadge>
     ),
   },
   {
     id: "target",
     header: "Target",
     cell: ({ row }) => (
-      <div className="min-w-0">
-        <p className="font-medium">
-          {row.original.targetUserName ?? "System target"}
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {row.original.locationName ?? row.original.roleSlug ?? "Global"}
-        </p>
-      </div>
+      <AccessNameCell
+        description={
+          row.original.locationName ?? row.original.roleSlug ?? "Global"
+        }
+        name={row.original.targetUserName ?? "System target"}
+      />
     ),
   },
   {
     id: "change",
     header: "Change",
     cell: ({ row }) => (
-      <div className="min-w-0">
-        <p className="font-mono text-xs text-foreground">
-          {row.original.permissionKey ?? "role assignment"}
-        </p>
-        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-          {row.original.reason}
-        </p>
-      </div>
+      <AccessNameCell
+        description={row.original.reason}
+        name={row.original.permissionKey ?? "Role assignment"}
+      />
     ),
   },
   {
     id: "actor",
     header: "Actor",
     cell: ({ row }) => (
-      <span className="text-sm text-muted-foreground">
-        {row.original.actorName ?? "System"}
-      </span>
+      <AccessTextCell value={row.original.actorName ?? "System"} />
     ),
   },
   {
@@ -68,7 +59,7 @@ export const auditTableColumns: Array<ColumnDef<AdminAuditEntry, unknown>> = [
     id: "createdAt",
     header: "Created",
     cell: ({ row }) => (
-      <span className="text-sm tabular-nums text-muted-foreground">
+      <span className="type-support tabular-nums text-muted-foreground">
         {formatAdminDate(row.original.createdAt)}
       </span>
     ),

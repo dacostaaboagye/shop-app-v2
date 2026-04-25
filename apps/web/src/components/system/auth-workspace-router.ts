@@ -21,17 +21,17 @@ export const anonymousCopy: Record<
 > = {
   login: {
     alternateHref: "/register",
-    alternateLabel: "Create account",
-    description: "Welcome back — sign in to your account.",
+    alternateLabel: "Create Account",
+    description: "Welcome back. Sign in to your account.",
     linkPrompt: "No account?",
-    title: "Sign in",
+    title: "Sign In",
   },
   register: {
     alternateHref: "/login",
-    alternateLabel: "Sign in",
+    alternateLabel: "Sign In",
     description: "Create your account in seconds.",
     linkPrompt: "Already have an account?",
-    title: "Create account",
+    title: "Create Account",
   },
 };
 

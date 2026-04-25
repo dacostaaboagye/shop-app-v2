@@ -1,14 +1,14 @@
 "use client";
 
-import { AppErrorBanner } from "@/components/system/app-error";
-import { Skeleton } from "@/components/ui/skeleton";
+import {
+  StockWorkspaceError,
+  StockWorkspaceListSkeleton,
+} from "@/components/stock/stock-workspace-feedback";
 import { IncomingRequestList } from "./manager-supply-request-list";
 import type {
   RequestFilter,
   ViewMode,
 } from "./manager-supply-requests.support";
-
-const SKELETON_KEYS = [1, 2, 3, 4, 5];
 
 export function RequestContent({
   allItems,
@@ -47,11 +47,13 @@ export function RequestContent({
   statusFilter: RequestFilter;
   viewMode: ViewMode;
 }) {
-  if (isLoading || queryState === "pending") return <SupplyRequestSkeleton />;
+  if (isLoading || queryState === "pending") {
+    return <StockWorkspaceListSkeleton />;
+  }
   if (!hasLocations) return null;
   if (queryState === "error") {
     return (
-      <AppErrorBanner
+      <StockWorkspaceError
         detail="Could not load supply requests. Please try again."
         error={queryError}
         onRetry={onRetry}
@@ -75,15 +77,5 @@ export function RequestContent({
       statusFilter={statusFilter}
       viewMode={viewMode}
     />
-  );
-}
-
-function SupplyRequestSkeleton() {
-  return (
-    <div className="flex flex-col gap-3">
-      {SKELETON_KEYS.map((key) => (
-        <Skeleton className="h-44 w-full rounded-xl" key={key} />
-      ))}
-    </div>
   );
 }

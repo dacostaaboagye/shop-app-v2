@@ -4,12 +4,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useEffect } from "react";
 import { useAuthorization } from "@/components/providers/authorization-provider";
 import { AppErrorState } from "@/components/system/app-error";
-import { Spinner } from "@/components/ui/spinner";
 import { toRoute } from "@/lib/routes";
 import {
   isAuthSessionPending,
   useAuthSessionStore,
 } from "@/store/use-auth-session-store";
+import { AuthTransitionState } from "./auth-transition-state";
 import { canAccessPortalItem, getRouteItem } from "./portal-shell-config";
 
 type AuthGuardProps = {
@@ -83,9 +83,10 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   if (!isReady) {
     return (
-      <div className="flex min-h-svh items-center justify-center">
-        <Spinner className="size-5 text-muted-foreground" />
-      </div>
+      <AuthTransitionState
+        description="We are checking your session and workspace permissions."
+        title="Loading Access"
+      />
     );
   }
 

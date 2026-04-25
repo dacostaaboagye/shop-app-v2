@@ -145,6 +145,7 @@ export class StockSupplyService {
 
   async cancel(input: {
     actor: AuthenticatedActor;
+    adminOverrideReason?: string;
     id: string;
     now: Date;
     requesterId: string;
@@ -154,11 +155,15 @@ export class StockSupplyService {
       id: input.id,
       now: input.now,
       requesterId: input.requesterId,
+      ...(input.adminOverrideReason
+        ? { adminOverrideReason: input.adminOverrideReason }
+        : {}),
     });
   }
 
   async cancelById(input: {
     actor: AuthenticatedActor;
+    adminOverrideReason?: string;
     id: string;
     now: Date;
   }): Promise<SupplyRequestRow | null> {
@@ -176,6 +181,7 @@ export class StockSupplyService {
   }
 
   async confirmReceipt(input: {
+    adminOverrideReason?: string;
     actor: AuthenticatedActor;
     notes: string | null;
     now: Date;

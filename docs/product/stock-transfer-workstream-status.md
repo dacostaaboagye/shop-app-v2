@@ -173,6 +173,39 @@ Implementation files:
 - `apps/web/src/components/stock/transfer-workspace.support.ts`
 - `apps/web/src/components/stock/transfer-workspace.support.test.ts`
 
+### Admin transfer control tower first slice
+
+- Replaced the old admin supply-request filter page with a real
+  `/admin/transfers` workspace built on the same transfer detail surface as the
+  worker and manager flows.
+- Added explicit admin transfer lanes for `Needs review`, `Bottlenecks`,
+  `In transit`, `Exceptions`, and `Completed`.
+- Surfaced control-tower summary cards for bottlenecks, ageing transfers, and
+  exception states so intervention pressure is visible centrally.
+- Redirected the legacy `/admin/stock/supply-requests` route into the new admin
+  transfer workspace to avoid keeping a separate shadow flow.
+- Added explicit admin override actions for transfer cancellation and receipt
+  confirmation, with required reason capture enforced at the API boundary for
+  on-behalf interventions.
+
+Implementation files:
+
+- `apps/web/src/app/admin/transfers/page.tsx`
+- `apps/web/src/app/admin/stock/supply-requests/page.tsx`
+- `apps/web/src/components/admin/stock/admin-transfer-actions.tsx`
+- `apps/web/src/components/admin/stock/admin-transfer-override-dialog.tsx`
+- `apps/web/src/components/admin/stock/admin-transfers-page-client.tsx`
+- `apps/api/src/modules/stock/supply-request-access-policy.ts`
+- `apps/api/src/modules/stock/supply-request-worker.routes.ts`
+- `apps/api/src/modules/stock/stock-supply.service.ts`
+- `apps/api/src/modules/stock/stock-supply-request-transitions.ts`
+- `apps/api/src/modules/stock/stock-supply-receipt-operation.ts`
+- `apps/api/src/modules/stock/stock-supply-event-summary.ts`
+- `apps/api/test/supply-request.routes.test.ts`
+- `apps/web/src/components/stock/transfer-workspace.support.ts`
+- `apps/web/src/components/system/portal-shell-registry.primary.sections.commerce-catalog-supply.ts`
+- `apps/web/src/components/system/portal-shell-config.test.ts`
+
 ### Architecture and backlog records
 
 - Added stock-transfer workflow and operating-scope ADR.
@@ -375,9 +408,9 @@ Known guard status:
 - Worker and manager transfer pages now have a first real workspace and detail
   surface, but they are still backed by supply-request projections rather than
   a dedicated transfer query model with exception lanes.
-- Admin supply requests now have a first control-tower slice, but they are
-  still supply-request based rather than a true cross-location transfer control
-  surface with ageing, bottleneck, and exception lanes.
+- Admin now has a first real transfer control-tower page, but it is still
+  backed by supply-request projections rather than a dedicated transfer query
+  model.
 - The platform now has durable event storage, retryable delivery, notification
   APIs, frontend notification surfaces, environment-driven delivery controls,
   delivery-health visibility, and transactional stock-transfer event append,

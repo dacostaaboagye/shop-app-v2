@@ -1,4 +1,5 @@
 import type { CurrentAssignment } from "@shop/contracts";
+import { formatCount } from "@/lib/display/format";
 
 export type StockFilter = "all" | "in_stock" | "low_stock" | "out_of_stock";
 export type ViewMode = "card" | "compact";
@@ -40,6 +41,27 @@ export function getAssignmentCounts(items: CurrentAssignment[]) {
       (item) => getStockStatus(item.availableQuantity) === "out_of_stock",
     ).length,
   } satisfies Record<StockFilter, number>;
+}
+
+export function formatStockFilterLabel(value: StockFilter) {
+  switch (value) {
+    case "all":
+      return "All";
+    case "in_stock":
+      return "In Stock";
+    case "low_stock":
+      return "Low Stock";
+    case "out_of_stock":
+      return "Out Of Stock";
+  }
+}
+
+export function formatStockSummary(count: number, locationName?: string) {
+  if (!locationName) {
+    return `${formatCount(count)} variant${count === 1 ? "" : "s"} assigned`;
+  }
+
+  return `${formatCount(count)} variant${count === 1 ? "" : "s"} at ${locationName}`;
 }
 
 export function filterAssignments(input: {

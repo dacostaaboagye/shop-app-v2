@@ -35,16 +35,16 @@ export function AppEmptyState({
   return (
     <Empty
       className={cn(
-        "rounded-xl border border-border bg-muted/20 px-5 py-8",
+        "rounded-xl border border-border/60 bg-card/80 px-5 py-8 shadow-sm backdrop-blur-sm",
         className,
       )}
     >
       <EmptyHeader>
         <EmptyMedia
           className={cn(
-            "size-11 rounded-xl ring-1 ring-border",
+            "size-11 rounded-xl ring-1 ring-border/60",
             kind === "no-results"
-              ? "bg-secondary text-secondary-foreground"
+              ? "bg-secondary/70 text-secondary-foreground"
               : "bg-primary/10 text-primary",
           )}
           variant="icon"

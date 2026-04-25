@@ -9,11 +9,11 @@ import {
   AppDataTable,
   type AppDataTableSort,
 } from "@/components/data-table/app-data-table";
+import { StockWorkspaceTableSkeleton } from "@/components/stock/stock-workspace-feedback";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { PermissionGate } from "@/components/system/permission-gate";
 import { buttonVariants } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   adminLocationsQueryKey,
   fetchAdminLocations,
@@ -134,7 +134,7 @@ export function LocationsPageClient() {
             </Link>
           </PermissionGate>
         }
-        description="Backend-backed location directory with URL-synced filters and server pagination."
+        description="Manage operational locations, fulfilment availability, staffing ownership, and mapped site details."
         title="Locations"
       />
 
@@ -168,14 +168,9 @@ export function LocationsPageClient() {
           type={type}
         />
 
-        {/* Sovereign Table Surface */}
-        <div className="overflow-hidden rounded-xl bg-white shadow-sm border border-border">
+        <div className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm">
           {locationsQuery.isPending && !locationsQuery.data ? (
-            <div className="flex flex-col gap-1 p-4">
-              {LOCATION_SKELETON_KEYS.map((key) => (
-                <Skeleton key={key} className="h-12 w-full rounded-lg" />
-              ))}
-            </div>
+            <StockWorkspaceTableSkeleton keys={LOCATION_SKELETON_KEYS} />
           ) : (
             <>
               {locationsQuery.isError ? (
@@ -196,11 +191,11 @@ export function LocationsPageClient() {
                 density="compact"
                 emptyDescription={
                   hasFilters
-                    ? "Try adjusting the current filters or search term."
-                    : "No locations were returned from the current backend dataset."
+                    ? "Try broadening the current search or filters."
+                    : "Add a location to start assigning staff, zones, and fulfilment operations."
                 }
                 emptyTitle={
-                  hasFilters ? "No locations match" : "No locations available"
+                  hasFilters ? "No locations match" : "No locations yet"
                 }
                 emptyState={{
                   kind: hasFilters ? "no-results" : "no-data",

@@ -16,6 +16,7 @@ import {
 } from "@/components/system/page-shell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
+import { formatCount } from "@/lib/display/format";
 import { DEFAULT_OFFICIAL_DOCUMENT_PROFILE } from "@/lib/documents/official-document-profile";
 import { formatMoney, toNumericAmount } from "@/lib/money/format-money";
 import {
@@ -132,12 +133,12 @@ export function ManagerSalesPageClient() {
             <StatCard
               icon={Receipt}
               label="Total transactions"
-              value={salesQuery.data.total}
+              value={formatCount(salesQuery.data.total)}
             />
             <StatCard
               icon={BarChart3}
               label="POS sales"
-              value={posItems.length}
+              value={formatCount(posItems.length)}
             />
             <StatCard
               icon={BarChart3}

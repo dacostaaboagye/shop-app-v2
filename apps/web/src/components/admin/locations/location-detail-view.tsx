@@ -57,7 +57,7 @@ export function LocationDetailView({
       <PageHeader
         backHref={toRoute("/admin/locations")}
         backLabel="Locations"
-        description={`/${location.slug}`}
+        description="Manage staff coverage, storage zones, fulfilment routing, and mapped site details."
         eyebrow={typeMeta.label}
         image={location.primaryImageUrl ?? null}
         title={location.name}
@@ -126,7 +126,7 @@ export function LocationDetailView({
         />
       ) : (
         <Tabs className="flex flex-col gap-6" defaultValue="details">
-          <TabsList className="w-fit">
+          <TabsList className="w-full justify-start overflow-x-auto">
             <TabsTrigger value="details">Details & Map</TabsTrigger>
             <TabsTrigger value="staff">Staff</TabsTrigger>
             <TabsTrigger value="zones">Storage Zones</TabsTrigger>

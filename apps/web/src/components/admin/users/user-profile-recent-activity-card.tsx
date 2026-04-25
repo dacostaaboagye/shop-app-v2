@@ -38,13 +38,13 @@ export function UserProfileRecentActivityCard({
             {recentActivity.slice(0, 8).map((event) => (
               <div
                 key={getUserProfileActivityKey(event)}
-                className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/15 px-3 py-2"
+                className="flex flex-col gap-2 rounded-lg border border-border/60 bg-muted/15 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
               >
-                <Badge className="shrink-0" variant="secondary">
+                <Badge className="w-fit shrink-0" variant="secondary">
                   {USER_PROFILE_EVENT_TYPE_LABELS[event.eventType] ??
                     event.eventType}
                 </Badge>
-                <span className="truncate font-mono text-xs text-muted-foreground">
+                <span className="type-identifier text-xs text-muted-foreground">
                   {event.ipAddress ?? "-"}
                 </span>
                 <span className="shrink-0 text-xs tabular-nums text-muted-foreground">

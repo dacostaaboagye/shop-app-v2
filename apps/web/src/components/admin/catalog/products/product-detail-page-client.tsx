@@ -11,9 +11,7 @@ import {
   PageShell,
   StatCard,
 } from "@/components/system/page-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CATALOG_STATUS_META, formatAdminDate } from "@/lib/admin-models";
 import {
   adminBrandsQueryKey,
@@ -31,8 +29,12 @@ import { toRoute } from "@/lib/routes";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { CatalogDeleteDialog } from "../catalog-delete-dialog";
+import {
+  CatalogDetailError,
+  CatalogDetailRow,
+  CatalogDetailsCard,
+} from "../catalog-detail-surfaces";
 import { MediaPanel } from "../media/media-panel";
-import { DetailRow } from "./detail-row";
 import {
   PRODUCT_DETAIL_QUERY,
   ProductDetailSkeleton,
@@ -43,6 +45,7 @@ import {
 import { ProductEditForm, type ProductEditValues } from "./product-edit-form";
 import { ProductOptionsPanel } from "./product-options-panel";
 import { VariantsPanel } from "./variants-panel";
+
 export function ProductDetailPageClient({ slug }: { slug: string }) {
   const { can } = useAuthorization();
   const queryClient = useQueryClient();
@@ -99,24 +102,24 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
 
   if (productQuery.isError) {
     return (
-      <PageShell>
-        <Alert variant="destructive">
-          <AlertTitle>Unable to load product</AlertTitle>
-          <AlertDescription>
-            {productQuery.error instanceof Error
-              ? productQuery.error.message
-              : "An unexpected error occurred."}
-          </AlertDescription>
-        </Alert>
-      </PageShell>
+      <CatalogDetailError
+        message={
+          productQuery.error instanceof Error
+            ? productQuery.error.message
+            : "An unexpected error occurred."
+        }
+        title="Unable to load product"
+      />
     );
   }
 
   if (!productQuery.data) return null;
+
   const product = productQuery.data;
   const statusMeta = CATALOG_STATUS_META[product.status];
   const brands = brandsQuery.data?.items ?? [];
   const categories = categoriesQuery.data?.items ?? [];
+
   return (
     <PageShell>
       <PageHeader
@@ -131,7 +134,7 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
         }
         backHref={toRoute("/admin/products")}
         backLabel="Products"
-        description={`/${product.slug}`}
+        description="Manage product information, variants, and media."
         image={product.primaryImageUrl ?? null}
         title={product.name}
       />
@@ -162,10 +165,10 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
           }
         />
         <StatCard
-          description="Brand association."
+          description="Brand currently assigned to this product."
           icon={CalendarDays}
           label="Brand"
-          value={product.brandSlug ?? "—"}
+          value={product.brandSlug ?? "Not set"}
         />
       </div>
       {isEditing ? (
@@ -181,19 +184,32 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
           }
         />
       ) : (
-        <Card className="border-border/70 bg-card shadow-none">
-          <CardHeader>
-            <CardTitle>Product details</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2 text-sm">
-            <DetailRow label="Name" value={product.name} />
-            <DetailRow label="Brand" value={product.brandSlug ?? "—"} />
-            <DetailRow label="Category" value={product.categorySlug ?? "—"} />
-            {product.description ? (
-              <DetailRow label="Description" value={product.description} />
-            ) : null}
-          </CardContent>
-        </Card>
+        <CatalogDetailsCard title="Product details">
+          <CatalogDetailRow label="Name" value={product.name} />
+          <CatalogDetailRow
+            label="Slug"
+            tone="identifier"
+            value={product.slug}
+          />
+          <CatalogDetailRow
+            label="Brand"
+            tone="support"
+            value={product.brandSlug ?? "Not set"}
+          />
+          <CatalogDetailRow
+            label="Category"
+            tone="support"
+            value={product.categorySlug ?? "Not set"}
+          />
+          {product.description ? (
+            <CatalogDetailRow
+              className="sm:col-span-2"
+              label="Description"
+              tone="support"
+              value={product.description}
+            />
+          ) : null}
+        </CatalogDetailsCard>
       )}
       <ProductOptionsPanel
         canManage={canManage}
@@ -218,8 +234,8 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
         entityType="product"
         isOpen={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}
-        onDelete={async (slug: string) => {
-          await deleteAdminProduct(slug);
+        onDelete={async (nextSlug: string) => {
+          await deleteAdminProduct(nextSlug);
           router.push(toRoute("/admin/products"));
         }}
         onSuccessQueryKeys={[

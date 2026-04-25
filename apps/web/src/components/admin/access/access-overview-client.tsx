@@ -6,13 +6,11 @@ import Link from "next/link";
 import { useAuthorization } from "@/components/providers/authorization-provider";
 import { AppEmptyState } from "@/components/system/app-empty-state";
 import {
-  MenuCard,
   PageHeader,
   PageShell,
   StatCard,
 } from "@/components/system/page-shell";
 import { PermissionGate } from "@/components/system/permission-gate";
-import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
@@ -30,7 +28,9 @@ import {
 import { toRoute } from "@/lib/routes";
 import {
   ACCESS_AUDIT_SKELETON_KEYS,
+  AccessLinkCard,
   getAuditEntryKey,
+  RecentAccessChangeCard,
 } from "./access-overview-support";
 
 export function AccessOverviewClient() {
@@ -67,23 +67,21 @@ export function AccessOverviewClient() {
           description="System and custom roles currently configured."
           icon={ShieldCheck}
           label="Roles"
-          value={rolesQuery.data?.totalCount ?? "—"}
+          value={rolesQuery.data?.totalCount ?? 0}
         />
         <StatCard
           description="Canonical permission keys available for grants."
           icon={KeyRound}
           label="Permissions"
           value={
-            canViewPermissions
-              ? (permissionsQuery.data?.totalCount ?? "—")
-              : "—"
+            canViewPermissions ? (permissionsQuery.data?.totalCount ?? 0) : 0
           }
         />
         <StatCard
           description="Recent role and override history preserved in the audit log."
           icon={ClipboardList}
           label="Audit events"
-          value={canViewAudit ? (auditQuery.data?.totalCount ?? "—") : "—"}
+          value={canViewAudit ? (auditQuery.data?.totalCount ?? 0) : 0}
         />
         <StatCard
           description="Current access-related capabilities on this signed-in session."
@@ -103,34 +101,30 @@ export function AccessOverviewClient() {
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
-            <MenuCard
+            <AccessLinkCard
               description="Review role definitions, granted permission sets, and assignment impact."
               href="/admin/access/roles"
-              icon={ShieldCheck}
-              title="Roles"
+              label="Roles"
             />
             <PermissionGate permission="users.view">
-              <MenuCard
+              <AccessLinkCard
                 description="Inspect current user role coverage and assigned location scopes."
                 href="/admin/access/users"
-                icon={Users}
-                title="User access"
+                label="User access"
               />
             </PermissionGate>
             <PermissionGate permission="access.permissions.view">
-              <MenuCard
+              <AccessLinkCard
                 description="Inspect page permissions and action permissions across the platform."
                 href="/admin/access/permissions"
-                icon={KeyRound}
-                title="Permissions"
+                label="Permissions"
               />
             </PermissionGate>
             <PermissionGate permission="access.audit.view">
-              <MenuCard
+              <AccessLinkCard
                 description="Review append-only access changes with actor, target, and reason."
                 href="/admin/access/audit"
-                icon={ClipboardList}
-                title="Audit log"
+                label="Audit log"
               />
             </PermissionGate>
           </CardContent>
@@ -192,24 +186,10 @@ export function AccessOverviewClient() {
           ) : auditQuery.data?.items.length ? (
             <div className="flex flex-col gap-3">
               {auditQuery.data.items.map((entry) => (
-                <div
+                <RecentAccessChangeCard
+                  entry={entry}
                   key={getAuditEntryKey(entry)}
-                  className="rounded-xl border border-border/70 bg-muted/20 p-3"
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline">
-                      {entry.action.replaceAll("_", " ")}
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {entry.actorName ?? "System"} changed{" "}
-                      {entry.targetUserName ?? "a platform subject"}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm text-foreground">{entry.reason}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {entry.permissionKey ?? entry.roleSlug ?? "Global scope"}
-                  </p>
-                </div>
+                />
               ))}
             </div>
           ) : (

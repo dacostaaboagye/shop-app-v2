@@ -11,10 +11,14 @@ import { AppEmptyState } from "@/components/system/app-empty-state";
 import { AppTableWrapper } from "@/components/system/app-table-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { NumberField, SelectField, TextField } from "./supplier-form-controls";
+import {
+  NumberField,
+  SelectField,
+  SwitchField,
+  TextAreaField,
+  TextField,
+} from "./supplier-form-controls";
 
 export function ProductsPanel(props: {
   isPending: boolean;
@@ -33,16 +37,19 @@ export function ProductsPanel(props: {
     status: "active" as const,
     supplierProductCode: "",
   });
+
   return (
-    <div className="flex flex-col gap-6 rounded-xl border border-border/50 bg-white p-6 shadow-sm">
+    <div className="flex flex-col gap-6 rounded-xl border border-border/50 bg-card p-6 shadow-sm">
       <div className="flex flex-col gap-4">
-        <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">
+        <h3 className="text-sm font-semibold text-muted-foreground">
           Link new product
         </h3>
         <div className="grid gap-4 md:grid-cols-3">
           <SelectField
             label="Product"
-            onChange={(productSlug) => setForm((v) => ({ ...v, productSlug }))}
+            onChange={(productSlug) =>
+              setForm((value) => ({ ...value, productSlug }))
+            }
             options={props.products.map((product) => ({
               label: product.name,
               value: product.slug,
@@ -54,7 +61,7 @@ export function ProductsPanel(props: {
             label="Lead time days"
             min={0}
             onChange={(leadTimeDays) =>
-              setForm((v) => ({ ...v, leadTimeDays }))
+              setForm((value) => ({ ...value, leadTimeDays }))
             }
             value={form.leadTimeDays}
           />
@@ -62,52 +69,43 @@ export function ProductsPanel(props: {
             label="MOQ"
             min={1}
             onChange={(minimumOrderQuantity) =>
-              setForm((v) => ({ ...v, minimumOrderQuantity }))
+              setForm((value) => ({ ...value, minimumOrderQuantity }))
             }
             value={form.minimumOrderQuantity}
           />
           <TextField
             label="Supplier product code"
             onChange={(supplierProductCode) =>
-              setForm((v) => ({ ...v, supplierProductCode }))
+              setForm((value) => ({ ...value, supplierProductCode }))
             }
             value={form.supplierProductCode}
           />
           <TextField
+            description="Use the supplier's quoted or last agreed cost."
+            inputMode="decimal"
             label="Last cost"
             onChange={(lastCostPrice) =>
-              setForm((v) => ({ ...v, lastCostPrice }))
+              setForm((value) => ({ ...value, lastCostPrice }))
             }
+            placeholder="0.00"
             value={form.lastCostPrice}
           />
-          <div className="flex items-center gap-2 pt-8">
-            <input
-              checked={form.isPreferred}
-              className="size-4 rounded-md border-border/60 text-primary focus:ring-primary/20"
-              id="is-preferred-supplier"
-              onChange={(event) =>
-                setForm((v) => ({ ...v, isPreferred: event.target.checked }))
-              }
-              type="checkbox"
-            />
-            <Label className="font-medium" htmlFor="is-preferred-supplier">
-              Preferred supplier
-            </Label>
-          </div>
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
-            Purchase notes
-          </Label>
-          <Textarea
-            className="min-h-20 rounded-xl border-border/60 bg-muted/20 transition-all focus:bg-background focus:ring-primary/20"
-            onChange={(event) =>
-              setForm((v) => ({ ...v, notes: event.target.value }))
+          <SwitchField
+            description="Use this when the supplier should be the default sourcing option for this product."
+            label="Preferred supplier"
+            onChange={(isPreferred) =>
+              setForm((value) => ({ ...value, isPreferred }))
             }
-            placeholder="Commercial terms, delivery notes, or supplier constraints"
-            value={form.notes}
+            value={form.isPreferred}
           />
         </div>
+        <TextAreaField
+          description="Capture commercial terms, delivery constraints, or negotiation notes."
+          label="Purchase notes"
+          onChange={(notes) => setForm((value) => ({ ...value, notes }))}
+          placeholder="Commercial terms, delivery notes, or supplier constraints"
+          value={form.notes}
+        />
         <div className="flex justify-start">
           <Button
             className="h-11 rounded-xl px-8"
@@ -129,7 +127,7 @@ export function ProductsPanel(props: {
       </div>
 
       <div className="flex flex-col gap-4">
-        <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">
+        <h3 className="text-sm font-semibold text-muted-foreground">
           Linked products
         </h3>
         {props.supplierProducts.length === 0 ? (
@@ -175,17 +173,17 @@ function SupplierProductRow({
         index !== itemCount - 1 && "border-b border-border/50",
       )}
     >
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         <p className="font-semibold text-foreground">{product.productName}</p>
         <p className="mt-0.5 text-xs text-muted-foreground/80">
-          {product.variantCount} SKU{product.variantCount === 1 ? "" : "s"} •{" "}
-          {product.brandName ?? "No brand"} •{" "}
+          {product.variantCount} SKU{product.variantCount === 1 ? "" : "s"} |{" "}
+          {product.brandName ?? "No brand"} |{" "}
           {product.categoryName ?? "No category"}
         </p>
       </div>
       <div className="flex items-center gap-3">
         <Badge
-          className="rounded-md font-bold uppercase tracking-wider text-[10px]"
+          className="rounded-md text-[10px] font-semibold"
           variant="secondary"
         >
           MOQ {product.minimumOrderQuantity}

@@ -27,7 +27,9 @@ export function LocationDetailMapCard({
     <Card className="h-full border-border/70 bg-card shadow-none">
       <CardHeader>
         <CardTitle>Map</CardTitle>
-        <CardDescription>Pin location on the map.</CardDescription>
+        <CardDescription>
+          Read-only view of the saved site position and address.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="pointer-events-none opacity-80">
