@@ -134,14 +134,12 @@ jobs:
       - name: Pull Vercel project settings
         run: |
           pnpm dlx vercel@latest pull \
-            --cwd apps/web \
             --yes \
             --environment=production \
             --token "$TEST_VERCEL_TOKEN"
       - name: Deploy web to Vercel testing project
         run: |
           pnpm dlx vercel@latest deploy \
-            --cwd apps/web \
             --prod \
             --token "$TEST_VERCEL_TOKEN" \
             --archive=tgz \
