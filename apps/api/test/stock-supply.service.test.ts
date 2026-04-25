@@ -25,7 +25,7 @@ describe("StockSupplyService", () => {
       } as never,
       {
         async generateReference() {
-          return "unused";
+          return "TRF-00001";
         },
       } as never,
       {
@@ -60,10 +60,13 @@ describe("StockSupplyService", () => {
 
     assert.deepEqual(calls, [
       "insert-stock-request",
+      "insert-stock-transfer",
+      "insert-stock-transfer-event",
       "append-event",
       "notify-delivery",
     ]);
     assert.equal(row.reference, "SUP-0001");
+    assert.equal(row.transferReference, "TRF-00001");
     const recordedEvent = appendedEvent as PlatformEventRecord | null;
     assert.ok(recordedEvent);
     assert.equal(recordedEvent.type, "transfer.requested");
@@ -73,7 +76,28 @@ describe("StockSupplyService", () => {
 
 function createInsertOnlyTx(calls: string[]) {
   return {
-    insert() {
+    insert(table?: { [key: string]: unknown }) {
+      if (table && "supplyRequestId" in table && "requestedBy" in table) {
+        return {
+          values() {
+            return {
+              async returning() {
+                calls.push("insert-stock-transfer");
+                return [{ id: "transfer-1" }];
+              },
+            };
+          },
+        };
+      }
+
+      if (table && "transferId" in table && "eventType" in table) {
+        return {
+          values: async () => {
+            calls.push("insert-stock-transfer-event");
+          },
+        };
+      }
+
       return {
         values() {
           return {

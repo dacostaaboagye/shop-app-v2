@@ -66,6 +66,22 @@ export function SupplyRequestSummaryCard({
                 <span className="font-mono text-xs text-muted-foreground">
                   {item.reference}
                 </span>
+                {item.transferReference ? (
+                  <Badge
+                    className="h-4 px-1.5 font-mono text-[10px] uppercase"
+                    variant="outline"
+                  >
+                    Transfer: {item.transferReference}
+                  </Badge>
+                ) : null}
+                {item.sourceReservationStatus === "active" ? (
+                  <Badge
+                    className="h-4 px-1.5 text-[10px] uppercase"
+                    variant="outline"
+                  >
+                    Reserved at source
+                  </Badge>
+                ) : null}
                 {item.gtnReference ? (
                   <Badge
                     className="h-4 px-1.5 font-mono text-[10px] uppercase"

@@ -16,7 +16,9 @@ export type StockSupplyRouteDependencies = {
   };
   permissionService: Pick<
     PermissionResolutionService,
-    "assertHasPermission" | "resolvePermissionsForAnyScope"
+    | "assertHasPermission"
+    | "resolveAllPermissions"
+    | "resolvePermissionsForAnyScope"
   >;
   referenceNumberService: Pick<ReferenceNumberService, "generateReference">;
   supplyRequestRepository: Pick<
@@ -26,6 +28,7 @@ export type StockSupplyRouteDependencies = {
     | "findGtnBySupplyRequest"
     | "listByLocation"
     | "listByRequester"
+    | "listBySourceLocations"
     | "listBySourceLocation"
   >;
   supplyService: Pick<
@@ -113,6 +116,7 @@ export function toRequestResponse(row: SupplyRequestRow) {
     notes: row.notes,
     receivedAt: row.receivedAt?.toISOString() ?? null,
     reference: row.reference,
+    sourceReservationStatus: row.sourceReservationStatus,
     requesterEmail: row.requesterEmail,
     requesterId: row.requesterId,
     requesterName: row.requesterName,
@@ -126,6 +130,7 @@ export function toRequestResponse(row: SupplyRequestRow) {
     sourceLocationName: row.sourceLocationName,
     status: row.status,
     supplyRequestId: row.id,
+    transferReference: row.transferReference,
   };
 }
 

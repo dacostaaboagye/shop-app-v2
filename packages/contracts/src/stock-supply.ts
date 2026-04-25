@@ -9,6 +9,14 @@ export const supplyRequestStatusSchema = z.enum([
   "cancelled",
 ]);
 
+export const sourceReservationStatusSchema = z.enum([
+  "active",
+  "confirmed",
+  "released",
+  "expired",
+  "cancelled",
+]);
+
 export const gtnStatusSchema = z.enum(["dispatched", "received", "cancelled"]);
 
 // Worker creates a request specifying source location and what they need
@@ -44,6 +52,8 @@ export const confirmReceiptSchema = z.object({
 export const stockSupplyRequestResponseSchema = z.object({
   reference: z.string(),
   supplyRequestId: z.string().uuid(),
+  transferReference: z.string().nullable(),
+  sourceReservationStatus: sourceReservationStatusSchema.nullable(),
 
   requesterId: z.string().uuid(),
   requesterName: z.string().nullable(),
@@ -137,6 +147,9 @@ export const gtnResponseSchema = z.object({
 });
 
 export type SupplyRequestStatus = z.infer<typeof supplyRequestStatusSchema>;
+export type SourceReservationStatus = z.infer<
+  typeof sourceReservationStatusSchema
+>;
 export type GtnStatus = z.infer<typeof gtnStatusSchema>;
 export type CreateStockSupplyRequest = z.infer<
   typeof createStockSupplyRequestSchema

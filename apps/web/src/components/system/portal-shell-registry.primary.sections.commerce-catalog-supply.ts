@@ -118,11 +118,11 @@ export const COMMERCE_CATALOG_SUPPLY_NAV_REGISTRY: readonly NavRegistryEntry[] =
         { mode: "descendants", path: "/admin/stock/supply-requests" },
       ],
       description:
-        "Review restocking requests for the selected location and manage dispatch decisions.",
+        "Monitor restocking requests across the network with an optional location filter for intervention work.",
       href: toRoute("/admin/stock/supply-requests"),
       icon: ClipboardList,
       label: "Supply requests",
-      locationSelectorPermission: "stock.supply.manage",
+      locationSelectorPermission: null,
       requiredPermission: "stock.supply.manage",
       section: "Supply",
     },

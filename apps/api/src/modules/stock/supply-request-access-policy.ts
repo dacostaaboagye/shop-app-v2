@@ -12,6 +12,13 @@ type SupplyRequestPermissionService = {
     scope?: "any_active" | "contextual";
     user: AuthenticatedActor;
   }): Promise<void>;
+  resolveAllPermissions(input: { userId: string }): Promise<{
+    anyActivePermissions: Array<{ key: string }>;
+    locationScopes: Array<{
+      locationId: string;
+      permissions: Array<{ key: string }>;
+    }>;
+  }>;
   resolvePermissionsForAnyScope(input: {
     userId: string;
   }): Promise<Array<{ key: string }>>;
@@ -42,6 +49,22 @@ export class SupplyRequestAccessPolicy {
       permission: "stock.supply.manage",
       user: input.actor,
     });
+  }
+
+  async listManageableSourceLocationIds(input: {
+    actor: AuthenticatedActor;
+  }): Promise<string[]> {
+    const resolved = await this.permissionService.resolveAllPermissions({
+      userId: input.actor.userId,
+    });
+
+    return resolved.locationScopes
+      .filter((scope) =>
+        scope.permissions.some(
+          (permission) => permission.key === "stock.supply.manage",
+        ),
+      )
+      .map((scope) => scope.locationId);
   }
 
   async assertCanListRequestsForLocation(input: {

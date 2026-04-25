@@ -28,6 +28,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 type LocationScopePanelProps = {
+  allOptionLabel?: string;
   description: string;
   emptyDescription: string;
   locationScopes: readonly AuthLocationPermissionScope[];
@@ -39,6 +40,7 @@ type LocationScopePanelProps = {
 };
 
 export function LocationScopePanel({
+  allOptionLabel,
   description,
   emptyDescription,
   isLoading = false,
@@ -49,6 +51,7 @@ export function LocationScopePanel({
   title,
 }: LocationScopePanelProps) {
   const selectId = useId();
+  const allOptionValue = "__all_locations__";
 
   if (isLoading) {
     return <Skeleton className="h-24 w-full rounded-xl" />;
@@ -114,7 +117,12 @@ export function LocationScopePanel({
           >
             {label}
           </Label>
-          <Select value={selectedLocationSlug} onValueChange={onLocationChange}>
+          <Select
+            value={selectedLocationSlug || allOptionValue}
+            onValueChange={(value) =>
+              onLocationChange(value === allOptionValue ? "" : value)
+            }
+          >
             <SelectTrigger
               id={selectId}
               className="h-11 w-full rounded-xl border-border/60 bg-muted/20 transition-all focus:bg-background focus:ring-primary/20"
@@ -122,6 +130,9 @@ export function LocationScopePanel({
               <SelectValue placeholder="Select a location" />
             </SelectTrigger>
             <SelectContent>
+              {allOptionLabel ? (
+                <SelectItem value={allOptionValue}>{allOptionLabel}</SelectItem>
+              ) : null}
               {locationScopes.map((scope) => (
                 <SelectItem key={scope.locationId} value={scope.locationSlug}>
                   {scope.locationName}

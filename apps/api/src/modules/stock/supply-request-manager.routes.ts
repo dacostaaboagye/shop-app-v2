@@ -45,23 +45,16 @@ function registerIncomingRoute(
     async handler(request) {
       const actor = getAuthenticatedActor(request);
       const query = stockSupplyRequestListQuerySchema.parse(request.query);
-      if (!query.sourceLocationId) {
-        throw new AppError({
-          code: "validation_error",
-          detail: "sourceLocationId is required.",
-          statusCode: 400,
-          title: "Missing sourceLocationId",
-        });
-      }
-      await accessPolicy.assertCanListIncomingForSource({
+      const sourceLocationIds = await resolveIncomingSourceLocationIds(
+        accessPolicy,
         actor,
-        sourceLocationId: query.sourceLocationId,
-      });
+        query.sourceLocationId,
+      );
       const result =
-        await dependencies.supplyRequestRepository.listBySourceLocation({
+        await dependencies.supplyRequestRepository.listBySourceLocations({
           page: query.page,
           pageSize: query.pageSize,
-          sourceLocationId: query.sourceLocationId,
+          sourceLocationIds,
           ...(query.status ? { status: query.status } : {}),
         });
       return stockSupplyRequestListResponseSchema.parse({
@@ -72,6 +65,22 @@ function registerIncomingRoute(
       });
     },
   });
+}
+
+async function resolveIncomingSourceLocationIds(
+  accessPolicy: SupplyRequestAccessPolicy,
+  actor: ReturnType<typeof getAuthenticatedActor>,
+  sourceLocationId: string | undefined,
+) {
+  if (sourceLocationId) {
+    await accessPolicy.assertCanListIncomingForSource({
+      actor,
+      sourceLocationId,
+    });
+    return [sourceLocationId];
+  }
+
+  return accessPolicy.listManageableSourceLocationIds({ actor });
 }
 
 function registerApproveRoute(

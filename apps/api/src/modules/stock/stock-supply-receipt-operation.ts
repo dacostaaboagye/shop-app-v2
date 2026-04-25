@@ -18,6 +18,7 @@ import {
   notifyStockSupplyEventsCommitted,
   type StockSupplyOperationContext,
 } from "./stock-supply-operation-context.js";
+import { syncTransferLifecycle } from "./stock-transfer-lifecycle.js";
 
 export async function confirmStockSupplyReceipt(
   input: {
@@ -87,20 +88,32 @@ export async function confirmStockSupplyReceipt(
       null,
       null,
       null,
+      "confirmed",
+      null,
     );
+    const transferReference = await syncTransferLifecycle(tx, {
+      actorUserId: input.actor.userId,
+      eventType: "received",
+      occurredAt: input.now,
+      supplyRequest,
+    });
+    const updatedSupplyRequest = {
+      ...supplyRequest,
+      transferReference,
+    };
     await appendStockSupplyEventWithinTransaction(context, tx, {
       actor: input.actor,
       payload: { gtnReference: existingGtn?.reference ?? null },
-      supplyRequest,
+      supplyRequest: updatedSupplyRequest,
       summary: formatStockSupplyEventSummary({
         action: "received",
         gtnReference: existingGtn?.reference ?? null,
-        supplyRequest,
+        supplyRequest: updatedSupplyRequest,
       }),
       type: "transfer.received",
     });
 
-    return { requestId: request.id, updatedRequest };
+    return { requestId: request.id, transferReference, updatedRequest };
   });
 
   await notifyStockSupplyEventsCommitted(context);
@@ -117,6 +130,8 @@ export async function confirmStockSupplyReceipt(
       null,
       null,
       null,
+      received.transferReference,
+      "confirmed",
       gtnRow.reference,
     ),
   };

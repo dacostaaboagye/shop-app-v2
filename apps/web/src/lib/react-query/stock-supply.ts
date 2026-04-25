@@ -63,13 +63,15 @@ export async function fetchWorkerSupplyRequests(
 }
 
 export async function fetchManagerIncomingSupplyRequests(
-  query: SupplyRequestListQuery & { sourceLocationId: string },
+  query: SupplyRequestListQuery,
 ): Promise<StockSupplyRequestListResponse> {
   const params = new URLSearchParams({
-    sourceLocationId: query.sourceLocationId,
     page: String(query.page ?? 1),
     pageSize: String(query.pageSize ?? 25),
   });
+  if (query.sourceLocationId) {
+    params.set("sourceLocationId", query.sourceLocationId);
+  }
   if (query.status) params.set("status", query.status);
 
   return fetchJson<StockSupplyRequestListResponse>(

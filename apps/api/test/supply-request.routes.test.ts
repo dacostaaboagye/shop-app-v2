@@ -75,6 +75,39 @@ describe("stock supply routes", () => {
     assert.equal(response.json().title, "Forbidden");
   });
 
+  it("lists manager inbox requests across all manageable source locations", async () => {
+    let listedSourceLocationIds: string[] = [];
+    const server = createStockSupplyServer({
+      allowedLocationPermissions: {
+        "stock.supply.manage": [UUIDS.managerSourceA, UUIDS.managerSourceB],
+      },
+      async listBySourceLocations(input) {
+        listedSourceLocationIds = input.sourceLocationIds;
+        return { items: [makeSupplyRequestRow()], total: 1 };
+      },
+      userSlug: "manager-a",
+    });
+
+    const response = await server.inject({
+      headers: {
+        authorization: bearerToken(UUIDS.actor, "manager-a"),
+      },
+      method: "GET",
+      query: {
+        page: "1",
+        pageSize: "25",
+      },
+      url: "/api/manager/stock/supply-requests/incoming",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(listedSourceLocationIds, [
+      UUIDS.managerSourceA,
+      UUIDS.managerSourceB,
+    ]);
+    assert.equal(response.json().total, 1);
+  });
+
   it("lists all requests involving a managed location", async () => {
     let listedLocationId = "";
     const server = createStockSupplyServer({
@@ -338,6 +371,12 @@ function createStockSupplyServer(input: {
     pageSize: number;
     status?: string;
   }) => Promise<{ items: SupplyRequestRow[]; total: number }>;
+  listBySourceLocations?: (input: {
+    page: number;
+    pageSize: number;
+    sourceLocationIds: string[];
+    status?: string;
+  }) => Promise<{ items: SupplyRequestRow[]; total: number }>;
   publishedEvents?: PlatformEventRecord[];
   requestById?: SupplyRequestRow;
   userId?: string;
@@ -406,6 +445,11 @@ function createStockSupplyServer(input: {
         },
         async listByRequester() {
           return { items: [], total: 0 };
+        },
+        async listBySourceLocations(args) {
+          return input.listBySourceLocations
+            ? input.listBySourceLocations(args)
+            : { items: [], total: 0 };
         },
         async listBySourceLocation() {
           return { items: [], total: 0 };
@@ -528,7 +572,75 @@ function createPermissionService(input: {
         source: "role" as const,
       }));
     },
+    async resolveAllPermissions() {
+      return {
+        anyActivePermissions: input.globalPermissions.map((key) => ({
+          key,
+          source: "role" as const,
+        })),
+        locationScopes: Object.entries(input.allowedLocationPermissions).reduce<
+          Array<{
+            locationId: string;
+            locationName: string;
+            locationSlug: string;
+            permissions: Array<{ key: string; source: "role" }>;
+          }>
+        >((scopes, [permission, locationIds]) => {
+          for (const locationId of locationIds) {
+            const existingScope = scopes.find(
+              (scope) => scope.locationId === locationId,
+            );
+            if (existingScope) {
+              existingScope.permissions.push({
+                key: permission,
+                source: "role",
+              });
+              continue;
+            }
+
+            scopes.push({
+              locationId,
+              locationName: locationNameFor(locationId),
+              locationSlug: locationSlugFor(locationId),
+              permissions: [{ key: permission, source: "role" }],
+            });
+          }
+
+          return scopes;
+        }, []),
+      };
+    },
   };
+}
+
+function locationNameFor(locationId: string) {
+  switch (locationId) {
+    case UUIDS.destinationA:
+      return "Store A";
+    case UUIDS.destinationB:
+      return "Store B";
+    case UUIDS.managerSourceA:
+      return "Warehouse A";
+    case UUIDS.managerSourceB:
+      return "Warehouse B";
+    default:
+      return "Location";
+  }
+}
+
+function locationSlugFor(locationId: string) {
+  switch (locationId) {
+    case UUIDS.destinationA:
+      return "store-a";
+    case UUIDS.destinationB:
+      return "store-b";
+    case UUIDS.managerSourceA:
+      return "warehouse-a";
+    case UUIDS.managerSourceB:
+      return "warehouse-b";
+    default:
+      return "location";
+  }
 }
 
 function makeSupplyRequestRow(
@@ -553,6 +665,8 @@ function makeSupplyRequestRowBase(): SupplyRequestRow {
     notes: null,
     receivedAt: null,
     reference: "SUP-0001",
+    sourceReservationStatus: null,
+    transferReference: "TRF-0001",
     requesterEmail: "worker@example.com",
     requesterId: UUIDS.actor,
     requesterName: "Worker A",

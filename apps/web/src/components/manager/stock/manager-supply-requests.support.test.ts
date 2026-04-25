@@ -32,8 +32,10 @@ const baseRequest: StockSupplyRequestResponse = {
   },
   sourceLocationId: "44444444-4444-4444-8444-444444444444",
   sourceLocationName: "Main Warehouse",
+  sourceReservationStatus: null,
   status: "pending",
   supplyRequestId: "55555555-5555-4555-8555-555555555555",
+  transferReference: null,
 };
 
 test("counts active and closed manager supply request lanes", () => {

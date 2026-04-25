@@ -296,6 +296,10 @@ assert.match(migrationSql, /stock_movements_quantity_delta_nonzero/);
 assert.match(migrationSql, /stock_reservations_active_source_unique/);
 assert.match(migrationSql, /stock_reservations_quantity_positive/);
 assert.match(migrationSql, /stock_reservations_expiry_after_create/);
+assert.match(migrationSql, /stock_transfer_status/);
+assert.match(migrationSql, /stock_transfer_event_type/);
+assert.match(migrationSql, /stock_transfers/);
+assert.match(migrationSql, /stock_transfer_events/);
 assert.match(
   migrationSql,
   /ALTER TABLE "stock_ownership_events" RENAME COLUMN "product_id" TO "sku_id"/,
