@@ -61,7 +61,7 @@ jobs:
         run: |
           set -o pipefail
           pnpm --filter @shop/database db:migrate 2>&1 \
-            | sed 's/\x1b\[[0-9;]*[mGKHJMF]//g' \
+            | sed 's/\x1b\[[0-9]*G/\n/g; s/\x1b\[[0-9;]*[A-Za-z]//g' \
             | tr '\r' '\n' \
             | grep -v '^[[:space:]]*$' \
             | tee testing-db-migrate.log
