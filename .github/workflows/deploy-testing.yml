@@ -48,7 +48,19 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm deploy:testing:bootstrap
+      - name: Verify testing database configuration
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::TEST_DATABASE_URL is not configured."
+            exit 1
+          fi
+          echo "Testing database URL is configured."
+      - name: Run testing database migration with debug output
+        run: |
+          set -o pipefail
+          pnpm --filter @shop/database db:migrate 2>&1 | tee testing-db-migrate.log
+      - name: Seed core testing data
+        run: pnpm --filter @shop/api db:seed-core
       - if: ${{ env.SUPER_ADMIN_EMAIL != '' && env.SUPER_ADMIN_PASSWORD != '' && env.SUPER_ADMIN_FIRST_NAME != '' && env.SUPER_ADMIN_LAST_NAME != '' }}
         run: pnpm deploy:testing:seed-admin
 
