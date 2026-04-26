@@ -56,10 +56,13 @@ jobs:
           fi
           echo "Testing database URL is configured."
       - name: Run testing database migration with debug output
+        env:
+          NO_COLOR: "1"
         run: |
           set -o pipefail
           pnpm --filter @shop/database db:migrate 2>&1 \
-            | sed $'s/\x1b\\[[0-9;]*[mGKHJMF]//g; s/\r/\n/g' \
+            | sed 's/\x1b\[[0-9;]*[mGKHJMF]//g' \
+            | tr '\r' '\n' \
             | grep -v '^[[:space:]]*$' \
             | tee testing-db-migrate.log
       - name: Seed core testing data
