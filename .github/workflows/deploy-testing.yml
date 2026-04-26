@@ -58,7 +58,10 @@ jobs:
       - name: Run testing database migration with debug output
         run: |
           set -o pipefail
-          pnpm --filter @shop/database db:migrate 2>&1 | tee testing-db-migrate.log
+          pnpm --filter @shop/database db:migrate 2>&1 \
+            | sed $'s/\x1b\\[[0-9;]*[mGKHJMF]//g; s/\r/\n/g' \
+            | grep -v '^[[:space:]]*$' \
+            | tee testing-db-migrate.log
       - name: Seed core testing data
         run: pnpm --filter @shop/api db:seed-core
       - if: ${{ env.SUPER_ADMIN_EMAIL != '' && env.SUPER_ADMIN_PASSWORD != '' && env.SUPER_ADMIN_FIRST_NAME != '' && env.SUPER_ADMIN_LAST_NAME != '' }}

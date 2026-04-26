@@ -1,8 +1,8 @@
-ALTER TYPE "public"."email_delivery_status" ADD VALUE 'bounced' BEFORE 'console_fallback';--> statement-breakpoint
-ALTER TYPE "public"."email_delivery_status" ADD VALUE 'complained' BEFORE 'console_fallback';--> statement-breakpoint
-ALTER TYPE "public"."email_delivery_status" ADD VALUE 'delayed' BEFORE 'failed';--> statement-breakpoint
-ALTER TYPE "public"."email_delivery_status" ADD VALUE 'delivered' BEFORE 'failed';--> statement-breakpoint
-ALTER TYPE "public"."email_delivery_status" ADD VALUE 'suppressed';--> statement-breakpoint
+ALTER TYPE "public"."email_delivery_status" ADD VALUE IF NOT EXISTS 'bounced' BEFORE 'console_fallback';--> statement-breakpoint
+ALTER TYPE "public"."email_delivery_status" ADD VALUE IF NOT EXISTS 'complained' BEFORE 'console_fallback';--> statement-breakpoint
+ALTER TYPE "public"."email_delivery_status" ADD VALUE IF NOT EXISTS 'delayed' BEFORE 'failed';--> statement-breakpoint
+ALTER TYPE "public"."email_delivery_status" ADD VALUE IF NOT EXISTS 'delivered' BEFORE 'failed';--> statement-breakpoint
+ALTER TYPE "public"."email_delivery_status" ADD VALUE IF NOT EXISTS 'suppressed';--> statement-breakpoint
 CREATE TABLE "email_delivery_status_events" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"attempt_id" uuid,
