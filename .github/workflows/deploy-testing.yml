@@ -57,26 +57,17 @@ jobs:
           echo "Testing database URL is configured."
       - name: Show current migration state
         run: |
-          node -e "
-          const { Client } = require('pg');
-          const client = new Client({ connectionString: process.env.DATABASE_URL });
-          client.connect()
-            .then(() => client.query(\"SELECT id, hash, created_at FROM drizzle.__drizzle_migrations ORDER BY created_at\"))
-            .then(r => { console.log('Recorded migrations (' + r.rows.length + '):', r.rows.map(x => x.id).join(', ')); })
-            .catch(e => console.log('Migration state query failed (table may not exist):', e.message))
-            .finally(() => client.end());
-          "
+          psql "$DATABASE_URL" -c "SELECT id, hash, created_at FROM drizzle.__drizzle_migrations ORDER BY created_at;" 2>&1 \
+            || echo "Migration table not found or DB unreachable"
         continue-on-error: true
-      - name: Run testing database migration with debug output
+      - name: Run testing database migration
         env:
           NO_COLOR: "1"
         run: |
-          set -o pipefail
-          pnpm --filter @shop/database db:migrate 2>&1 \
-            | sed 's/\x1b\[[0-9]*G/\n/g; s/\x1b\[[0-9;]*[A-Za-z]//g' \
-            | tr '\r' '\n' \
-            | grep -v '^[[:space:]]*$' \
-            | tee testing-db-migrate.log
+          pnpm --filter @shop/database db:migrate > /tmp/migrate-output.log 2>&1
+          EXIT_CODE=$?
+          sed 's/\x1b\[[0-9;]*[A-Za-z]//g' /tmp/migrate-output.log | tr '\r' '\n' | grep -v '^[[:space:]]*$'
+          exit $EXIT_CODE
       - name: Seed core testing data
         run: pnpm --filter @shop/api db:seed-core
       - if: ${{ env.SUPER_ADMIN_EMAIL != '' && env.SUPER_ADMIN_PASSWORD != '' && env.SUPER_ADMIN_FIRST_NAME != '' && env.SUPER_ADMIN_LAST_NAME != '' }}
