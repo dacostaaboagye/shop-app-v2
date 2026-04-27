@@ -108,7 +108,7 @@ describe("notification center filtering", () => {
     assert.deepEqual(buildNotificationEventOptions(NOTIFICATIONS), [
       { label: "Approved", value: "transfer.approved" },
       {
-        label: "Goods Received",
+        label: "Goods received",
         value: "supplier.procurement.received",
       },
       { label: "Invite sent", value: "supplier.portal.invited" },

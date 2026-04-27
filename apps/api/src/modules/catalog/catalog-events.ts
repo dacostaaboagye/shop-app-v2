@@ -1,14 +1,15 @@
-import { randomUUID } from "node:crypto";
 import type {
   AdminBrandSummary,
   AdminCategorySummary,
   AdminProductDetail,
 } from "@shop/contracts";
 import type { PlatformEventRecord } from "../events/platform-event.types.js";
-
-type CatalogActor = {
-  userSlug: string;
-};
+import {
+  type CatalogActor,
+  createCatalogEvent,
+  formatCatalogPathSummary,
+  formatParentSummary,
+} from "./catalog-event-support.js";
 
 export function createCatalogBrandCreatedEvent(input: {
   actor: CatalogActor;
@@ -292,43 +293,4 @@ export function createCatalogVariantDeletedEvent(input: {
     summary: `Catalog variant deleted from ${input.variant.productSlug}: ${input.variant.variantName} (${input.variant.variantSlug} / ${input.variant.sku}).`,
     type: "catalog.variant.deleted",
   });
-}
-
-function createCatalogEvent(input: {
-  actor: CatalogActor;
-  occurredAt: Date;
-  payload: Record<string, string | number | boolean | null>;
-  reference: string;
-  resourceKind: string;
-  summary: string;
-  type: string;
-}): PlatformEventRecord {
-  return {
-    actor: { userSlug: input.actor.userSlug },
-    audience: [
-      { kind: "permission", permission: "catalog.view" },
-      { kind: "permission", permission: "admin.dashboard.view" },
-    ],
-    id: randomUUID(),
-    occurredAt: input.occurredAt.toISOString(),
-    payload: input.payload,
-    resource: {
-      kind: input.resourceKind,
-      reference: input.reference,
-    },
-    summary: input.summary,
-    type: input.type,
-  };
-}
-
-function formatParentSummary(parentCategorySlug: string | null | undefined) {
-  return parentCategorySlug ? ` under ${parentCategorySlug}` : "";
-}
-
-function formatCatalogPathSummary(product: {
-  brandSlug?: string | null | undefined;
-  categorySlug?: string | null | undefined;
-}) {
-  const segments = [product.categorySlug, product.brandSlug].filter(Boolean);
-  return segments.length > 0 ? ` in ${segments.join(" / ")}` : "";
 }

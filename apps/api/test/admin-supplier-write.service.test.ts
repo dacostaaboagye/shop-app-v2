@@ -223,7 +223,11 @@ function createService(events: PlatformEventRecord[]) {
         throw new Error("not used");
       },
     },
-    undefined,
+    {
+      async generateReference() {
+        return "PO-2026-0001";
+      },
+    },
     {
       async publish(event) {
         events.push(event);

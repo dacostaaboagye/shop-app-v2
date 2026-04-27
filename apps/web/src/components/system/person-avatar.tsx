@@ -1,7 +1,7 @@
 "use client";
 
 import { PreviewImage } from "@/components/system/preview-image";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 type PersonAvatarProps = {
@@ -59,7 +59,15 @@ export function PersonAvatar({
       className={cn(SIZE_CLASS_NAMES[size], className)}
       size={size === "sm" ? "sm" : size === "lg" ? "lg" : "default"}
     >
-      {src ? <AvatarImage alt={alt} src={src} /> : null}
+      {src ? (
+        // biome-ignore lint/performance/noImgElement: SSR-safe avatar markup for shared server-render tests and external media URLs.
+        <img
+          alt={alt}
+          className="aspect-square size-full rounded-full object-cover"
+          data-slot="avatar-image"
+          src={src}
+        />
+      ) : null}
       <AvatarFallback className={FALLBACK_TEXT_CLASS_NAMES[size]}>
         {getInitials({ firstName, lastName, name: displayName })}
       </AvatarFallback>

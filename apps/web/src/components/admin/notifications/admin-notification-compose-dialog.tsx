@@ -1,8 +1,7 @@
 "use client";
 
-import type { AdminStaffRoleFilter, AdminUserSummary } from "@shop/contracts";
+import type { AdminStaffRoleFilter } from "@shop/contracts";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { BellRing, Mail } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AppDialog, AppDialogBody } from "@/components/system/app-dialog";
@@ -10,22 +9,15 @@ import { AppErrorBanner } from "@/components/system/app-error";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { getAppErrorMessage } from "@/lib/errors/app-error";
 import { fetchAdminStaff } from "@/lib/react-query/admin-directory";
 import { postAdminNotificationCompose } from "@/lib/react-query/notifications";
 import {
-  ADMIN_NOTIFICATION_AUDIENCE_OPTIONS,
-  ADMIN_NOTIFICATION_TARGET_OPTIONS,
-} from "./admin-notification-compose.support";
+  AdminNotificationChannelSection,
+  AdminNotificationTargetSection,
+} from "./admin-notification-compose.sections";
+import { ADMIN_NOTIFICATION_AUDIENCE_OPTIONS } from "./admin-notification-compose.support";
 
 type LocationScopeOption = {
   locationId: string;
@@ -110,13 +102,6 @@ export function AdminNotificationComposeDialog({
     },
   });
 
-  const selectedAudience = useMemo(
-    () =>
-      ADMIN_NOTIFICATION_AUDIENCE_OPTIONS.find(
-        (option) => option.permission === audiencePermission,
-      ) ?? null,
-    [audiencePermission],
-  );
   const staffItems = staffQuery.data?.items ?? [];
   const selectedRecipient = useMemo(
     () => staffItems.find((item) => item.slug === recipientSlug) ?? null,
@@ -171,185 +156,39 @@ export function AdminNotificationComposeDialog({
     >
       <form onSubmit={handleSubmit}>
         <AppDialogBody className="gap-5">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor={targetId}>Target</Label>
-            <Select
-              value={targetKind}
-              onValueChange={(value) =>
-                setTargetKind(value as "audience" | "user")
-              }
-            >
-              <SelectTrigger id={targetId}>
-                <SelectValue placeholder="Choose target mode" />
-              </SelectTrigger>
-              <SelectContent>
-                {ADMIN_NOTIFICATION_TARGET_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="type-support">
-              {
-                ADMIN_NOTIFICATION_TARGET_OPTIONS.find(
-                  (option) => option.value === targetKind,
-                )?.description
-              }
-            </p>
-          </div>
+          <AdminNotificationTargetSection
+            audienceId={audienceId}
+            audiencePermission={audiencePermission}
+            locationId={locationId}
+            locationOptions={locationOptions}
+            locationScopeId={locationScopeId}
+            recipientId={recipientId}
+            recipientRole={recipientRole}
+            recipientRoleId={recipientRoleId}
+            recipientSearch={recipientSearch}
+            recipientSearchId={recipientSearchId}
+            recipientSlug={recipientSlug}
+            selectedRecipient={selectedRecipient}
+            setAudiencePermission={setAudiencePermission}
+            setLocationScopeId={setLocationScopeId}
+            setRecipientRole={setRecipientRole}
+            setRecipientSearch={setRecipientSearch}
+            setRecipientSlug={setRecipientSlug}
+            setTargetKind={setTargetKind}
+            staffItems={staffItems}
+            staffPending={staffQuery.isPending}
+            targetId={targetId}
+            targetKind={targetKind}
+          />
 
-          {targetKind === "audience" ? (
-            <div className="grid gap-4 lg:grid-cols-2">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor={audienceId}>Audience</Label>
-                <Select
-                  value={audiencePermission}
-                  onValueChange={setAudiencePermission}
-                >
-                  <SelectTrigger id={audienceId}>
-                    <SelectValue placeholder="Choose audience" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ADMIN_NOTIFICATION_AUDIENCE_OPTIONS.map((option) => (
-                      <SelectItem
-                        key={option.permission}
-                        value={option.permission}
-                      >
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {selectedAudience ? (
-                  <p className="type-support">{selectedAudience.description}</p>
-                ) : null}
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor={locationId}>Location Scope</Label>
-                <Select
-                  value={locationScopeId}
-                  onValueChange={setLocationScopeId}
-                >
-                  <SelectTrigger id={locationId}>
-                    <SelectValue placeholder="All locations" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__all__">All Locations</SelectItem>
-                    {locationOptions.map((option) => (
-                      <SelectItem
-                        key={option.locationId}
-                        value={option.locationId}
-                      >
-                        {option.locationName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="type-support">
-                  Leave this global to target all recipients who hold the
-                  selected permission.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              <div className="grid gap-4 lg:grid-cols-[12rem_minmax(0,1fr)]">
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor={recipientRoleId}>Staff Role</Label>
-                  <Select
-                    value={recipientRole}
-                    onValueChange={(value) =>
-                      setRecipientRole(value as AdminStaffRoleFilter)
-                    }
-                  >
-                    <SelectTrigger id={recipientRoleId}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="worker">Workers</SelectItem>
-                      <SelectItem value="manager">Managers</SelectItem>
-                      <SelectItem value="all">Managers and Workers</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor={recipientSearchId}>Search Staff</Label>
-                  <Input
-                    id={recipientSearchId}
-                    placeholder="Search by name or email"
-                    value={recipientSearch}
-                    onChange={(event) => setRecipientSearch(event.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor={recipientId}>Recipient</Label>
-                <Select value={recipientSlug} onValueChange={setRecipientSlug}>
-                  <SelectTrigger id={recipientId}>
-                    <SelectValue placeholder="Choose a staff member" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {staffItems.map((staff) => (
-                      <SelectItem key={staff.slug} value={staff.slug}>
-                        {formatRecipientLabel(staff)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="type-support">
-                  {staffQuery.isPending
-                    ? "Loading active staff."
-                    : selectedRecipient
-                      ? `${selectedRecipient.email}`
-                      : "Select one active manager or worker for a direct message."}
-                </p>
-              </div>
-            </div>
-          )}
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-card px-4 py-3">
-              <Switch
-                checked={sendNotification}
-                id={notificationChannelId}
-                onCheckedChange={setSendNotification}
-              />
-              <span className="min-w-0">
-                <Label
-                  className="flex items-center gap-2 text-sm font-medium text-foreground"
-                  htmlFor={notificationChannelId}
-                >
-                  <BellRing className="size-4" />
-                  In-App Notification
-                </Label>
-                <span className="type-support mt-1 block">
-                  Deliver this update through the notification center.
-                </span>
-              </span>
-            </div>
-            <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-card px-4 py-3">
-              <Switch
-                checked={sendEmail}
-                id={emailChannelId}
-                onCheckedChange={setSendEmail}
-              />
-              <span className="min-w-0">
-                <Label
-                  className="flex items-center gap-2 text-sm font-medium text-foreground"
-                  htmlFor={emailChannelId}
-                >
-                  <Mail className="size-4" />
-                  Email
-                </Label>
-                <span className="type-support mt-1 block">
-                  Send the same update through the governed messaging runtime.
-                </span>
-              </span>
-            </div>
-          </div>
+          <AdminNotificationChannelSection
+            emailChannelId={emailChannelId}
+            notificationChannelId={notificationChannelId}
+            sendEmail={sendEmail}
+            sendNotification={sendNotification}
+            setSendEmail={setSendEmail}
+            setSendNotification={setSendNotification}
+          />
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor={subjectId}>Subject</Label>
@@ -399,8 +238,4 @@ export function AdminNotificationComposeDialog({
       </form>
     </AppDialog>
   );
-}
-
-function formatRecipientLabel(staff: AdminUserSummary) {
-  return `${staff.firstName} ${staff.lastName} - ${staff.email}`;
 }

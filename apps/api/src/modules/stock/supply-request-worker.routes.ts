@@ -22,6 +22,7 @@ import {
   supplyRequestRoutes,
   toRequestResponse,
 } from "./supply-request-route-support.js";
+import { cannotCancelError } from "./supply-request-worker-route-support.js";
 
 export function registerWorkerSupplyRequestRoutes(
   server: FastifyInstance,
@@ -294,14 +295,5 @@ function registerConfirmReceiptRoute(
         toRequestResponse(supplyRequest),
       );
     },
-  });
-}
-
-function cannotCancelError() {
-  return new AppError({
-    code: "not_found",
-    detail: "Request not found or cannot be cancelled at this stage.",
-    statusCode: 404,
-    title: "Cannot cancel",
   });
 }
