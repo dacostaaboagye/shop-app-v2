@@ -8,9 +8,7 @@ FROM base AS builder
 WORKDIR /app
 
 ARG API_BASE_URL=
-ARG NEXT_PUBLIC_API_BASE_URL=
 ENV API_BASE_URL=$API_BASE_URL
-ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 
 # Copy manifests first for layer caching
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
