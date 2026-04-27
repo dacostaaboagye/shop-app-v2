@@ -8,10 +8,15 @@ import {
   stockSupplyRequestResponseSchema,
 } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
-import { AppError } from "../_core/errors/app-error.js";
 import { getAuthenticatedUserId } from "../auth/auth-route-support.js";
 import type { SupplyRequestAccessPolicy } from "./supply-request-access-policy.js";
+import { registerManagerSupplyRequestCreateRoutes } from "./supply-request-manager-create.routes.js";
 import { registerManagerSupplyRequestListRoute } from "./supply-request-manager-list.routes.js";
+import {
+  loadManageableRequest,
+  manageRequestNotFound,
+  resolveIncomingSourceLocationIds,
+} from "./supply-request-manager-route-support.js";
 import {
   getAuthenticatedActor,
   type StockSupplyRouteDependencies,
@@ -25,13 +30,13 @@ export function registerManagerSupplyRequestRoutes(
   dependencies: StockSupplyRouteDependencies,
   accessPolicy: SupplyRequestAccessPolicy,
 ) {
+  registerManagerSupplyRequestCreateRoutes(server, dependencies, accessPolicy);
   registerManagerSupplyRequestListRoute(server, dependencies, accessPolicy);
   registerIncomingRoute(server, dependencies, accessPolicy);
   registerApproveRoute(server, dependencies, accessPolicy);
   registerRejectRoute(server, dependencies, accessPolicy);
   registerDispatchRoute(server, dependencies, accessPolicy);
 }
-
 function registerIncomingRoute(
   server: FastifyInstance,
   dependencies: StockSupplyRouteDependencies,
@@ -66,23 +71,6 @@ function registerIncomingRoute(
     },
   });
 }
-
-async function resolveIncomingSourceLocationIds(
-  accessPolicy: SupplyRequestAccessPolicy,
-  actor: ReturnType<typeof getAuthenticatedActor>,
-  sourceLocationId: string | undefined,
-) {
-  if (sourceLocationId) {
-    await accessPolicy.assertCanListIncomingForSource({
-      actor,
-      sourceLocationId,
-    });
-    return [sourceLocationId];
-  }
-
-  return accessPolicy.listManageableSourceLocationIds({ actor });
-}
-
 function registerApproveRoute(
   server: FastifyInstance,
   dependencies: StockSupplyRouteDependencies,
@@ -118,7 +106,6 @@ function registerApproveRoute(
     },
   });
 }
-
 function registerRejectRoute(
   server: FastifyInstance,
   dependencies: StockSupplyRouteDependencies,
@@ -153,7 +140,6 @@ function registerRejectRoute(
     },
   });
 }
-
 function registerDispatchRoute(
   server: FastifyInstance,
   dependencies: StockSupplyRouteDependencies,
@@ -191,44 +177,4 @@ function registerDispatchRoute(
       };
     },
   });
-}
-
-async function loadManageableRequest(
-  dependencies: StockSupplyRouteDependencies,
-  accessPolicy: SupplyRequestAccessPolicy,
-  actor: ReturnType<typeof getAuthenticatedActor>,
-  id: string,
-  title: string,
-) {
-  const existingRequest =
-    await dependencies.supplyRequestRepository.findById(id);
-  if (!existingRequest) {
-    throw manageRequestNotFound(title);
-  }
-  await accessPolicy.assertCanManageRequest({
-    actor,
-    supplyRequest: existingRequest,
-  });
-  return existingRequest;
-}
-
-function manageRequestNotFound(title: string) {
-  return new AppError({
-    code: "not_found",
-    detail: requestNotFoundDetail(title),
-    statusCode: 404,
-    title,
-  });
-}
-
-function requestNotFoundDetail(title: string) {
-  switch (title) {
-    case "Cannot approve":
-    case "Cannot reject":
-      return "Request not found or is not in a pending state.";
-    case "Cannot dispatch":
-      return "Supply request not found or is not in an approved state.";
-    default:
-      return "Supply request not found.";
-  }
 }

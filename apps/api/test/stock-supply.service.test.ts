@@ -72,6 +72,62 @@ describe("StockSupplyService", () => {
     assert.equal(recordedEvent.type, "transfer.requested");
     assert.equal(recordedEvent.resource.reference, "SUP-0001");
   });
+
+  it("creates grouped supply requests with one shared group reference", async () => {
+    const tx = createInsertOnlyTx([]);
+    const service = new StockSupplyService(
+      {
+        async transaction(
+          callback: (transaction: typeof tx) => Promise<unknown>,
+        ) {
+          return callback(tx);
+        },
+      } as never,
+      {
+        async generateReference(input: { sequenceKey: string }) {
+          if (input.sequenceKey === "stock-transfer") {
+            return "TRF-00001";
+          }
+          return "UNUSED-00001";
+        },
+      } as never,
+    );
+
+    const rows = await service.createRequestBatch({
+      actor: { userId: "worker-1", userSlug: "worker-one" },
+      items: [
+        {
+          reference: "SUP-0001",
+          requestedQuantity: 4,
+          skuId: "sku-1",
+          skuSnapshot: {
+            productName: "Travel Pack",
+            sku: "TRAVEL-PACK",
+            variantName: "Standard",
+          },
+        },
+        {
+          reference: "SUP-0002",
+          requestedQuantity: 2,
+          skuId: "sku-2",
+          skuSnapshot: {
+            productName: "Travel Pack",
+            sku: "TRAVEL-PACK-B",
+            variantName: "Large",
+          },
+        },
+      ],
+      locationId: "location-destination",
+      notes: "Need stock",
+      requestGroupReference: "SUPB-0001",
+      requesterId: "worker-1",
+      sourceLocationId: "location-source",
+    });
+
+    assert.equal(rows.length, 2);
+    assert.equal(rows[0]?.requestGroupReference, "SUPB-0001");
+    assert.equal(rows[1]?.requestGroupReference, "SUPB-0001");
+  });
 });
 
 function createInsertOnlyTx(calls: string[]) {
@@ -123,6 +179,7 @@ function makeSupplyRequestRecord() {
     notes: "Need stock",
     receivedAt: null,
     reference: "SUP-0001",
+    requestGroupReference: "SUPB-0001",
     requestedQuantity: 4,
     requesterId: "worker-1",
     resolutionNotes: null,

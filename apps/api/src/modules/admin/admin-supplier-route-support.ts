@@ -92,7 +92,7 @@ export function createUnavailableSupplierDependencies(): AdminSupplierRouteDepen
 
 export async function handleSupplierProcurementAction(input: {
   action: string;
-  actorId: string;
+  actor: { userId: string; userSlug: string };
   body: unknown;
   reference: string;
   service: AdminSupplierRouteDependencies["adminSupplierWriteService"];
@@ -106,7 +106,7 @@ export async function handleSupplierProcurementAction(input: {
     return input.service.receiveProcurementOrder(
       input.slug,
       input.reference,
-      input.actorId,
+      input.actor,
       payload,
       now,
     );
@@ -118,7 +118,7 @@ export async function handleSupplierProcurementAction(input: {
   return input.service.transitionProcurementOrder(
     input.slug,
     input.reference,
-    input.actorId,
+    input.actor,
     procurementActionStatus(input.action),
     payload.notes ?? null,
     now,

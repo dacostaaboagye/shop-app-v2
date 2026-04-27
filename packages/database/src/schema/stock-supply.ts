@@ -27,6 +27,9 @@ export const stockSupplyRequests = pgTable(
   {
     id: publicUuidColumn(),
     reference: varchar("reference", { length: 25 }).notNull(),
+    requestGroupReference: varchar("request_group_reference", {
+      length: 25,
+    }),
 
     // Who is requesting and where the goods should go (destination)
     requesterId: uuid("requester_id")
@@ -78,6 +81,9 @@ export const stockSupplyRequests = pgTable(
   },
   (table) => [
     uniqueIndex("supply_requests_reference_unique").on(table.reference),
+    index("supply_requests_group_reference_idx").on(
+      table.requestGroupReference,
+    ),
     check("supply_requests_qty_positive", sql`${table.requestedQuantity} > 0`),
     check(
       "supply_requests_approved_qty_positive",

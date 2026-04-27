@@ -9,6 +9,22 @@ import type {
 } from "./portal-shell-config.types";
 import { NAV_REGISTRY, SHELL_META } from "./portal-shell-registry";
 
+const NAV_SECTION_PRIORITY = [
+  "Overview",
+  "Operations",
+  "Sales",
+  "My work",
+  "Commerce",
+  "Catalog",
+  "Supply",
+  "Administration",
+  "Access",
+  "Settings",
+  "Delivery",
+  "My account",
+  "Account",
+] as const;
+
 export type {
   PortalNavItem,
   PortalNavSection,
@@ -46,7 +62,14 @@ export function getVisibleNavSections(
     sectionMap.set(entry.section, items);
   }
 
-  return [...sectionMap.entries()].map(([title, items]) => ({ title, items }));
+  return [...sectionMap.entries()]
+    .map(([title, items]) => ({ title, items }))
+    .sort((left, right) => {
+      return (
+        getSectionPriority(left.title) - getSectionPriority(right.title) ||
+        left.title.localeCompare(right.title)
+      );
+    });
 }
 
 export function getRouteItem(pathname: string): PortalNavItem | undefined {
@@ -115,6 +138,14 @@ function doesPathMatch(pathname: string, matcher: PortalPathMatcher) {
   }
 
   return pathname === matcher.path || pathname.startsWith(`${matcher.path}/`);
+}
+
+function getSectionPriority(title: string) {
+  const priority = NAV_SECTION_PRIORITY.indexOf(
+    title as (typeof NAV_SECTION_PRIORITY)[number],
+  );
+
+  return priority === -1 ? NAV_SECTION_PRIORITY.length : priority;
 }
 
 export { PORTALS };

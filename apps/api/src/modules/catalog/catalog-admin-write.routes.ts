@@ -14,7 +14,7 @@ import {
 } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
 import { AppError } from "../_core/errors/app-error.js";
-import { getAuthenticatedUserId } from "../auth/auth-route-support.js";
+import { getAuthenticatedActor } from "../auth/auth-route-support.js";
 import {
   type CatalogWriteRouteDependencies,
   catalogWriteRoutes,
@@ -31,9 +31,10 @@ export function registerCatalogAdminWriteRoutes(
     url: catalogWriteRoutes.createCategory.url,
     async handler(request) {
       const payload = adminCreateCategoryRequestSchema.parse(request.body);
+      const actor = getAuthenticatedActor(request);
       const result =
         await dependencies.catalogCategoryWriteService.createCategory(
-          getAuthenticatedUserId(request),
+          actor,
           payload,
           new Date(),
         );
@@ -48,9 +49,10 @@ export function registerCatalogAdminWriteRoutes(
     async handler(request) {
       const { slug } = request.params as { slug: string };
       const payload = adminUpdateCategoryRequestSchema.parse(request.body);
+      const actor = getAuthenticatedActor(request);
       const result =
         await dependencies.catalogCategoryWriteService.updateCategory(
-          getAuthenticatedUserId(request),
+          actor,
           slug,
           payload,
           new Date(),
@@ -75,7 +77,12 @@ export function registerCatalogAdminWriteRoutes(
     url: catalogWriteRoutes.deleteCategory.url,
     async handler(request) {
       const { slug } = request.params as { slug: string };
-      await dependencies.catalogCategoryWriteService.deleteCategory(slug);
+      const actor = getAuthenticatedActor(request);
+      await dependencies.catalogCategoryWriteService.deleteCategory(
+        actor,
+        slug,
+        new Date(),
+      );
       return { success: true };
     },
   });
@@ -86,9 +93,10 @@ export function registerCatalogAdminWriteRoutes(
     url: catalogWriteRoutes.createProduct.url,
     async handler(request) {
       const payload = adminCreateProductRequestSchema.parse(request.body);
+      const actor = getAuthenticatedActor(request);
       const result =
         await dependencies.catalogProductWriteService.createProduct(
-          getAuthenticatedUserId(request),
+          actor,
           payload,
           new Date(),
         );
@@ -103,9 +111,10 @@ export function registerCatalogAdminWriteRoutes(
     async handler(request) {
       const { slug } = request.params as { slug: string };
       const payload = adminUpdateProductRequestSchema.parse(request.body);
+      const actor = getAuthenticatedActor(request);
       const result =
         await dependencies.catalogProductWriteService.updateProduct(
-          getAuthenticatedUserId(request),
+          actor,
           slug,
           payload,
           new Date(),
@@ -130,7 +139,12 @@ export function registerCatalogAdminWriteRoutes(
     url: catalogWriteRoutes.deleteProduct.url,
     async handler(request) {
       const { slug } = request.params as { slug: string };
-      await dependencies.catalogProductWriteService.deleteProduct(slug);
+      const actor = getAuthenticatedActor(request);
+      await dependencies.catalogProductWriteService.deleteProductWithActor(
+        actor,
+        slug,
+        new Date(),
+      );
       return { success: true };
     },
   });
@@ -142,9 +156,10 @@ export function registerCatalogAdminWriteRoutes(
     async handler(request) {
       const { slug: productSlug } = request.params as { slug: string };
       const payload = adminCreateVariantRequestSchema.parse(request.body);
+      const actor = getAuthenticatedActor(request);
       const result =
         await dependencies.catalogProductWriteService.createVariant(
-          getAuthenticatedUserId(request),
+          actor,
           productSlug,
           payload,
           new Date(),
@@ -163,9 +178,10 @@ export function registerCatalogAdminWriteRoutes(
         variantSlug: string;
       };
       const payload = adminUpdateVariantRequestSchema.parse(request.body);
+      const actor = getAuthenticatedActor(request);
       const result =
         await dependencies.catalogProductWriteService.updateVariant(
-          getAuthenticatedUserId(request),
+          actor,
           productSlug,
           variantSlug,
           payload,
@@ -194,9 +210,12 @@ export function registerCatalogAdminWriteRoutes(
         slug: string;
         variantSlug: string;
       };
+      const actor = getAuthenticatedActor(request);
       await dependencies.catalogProductWriteService.deleteVariant(
+        actor,
         productSlug,
         variantSlug,
+        new Date(),
       );
       return { success: true };
     },

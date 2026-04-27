@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { invoiceListQuerySchema, invoiceResponseSchema } from "./sales.js";
+import {
+  invoiceListQuerySchema,
+  invoiceResponseSchema,
+  processPosPaymentRequestSchema,
+} from "./sales.js";
 
 describe("sales contracts", () => {
   it("accepts invoice document type filters", () => {
@@ -30,6 +34,8 @@ describe("sales contracts", () => {
       confirmedAt: "2026-04-21T10:00:00.000Z",
       createdAt: "2026-04-21T09:55:00.000Z",
       customerBillingAddressLines: ["12 Market Street", "Accra"],
+      currencyCode: "GHS",
+      currencyScale: 2,
       customerEmail: "buyer@example.com",
       customerName: "Adwoa Mensah",
       customerPhone: "+233 20 000 0000",
@@ -47,6 +53,7 @@ describe("sales contracts", () => {
     });
 
     assert.equal(parsed.customerName, "Adwoa Mensah");
+    assert.equal(parsed.currencyCode, "GHS");
     assert.deepEqual(parsed.customerBillingAddressLines, [
       "12 Market Street",
       "Accra",
@@ -60,6 +67,8 @@ describe("sales contracts", () => {
       attributedWorkerName: null,
       confirmedAt: "2026-04-21T10:00:00.000Z",
       createdAt: "2026-04-21T09:55:00.000Z",
+      currencyCode: "GHS",
+      currencyScale: 2,
       lines: [],
       locationId: "4181707d-c61e-4c22-995d-335295748060",
       notes: null,
@@ -75,5 +84,30 @@ describe("sales contracts", () => {
     assert.equal(parsed.customerName, null);
     assert.equal(parsed.customerEmail, null);
     assert.equal(parsed.customerBillingAddressLines, null);
+    assert.equal(parsed.currencyScale, 2);
+  });
+
+  it("accepts optional buyer details on POS payment requests", () => {
+    const parsed = processPosPaymentRequestSchema.parse({
+      customerBillingAddressLines: ["12 Market Street", "Accra"],
+      customerEmail: "buyer@example.com",
+      customerName: "Adwoa Mensah",
+      customerPhone: "+233200000000",
+      customerTaxNumber: "TIN-123",
+      lines: [
+        {
+          quantity: 2,
+          skuId: "4181707d-c61e-4c22-995d-335295748060",
+        },
+      ],
+      locationId: "5181707d-c61e-4c22-995d-335295748060",
+      paymentMethod: "cash",
+    });
+
+    assert.equal(parsed.customerName, "Adwoa Mensah");
+    assert.deepEqual(parsed.customerBillingAddressLines, [
+      "12 Market Street",
+      "Accra",
+    ]);
   });
 });

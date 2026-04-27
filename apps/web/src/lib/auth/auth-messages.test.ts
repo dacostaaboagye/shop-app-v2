@@ -41,4 +41,54 @@ describe("auth-messages", () => {
     );
     assert.equal(isUnauthorizedApiError(new Error("boom")), false);
   });
+
+  it("translates blocked delivery errors into safe auth copy", () => {
+    const message = getAuthErrorMessage(
+      new ApiError({
+        problem: {
+          code: "conflict",
+          detail:
+            "worker@example.com cannot receive email right now because the provider has suppressed the address.",
+          details: {
+            occurredAt: "2026-04-24T00:00:00.000Z",
+            recipientEmail: "worker@example.com",
+            status: "suppressed",
+          },
+          requestId: "req_456",
+          status: 409,
+          timestamp: "2026-04-24T00:00:00.000Z",
+          title: "Email delivery blocked",
+        },
+        status: 409,
+      }),
+    );
+
+    assert.equal(message.title, "Email temporarily unavailable");
+    assert.equal(
+      message.detail,
+      "We could not send email to this address right now. Contact support or ask an administrator to check your email delivery status before trying again.",
+    );
+  });
+
+  it("translates failed delivery errors into safe auth copy", () => {
+    const message = getAuthErrorMessage(
+      new ApiError({
+        problem: {
+          code: "internal_error",
+          detail: "The provider request failed.",
+          requestId: "req_789",
+          status: 502,
+          timestamp: "2026-04-24T00:00:00.000Z",
+          title: "Email delivery failed",
+        },
+        status: 502,
+      }),
+    );
+
+    assert.equal(message.title, "Email temporarily unavailable");
+    assert.equal(
+      message.detail,
+      "We could not send that email right now. Please wait a moment and try again. If the problem continues, contact support.",
+    );
+  });
 });

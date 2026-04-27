@@ -19,8 +19,7 @@ export const ADMIN_ACCESS_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     label: "Notifications",
     locationSelectorPermission: null,
     requiredPermission: "admin.dashboard.view",
-    section: "Overview",
-    sidebar: false,
+    section: "Account",
   },
   {
     activeMatchers: [{ mode: "descendants", path: "/admin/users" }],

@@ -79,4 +79,30 @@ describe("notification presentation helpers", () => {
       "By Warehouse Manager dispatched 4 units from Main Warehouse to Ablekuma Warehouse under GTN GTN-0001.",
     );
   });
+
+  it("shows admin communication message body in notification detail", () => {
+    const presentation = getNotificationPresentation({
+      actorUserSlug: "admin-user",
+      eventType: "admin.communication.sent",
+      notificationKey: "11111111-1111-4111-8111-111111111119",
+      occurredAt: "2026-04-27T03:00:00.000Z",
+      payload: {
+        messageBody: "Please complete closing counts before you leave today.",
+        subject: "Closing count reminder",
+      },
+      readAt: null,
+      resource: {
+        kind: "admin_communication",
+        reference: "Closing count reminder",
+      },
+      status: "unread",
+      summary: "Closing count reminder",
+    });
+
+    assert.equal(
+      presentation.detail,
+      "Please complete closing counts before you leave today.",
+    );
+    assert.equal(presentation.title, "Closing count reminder");
+  });
 });

@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
+import type { AuthPermissionSet } from "@shop/contracts";
 import { AppError } from "../_core/errors/app-error.js";
 import { issueAccessToken } from "./access-token.js";
 import type {
@@ -69,6 +70,10 @@ export interface LogoutSessionService {
   logout(command: LogoutSessionCommand): Promise<void>;
 }
 
+export interface SessionPermissionLookup {
+  getCurrentPermissions(userId: string): Promise<AuthPermissionSet>;
+}
+
 export class TokenSessionService
   implements LogoutSessionService, RefreshSessionService, SessionIssuer
 {
@@ -76,6 +81,7 @@ export class TokenSessionService
     private readonly repository: SessionRepository,
     private readonly config: SessionServiceConfig,
     private readonly now: () => Date = () => new Date(),
+    private readonly permissionLookup?: SessionPermissionLookup,
   ) {}
 
   async issueSession(
@@ -105,12 +111,16 @@ export class TokenSessionService
       userId: user.id,
     });
 
+    const permissionSet = this.permissionLookup
+      ? await this.permissionLookup.getCurrentPermissions(user.id)
+      : { locationScopes: [], permissions: [] };
+
     return {
       accessToken: issuedAccessToken.token,
       accessTokenExpiresAt: issuedAccessToken.expiresAt.toISOString(),
       refreshToken,
       refreshTokenExpiresAt: refreshTokenExpiresAt.toISOString(),
-      user: mapAuthUser(user),
+      user: mapAuthUser(user, permissionSet),
     };
   }
 
@@ -189,7 +199,10 @@ export function hashRefreshToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
-function mapAuthUser(user: AuthUserRecord): IssuedSession["user"] {
+function mapAuthUser(
+  user: AuthUserRecord,
+  permissionSet: AuthPermissionSet,
+): IssuedSession["user"] {
   const availablePortals = user.availablePortals ?? [];
 
   return {
@@ -197,8 +210,12 @@ function mapAuthUser(user: AuthUserRecord): IssuedSession["user"] {
     email: user.email,
     emailVerified: user.emailVerified,
     firstName: user.firstName,
+    hasPassword: Boolean(user.passwordHash),
     lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
     lastName: user.lastName,
+    notificationPreferences: user.notificationPreferences,
+    permissionSet,
+    primaryImageUrl: user.primaryImageUrl ?? null,
     preferredPortal: normalizePreferredPortal({
       availablePortals,
       preferredPortal: user.preferredPortal,

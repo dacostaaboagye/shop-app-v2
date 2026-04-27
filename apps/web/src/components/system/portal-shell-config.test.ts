@@ -88,6 +88,53 @@ describe("portal-shell-config", () => {
     );
   });
 
+  it("keeps Account as the last sidebar section", () => {
+    const sections = getVisibleNavSections(
+      createPermissionAbility([
+        "admin.dashboard.view",
+        "users.view",
+        "settings.documents.view",
+      ]),
+    );
+
+    assert.equal(sections.at(-1)?.title, "Account");
+  });
+
+  it("orders admin sections by operational importance before Account", () => {
+    const sections = getVisibleNavSections(
+      createPermissionAbility([
+        "admin.dashboard.view",
+        "orders.view",
+        "catalog.view",
+        "stock.supply.manage",
+        "users.view",
+        "settings.documents.view",
+      ]),
+    );
+
+    const sectionTitles = sections.map((section) => section.title);
+
+    assert.ok(
+      sectionTitles.indexOf("Overview") < sectionTitles.indexOf("Commerce"),
+    );
+    assert.ok(
+      sectionTitles.indexOf("Commerce") < sectionTitles.indexOf("Catalog"),
+    );
+    assert.ok(
+      sectionTitles.indexOf("Catalog") < sectionTitles.indexOf("Supply"),
+    );
+    assert.ok(
+      sectionTitles.indexOf("Supply") < sectionTitles.indexOf("Administration"),
+    );
+    assert.ok(
+      sectionTitles.indexOf("Administration") <
+        sectionTitles.indexOf("Settings"),
+    );
+    assert.ok(
+      sectionTitles.indexOf("Settings") < sectionTitles.indexOf("Account"),
+    );
+  });
+
   it("resolves getRouteItem for /admin/locations to the Locations entry", () => {
     const item = getRouteItem("/admin/locations");
 

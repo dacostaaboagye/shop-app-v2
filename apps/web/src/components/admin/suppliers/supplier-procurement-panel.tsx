@@ -16,8 +16,15 @@ import {
   type ProcurementAction,
   SupplierProcurementList,
 } from "./supplier-procurement-list";
+import {
+  appendProcurementDraftLine,
+  buildProcurementOrderPayload,
+  type PurchaseOrderDraftLine,
+  removeProcurementDraftLine,
+} from "./supplier-procurement-panel.support";
 
 type PurchaseOrderFormState = {
+  lines: PurchaseOrderDraftLine[];
   notes: string;
   quantity: number;
   unitCost: string;
@@ -25,6 +32,7 @@ type PurchaseOrderFormState = {
 };
 
 export function ProcurementPanel(props: {
+  isPending?: boolean;
   onAction: (reference: string, action: ProcurementAction) => void;
   onCreateOrder: (input: AdminCreateSupplierProcurementOrderRequest) => void;
   onReceive: (
@@ -35,6 +43,7 @@ export function ProcurementPanel(props: {
   supplierProducts: AdminSupplierDetail["products"];
 }) {
   const [orderForm, setOrderForm] = useState<PurchaseOrderFormState>({
+    lines: [],
     notes: "",
     quantity: 1,
     unitCost: "",
@@ -57,6 +66,7 @@ export function ProcurementPanel(props: {
           form={orderForm}
           onChange={setOrderForm}
           onCreate={props.onCreateOrder}
+          isPending={props.isPending ?? false}
           variants={variants}
         />
       </div>
@@ -77,10 +87,15 @@ export function ProcurementPanel(props: {
 
 function PurchaseOrderForm(props: {
   form: PurchaseOrderFormState;
+  isPending: boolean;
   onChange: Dispatch<SetStateAction<PurchaseOrderFormState>>;
   onCreate: (input: AdminCreateSupplierProcurementOrderRequest) => void;
   variants: Array<{ productName: string; sku: string; variantSlug: string }>;
 }) {
+  const selectedVariant = props.variants.find(
+    (variant) => variant.variantSlug === props.form.variantSlug,
+  );
+
   return (
     <>
       <div className="grid gap-4 md:grid-cols-3">
@@ -121,6 +136,93 @@ function PurchaseOrderForm(props: {
           value={props.form.unitCost}
         />
       </div>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          disabled={!props.form.variantSlug || props.isPending}
+          onClick={() =>
+            props.onChange((value) => ({
+              ...value,
+              lines: appendProcurementDraftLine(value.lines, {
+                quantity: value.quantity,
+                unitCost: value.unitCost,
+                variantSlug: value.variantSlug,
+              }),
+              quantity: 1,
+              unitCost: "",
+              variantSlug: "",
+            }))
+          }
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          Add line item
+        </Button>
+        {selectedVariant ? (
+          <p className="type-support">
+            Queue{" "}
+            <span className="font-medium text-foreground">
+              {selectedVariant.productName}
+            </span>{" "}
+            / {selectedVariant.sku}
+          </p>
+        ) : null}
+      </div>
+      <div className="rounded-xl border border-border/60 bg-card">
+        <div className="border-b border-border/60 px-4 py-3">
+          <h4 className="text-sm font-semibold text-foreground">
+            Draft line items
+          </h4>
+        </div>
+        <div className="divide-y divide-border/60">
+          {props.form.lines.length === 0 ? (
+            <p className="type-support px-4 py-4">
+              Add one or more supplier items before drafting the purchase order.
+            </p>
+          ) : (
+            props.form.lines.map((line) => {
+              const variant = props.variants.find(
+                (item) => item.variantSlug === line.variantSlug,
+              );
+
+              return (
+                <div
+                  className="flex flex-wrap items-start justify-between gap-3 px-4 py-3"
+                  key={line.variantSlug}
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">
+                      {variant?.productName ?? "Selected product"}
+                    </p>
+                    <p className="type-support">
+                      {variant?.sku ?? line.variantSlug} | Qty {line.quantity}
+                    </p>
+                    <p className="type-support">
+                      Unit cost {line.unitCost || "Not set"}
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() =>
+                      props.onChange((value) => ({
+                        ...value,
+                        lines: removeProcurementDraftLine(
+                          value.lines,
+                          line.variantSlug,
+                        ),
+                      }))
+                    }
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    Remove
+                  </Button>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
       <TextAreaField
         description="Capture the buying rationale, delivery expectation, or internal handoff note."
         label="Purchasing notes"
@@ -136,23 +238,14 @@ function PurchaseOrderForm(props: {
       <div className="flex justify-start">
         <Button
           className="h-11 rounded-xl px-8"
-          disabled={!props.form.variantSlug}
+          disabled={props.form.lines.length === 0 || props.isPending}
           onClick={() =>
-            props.onCreate({
-              lines: [
-                {
-                  requestedQuantity: props.form.quantity,
-                  unitCost: props.form.unitCost || null,
-                  variantSlug: props.form.variantSlug,
-                },
-              ],
-              notes: props.form.notes || null,
-            })
+            props.onCreate(buildProcurementOrderPayload(props.form))
           }
           size="sm"
           type="button"
         >
-          Draft purchase order
+          {props.isPending ? "Creating..." : "Draft purchase order"}
         </Button>
       </div>
     </>

@@ -1,16 +1,28 @@
 import {
+  adminSentCommunicationListQuerySchema,
+  adminSentCommunicationListResponseSchema,
   emailOperationsResponseSchema,
   emailRecipientStateQuerySchema,
   emailRecipientStateResponseSchema,
+  sendAdminCommunicationRequestSchema,
+  sendAdminCommunicationResponseSchema,
   sendTestEmailRequestSchema,
   sendTestEmailResponseSchema,
 } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
 import { AppError } from "../_core/errors/app-error.js";
 import type { RouteDefinition } from "../_core/route-contract.js";
+import { getAuthenticatedActor } from "../stock/supply-request-route-support.js";
+import type { AdminCommunicationService } from "./admin-communication.service.js";
+import type { AdminCommunicationQueryService } from "./admin-communication-query.service.js";
 import type { EmailOperationsService } from "./email-operations.service.js";
 
 type EmailAdminRouteDependencies = {
+  adminCommunicationQueryService: Pick<
+    AdminCommunicationQueryService,
+    "listSent"
+  > | null;
+  adminCommunicationService: Pick<AdminCommunicationService, "send"> | null;
   operationsService: Pick<
     EmailOperationsService,
     "getOperationsOverview" | "getRecipientState" | "sendTestEmail"
@@ -33,6 +45,18 @@ const getRecipientStateRoute: RouteDefinition = {
   access: { kind: "permission", permission: "settings.documents.view" },
   method: "GET",
   url: "/api/admin/settings/email/recipient-state",
+};
+
+const sendAdminCommunicationRoute: RouteDefinition = {
+  access: { kind: "permission", permission: "admin.dashboard.view" },
+  method: "POST",
+  url: "/api/admin/notifications/compose",
+};
+
+const listSentAdminCommunicationRoute: RouteDefinition = {
+  access: { kind: "permission", permission: "admin.dashboard.view" },
+  method: "GET",
+  url: "/api/admin/notifications/sent",
 };
 
 export function registerEmailAdminRoutes(
@@ -79,10 +103,71 @@ export function registerEmailAdminRoutes(
         .send(sendTestEmailResponseSchema.parse({ ok: true }));
     },
   });
+
+  server.route({
+    config: { access: listSentAdminCommunicationRoute.access },
+    method: listSentAdminCommunicationRoute.method,
+    url: listSentAdminCommunicationRoute.url,
+    async handler(request) {
+      if (!dependencies.adminCommunicationQueryService) {
+        throw unavailableMessagingError();
+      }
+
+      const query = adminSentCommunicationListQuerySchema.parse(request.query);
+      const result =
+        await dependencies.adminCommunicationQueryService.listSent(query);
+      return adminSentCommunicationListResponseSchema.parse(result);
+    },
+  });
+
+  server.route({
+    config: { access: sendAdminCommunicationRoute.access },
+    method: sendAdminCommunicationRoute.method,
+    url: sendAdminCommunicationRoute.url,
+    async handler(request, reply) {
+      if (!dependencies.adminCommunicationService) {
+        throw unavailableMessagingError();
+      }
+
+      const actor = getAuthenticatedActor(request);
+      const payload = sendAdminCommunicationRequestSchema.parse(request.body);
+      const result = await dependencies.adminCommunicationService.send({
+        actorUserSlug: actor.userSlug,
+        messageBody: payload.messageBody,
+        now: new Date(),
+        sendEmail: payload.sendEmail,
+        sendNotification: payload.sendNotification,
+        subject: payload.subject,
+        target:
+          payload.target.kind === "audience"
+            ? {
+                audience: {
+                  ...(payload.target.audience.locationId
+                    ? { locationId: payload.target.audience.locationId }
+                    : {}),
+                  permission: payload.target.audience.permission,
+                },
+                kind: "audience",
+              }
+            : {
+                kind: "user",
+                recipient: {
+                  userSlug: payload.target.recipient.userSlug,
+                },
+              },
+      });
+
+      return reply
+        .status(200)
+        .send(sendAdminCommunicationResponseSchema.parse(result));
+    },
+  });
 }
 
 function createUnavailableDependencies(): EmailAdminRouteDependencies {
   return {
+    adminCommunicationQueryService: null,
+    adminCommunicationService: null,
     operationsService: {
       async getOperationsOverview() {
         throw unavailableMessagingError();

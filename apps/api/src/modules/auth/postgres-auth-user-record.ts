@@ -1,6 +1,8 @@
 import type { PortalKey } from "@shop/contracts";
 import type { SQL } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
+import { listPrimaryImageUrls } from "../catalog/catalog-primary-image.loader.js";
+import { toAuthNotificationPreferences } from "./auth-notification-preferences.js";
 import type { AuthUserRecord } from "./authentication.service.js";
 
 export async function findAuthUser(
@@ -21,6 +23,8 @@ export async function findAuthUser(
 
   if (!user) return null;
 
+  const primaryImageUrls = await listPrimaryImageUrls(db, "user", [user.slug]);
+
   const availablePortals = user.userRoles
     .map((ur) => ur.role?.slug)
     .filter(
@@ -31,6 +35,8 @@ export async function findAuthUser(
 
   return {
     ...user,
+    notificationPreferences: toAuthNotificationPreferences(user),
+    primaryImageUrl: primaryImageUrls.get(user.slug) ?? null,
     preferredPortal: user.preferredPortal as PortalKey | null,
     availablePortals: Array.from(
       new Set(availablePortals),

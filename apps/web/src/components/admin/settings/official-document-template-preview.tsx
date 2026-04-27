@@ -83,17 +83,17 @@ export function OfficialDocumentTemplatePreview({
 
 function PreviewToolbar() {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 bg-foreground px-4 py-3 text-background">
+    <div className="flex flex-col gap-3 border-b border-border/70 bg-foreground px-4 py-3 text-background sm:flex-row sm:items-center sm:justify-between">
       <div>
         <p className="text-sm font-semibold">Template preview</p>
         <p className="text-xs text-background/70">
           Brand, recipient, and layout preview
         </p>
       </div>
-      <TabsList className="h-auto max-w-full flex-wrap justify-start">
+      <TabsList className="grid h-auto w-full grid-cols-1 gap-2 bg-transparent p-0 sm:grid-cols-2 lg:grid-cols-4 sm:w-auto">
         {OFFICIAL_DOCUMENT_TEMPLATE_PREVIEWS.map((template) => (
           <TabsTrigger
-            className="text-background/70 data-active:bg-background data-active:text-foreground"
+            className="min-w-0 rounded-lg border border-background/15 bg-background/8 px-3 py-2 text-background/70 whitespace-normal data-active:bg-background data-active:text-foreground"
             key={template.key}
             value={template.key}
           >

@@ -94,7 +94,7 @@ describe("admin supplier routes", () => {
 
   it("links an existing user account to a supplier contact portal", async () => {
     const state = {
-      actorId: "",
+      actor: null as null | { userId: string; userSlug: string },
       contactReference: "",
       payload: null as null | { userSlug: string },
       slug: "",
@@ -105,10 +105,10 @@ describe("admin supplier routes", () => {
           adminSupplierQueryService: unavailableSupplierQueryService(),
           adminSupplierWriteService: {
             ...unavailableSupplierWriteService(),
-            async linkContactPortal(slug, contactReference, actorId, payload) {
+            async linkContactPortal(slug, contactReference, actor, payload) {
               state.slug = slug;
               state.contactReference = contactReference;
-              state.actorId = actorId;
+              state.actor = actor;
               state.payload = payload;
               return supplierDetail({ contactUserSlug: payload.userSlug });
             },
@@ -128,16 +128,113 @@ describe("admin supplier routes", () => {
     assert.equal(response.statusCode, 200);
     assert.equal(response.json().contacts[0]?.userSlug, "supplier-user");
     assert.deepEqual(state, {
-      actorId: "usr_123",
+      actor: { userId: "usr_123", userSlug: "admin-user" },
       contactReference: "11111111-1111-4111-8111-111111111111",
       payload: { userSlug: "supplier-user" },
       slug: "acme-distribution",
     });
   });
 
+  it("links a supplier product", async () => {
+    const state = {
+      actor: null as null | { userId: string; userSlug: string },
+      payload: null as null | { productSlug: string },
+      slug: "",
+    };
+    const server = createAuthorizedServer(
+      {
+        adminSuppliers: {
+          adminSupplierQueryService: unavailableSupplierQueryService(),
+          adminSupplierWriteService: {
+            ...unavailableSupplierWriteService(),
+            async linkProduct(slug, actor, payload) {
+              state.slug = slug;
+              state.actor = actor;
+              state.payload = payload;
+              return supplierDetail({ contactUserSlug: "supplier-user" });
+            },
+          },
+        },
+      },
+      "suppliers.manage",
+    );
+
+    const response = await server.inject({
+      headers: { authorization: `Bearer ${issueTestToken()}` },
+      method: "POST",
+      payload: {
+        isPreferred: true,
+        leadTimeDays: 5,
+        minimumOrderQuantity: 10,
+        productSlug: "soap-bar",
+      },
+      url: "/api/admin/suppliers/acme-distribution/products",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().products[0]?.productSlug, "soap-bar");
+    assert.deepEqual(state, {
+      actor: { userId: "usr_123", userSlug: "admin-user" },
+      payload: {
+        isPreferred: true,
+        leadTimeDays: 5,
+        minimumOrderQuantity: 10,
+        productSlug: "soap-bar",
+      },
+      slug: "acme-distribution",
+    });
+  });
+
+  it("creates a supplier procurement order with the authenticated actor", async () => {
+    const state = {
+      actor: null as null | { userId: string; userSlug: string },
+      payload: null as null | Record<string, unknown>,
+      slug: "",
+    };
+    const server = createAuthorizedServer(
+      {
+        adminSuppliers: {
+          adminSupplierQueryService: unavailableSupplierQueryService(),
+          adminSupplierWriteService: {
+            ...unavailableSupplierWriteService(),
+            async createProcurementOrder(slug, actor, payload) {
+              state.slug = slug;
+              state.actor = actor;
+              state.payload = payload;
+              return supplierDetail({ contactUserSlug: "supplier-user" });
+            },
+          },
+        },
+      },
+      "suppliers.manage",
+    );
+
+    const response = await server.inject({
+      headers: { authorization: `Bearer ${issueTestToken()}` },
+      method: "POST",
+      payload: {
+        destinationLocationSlug: "accra-central-store",
+        lines: [{ requestedQuantity: 12, variantSlug: "soap-bar-fresh" }],
+        notes: "Restock the retail shelf.",
+      },
+      url: "/api/admin/suppliers/acme-distribution/procurement-orders",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(state, {
+      actor: { userId: "usr_123", userSlug: "admin-user" },
+      payload: {
+        destinationLocationSlug: "accra-central-store",
+        lines: [{ requestedQuantity: 12, variantSlug: "soap-bar-fresh" }],
+        notes: "Restock the retail shelf.",
+      },
+      slug: "acme-distribution",
+    });
+  });
+
   it("invites a supplier contact into the supplier portal", async () => {
     const state = {
-      actorId: "",
+      actor: null as null | { userId: string; userSlug: string },
       contactReference: "",
       slug: "",
     };
@@ -147,10 +244,10 @@ describe("admin supplier routes", () => {
           adminSupplierQueryService: unavailableSupplierQueryService(),
           adminSupplierWriteService: {
             ...unavailableSupplierWriteService(),
-            async inviteContactPortal(slug, contactReference, actorId) {
+            async inviteContactPortal(slug, contactReference, actor) {
               state.slug = slug;
               state.contactReference = contactReference;
-              state.actorId = actorId;
+              state.actor = actor;
               return supplierDetail({ contactUserSlug: "ama-mensah" });
             },
           },
@@ -168,7 +265,7 @@ describe("admin supplier routes", () => {
     assert.equal(response.statusCode, 200);
     assert.equal(response.json().contacts[0]?.userSlug, "ama-mensah");
     assert.deepEqual(state, {
-      actorId: "usr_123",
+      actor: { userId: "usr_123", userSlug: "admin-user" },
       contactReference: "11111111-1111-4111-8111-111111111111",
       slug: "acme-distribution",
     });
@@ -176,6 +273,7 @@ describe("admin supplier routes", () => {
 
   it("unlinks a supplier contact portal user", async () => {
     const state = {
+      actor: null as null | { userId: string; userSlug: string },
       contactReference: "",
       slug: "",
     };
@@ -185,9 +283,10 @@ describe("admin supplier routes", () => {
           adminSupplierQueryService: unavailableSupplierQueryService(),
           adminSupplierWriteService: {
             ...unavailableSupplierWriteService(),
-            async unlinkContactPortal(slug, contactReference) {
+            async unlinkContactPortal(slug, contactReference, actor) {
               state.slug = slug;
               state.contactReference = contactReference;
+              state.actor = actor;
               return supplierDetail({ contactUserSlug: null });
             },
           },
@@ -205,8 +304,98 @@ describe("admin supplier routes", () => {
     assert.equal(response.statusCode, 200);
     assert.equal(response.json().contacts[0]?.userSlug, null);
     assert.deepEqual(state, {
+      actor: { userId: "usr_123", userSlug: "admin-user" },
       contactReference: "11111111-1111-4111-8111-111111111111",
       slug: "acme-distribution",
+    });
+  });
+
+  it("unlinks a supplier product", async () => {
+    const state = {
+      actor: null as null | { userId: string; userSlug: string },
+      productSlug: "",
+      slug: "",
+    };
+    const server = createAuthorizedServer(
+      {
+        adminSuppliers: {
+          adminSupplierQueryService: unavailableSupplierQueryService(),
+          adminSupplierWriteService: {
+            ...unavailableSupplierWriteService(),
+            async unlinkProduct(slug, productSlug, actor) {
+              state.slug = slug;
+              state.productSlug = productSlug;
+              state.actor = actor;
+              return true;
+            },
+          },
+        },
+      },
+      "suppliers.manage",
+    );
+
+    const response = await server.inject({
+      headers: { authorization: `Bearer ${issueTestToken()}` },
+      method: "DELETE",
+      url: "/api/admin/suppliers/acme-distribution/products/soap-bar",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(state, {
+      actor: { userId: "usr_123", userSlug: "admin-user" },
+      productSlug: "soap-bar",
+      slug: "acme-distribution",
+    });
+  });
+
+  it("transitions a supplier procurement order with the authenticated actor", async () => {
+    const state = {
+      actor: null as null | { userId: string; userSlug: string },
+      notes: null as null | string,
+      reference: "",
+      slug: "",
+      status: "",
+    };
+    const server = createAuthorizedServer(
+      {
+        adminSuppliers: {
+          adminSupplierQueryService: unavailableSupplierQueryService(),
+          adminSupplierWriteService: {
+            ...unavailableSupplierWriteService(),
+            async transitionProcurementOrder(
+              slug,
+              reference,
+              actor,
+              status,
+              notes,
+            ) {
+              state.slug = slug;
+              state.reference = reference;
+              state.actor = actor;
+              state.status = status;
+              state.notes = notes;
+              return supplierDetail({ contactUserSlug: "supplier-user" });
+            },
+          },
+        },
+      },
+      "suppliers.manage",
+    );
+
+    const response = await server.inject({
+      headers: { authorization: `Bearer ${issueTestToken()}` },
+      method: "POST",
+      payload: { notes: "Ready to place with supplier." },
+      url: "/api/admin/suppliers/acme-distribution/procurement-orders/PO-2026-0001/approve",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(state, {
+      actor: { userId: "usr_123", userSlug: "admin-user" },
+      notes: "Ready to place with supplier.",
+      reference: "PO-2026-0001",
+      slug: "acme-distribution",
+      status: "approved",
     });
   });
 });
@@ -403,7 +592,21 @@ function supplierDetail(input: { contactUserSlug: string | null }) {
     },
     primaryImageUrl: null,
     procurementOrders: [],
-    products: [],
+    products: [
+      {
+        brandName: "FreshGlow",
+        categoryName: "Bath Care",
+        isPreferred: true,
+        lastCostPrice: null,
+        leadTimeDays: 5,
+        minimumOrderQuantity: 10,
+        productName: "Soap Bar",
+        productSlug: "soap-bar",
+        supplierProductCode: null,
+        variantCount: 2,
+        variants: [],
+      },
+    ],
     recentTransactions: [],
     slug: "acme-distribution",
     status: "active" as const,

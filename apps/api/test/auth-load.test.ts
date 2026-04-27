@@ -83,7 +83,13 @@ function createUserRecord(): AuthUserRecord {
     lastLoginAt: null,
     lastName: "Manager",
     lockedUntil: null,
+    notificationPreferences: {
+      emailEnabled: true,
+      inAppEnabled: true,
+      soundEnabled: true,
+    },
     passwordHash: hashPassword("Password123!"),
+    primaryImageUrl: null,
     preferredPortal: null,
     requiresPasswordChange: false,
     slug: "store-manager-ab12",

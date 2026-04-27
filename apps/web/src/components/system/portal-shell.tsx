@@ -11,7 +11,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { AppAccountDialog } from "./portal-account-dialog";
 import { AppNotificationsDialog } from "./portal-overlays";
 import { AppSidebar } from "./portal-sidebar";
 import { AppTopbar } from "./portal-topbar";
@@ -22,7 +21,6 @@ type AppShellProps = {
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
-  const [accountOpen, setAccountOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
@@ -37,7 +35,7 @@ export function AppShell({ children }: AppShellProps) {
       <NotificationLiveProvider />
 
       <div className="fixed inset-y-0 left-0 z-40 hidden w-72 lg:block">
-        <AppSidebar onAccountOpen={() => setAccountOpen(true)} />
+        <AppSidebar />
       </div>
 
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
@@ -51,10 +49,7 @@ export function AppShell({ children }: AppShellProps) {
               Navigate within the application.
             </SheetDescription>
           </SheetHeader>
-          <AppSidebar
-            onAccountOpen={() => setAccountOpen(true)}
-            onNavigate={() => setMobileNavOpen(false)}
-          />
+          <AppSidebar onNavigate={() => setMobileNavOpen(false)} />
         </SheetContent>
       </Sheet>
 
@@ -64,7 +59,6 @@ export function AppShell({ children }: AppShellProps) {
 
         <AppTopbar
           pathname={pathname}
-          onAccountOpen={() => setAccountOpen(true)}
           onMenuOpen={() => setMobileNavOpen(true)}
           onNotificationsOpen={() => setNotificationsOpen(true)}
         />
@@ -79,7 +73,6 @@ export function AppShell({ children }: AppShellProps) {
         open={notificationsOpen}
         onOpenChange={setNotificationsOpen}
       />
-      <AppAccountDialog open={accountOpen} onOpenChange={setAccountOpen} />
     </div>
   );
 }

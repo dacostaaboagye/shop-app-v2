@@ -107,6 +107,7 @@ export class ResendEmailWebhookService {
           attempt,
           occurredAt: this.dependencies.now(),
           providerMessageId: verifiedPayload.data.email_id,
+          reference: verifiedPayload.data.email_id,
           status: mappedStatus,
           ...(statusReason ? { statusReason } : {}),
         }),

@@ -69,6 +69,9 @@ export function createUnavailableDependencies(): StockSupplyRouteDependencies {
       async confirmReceipt() {
         return unavailable();
       },
+      async createRequestBatch() {
+        return unavailable();
+      },
       async createRequest() {
         return unavailable();
       },

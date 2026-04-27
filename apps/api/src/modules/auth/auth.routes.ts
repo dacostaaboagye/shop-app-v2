@@ -176,12 +176,25 @@ export function registerAuthRoutes(
     method: updateProfileRoute.method,
     url: updateProfileRoute.url,
     async handler(request, reply) {
-      const { preferredPortal } = updateProfileRequestSchema.parse(
-        request.body,
-      );
-      await dependencies.profileUpdateService.updatePreferredPortal(
+      const profile = updateProfileRequestSchema.parse(request.body);
+      const nextProfile = {
+        ...("firstName" in profile && profile.firstName !== undefined
+          ? { firstName: profile.firstName }
+          : {}),
+        ...("lastName" in profile && profile.lastName !== undefined
+          ? { lastName: profile.lastName }
+          : {}),
+        ...("notificationPreferences" in profile &&
+        profile.notificationPreferences !== undefined
+          ? { notificationPreferences: profile.notificationPreferences }
+          : {}),
+        ...("preferredPortal" in profile
+          ? { preferredPortal: profile.preferredPortal ?? null }
+          : {}),
+      };
+      await dependencies.profileUpdateService.updateProfile(
         getAuthenticatedUserId(request),
-        preferredPortal,
+        nextProfile,
       );
       return reply.status(204).send();
     },

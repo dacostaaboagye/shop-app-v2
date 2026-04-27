@@ -15,7 +15,7 @@ type NotificationRouteDependencies = {
   notificationQueryService: Pick<NotificationQueryService, "listNotifications">;
   notificationWriteService: Pick<
     NotificationWriteService,
-    "markAllRead" | "markRead"
+    "deleteNotification" | "markAllRead" | "markRead"
   >;
 };
 
@@ -37,6 +37,12 @@ const notificationMarkAllReadRoute: RouteDefinition = {
   url: "/api/notifications/read-all",
 };
 
+const notificationDeleteRoute: RouteDefinition = {
+  access: { kind: "authenticated" },
+  method: "DELETE",
+  url: "/api/notifications/:notificationKey",
+};
+
 export function registerNotificationRoutes(
   server: FastifyInstance,
   dependencies: NotificationRouteDependencies = createUnavailableDependencies(),
@@ -55,6 +61,23 @@ export function registerNotificationRoutes(
         });
 
       return notificationListResponseSchema.parse(result);
+    },
+  });
+
+  server.route({
+    config: { access: notificationDeleteRoute.access },
+    method: notificationDeleteRoute.method,
+    url: notificationDeleteRoute.url,
+    async handler(request, reply) {
+      const userId = getAuthenticatedUserId(request);
+      const { notificationKey } = request.params as { notificationKey: string };
+
+      await dependencies.notificationWriteService.deleteNotification({
+        notificationKey,
+        userId,
+      });
+
+      return reply.status(204).send();
     },
   });
 
@@ -108,6 +131,9 @@ function createUnavailableDependencies(): NotificationRouteDependencies {
       },
     },
     notificationWriteService: {
+      async deleteNotification() {
+        return unavailable();
+      },
       async markAllRead() {
         return unavailable();
       },

@@ -46,11 +46,17 @@ describe("EmailService", () => {
 
   it("returns a structured delivery failure when the provider rejects a message", async () => {
     const attempts: unknown[] = [];
+    const published: unknown[] = [];
     const service = new EmailService("test-key", "noreply@example.com", {
       deliveryRecorder: {
         async recordAttempt(input) {
           attempts.push(input);
           return { attemptId: "attempt_failed" };
+        },
+      },
+      eventPublisher: {
+        async publish(event) {
+          published.push(event);
         },
       },
       logger: {
@@ -79,6 +85,66 @@ describe("EmailService", () => {
     assert.deepEqual(
       attempts.map((attempt) => (attempt as { status: string }).status),
       ["failed"],
+    );
+    assert.equal(
+      (published[0] as { type: string }).type,
+      "messaging.email.failed",
+    );
+    assert.equal(
+      (published[0] as { payload: { attemptId: string | null } }).payload
+        .attemptId,
+      "attempt_failed",
+    );
+    assert.match(
+      (published[0] as { summary: string }).summary,
+      /worker@example\.com/,
+    );
+  });
+
+  it("publishes a failed delivery issue event even when attempt recording is unavailable", async () => {
+    const published: unknown[] = [];
+    const service = new EmailService("test-key", "noreply@example.com", {
+      eventPublisher: {
+        async publish(event) {
+          published.push(event);
+        },
+      },
+      logger: {
+        error: () => undefined,
+        log: () => undefined,
+      },
+      transport: {
+        async send() {
+          throw new Error("socket hang up");
+        },
+      },
+    });
+
+    await assert.rejects(
+      () =>
+        service.sendVerificationEmail({
+          firstName: "Store",
+          to: "worker@example.com",
+          verificationUrl: "http://localhost:3000/verify-email?token=test",
+        }),
+      (error) =>
+        error instanceof AppError &&
+        error.statusCode === 502 &&
+        error.title === "Email delivery failed",
+    );
+
+    assert.equal(
+      (published[0] as { type: string }).type,
+      "messaging.email.failed",
+    );
+    assert.equal(
+      (published[0] as { payload: { attemptId: string | null } }).payload
+        .attemptId,
+      null,
+    );
+    assert.match(
+      (published[0] as { resource: { reference: string } }).resource.reference,
+      /^send_failure:email_verification:worker@example\.com$/,
     );
   });
 

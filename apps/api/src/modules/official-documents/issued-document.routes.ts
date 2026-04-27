@@ -1,6 +1,7 @@
 import {
   issuedDocumentSnapshotResponseSchema,
   issuedSalesDocumentSnapshotParamsSchema,
+  sendIssuedSalesDocumentEmailResponseSchema,
 } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
 import { AppError } from "../_core/errors/app-error.js";
@@ -19,7 +20,7 @@ type IssuedDocumentRouteDependencies = {
   >;
   salesDocumentSnapshotService: Pick<
     SalesIssuedDocumentSnapshotService,
-    "getOrIssueSnapshot" | "getPdfDownload"
+    "getOrIssueSnapshot" | "getPdfDownload" | "sendEmail"
   >;
 };
 
@@ -33,6 +34,12 @@ const downloadSalesDocumentRoute: RouteDefinition = {
   access: { kind: "authenticated" },
   method: "GET",
   url: "/api/documents/sales/:reference/download",
+};
+
+const sendSalesDocumentEmailRoute: RouteDefinition = {
+  access: { kind: "authenticated" },
+  method: "POST",
+  url: "/api/documents/sales/:reference/send-email",
 };
 
 const getGtnSnapshotRoute: RouteDefinition = {
@@ -113,6 +120,23 @@ export function registerIssuedDocumentRoutes(
   });
 
   server.route({
+    config: { access: sendSalesDocumentEmailRoute.access },
+    method: sendSalesDocumentEmailRoute.method,
+    url: sendSalesDocumentEmailRoute.url,
+    async handler(request) {
+      const { reference } = issuedSalesDocumentSnapshotParamsSchema.parse(
+        request.params,
+      );
+      const result = await dependencies.salesDocumentSnapshotService.sendEmail({
+        actorUserSlug: getAuthenticatedActor(request).userSlug,
+        actorUserId: getAuthenticatedUserId(request),
+        reference,
+      });
+      return sendIssuedSalesDocumentEmailResponseSchema.parse(result);
+    },
+  });
+
+  server.route({
     config: { access: downloadGtnDocumentRoute.access },
     method: downloadGtnDocumentRoute.method,
     url: downloadGtnDocumentRoute.url,
@@ -154,6 +178,9 @@ function createUnavailableDependencies(): IssuedDocumentRouteDependencies {
         throw unavailableIssuedDocumentsError();
       },
       async getOrIssueSnapshot() {
+        throw unavailableIssuedDocumentsError();
+      },
+      async sendEmail() {
         throw unavailableIssuedDocumentsError();
       },
     },

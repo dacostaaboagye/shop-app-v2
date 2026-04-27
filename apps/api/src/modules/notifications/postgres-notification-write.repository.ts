@@ -11,6 +11,23 @@ type NotificationWriteRow = {
 export class PostgresNotificationWriteRepository {
   constructor(private readonly db: ApiDatabase) {}
 
+  async deleteNotification(input: {
+    notificationKey: string;
+    userId: string;
+  }): Promise<boolean> {
+    const deleted = await this.db
+      .delete(userNotifications)
+      .where(
+        and(
+          eq(userNotifications.id, input.notificationKey),
+          eq(userNotifications.userId, input.userId),
+        ),
+      )
+      .returning({ notificationKey: userNotifications.id });
+
+    return deleted.length > 0;
+  }
+
   async markAllRead(input: { now: Date; userId: string }): Promise<number> {
     const rows = await this.db
       .update(userNotifications)

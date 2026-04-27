@@ -74,6 +74,8 @@ export class PostgresInvoiceRepository {
           createdBy: input.createdBy,
           customerBillingAddressLines:
             input.customerBillingAddressLines ?? null,
+          currencyCode: input.currencyCode,
+          currencyScale: input.currencyScale,
           customerEmail: input.customerEmail ?? null,
           customerName: input.customerName ?? null,
           customerPhone: input.customerPhone ?? null,

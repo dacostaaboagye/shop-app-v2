@@ -14,6 +14,7 @@ import { registerAdminUserAccessRoutes } from "../modules/admin/admin-user-acces
 import { registerSupplierPortalRoutes } from "../modules/admin/supplier-portal.routes.js";
 import { registerManagerStaffRoutes } from "../modules/assignments/manager-staff.routes.js";
 import { registerStockAssignmentRoutes } from "../modules/assignments/stock-assignment.routes.js";
+import { registerAccountProfileMediaRoutes } from "../modules/auth/account-profile-media.routes.js";
 import { registerAuthRoutes } from "../modules/auth/auth.routes.js";
 import { registerCatalogProductOptionsRoutes } from "../modules/catalog/catalog-admin-product-options.routes.js";
 import { registerCatalogAdminQueryRoutes } from "../modules/catalog/catalog-admin-query.routes.js";
@@ -47,6 +48,7 @@ type CreateServerOptions = {
   supplierPortal?: Parameters<typeof registerSupplierPortalRoutes>[1];
   adminUserAccess?: Parameters<typeof registerAdminUserAccessRoutes>[1];
   auth?: Parameters<typeof registerAuthRoutes>[1];
+  authProfileMedia?: Parameters<typeof registerAccountProfileMediaRoutes>[1];
   catalogManagerQuery?: Parameters<typeof registerCatalogManagerQueryRoutes>[1];
   catalogBrands?: Parameters<typeof registerCatalogBrandRoutes>[1];
   catalogMedia?: Parameters<typeof registerCatalogMediaRoutes>[1];
@@ -106,6 +108,7 @@ export function createServer(options: CreateServerOptions = {}) {
   registerErrorHandling(server);
   registerRouteAuthorization(server, options.accessControl);
   registerAuthRoutes(server, options.auth);
+  registerAccountProfileMediaRoutes(server, options.authProfileMedia);
   registerAdminDirectoryRoutes(server, options.adminDirectory);
   registerAdminAccessRoutes(server, options.adminAccess);
   registerAdminLocationQueryRoutes(server, options.adminLocationQuery);

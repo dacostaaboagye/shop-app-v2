@@ -20,6 +20,11 @@ export const posLineItemRequestSchema = z.object({
 });
 
 export const processPosPaymentRequestSchema = z.object({
+  customerBillingAddressLines: z.array(z.string().trim().min(1)).optional(),
+  customerEmail: z.string().trim().email().optional(),
+  customerName: z.string().trim().min(1).max(160).optional(),
+  customerPhone: z.string().trim().min(1).max(40).optional(),
+  customerTaxNumber: z.string().trim().min(1).max(80).optional(),
   lines: z.array(posLineItemRequestSchema).min(1),
   locationId: z.string().uuid(),
   notes: z.string().trim().max(500).optional(),
@@ -53,6 +58,8 @@ export const invoiceResponseSchema = z.object({
   customerName: z.string().nullable().default(null),
   customerPhone: z.string().nullable().default(null),
   customerTaxNumber: z.string().nullable().default(null),
+  currencyCode: z.string().length(3),
+  currencyScale: z.number().int().min(0).max(4),
   lines: z.array(invoiceLineItemResponseSchema),
   locationId: z.string().uuid(),
   notes: z.string().nullable(),

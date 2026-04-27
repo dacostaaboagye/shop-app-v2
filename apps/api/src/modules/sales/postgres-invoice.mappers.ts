@@ -13,6 +13,8 @@ export function mapInvoice(row: typeof invoices.$inferSelect): InvoiceRecord {
     createdAt: row.createdAt,
     createdBy: row.createdBy,
     customerBillingAddressLines: row.customerBillingAddressLines ?? null,
+    currencyCode: row.currencyCode,
+    currencyScale: row.currencyScale,
     customerEmail: row.customerEmail,
     customerName: row.customerName,
     customerPhone: row.customerPhone,

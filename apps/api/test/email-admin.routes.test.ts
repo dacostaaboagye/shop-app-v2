@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type {
+  AdminSentCommunicationListResponse,
   EmailOperationsResponse,
   EmailRecipientStateResponse,
 } from "@shop/contracts";
@@ -103,10 +104,230 @@ describe("email admin routes", () => {
     assert.equal(response.json().status, "suppressed");
     assert.equal(response.json().canSend, false);
   });
+
+  it("sends an admin operational communication", async () => {
+    const calls: Array<{
+      actorUserSlug: string;
+      messageBody: string;
+      sendEmail: boolean;
+      sendNotification: boolean;
+      subject: string;
+      target:
+        | {
+            audience: { locationId?: string; permission: string };
+            kind: "audience";
+          }
+        | {
+            kind: "user";
+            recipient: { userSlug: string };
+          };
+    }> = [];
+    const server = createMessagingServer({
+      async sendAdminCommunication(input) {
+        calls.push({
+          actorUserSlug: input.actorUserSlug,
+          messageBody: input.messageBody,
+          sendEmail: input.sendEmail,
+          sendNotification: input.sendNotification,
+          subject: input.subject,
+          target: input.target,
+        });
+        return {
+          emailRecipientCount: 2,
+          notificationRecipientCount: 2,
+          ok: true,
+          totalRecipientCount: 2,
+        };
+      },
+    });
+
+    const response = await server.inject({
+      headers: { authorization: bearerToken() },
+      method: "POST",
+      payload: {
+        messageBody: "Store A will close stock counts at 18:00 UTC.",
+        sendEmail: true,
+        sendNotification: true,
+        subject: "Store A stock count notice",
+        target: {
+          audience: {
+            locationId: "22222222-2222-4222-8222-222222222221",
+            permission: "worker.dashboard.view",
+          },
+          kind: "audience",
+        },
+      },
+      url: "/api/admin/notifications/compose",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(response.json(), {
+      emailRecipientCount: 2,
+      notificationRecipientCount: 2,
+      ok: true,
+      totalRecipientCount: 2,
+    });
+    assert.deepEqual(calls, [
+      {
+        actorUserSlug: "admin-user",
+        messageBody: "Store A will close stock counts at 18:00 UTC.",
+        sendEmail: true,
+        sendNotification: true,
+        subject: "Store A stock count notice",
+        target: {
+          audience: {
+            locationId: "22222222-2222-4222-8222-222222222221",
+            permission: "worker.dashboard.view",
+          },
+          kind: "audience",
+        },
+      },
+    ]);
+  });
+
+  it("sends an admin communication to one direct recipient", async () => {
+    const calls: Array<{
+      actorUserSlug: string;
+      messageBody: string;
+      sendEmail: boolean;
+      sendNotification: boolean;
+      subject: string;
+      target:
+        | {
+            audience: { locationId?: string; permission: string };
+            kind: "audience";
+          }
+        | {
+            kind: "user";
+            recipient: { userSlug: string };
+          };
+    }> = [];
+    const server = createMessagingServer({
+      async sendAdminCommunication(input) {
+        calls.push({
+          actorUserSlug: input.actorUserSlug,
+          messageBody: input.messageBody,
+          sendEmail: input.sendEmail,
+          sendNotification: input.sendNotification,
+          subject: input.subject,
+          target: input.target,
+        });
+        return {
+          emailRecipientCount: 1,
+          notificationRecipientCount: 1,
+          ok: true,
+          totalRecipientCount: 1,
+        };
+      },
+    });
+
+    const response = await server.inject({
+      headers: { authorization: bearerToken() },
+      method: "POST",
+      payload: {
+        messageBody: "Please finish the late-count reconciliation.",
+        sendEmail: true,
+        sendNotification: true,
+        subject: "Direct worker update",
+        target: {
+          kind: "user",
+          recipient: {
+            userSlug: "worker-b",
+          },
+        },
+      },
+      url: "/api/admin/notifications/compose",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(calls, [
+      {
+        actorUserSlug: "admin-user",
+        messageBody: "Please finish the late-count reconciliation.",
+        sendEmail: true,
+        sendNotification: true,
+        subject: "Direct worker update",
+        target: {
+          kind: "user",
+          recipient: {
+            userSlug: "worker-b",
+          },
+        },
+      },
+    ]);
+  });
+
+  it("lists sent admin communications", async () => {
+    const server = createMessagingServer({
+      async listSentAdminCommunications(input) {
+        assert.equal(input.page, 1);
+        assert.equal(input.pageSize, 10);
+        assert.equal(input.q, "stock");
+        return {
+          items: [
+            {
+              actorUserSlug: "admin-user",
+              deliveryStatus: "delivered",
+              eventId: "11111111-1111-4111-8111-111111111114",
+              messageBody: "Store A stock count closes at 18:00 UTC.",
+              occurredAt: "2026-04-27T03:00:00.000Z",
+              recipientLabel: "Worker Dashboard View (all locations)",
+              sendEmail: true,
+              sendNotification: true,
+              subject: "Store A stock count notice",
+            },
+          ],
+          page: 1,
+          pageSize: 10,
+          totalCount: 1,
+        } satisfies AdminSentCommunicationListResponse;
+      },
+    });
+
+    const response = await server.inject({
+      headers: { authorization: bearerToken() },
+      method: "GET",
+      url: "/api/admin/notifications/sent?page=1&pageSize=10&q=stock",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().totalCount, 1);
+    assert.equal(
+      response.json().items[0].subject,
+      "Store A stock count notice",
+    );
+  });
 });
 
 function createMessagingServer(
   input: {
+    listSentAdminCommunications?: (input: {
+      page: number;
+      pageSize: number;
+      q: string;
+    }) => Promise<AdminSentCommunicationListResponse>;
+    sendAdminCommunication?: (input: {
+      actorUserSlug: string;
+      messageBody: string;
+      now: Date;
+      sendEmail: boolean;
+      sendNotification: boolean;
+      subject: string;
+      target:
+        | {
+            audience: { locationId?: string; permission: string };
+            kind: "audience";
+          }
+        | {
+            kind: "user";
+            recipient: { userSlug: string };
+          };
+    }) => Promise<{
+      emailRecipientCount: number;
+      notificationRecipientCount: number;
+      ok: true;
+      totalRecipientCount: number;
+    }>;
     getOperationsOverview?: (input: {
       now: Date;
     }) => Promise<EmailOperationsResponse>;
@@ -145,6 +366,34 @@ function createMessagingServer(
       },
     },
     messagingAdmin: {
+      adminCommunicationQueryService: {
+        async listSent(args) {
+          if (input.listSentAdminCommunications) {
+            return input.listSentAdminCommunications(args);
+          }
+
+          return {
+            items: [],
+            page: args.page,
+            pageSize: args.pageSize,
+            totalCount: 0,
+          };
+        },
+      },
+      adminCommunicationService: {
+        async send(args) {
+          if (input.sendAdminCommunication) {
+            return input.sendAdminCommunication(args);
+          }
+
+          return {
+            emailRecipientCount: 0,
+            notificationRecipientCount: 0,
+            ok: true as const,
+            totalRecipientCount: 0,
+          };
+        },
+      },
       operationsService: {
         async getOperationsOverview(args) {
           if (input.getOperationsOverview) {

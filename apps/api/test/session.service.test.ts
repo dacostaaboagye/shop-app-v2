@@ -163,7 +163,13 @@ function createUserRecord(): AuthUserRecord {
     lastLoginAt: null,
     lastName: "Manager",
     lockedUntil: null,
+    notificationPreferences: {
+      emailEnabled: true,
+      inAppEnabled: true,
+      soundEnabled: true,
+    },
     passwordHash: "scrypt$unused$unused",
+    primaryImageUrl: null,
     preferredPortal: "admin",
     requiresPasswordChange: false,
     slug: "store-manager",

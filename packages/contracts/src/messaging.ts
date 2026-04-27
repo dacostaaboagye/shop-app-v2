@@ -46,6 +46,78 @@ export const sendTestEmailResponseSchema = z.object({
   ok: z.literal(true),
 });
 
+export const adminCommunicationAudienceSchema = z.object({
+  locationId: z.string().uuid().optional(),
+  permission: z.string().trim().min(1).max(120),
+});
+
+export const adminCommunicationDirectRecipientSchema = z.object({
+  userSlug: z.string().trim().min(1).max(120),
+});
+
+export const adminCommunicationTargetSchema = z.discriminatedUnion("kind", [
+  z.object({
+    audience: adminCommunicationAudienceSchema,
+    kind: z.literal("audience"),
+  }),
+  z.object({
+    kind: z.literal("user"),
+    recipient: adminCommunicationDirectRecipientSchema,
+  }),
+]);
+
+export const sendAdminCommunicationRequestSchema = z
+  .object({
+    messageBody: z.string().trim().min(1).max(4000),
+    sendEmail: z.boolean().default(false),
+    sendNotification: z.boolean().default(true),
+    subject: z.string().trim().min(1).max(160),
+    target: adminCommunicationTargetSchema,
+  })
+  .superRefine((value, context) => {
+    if (value.sendEmail || value.sendNotification) {
+      return;
+    }
+
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Select at least one delivery channel.",
+      path: ["sendNotification"],
+    });
+  });
+
+export const sendAdminCommunicationResponseSchema = z.object({
+  emailRecipientCount: z.number().int().min(0),
+  notificationRecipientCount: z.number().int().min(0),
+  ok: z.literal(true),
+  totalRecipientCount: z.number().int().min(0),
+});
+
+export const adminSentCommunicationListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(10),
+  q: z.string().trim().max(160).default(""),
+});
+
+export const adminSentCommunicationEntrySchema = z.object({
+  actorUserSlug: z.string().min(1).max(120),
+  deliveryStatus: z.enum(["pending", "processing", "delivered", "failed"]),
+  eventId: z.string().uuid(),
+  messageBody: z.string().min(1),
+  occurredAt: z.iso.datetime(),
+  recipientLabel: z.string().min(1),
+  sendEmail: z.boolean(),
+  sendNotification: z.boolean(),
+  subject: z.string().min(1).max(160),
+});
+
+export const adminSentCommunicationListResponseSchema = z.object({
+  items: z.array(adminSentCommunicationEntrySchema),
+  page: z.number().int().min(1),
+  pageSize: z.number().int().min(1),
+  totalCount: z.number().int().min(0),
+});
+
 export const blockedEmailDeliveryStatusSchema = z.enum([
   "bounced",
   "complained",
@@ -69,6 +141,21 @@ export type EmailOperationsResponse = z.infer<
   typeof emailOperationsResponseSchema
 >;
 export type SendTestEmailRequest = z.infer<typeof sendTestEmailRequestSchema>;
+export type SendAdminCommunicationRequest = z.infer<
+  typeof sendAdminCommunicationRequestSchema
+>;
+export type AdminCommunicationTarget = z.infer<
+  typeof adminCommunicationTargetSchema
+>;
+export type AdminSentCommunicationListQuery = z.infer<
+  typeof adminSentCommunicationListQuerySchema
+>;
+export type AdminSentCommunicationListResponse = z.infer<
+  typeof adminSentCommunicationListResponseSchema
+>;
+export type SendAdminCommunicationResponse = z.infer<
+  typeof sendAdminCommunicationResponseSchema
+>;
 export type BlockedEmailDeliveryStatus = z.infer<
   typeof blockedEmailDeliveryStatusSchema
 >;

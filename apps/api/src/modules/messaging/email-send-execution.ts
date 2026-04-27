@@ -1,4 +1,6 @@
 import { AppError } from "../_core/errors/app-error.js";
+import type { PlatformEventPublisher } from "../events/platform-event.types.js";
+import { createEmailDeliveryIssueEvent } from "./email-delivery-events.js";
 import { emailDeliveryError } from "./email-errors.js";
 import type {
   EmailDeliveryRecorder,
@@ -10,6 +12,7 @@ import type {
 type ExecutionDependencies = {
   allowConsoleFallback: boolean;
   deliveryRecorder: EmailDeliveryRecorder | null;
+  eventPublisher?: Pick<PlatformEventPublisher, "publish">;
   fromAddress: string;
   logger: Pick<Console, "error" | "log">;
   transport: EmailTransport | null;
@@ -39,6 +42,7 @@ export class EmailSendExecution {
 
     try {
       const { data, error } = await this.deps.transport.send({
+        ...(options.attachments ? { attachments: options.attachments } : {}),
         from: this.deps.fromAddress,
         ...(options.replyTo ? { replyTo: options.replyTo } : {}),
         to: options.to,
@@ -60,6 +64,11 @@ export class EmailSendExecution {
           error: error.message,
           subject: options.subject,
           to: options.to,
+        });
+        await this.publishFailureEvent({
+          attemptId: recorded.attemptId,
+          failureReason: error.message ?? "Provider rejected the message.",
+          options,
         });
         throw emailDeliveryError({
           attemptId: recorded.attemptId,
@@ -96,6 +105,11 @@ export class EmailSendExecution {
         subject: options.subject,
         to: options.to,
       });
+      await this.publishFailureEvent({
+        attemptId: recorded.attemptId,
+        failureReason: error instanceof Error ? error.message : String(error),
+        options,
+      });
       throw emailDeliveryError({
         attemptId: recorded.attemptId,
         failureReason: error instanceof Error ? error.message : String(error),
@@ -126,6 +140,43 @@ export class EmailSendExecution {
         to: input.recipientEmail,
       });
       return { attemptId: null };
+    }
+  }
+
+  private async publishFailureEvent(input: {
+    attemptId: string | null;
+    failureReason: string;
+    options: EmailOptions;
+  }): Promise<void> {
+    const reference =
+      input.attemptId ??
+      `send_failure:${input.options.messageType}:${input.options.to}`;
+
+    try {
+      await this.deps.eventPublisher?.publish(
+        createEmailDeliveryIssueEvent({
+          attempt: {
+            attemptId: input.attemptId,
+            messageType: input.options.messageType,
+            recipientEmail: input.options.to,
+            subject: input.options.subject,
+          },
+          occurredAt: new Date(),
+          reference,
+          status: "failed",
+          statusReason: input.failureReason,
+        }),
+      );
+    } catch (error) {
+      this.deps.logger.error(
+        "[email] Failed to publish delivery issue event.",
+        {
+          error: error instanceof Error ? error.message : String(error),
+          messageType: input.options.messageType,
+          reference,
+          to: input.options.to,
+        },
+      );
     }
   }
 }

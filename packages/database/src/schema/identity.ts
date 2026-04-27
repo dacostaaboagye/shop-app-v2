@@ -39,6 +39,15 @@ export const users = pgTable(
     passwordHash: text("password_hash"),
     status: userStatusEnum("status").default("active").notNull(),
     preferredPortal: varchar("preferred_portal", { length: 64 }),
+    notificationEmailEnabled: boolean("notification_email_enabled")
+      .default(true)
+      .notNull(),
+    notificationInAppEnabled: boolean("notification_in_app_enabled")
+      .default(true)
+      .notNull(),
+    notificationSoundEnabled: boolean("notification_sound_enabled")
+      .default(true)
+      .notNull(),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     lockedUntil: timestamp("locked_until", { withTimezone: true }),
     requiresPasswordChange: boolean("requires_password_change")

@@ -64,7 +64,7 @@ export function LocationStaffPanel({ locationSlug }: { locationSlug: string }) {
         ) : (
           <div className="divide-y divide-border rounded-md border border-border">
             {staffQuery.data.items.map((member) => (
-              <StaffRow key={member.userSlug} member={member} />
+              <LocationStaffRow key={member.userSlug} member={member} />
             ))}
           </div>
         )}
@@ -73,7 +73,11 @@ export function LocationStaffPanel({ locationSlug }: { locationSlug: string }) {
   );
 }
 
-function StaffRow({ member }: { member: AdminLocationStaffSummary }) {
+export function LocationStaffRow({
+  member,
+}: {
+  member: AdminLocationStaffSummary;
+}) {
   const statusLabel =
     member.status === "active"
       ? "Active"

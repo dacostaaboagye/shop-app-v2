@@ -4,6 +4,7 @@ import { and, desc, eq, gte, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { BasicUserRoleService } from "../access-control/basic-user-role.service.js";
 import type { AccessTokenUserRepository } from "./access-token-authentication.service.js";
+import { toAuthNotificationPreferences } from "./auth-notification-preferences.js";
 import type {
   AuthRepository,
   AuthUserRecord,
@@ -98,6 +99,8 @@ export class PostgresUserRepository
           status: "created" as const,
           user: {
             ...userRow,
+            notificationPreferences: toAuthNotificationPreferences(userRow),
+            primaryImageUrl: null,
             preferredPortal: userRow.preferredPortal as PortalKey | null,
             availablePortals: [] as PortalKey[],
           },
@@ -176,11 +179,28 @@ export class PostgresUserRepository
     await revokeUserRefreshTokens(this.db, input);
   }
 
-  async updatePreferredPortal(
+  async updateProfile(
     userId: string,
-    preferredPortal: string | null,
+    input: {
+      firstName?: string;
+      notificationPreferences?: {
+        emailEnabled: boolean;
+        inAppEnabled: boolean;
+        soundEnabled: boolean;
+      };
+      lastName?: string;
+      preferredPortal?: string | null;
+    },
   ): Promise<void> {
-    await updateUserPreferredPortal(this.db, userId, preferredPortal);
+    const user = await this.findUserById(userId);
+
+    if (!user) {
+      return;
+    }
+
+    await this.db.transaction(async (tx) => {
+      await updateUserPreferredPortal(tx, userId, input);
+    });
   }
 
   async setLockout(userId: string, lockedUntil: Date): Promise<void> {

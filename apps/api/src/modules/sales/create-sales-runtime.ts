@@ -1,13 +1,16 @@
 import type { DatabaseRuntime } from "../../infrastructure/database.js";
+import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import { OwnershipQueryService } from "../inventory-ownership/ownership-query.service.js";
 import { PostgresOwnershipQueryRepository } from "../inventory-ownership/postgres-ownership-query.repository.js";
 import { SalesAttributionService } from "../inventory-ownership/sales-attribution.service.js";
+import type { OfficialDocumentSettingsService } from "../official-documents/official-document-settings.service.js";
 import { PostgresReferenceNumberRepository } from "../public-identifiers/postgres-reference-number.repository.js";
 import { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
 import { PosSaleService } from "./pos-sale.service.js";
 import { PostgresInvoiceRepository } from "./postgres-invoice.repository.js";
 import { PostgresInvoiceQueryRepository } from "./postgres-invoice-query.repository.js";
 import { PostgresPosCatalogVariantRepository } from "./postgres-pos-catalog.repository.js";
+import { PostgresSalesEventContextRepository } from "./sales-event-context.repository.js";
 
 type SalesRuntime = {
   sales: {
@@ -19,6 +22,13 @@ type SalesRuntime = {
 
 export function createSalesRuntime(
   databaseRuntime: DatabaseRuntime,
+  options: {
+    documentProfileResolver: Pick<
+      OfficialDocumentSettingsService,
+      "resolveDocumentProfile"
+    >;
+    platformEventPublisher?: PlatformEventPublisher;
+  },
 ): SalesRuntime {
   const ownershipQueryService = new OwnershipQueryService(
     new PostgresOwnershipQueryRepository(databaseRuntime.db),
@@ -47,10 +57,29 @@ export function createSalesRuntime(
     ),
   };
 
+  const currencyResolver = {
+    async resolveCurrencySnapshot(input: { locationId: string }) {
+      const profile =
+        await options.documentProfileResolver.resolveDocumentProfile({
+          locationId: input.locationId,
+        });
+
+      return {
+        currencyCode: profile.currencyCode,
+        currencyScale: profile.currencyScale,
+      };
+    },
+  };
+
   const posSaleService = new PosSaleService({
     catalogVariantRepository,
+    currencyResolver,
     invoiceRepository: combinedInvoiceRepository,
+    platformEventPublisher: options.platformEventPublisher ?? null,
     referenceNumberService,
+    salesEventContextRepository: new PostgresSalesEventContextRepository(
+      databaseRuntime.db,
+    ),
     salesAttributionService,
   });
 

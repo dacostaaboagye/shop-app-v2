@@ -35,6 +35,8 @@ export type PrintableInvoiceData = {
   createdAt: string;
   locationId: string;
   notes: string | null;
+  customerEmail?: string | null;
+  customerName?: string | null;
   attributedWorkerId?: string | null;
   attributedWorkerName?: string | null;
   attributedWorkerEmail?: string | null;

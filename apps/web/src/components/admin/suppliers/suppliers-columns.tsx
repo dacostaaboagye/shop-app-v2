@@ -11,6 +11,7 @@ import {
 import { PreviewImage } from "@/components/system/preview-image";
 import { Badge } from "@/components/ui/badge";
 import { formatAdminDate } from "@/lib/admin-models";
+import { formatSupplierDisplayName } from "./supplier-display";
 
 export const supplierColumns: ColumnDef<AdminSupplierSummary>[] = [
   {
@@ -19,15 +20,19 @@ export const supplierColumns: ColumnDef<AdminSupplierSummary>[] = [
     header: "Supplier",
     cell: ({ row }) => {
       const supplier = row.original;
+      const supplierDisplayName = formatSupplierDisplayName(
+        supplier.name,
+        supplier.slug,
+      );
 
       return (
         <div className="flex items-center gap-3">
           {supplier.primaryImageUrl ? (
             <PreviewImage
-              alt={`${supplier.name} logo`}
+              alt={`${supplierDisplayName} logo`}
               className="size-10"
               height={40}
-              previewTitle={supplier.name}
+              previewTitle={supplierDisplayName}
               src={supplier.primaryImageUrl}
               width={40}
             />
@@ -38,7 +43,7 @@ export const supplierColumns: ColumnDef<AdminSupplierSummary>[] = [
           )}
           <AccessNameCell
             description={supplier.legalName ?? supplier.email}
-            name={supplier.name}
+            name={supplierDisplayName}
             slug={supplier.slug}
           />
         </div>

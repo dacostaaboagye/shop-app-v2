@@ -21,6 +21,11 @@ export const adminOverrideReasonSchema = z.string().trim().min(8).max(500);
 
 export const gtnStatusSchema = z.enum(["dispatched", "received", "cancelled"]);
 
+export const createStockSupplyRequestItemSchema = z.object({
+  skuId: z.string().uuid(),
+  requestedQuantity: z.number().int().min(1),
+});
+
 // Worker creates a request specifying source location and what they need
 export const createStockSupplyRequestSchema = z.object({
   sourceLocationId: z.string().uuid(),
@@ -29,6 +34,27 @@ export const createStockSupplyRequestSchema = z.object({
   requestedQuantity: z.number().int().min(1),
   notes: z.string().trim().max(500).optional(),
 });
+
+export const createBulkStockSupplyRequestSchema = z
+  .object({
+    sourceLocationId: z.string().uuid(),
+    locationId: z.string().uuid(),
+    items: z.array(createStockSupplyRequestItemSchema).min(1).max(50),
+    notes: z.string().trim().max(500).optional(),
+  })
+  .superRefine((value, context) => {
+    const seenSkuIds = new Set<string>();
+    for (const [index, item] of value.items.entries()) {
+      if (seenSkuIds.has(item.skuId)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Each SKU may only appear once in a grouped supply request.",
+          path: ["items", index, "skuId"],
+        });
+      }
+      seenSkuIds.add(item.skuId);
+    }
+  });
 
 // Source location manager approves with actual quantity they can send
 export const approveStockSupplyRequestSchema = z.object({
@@ -58,6 +84,7 @@ export const confirmReceiptSchema = z.object({
 
 export const stockSupplyRequestResponseSchema = z.object({
   reference: z.string(),
+  requestGroupReference: z.string().nullable(),
   supplyRequestId: z.string().uuid(),
   transferReference: z.string().nullable(),
   sourceReservationStatus: sourceReservationStatusSchema.nullable(),
@@ -96,6 +123,11 @@ export const stockSupplyRequestResponseSchema = z.object({
   gtnReference: z.string().nullable(),
 
   createdAt: z.iso.datetime(),
+});
+
+export const bulkStockSupplyRequestResponseSchema = z.object({
+  items: z.array(stockSupplyRequestResponseSchema),
+  requestGroupReference: z.string(),
 });
 
 export const stockSupplyRequestListResponseSchema = z.object({
@@ -161,6 +193,12 @@ export type GtnStatus = z.infer<typeof gtnStatusSchema>;
 export type CreateStockSupplyRequest = z.infer<
   typeof createStockSupplyRequestSchema
 >;
+export type CreateStockSupplyRequestItem = z.infer<
+  typeof createStockSupplyRequestItemSchema
+>;
+export type CreateBulkStockSupplyRequest = z.infer<
+  typeof createBulkStockSupplyRequestSchema
+>;
 export type ApproveStockSupplyRequest = z.infer<
   typeof approveStockSupplyRequestSchema
 >;
@@ -176,6 +214,9 @@ export type CancelStockSupplyRequest = z.infer<
 export type ConfirmReceipt = z.infer<typeof confirmReceiptSchema>;
 export type StockSupplyRequestResponse = z.infer<
   typeof stockSupplyRequestResponseSchema
+>;
+export type BulkStockSupplyRequestResponse = z.infer<
+  typeof bulkStockSupplyRequestResponseSchema
 >;
 export type StockSupplyRequestListResponse = z.infer<
   typeof stockSupplyRequestListResponseSchema

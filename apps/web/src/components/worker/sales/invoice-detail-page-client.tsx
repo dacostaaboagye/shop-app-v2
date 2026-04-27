@@ -3,11 +3,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { ShoppingCart } from "lucide-react";
 import Link from "next/link";
-import { SalesDocumentWorkspace } from "@/components/sales/sales-document-workspace";
+import {
+  SalesDocumentWorkspace,
+  SalesDocumentWorkspaceSkeleton,
+} from "@/components/sales/sales-document-workspace";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { buttonVariants } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { formatPublicReference } from "@/lib/display/format";
 import { DEFAULT_OFFICIAL_DOCUMENT_PROFILE } from "@/lib/documents/official-document-profile";
 import {
@@ -49,7 +51,7 @@ export function WorkerInvoiceDetailPageClient({
       />
 
       {invoiceQuery.isPending ? (
-        <InvoiceDetailSkeleton />
+        <SalesDocumentWorkspaceSkeleton />
       ) : invoiceQuery.isError ? (
         <AppErrorBanner
           detail="Could not load this invoice."
@@ -84,18 +86,5 @@ function NewSaleLink() {
       <ShoppingCart data-icon="inline-start" />
       New sale
     </Link>
-  );
-}
-
-function InvoiceDetailSkeleton() {
-  return (
-    <div className="grid gap-5 lg:grid-cols-2">
-      <div className="flex flex-col gap-3">
-        <Skeleton className="h-36 w-full" />
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-56 w-full" />
-      </div>
-      <Skeleton className="h-[620px] w-full" />
-    </div>
   );
 }

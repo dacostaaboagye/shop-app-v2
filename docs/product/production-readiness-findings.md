@@ -1,6 +1,6 @@
 # Production Readiness Findings
 
-Last updated: 2026-04-23
+Last updated: 2026-04-26
 
 This document records the current production-readiness findings from the
 operations, staff, stock, sales, supplier, document, and notification surfaces.
@@ -16,6 +16,8 @@ Current symptoms:
 - design-system usage is inconsistent across portals and page families
 - some screens still expose technical or low-value information to users
 - money, quantity, status, and date rendering are not uniformly standardized
+- native browser date inputs are still present in parts of the app instead of
+  using the shared date-picker or date-range primitives
 - resilience, accessibility, responsiveness, and content-growth handling are
   uneven across the app
 - testing environment exposed backend request IDs directly in normal user error
@@ -41,6 +43,8 @@ Definition of done:
 - internal request IDs and similar support/debug references are hidden from
   normal user-facing production UI by default
 - money, quantity, date, and status presentation uses shared helpers
+- all date and date-range inputs use shared shadcn-based picker primitives
+  instead of native browser date fields
 - content growth is handled intentionally across narrow and wide layouts
 - rewritten pages satisfy accessibility, responsiveness, and performance checks
 
@@ -125,6 +129,8 @@ Current symptoms:
 - approval does not reserve or allocate source stock
 - cancellation, dispatch, receipt, and exception handling are too thin for real
   operations
+- worker supply requests are still single-item oriented, which forces repeated
+  request creation when several variants need replenishment together
 
 Root cause:
 
@@ -139,6 +145,8 @@ Backlog owner:
 Definition of done:
 
 - transfer lifecycle is visible from one transfer truth
+- workers and managers can create one supply request containing multiple
+  requested variants with one shared operational context and notes
 - approval allocates source stock
 - dispatch moves quantity into in-transit state
 - receipt reconciles exact, partial, and exception outcomes
@@ -152,6 +160,8 @@ Current symptoms:
 - GTNs and sales documents can accidentally inherit each other's layout or
   wording
 - generated documents can miss business-specific fields
+- there is no bulk print workflow for generating a date-range booklet of issued
+  documents for printing or archive review
 - brand, currency, and location document setting changes need durable
   operational evidence for admins and affected managers
 - issued invoices, credit notes, and GTNs need event evidence when the immutable
@@ -176,6 +186,8 @@ Definition of done:
 - settings template preview and generated PDF consume the same document model
 - generated documents use resolved brand profile, uploaded logo, colors,
   currency, legal identity, and document evidence consistently
+- admins and managers can select a permitted date range and generate one
+  ordered booklet file for the matching issued documents in that scope
 - global and location document setting changes publish operator-readable
   platform events with actor, changed sections, scope, and affected location
 - newly issued immutable document snapshots publish one idempotent
@@ -191,6 +203,8 @@ Current symptoms:
 - preview and live send can diverge on visible sender details
 - email infrastructure lives mostly under the auth module even though it now
   supports supplier and platform workflows too
+- admins do not yet have one governed compose/send workflow for operational
+  outbound email
 - the system records delivery attempts but does not yet expose a production
   operator surface for test-send, provider mode, or delivery diagnostics
 - current templates render acceptably, but they still need stronger
@@ -206,6 +220,28 @@ Root cause:
 - rendered email HTML, sender semantics, and preview configuration are not yet
   driven by one dedicated messaging configuration runtime
 
+Progress since this finding was opened:
+
+- auth, admin directory, and messaging operations now share one configured
+  `EmailService` instance in the main API runtime
+- immediate provider send failures now publish durable
+  `messaging.email.failed` platform events
+- preview/live-send parity is covered for password reset and email verification
+- auth recovery, supplier portal invite, admin test-send, and blocked-recipient
+  checks now have focused route/service evidence
+- recipient-state diagnostics and send-disable behavior are shared across admin
+  email operations and supplier portal invite controls
+- operator-visible recent-attempt coverage now includes delayed and failed
+  lifecycle states
+
+Remaining production gap:
+
+- manual desktop/mobile mail-client checks still need to be recorded before
+  this finding can be closed
+- generated review fixtures and the release checklist now exist under:
+  - `docs/product/evidence/email-template-review-fixtures/*`
+  - [email-template-client-review.md](./email-template-client-review.md)
+
 Backlog owner:
 
 - `E-03-05B` email reliability foundation
@@ -220,10 +256,14 @@ Definition of done:
   contact are separate fields where needed
 - HTML templates are hardened for major email clients, dark mode, and mobile
   spacing
+- focused tests prove mobile header/CTA stacking and safer long-content
+  handling for brand names, support addresses, CTA labels, and fallback links
 - plain-text templates are reviewed as first-class outputs instead of being
   derived as an afterthought
 - admins can send a test email, inspect recent delivery attempts, and see
   whether the system is in live-send or console-fallback mode
+- admins can send governed operational outbound emails through the same
+  messaging runtime, with template/source/audit evidence
 - provider failures, missing configuration, and delivery-state mismatches are
   visible through structured diagnostics
 
@@ -231,7 +271,6 @@ Definition of done:
 
 Current symptoms:
 
-- sales and history needed currency display fixes page by page
 - future ecommerce and customer-portal invoices will require stable historical
   currency behavior
 - worker POS product selection needs tested filtering by brand, category, and
@@ -239,10 +278,35 @@ Current symptoms:
 
 Root cause:
 
-- amounts are still mostly fixed-scale strings, while invoice-level currency
-  snapshots are not fully modeled as first-class persisted data
+- invoice-level currency snapshots were missing from the sales aggregate and had
+  to be inferred from surrounding settings and UI behavior
 - sales UI filtering was implemented locally and needs reusable, tested query
   support as the sales surfaces grow
+
+Progress since this finding was opened:
+
+- POS invoices and credit notes now persist `currencyCode` and `currencyScale`
+  from the resolved document profile at write time
+- return flows now carry the parent invoice currency snapshot forward instead of
+  re-resolving currency from current settings
+- public invoice responses now expose the persisted invoice currency snapshot
+  instead of forcing callers to infer it elsewhere
+- issued sales-document snapshots now force profile currency to the persisted
+  invoice currency snapshot instead of current settings currency
+- focused sales service evidence now covers:
+  - custom price rounding
+  - invalid custom-price fallback to catalog price
+  - return total calculation from original unit price
+- focused route and document evidence now covers:
+  - sales history/detail currency fields
+  - issued sales snapshot currency fields
+  - sales receipt and credit-note PDF fixture coverage
+  - credit-note title and negative money formatting in document rendering
+
+Remaining production gap:
+
+- future non-POS sales channels still need the same currency-snapshot treatment
+  when they are brought into Wave 1 or later production scope
 
 Definition of done:
 
@@ -266,6 +330,21 @@ Root cause:
 - user primary media was projected on some admin user queries but not on
   location staff or manager staff payloads
 - people UI surfaces did not share a reusable avatar/preview pattern
+
+Progress since this finding was opened:
+
+- manager staff and admin location staff route coverage now proves
+  `primaryImageUrl` is exposed in operational staff payloads
+- worker assignment and POS selection surfaces consume `primaryImageUrl` and
+  fall back to initials when no uploaded image exists
+- button-based worker selectors now have focused UI evidence proving images are
+  rendered through non-interactive avatars instead of nested interactive image
+  previews
+- admin location staff rows, manager staff rows, and access-summary people
+  surfaces now have focused UI evidence proving uploaded user images render
+  through the shared avatar path with initials fallback when absent
+- standalone user-profile identity media now has focused UI evidence proving
+  uploaded people images render through the shared full-image preview behavior
 
 Backlog owner:
 
@@ -334,6 +413,10 @@ Current symptoms:
   operations
 - transfer notifications were reference-only summaries instead of explaining
   product, SKU, quantity, source, destination, and GTN context
+- users do not yet have notification sound controls, delivery preferences, or a
+  dedicated account-management surface for future account activity
+- admins do not yet have one audited path for sending in-app notifications to
+  users or operational groups
 
 Root cause:
 
@@ -341,6 +424,50 @@ Root cause:
   actions onto the durable event path
 - transfer event summaries were duplicated across code paths instead of using a
   shared formatter
+- user-facing notification management has not yet been modeled as part of the
+  account domain
+
+Progress since this finding was opened:
+
+- stock counts, transfer lifecycle actions, official-document setting changes,
+  and issued-document snapshots already publish durable platform events
+- catalog brand, category, product, and variant create/update writes now
+  publish operator-readable durable events with slug/name/status context
+- catalog brand, category, product, and variant deletes now publish
+  operator-readable durable events with relevant business context
+- supplier portal contact lifecycle now publishes operator-readable durable
+  events for:
+  - portal link
+  - portal invite
+  - portal unlink
+- supplier product relationship changes now publish operator-readable durable
+  events for:
+  - product link
+  - product unlink
+- supplier procurement lifecycle now publishes operator-readable durable events
+  for:
+  - purchase-order creation
+  - purchase-order status updates
+  - goods receipt recording
+- assignment lifecycle writes now publish operator-readable durable events for:
+  - assignment creation
+  - reassignment
+  - handover start
+  - handover revert
+- sales return processing now publishes operator-readable durable events with:
+  - credit-note reference
+  - parent invoice reference
+  - location context
+  - return reason
+  - historical currency/total context
+- access role create/update writes now publish operator-readable durable events
+- admin user-access mutations now publish operator-readable platform events for:
+  - role assignment
+  - role revocation
+  - permission override set/remove
+  - profile update
+  - status update
+  - forced password-reset requirement
 
 Definition of done:
 
@@ -350,6 +477,12 @@ Definition of done:
   quantity change is recorded
 - notifications are projected from events with operator-friendly copy and deep
   links
+- users can manage notification preferences, including sound and delivery
+  behavior, from an account-management surface that is ready for future account
+  activity features
+- admins can send audited in-app operational notifications through a governed
+  compose flow, and that compose path can also delegate to governed outbound
+  email where allowed
 - audit records include actor, action, target, location context, and reason
   where applicable
 - transfer event summaries are generated from one tested formatter and include
@@ -366,6 +499,11 @@ Definition of done:
 7. per-transaction money and currency snapshots
 8. supplier domain model
 9. platform-wide audit/event coverage and human-readable notifications
+10. multi-item supply request workflow
+11. admin outbound email and in-app notification compose path
+12. account management and per-user notification preferences
+13. shared date-picker/date-range replacement for native date inputs
+14. bulk issued-document booklet generation by date range
 
 ## Production Rule
 

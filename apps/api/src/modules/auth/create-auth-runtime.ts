@@ -4,6 +4,7 @@ import { BasicUserRoleService } from "../access-control/basic-user-role.service.
 import { PermissionResolutionService } from "../access-control/permission-resolution.service.js";
 import { PostgresPermissionRepository } from "../access-control/postgres-permission.repository.js";
 import { createConfiguredEmailService } from "../messaging/create-email-runtime.js";
+import type { EmailService } from "../messaging/email.service.js";
 import { PostgresSlugRepository } from "../public-identifiers/postgres-slug.repository.js";
 import { SlugService } from "../public-identifiers/slug.service.js";
 import { AccessTokenAuthenticationService } from "./access-token-authentication.service.js";
@@ -42,6 +43,9 @@ type AuthRuntime = {
 export function createAuthRuntime(
   databaseRuntime: DatabaseRuntime,
   env: ApiEnv,
+  dependencies: {
+    emailService?: EmailService;
+  } = {},
 ): AuthRuntime {
   if (!env.authAccessTokenSecret) {
     throw new Error("AUTH_ACCESS_TOKEN_SECRET must be configured.");
@@ -50,6 +54,12 @@ export function createAuthRuntime(
   const userRepository = new PostgresUserRepository(
     databaseRuntime.db,
     new BasicUserRoleService(),
+  );
+  const permissionService = new PermissionResolutionService(
+    new PostgresPermissionRepository(databaseRuntime.db),
+  );
+  const currentUserPermissionService = new CurrentUserPermissionService(
+    permissionService,
   );
   const slugService = new SlugService(
     new PostgresSlugRepository(databaseRuntime.db),
@@ -61,11 +71,12 @@ export function createAuthRuntime(
       accessTokenTtlSeconds: env.authAccessTokenTtlSeconds,
       refreshTokenTtlSeconds: env.authRefreshTokenTtlSeconds,
     },
+    undefined,
+    currentUserPermissionService,
   );
-  const permissionService = new PermissionResolutionService(
-    new PostgresPermissionRepository(databaseRuntime.db),
-  );
-  const emailService = createConfiguredEmailService(databaseRuntime, env);
+  const emailService =
+    dependencies.emailService ??
+    createConfiguredEmailService(databaseRuntime, env);
   const webBaseUrl = env.webBaseUrl ?? "http://localhost:3000";
 
   const emailVerificationService = new EmailVerificationService(
@@ -115,15 +126,19 @@ export function createAuthRuntime(
         userRepository,
         sessionService,
       ),
-      currentUserPermissionService: new CurrentUserPermissionService(
-        permissionService,
+      currentUserPermissionService,
+      currentUserService: new CurrentUserService(
+        userRepository,
+        currentUserPermissionService,
       ),
-      currentUserService: new CurrentUserService(userRepository),
       emailVerificationService,
       googleOAuthService: googleOAuthService ?? createUnavailableGoogleOAuth(),
       logoutSessionService: sessionService,
       passwordResetService,
-      profileUpdateService: new CurrentUserService(userRepository),
+      profileUpdateService: new CurrentUserService(
+        userRepository,
+        currentUserPermissionService,
+      ),
       refreshSessionService: sessionService,
       registrationService,
     },

@@ -1,10 +1,9 @@
 "use client";
 
-import { formatISO, parseISO } from "date-fns";
 import { CalendarDays, X } from "lucide-react";
 import { AppFormField } from "@/components/forms/app-form-field";
 import { Button } from "@/components/ui/button";
-import { DatePickerSimple } from "@/components/ui/date-picker";
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import {
   Select,
   SelectContent,
@@ -12,6 +11,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  fromSalesDateRange,
+  toSalesDateRange,
+} from "./sales-list-filters.support";
 
 export type SalesDocumentTypeFilter = "all" | "credit_note" | "invoice";
 
@@ -35,39 +38,24 @@ export function SalesListFilters({
   onDocumentTypeChange,
 }: Props) {
   const hasFilters = Boolean(dateFrom || dateTo || documentType !== "all");
-
-  const fromDate = dateFrom ? parseISO(dateFrom) : undefined;
-  const toDate = dateTo ? parseISO(dateTo) : undefined;
+  const dateRange = toSalesDateRange({ dateFrom, dateTo });
 
   return (
     <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
       <div className="flex flex-col gap-6">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-          <div className="grid min-w-0 gap-6 sm:grid-cols-3">
-            <AppFormField inputId="sales-date-from" label="From">
-              <DatePickerSimple
-                {...(fromDate ? { date: fromDate } : {})}
-                className="h-11 border-border/60 bg-muted/20 transition-all focus:bg-background"
-                id="sales-date-from"
-                onSelect={(date) =>
-                  onDateFromChange(
-                    date ? formatISO(date, { representation: "date" }) : "",
-                  )
-                }
-                placeholder="From date"
-              />
-            </AppFormField>
-            <AppFormField inputId="sales-date-to" label="To">
-              <DatePickerSimple
-                {...(toDate ? { date: toDate } : {})}
-                className="h-11 border-border/60 bg-muted/20 transition-all focus:bg-background"
-                id="sales-date-to"
-                onSelect={(date) =>
-                  onDateToChange(
-                    date ? formatISO(date, { representation: "date" }) : "",
-                  )
-                }
-                placeholder="To date"
+          <div className="grid min-w-0 gap-6 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+            <AppFormField inputId="sales-date-range" label="Date Range">
+              <DatePickerWithRange
+                {...(dateRange ? { date: dateRange } : {})}
+                className="w-full"
+                id="sales-date-range"
+                onSelect={(value) => {
+                  const nextRange = fromSalesDateRange(value);
+                  onDateFromChange(nextRange.dateFrom);
+                  onDateToChange(nextRange.dateTo);
+                }}
+                placeholder="Pick a date range"
               />
             </AppFormField>
             <AppFormField inputId="sales-document-type" label="Document Type">

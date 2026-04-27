@@ -1,4 +1,5 @@
 import {
+  type AuthNotificationPreferences,
   type AuthPermissionSet,
   type AuthUser,
   authSessionSchema,
@@ -44,9 +45,14 @@ export type AuthRouteDependencies = {
     resetPassword(token: string, newPassword: string): Promise<void>;
   };
   profileUpdateService: {
-    updatePreferredPortal(
+    updateProfile(
       userId: string,
-      preferredPortal: string | null,
+      input: {
+        firstName?: string;
+        notificationPreferences?: AuthNotificationPreferences;
+        lastName?: string;
+        preferredPortal?: string | null;
+      },
     ): Promise<void>;
   };
   registrationService: {
@@ -104,7 +110,7 @@ export function createUnavailableAuthDependencies(): AuthRouteDependencies {
       },
     },
     profileUpdateService: {
-      async updatePreferredPortal() {
+      async updateProfile() {
         throw unavailableAuthError();
       },
     },

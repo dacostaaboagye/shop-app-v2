@@ -28,16 +28,18 @@ export function DatePickerWithRange({
 }: DatePickerWithRangeProps) {
   const content = (
     <Popover>
-      <PopoverTrigger className="w-full" render={<span />}>
-        <Button
-          variant="outline"
+      <PopoverTrigger
+        className="w-full"
+        render={<Button variant="outline" type="button" />}
+      >
+        <span
           id={id}
           className={cn(
-            "h-10 w-full justify-start rounded-xl border-border/60 bg-muted/20 px-3 text-left font-normal transition-all hover:bg-muted/30 focus:bg-background focus:ring-primary/20",
+            "inline-flex w-full items-center justify-start gap-2 px-0 text-left font-normal",
             !date && "text-muted-foreground",
           )}
         >
-          <CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
+          <CalendarIcon className="h-4 w-4 opacity-50" />
           {date?.from ? (
             date.to ? (
               <>
@@ -50,7 +52,7 @@ export function DatePickerWithRange({
           ) : (
             <span>{placeholder}</span>
           )}
-        </Button>
+        </span>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar

@@ -19,6 +19,18 @@ describe("ReferenceNumberService", () => {
     assert.deepEqual(harness.state.sequenceKeys, ["invoice-pos"]);
   });
 
+  it("generates padded grouped supply request references", async () => {
+    const harness = createHarness();
+
+    const reference = await harness.service.generateReference({
+      now: new Date("2026-04-08T10:00:00.000Z"),
+      sequenceKey: "supply-request-group",
+    });
+
+    assert.equal(reference, "SUPB-00001");
+    assert.deepEqual(harness.state.sequenceKeys, ["supply-request-group"]);
+  });
+
   it("supports configurable starting numbers per channel", async () => {
     const harness = createHarness({
       startsAt: {

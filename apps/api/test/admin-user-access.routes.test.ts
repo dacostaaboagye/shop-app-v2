@@ -33,6 +33,11 @@ describe("admin user access routes", () => {
               firstName: "Admin",
               lastLoginAt: "2026-04-09T12:00:00.000Z",
               lastName: "User",
+              notificationPreferences: {
+                emailEnabled: true,
+                inAppEnabled: true,
+                soundEnabled: true,
+              },
               preferredPortal: "admin" as const,
               recentActivity: [],
               requiresPasswordChange: false,
@@ -74,22 +79,22 @@ describe("admin user access routes", () => {
           },
         },
         adminUserAccessWriteService: {
-          async assignRole(actorId, slug, input) {
-            state.roleAssignment = { actorId, input, slug };
+          async assignRole(actor, slug, input) {
+            state.roleAssignment = { actor, input, slug };
           },
-          async forcePasswordReset(actorId, slug, input) {
-            state.forceReset = { actorId, input, slug };
+          async forcePasswordReset(actor, slug, input) {
+            state.forceReset = { actor, input, slug };
           },
           async removePermissionOverride() {},
           async revokeRole() {},
-          async setPermissionOverride(actorId, slug, input) {
-            state.override = { actorId, input, slug };
+          async setPermissionOverride(actor, slug, input) {
+            state.override = { actor, input, slug };
           },
-          async updateProfile(slug, input) {
-            state.profile = { input, slug };
+          async updateProfile(actor, slug, input) {
+            state.profile = { actor, input, slug };
           },
-          async updateStatus(actorId, slug, input) {
-            state.status = { actorId, input, slug };
+          async updateStatus(actor, slug, input) {
+            state.status = { actor, input, slug };
           },
         },
       },
@@ -160,7 +165,10 @@ describe("admin user access routes", () => {
     assert.equal(statusResponse.statusCode, 204);
     assert.equal(resetResponse.statusCode, 204);
     assert.deepEqual(state.roleAssignment, {
-      actorId: "usr_123",
+      actor: {
+        userId: "usr_123",
+        userSlug: "store-manager",
+      },
       input: {
         locationSlug: "downtown-store",
         reason: "Assigned to downtown operations",
@@ -169,7 +177,10 @@ describe("admin user access routes", () => {
       slug: "admin-user",
     });
     assert.deepEqual(state.override, {
-      actorId: "usr_123",
+      actor: {
+        userId: "usr_123",
+        userSlug: "store-manager",
+      },
       input: {
         effect: "deny",
         locationSlug: null,
@@ -179,6 +190,10 @@ describe("admin user access routes", () => {
       slug: "admin-user",
     });
     assert.deepEqual(state.profile, {
+      actor: {
+        userId: "usr_123",
+        userSlug: "store-manager",
+      },
       input: {
         email: "updated@example.com",
         firstName: "Updated",
@@ -187,7 +202,10 @@ describe("admin user access routes", () => {
       slug: "admin-user",
     });
     assert.deepEqual(state.status, {
-      actorId: "usr_123",
+      actor: {
+        userId: "usr_123",
+        userSlug: "store-manager",
+      },
       input: {
         reason: "Compliance hold",
         status: "suspended",
@@ -195,7 +213,10 @@ describe("admin user access routes", () => {
       slug: "admin-user",
     });
     assert.deepEqual(state.forceReset, {
-      actorId: "usr_123",
+      actor: {
+        userId: "usr_123",
+        userSlug: "store-manager",
+      },
       input: {
         reason: "Security review",
       },
@@ -218,11 +239,11 @@ describe("admin user access routes", () => {
         adminUserAccessWriteService: {
           async assignRole() {},
           async forcePasswordReset() {},
-          async removePermissionOverride(actorId, slug, permissionKey, input) {
-            state.removeOverride = { actorId, input, permissionKey, slug };
+          async removePermissionOverride(actor, slug, permissionKey, input) {
+            state.removeOverride = { actor, input, permissionKey, slug };
           },
-          async revokeRole(actorId, slug, roleSlug, input) {
-            state.revokeRole = { actorId, input, roleSlug, slug };
+          async revokeRole(actor, slug, roleSlug, input) {
+            state.revokeRole = { actor, input, roleSlug, slug };
           },
           async setPermissionOverride() {},
           async updateProfile() {},
@@ -254,7 +275,10 @@ describe("admin user access routes", () => {
     assert.equal(revokeResponse.statusCode, 204);
     assert.equal(removeOverrideResponse.statusCode, 204);
     assert.deepEqual(state.revokeRole, {
-      actorId: "usr_123",
+      actor: {
+        userId: "usr_123",
+        userSlug: "store-manager",
+      },
       input: {
         locationSlug: "downtown-store",
         reason: "Reassigned to another location",
@@ -263,7 +287,10 @@ describe("admin user access routes", () => {
       slug: "admin-user",
     });
     assert.deepEqual(state.removeOverride, {
-      actorId: "usr_123",
+      actor: {
+        userId: "usr_123",
+        userSlug: "store-manager",
+      },
       input: {
         locationSlug: null,
         reason: "Restriction lifted",

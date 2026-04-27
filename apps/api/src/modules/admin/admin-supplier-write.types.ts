@@ -65,6 +65,12 @@ export type AdminSupplierWriteRepository = {
     payload: AdminLinkSupplierProductRequest;
     supplierSlug: string;
   }): Promise<AdminSupplierDetail | null>;
+  getSupplierProductEventContext(input: {
+    productSlug: string;
+    supplierSlug: string;
+  }): Promise<
+    import("./admin-supplier-events.js").SupplierProductEventContext | null
+  >;
   unlinkProduct(input: {
     productSlug: string;
     supplierSlug: string;
@@ -98,4 +104,11 @@ export type AdminSupplierWriteRepository = {
     reference: string;
     supplierSlug: string;
   }): Promise<AdminSupplierDetail | null>;
+  getPortalContactEventContext(input: {
+    contactReference: string;
+    supplierSlug: string;
+  }): Promise<
+    | import("./admin-supplier-events.js").SupplierPortalContactEventContext
+    | null
+  >;
 };

@@ -266,6 +266,92 @@ describe("auth routes", () => {
     });
   });
 
+  it("updates the current user profile preferences for an authenticated user", async () => {
+    const now = new Date("2026-04-08T12:00:00.000Z");
+    let receivedUserId = "";
+    let receivedProfile:
+      | {
+          notificationPreferences?: {
+            emailEnabled: boolean;
+            inAppEnabled: boolean;
+            soundEnabled: boolean;
+          };
+          preferredPortal?: string | null;
+        }
+      | undefined;
+    const server = createServer({
+      accessControl: {
+        accessTokenAuthenticationService: {
+          async authenticate(token) {
+            const { AccessTokenAuthenticationService } = await import(
+              "../src/modules/auth/access-token-authentication.service.js"
+            );
+
+            return new AccessTokenAuthenticationService(
+              {
+                async findUserById() {
+                  return {
+                    id: "usr_123",
+                    slug: "store-manager",
+                    status: "active",
+                  };
+                },
+              },
+              "development-access-secret",
+              () => now,
+            ).authenticate(token);
+          },
+        },
+      },
+      auth: {
+        ...createUnavailableAuthDependencies(),
+        profileUpdateService: {
+          async updateProfile(userId, profile) {
+            receivedUserId = userId;
+            receivedProfile = profile;
+          },
+        },
+      },
+    });
+
+    const response = await server.inject({
+      headers: {
+        authorization: `Bearer ${
+          issueAccessToken({
+            expiresInSeconds: 900,
+            now,
+            secret: "development-access-secret",
+            userId: "usr_123",
+            userSlug: "store-manager",
+          }).token
+        }`,
+      },
+      method: "PATCH",
+      payload: {
+        firstName: "Store",
+        lastName: "Lead",
+        notificationPreferences: {
+          emailEnabled: false,
+          inAppEnabled: true,
+          soundEnabled: false,
+        },
+      },
+      url: "/api/auth/me",
+    });
+
+    assert.equal(response.statusCode, 204);
+    assert.equal(receivedUserId, "usr_123");
+    assert.deepEqual(receivedProfile, {
+      firstName: "Store",
+      lastName: "Lead",
+      notificationPreferences: {
+        emailEnabled: false,
+        inAppEnabled: true,
+        soundEnabled: false,
+      },
+    });
+  });
+
   it("returns 503 when auth services are not configured", async () => {
     const server = createServer();
 
@@ -295,6 +381,11 @@ function createSession(email: string): IssuedSession {
       firstName: "Store",
       lastLoginAt: null,
       lastName: "Manager",
+      notificationPreferences: {
+        emailEnabled: true,
+        inAppEnabled: true,
+        soundEnabled: true,
+      },
       preferredPortal: "admin",
       requiresPasswordChange: false,
       slug: "store-manager",

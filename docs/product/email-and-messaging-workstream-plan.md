@@ -24,6 +24,57 @@ Related architecture:
   well.
 - Operators need diagnostics, not just logs.
 
+## Current Status
+
+Completed evidence so far:
+
+- `E-03-05B1`
+  - messaging remains the shared owner for transactional email delivery
+  - auth, admin test-send, and supplier invite paths now use the same
+    configured `EmailService` instance from the main API runtime
+  - focused coverage exists for auth recovery, supplier invite, and shared
+    email send behavior
+- `E-03-05B2`
+  - preview and live send now resolve from one runtime path
+  - focused parity tests cover password reset and email verification preview vs
+    live send
+- `E-03-05B4`
+  - admins can inspect recent attempts, current mode, reply-to, support email,
+    and recipient state
+  - immediate provider send failures now emit durable `messaging.email.failed`
+    platform events instead of relying on logs alone
+- `E-03-05B5`
+  - webhook ingestion remains idempotent and append-only
+  - recent-attempt operations coverage now proves operator visibility for
+    delayed and failed lifecycle states
+- `E-03-05B6`
+  - blocked-recipient policy is enforced in the shared runtime
+  - focused evidence exists for admin test-send, auth resend, supplier portal
+    invite, and shared email send blocking
+- `E-03-05B7`
+  - recipient-state lookup is exposed in product
+  - the same clear-to-send / blocked decision path is now shared between admin
+    email operations and supplier portal invite controls
+
+Remaining gaps before this workstream is fully done:
+
+- `E-03-05B3`
+  - manual checks still need to be recorded against a real desktop and mobile
+    mail client before launch
+- `E-03-05B4`
+  - if launch requires notification/audit evidence for every important
+    email-triggered business event, that broader event coverage is still
+    incomplete outside the current transactional send failure path
+- `E-03-05B5`
+  - if launch requires explicit delayed-delivery alerting beyond the operations
+    surface, that projection work is still open
+
+Recommended exit condition for `E-03-05B`:
+
+- do not leave this workstream until `E-03-05B3` has explicit evidence and the
+  remaining operator visibility decision around delayed-delivery projection is
+  resolved
+
 ## Execution Slices
 
 ### `E-03-05B1` dedicated messaging module extraction
@@ -82,6 +133,16 @@ Definition of done:
 - tests cover rendered HTML/text snapshots where practical
 - manual checks are recorded against at least one desktop and one mobile client
 - preview output and sent output remain aligned
+- current evidence:
+  - shared email HTML now uses safer long-content handling and mobile stacking
+    for brand header and CTA blocks
+  - focused tests cover dark mode, mobile CTA/header stacking rules, and
+    break-safe handling for long brand names, support addresses, headings,
+    button labels, and fallback links
+  - generated review fixtures now live under
+    `docs/product/evidence/email-template-review-fixtures/*`
+  - the release checklist for the remaining desktop/mobile client review lives
+    in [email-template-client-review.md](./email-template-client-review.md)
 
 ### `E-03-05B4` email diagnostics and operations
 

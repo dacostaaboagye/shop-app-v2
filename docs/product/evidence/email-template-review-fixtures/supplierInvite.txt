@@ -1,0 +1,10 @@
+Supplier portal access
+
+Hi Ama, you have been invited to manage supplier activity for Acme Distribution.
+
+Set up supplier portal access and review operational activity:
+https://app.example.com/reset-password?token=sample-token
+
+This link expires in 1 hour. If you were not expecting this invite, contact the business before continuing.
+
+If the button does not work, copy and paste the full link into your browser.

@@ -34,6 +34,7 @@ export type AuthUserRecord = Omit<AuthUser, "lastLoginAt"> & {
   lastLoginAt: Date | null;
   lockedUntil: Date | null;
   passwordHash: string | null;
+  primaryImageUrl: string | null;
 };
 
 export type LoginCommand = {

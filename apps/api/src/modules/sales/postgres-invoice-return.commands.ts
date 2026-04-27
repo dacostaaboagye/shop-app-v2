@@ -25,6 +25,8 @@ export async function createReturnTransaction(
         customerName: invoices.customerName,
         customerPhone: invoices.customerPhone,
         customerTaxNumber: invoices.customerTaxNumber,
+        currencyCode: invoices.currencyCode,
+        currencyScale: invoices.currencyScale,
       })
       .from(invoices)
       .where(eq(invoices.id, input.parentInvoiceId));
@@ -53,6 +55,8 @@ export async function createReturnTransaction(
         createdBy: input.createdBy,
         customerBillingAddressLines:
           parentInvoice?.customerBillingAddressLines ?? null,
+        currencyCode: parentInvoice?.currencyCode ?? input.currencyCode,
+        currencyScale: parentInvoice?.currencyScale ?? input.currencyScale,
         customerEmail: parentInvoice?.customerEmail ?? null,
         customerName: parentInvoice?.customerName ?? null,
         customerPhone: parentInvoice?.customerPhone ?? null,

@@ -1,3 +1,4 @@
+import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import type { ResolvedEmailConfiguration } from "./email-configuration.js";
 
 export type EmailDeliveryStatus =
@@ -11,12 +12,21 @@ export type EmailDeliveryStatus =
   | "suppressed";
 
 export type EmailMessageType =
+  | "admin_operational"
   | "email_test"
   | "email_verification"
   | "password_reset"
+  | "sales_document"
   | "supplier_invite";
 
+export type EmailAttachment = {
+  content: Buffer;
+  contentType: string;
+  filename: string;
+};
+
 export type EmailOptions = {
+  attachments?: EmailAttachment[];
   messageType: EmailMessageType;
   to: string;
   subject: string;
@@ -69,6 +79,7 @@ export type EmailServiceOptions = {
   allowConsoleFallback?: boolean;
   deliveryPolicy?: EmailDeliveryPolicy;
   deliveryRecorder?: EmailDeliveryRecorder | null;
+  eventPublisher?: Pick<PlatformEventPublisher, "publish">;
   logger?: Pick<Console, "error" | "log">;
   templateProvider?: EmailTemplateProvider;
   transport?: EmailTransport | null;

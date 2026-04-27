@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Building2, Package, ReceiptText, UsersRound } from "lucide-react";
+import { CatalogDetailSkeleton } from "@/components/admin/catalog/catalog-detail-surfaces";
 import { CatalogFormCard } from "@/components/admin/catalog/catalog-form-surfaces";
 import { AppErrorBanner } from "@/components/system/app-error";
 import {
@@ -26,6 +27,7 @@ import {
   TransactionsPanel,
   toSupplierFormValues,
 } from "./supplier-detail-sections";
+import { formatSupplierDisplayName } from "./supplier-display";
 import { SupplierForm } from "./supplier-form";
 import { SupplierInquiryPanel } from "./supplier-inquiry-panel";
 import { ProcurementPanel } from "./supplier-procurement-panel";
@@ -91,11 +93,7 @@ export function SupplierDetailPageClient({ slug }: { slug: string }) {
   });
 
   if (supplierQuery.isPending) {
-    return (
-      <PageShell>
-        <PageHeader title="Supplier" />
-      </PageShell>
-    );
+    return <CatalogDetailSkeleton statCount={4} />;
   }
 
   if (supplierQuery.isError) {
@@ -112,6 +110,10 @@ export function SupplierDetailPageClient({ slug }: { slug: string }) {
   }
 
   const supplier = supplierQuery.data;
+  const supplierDisplayName = formatSupplierDisplayName(
+    supplier.name,
+    supplier.slug,
+  );
 
   return (
     <PageShell>
@@ -119,7 +121,7 @@ export function SupplierDetailPageClient({ slug }: { slug: string }) {
         backHref={toRoute("/admin/suppliers")}
         backLabel="Suppliers"
         description="Manage supplier details, linked contacts, supply activity, and transaction history."
-        title={supplier.name}
+        title={supplierDisplayName}
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
@@ -225,6 +227,11 @@ export function SupplierDetailPageClient({ slug }: { slug: string }) {
         </TabsContent>
         <TabsContent className="pt-3" value="procurement">
           <ProcurementPanel
+            isPending={
+              actions.procurementCreateMutation.isPending ||
+              actions.procurementActionMutation.isPending ||
+              actions.procurementReceiveMutation.isPending
+            }
             onAction={(reference, action) =>
               actions.procurementActionMutation.mutate({ action, reference })
             }

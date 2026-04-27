@@ -15,6 +15,8 @@ const snapshot: IssuedDocumentSnapshotResponse = {
     attributedWorkerName: null,
     confirmedAt: "2026-04-20T10:00:00.000Z",
     createdAt: "2026-04-20T09:59:00.000Z",
+    currencyCode: "GHS",
+    currencyScale: 2,
     lines: [],
     locationId: "22222222-2222-4222-8222-222222222222",
     notes: null,
