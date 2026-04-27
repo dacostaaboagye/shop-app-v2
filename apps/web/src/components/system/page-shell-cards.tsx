@@ -31,7 +31,7 @@ export function StatCard({
         <div className="flex min-w-0 flex-col gap-3">
           <p className="type-kicker text-muted-foreground">{label}</p>
           <div className="min-w-0 max-w-full overflow-hidden">
-            <h3 className="type-stat-value break-normal text-foreground [overflow-wrap:normal] [word-break:normal]">
+            <h3 className="type-stat-value break-normal text-[clamp(1.75rem,2.4vw,2.35rem)] leading-tight text-foreground [overflow-wrap:normal] [word-break:normal]">
               {value}
             </h3>
           </div>

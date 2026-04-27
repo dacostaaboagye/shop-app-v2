@@ -95,7 +95,7 @@ export function SalesLedgerWorkspace({
         onSearchChange={setSearch}
       />
 
-      <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2">
         <StatCard
           description="Sales less issued credit notes."
           icon={TrendingUp}

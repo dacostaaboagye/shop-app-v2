@@ -126,10 +126,13 @@ export class GoogleOAuthService {
 
     const config = await this.getConfig();
 
-    // Build the current URL from the request for openid-client to parse
-    const protocol = this.cookieSecure ? "https" : "http";
-    const host = request.headers.host ?? "localhost";
-    const currentUrl = new URL(`${protocol}://${host}${request.url}`);
+    // Use the configured callback origin so token exchange stays aligned with
+    // the registered redirect URI even when the request arrived through a
+    // reverse proxy on a different internal host.
+    const currentUrl = buildConfiguredCallbackUrl(
+      this.callbackUrl,
+      request.url,
+    );
 
     // Exchange authorization code for tokens
     const tokens = await oidc.authorizationCodeGrant(config, currentUrl, {
@@ -238,4 +241,14 @@ export class GoogleOAuthService {
     }
     return this.configCache;
   }
+}
+
+export function buildConfiguredCallbackUrl(
+  callbackUrl: string,
+  requestUrl: string,
+) {
+  const callback = new URL(callbackUrl);
+  const request = new URL(requestUrl, callbackUrl);
+  callback.search = request.search;
+  return callback;
 }
