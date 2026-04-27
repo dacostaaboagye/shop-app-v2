@@ -95,9 +95,33 @@ describe("notification routes", () => {
     assert.equal(response.statusCode, 200);
     assert.equal(response.json().updatedCount, 3);
   });
+
+  it("deletes an owned notification", async () => {
+    let seenKey = "";
+    const server = createNotificationServer({
+      deleteImpl: async ({ notificationKey }) => {
+        seenKey = notificationKey;
+      },
+    });
+
+    const response = await server.inject({
+      headers: {
+        authorization: bearerToken(USER_ID, "worker-a"),
+      },
+      method: "DELETE",
+      url: "/api/notifications/22222222-2222-4222-8222-222222222222",
+    });
+
+    assert.equal(response.statusCode, 204);
+    assert.equal(seenKey, "22222222-2222-4222-8222-222222222222");
+  });
 });
 
 function createNotificationServer(input?: {
+  deleteImpl?: (args: {
+    notificationKey: string;
+    userId: string;
+  }) => Promise<void>;
   markAllReadImpl?: (args: {
     now: Date;
     userId: string;
@@ -166,6 +190,11 @@ function createNotificationServer(input?: {
         },
       },
       notificationWriteService: {
+        async deleteNotification(args) {
+          if (input?.deleteImpl) {
+            return input.deleteImpl(args);
+          }
+        },
         async markAllRead(args) {
           if (input?.markAllReadImpl) {
             return input.markAllReadImpl(args);

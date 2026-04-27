@@ -35,6 +35,11 @@ describe("fetchFile", () => {
         firstName: "Store",
         lastLoginAt: null,
         lastName: "Worker",
+        notificationPreferences: {
+          emailEnabled: true,
+          inAppEnabled: true,
+          soundEnabled: true,
+        },
         preferredPortal: "worker",
         requiresPasswordChange: false,
         slug: "store-worker",

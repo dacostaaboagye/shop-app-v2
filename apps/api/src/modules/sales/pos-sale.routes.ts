@@ -7,7 +7,10 @@ import {
 } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
 import type { PermissionResolutionService } from "../access-control/permission-resolution.service.js";
-import { getAuthenticatedUserId } from "../auth/auth-route-support.js";
+import {
+  getAuthenticatedActor,
+  getAuthenticatedUserId,
+} from "../auth/auth-route-support.js";
 import { toInvoiceResponse } from "./invoice-response.mapper.js";
 import type { PosSaleService } from "./pos-sale.service.js";
 import { posSaleRoutes } from "./pos-sale-route-definitions.js";
@@ -49,6 +52,21 @@ export function registerPosSaleRoutes(
       });
       const invoice = await dependencies.posSaleService.processSale({
         createdBy: userId,
+        ...(body.customerBillingAddressLines !== undefined
+          ? { customerBillingAddressLines: body.customerBillingAddressLines }
+          : {}),
+        ...(body.customerEmail !== undefined
+          ? { customerEmail: body.customerEmail }
+          : {}),
+        ...(body.customerName !== undefined
+          ? { customerName: body.customerName }
+          : {}),
+        ...(body.customerPhone !== undefined
+          ? { customerPhone: body.customerPhone }
+          : {}),
+        ...(body.customerTaxNumber !== undefined
+          ? { customerTaxNumber: body.customerTaxNumber }
+          : {}),
         lines: body.lines.map((l) => ({
           quantity: l.quantity,
           skuId: l.skuId,
@@ -127,7 +145,8 @@ export function registerPosSaleRoutes(
     method: posSaleRoutes.workerReturnSale.method,
     url: posSaleRoutes.workerReturnSale.url,
     async handler(request) {
-      const userId = getAuthenticatedUserId(request);
+      const actor = getAuthenticatedActor(request);
+      const userId = actor.userId;
       const { reference } = request.params as { reference: string };
       const body = processPosReturnRequestSchema.parse(request.body);
       const invoice =
@@ -139,6 +158,7 @@ export function registerPosSaleRoutes(
         userId,
       });
       const creditNote = await dependencies.posSaleService.processReturn({
+        actor: { userSlug: actor.userSlug },
         createdBy: userId,
         lines: body.lines,
         parentReference: reference,

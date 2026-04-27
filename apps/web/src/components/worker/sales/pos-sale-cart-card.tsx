@@ -12,6 +12,8 @@ import {
   type MoneyProfile,
   toNumericAmount,
 } from "@/lib/money/format-money";
+import type { PosSaleCustomerDetails } from "./pos-sale-customer-details.support";
+import { PosSaleCustomerDetailsPanel } from "./pos-sale-customer-details-panel";
 import { CartRow, CartTitle, CartTitleBadge } from "./pos-sale-page-sections";
 
 export type CartItem = {
@@ -22,11 +24,13 @@ export type CartItem = {
 
 export type CartBodyProps = {
   cart: CartItem[];
+  customerDetails: PosSaleCustomerDetails;
   error: unknown;
   isPending: boolean;
   moneyProfile: MoneyProfile;
   notes: string;
   onConfirm: () => void;
+  onCustomerDetailsChange: (details: PosSaleCustomerDetails) => void;
   onNotesChange: (value: string) => void;
   onPaymentMethodChange: (value: PosPaymentMethod) => void;
   onPriceChange: (skuId: string, unitPrice: string) => void;
@@ -44,11 +48,13 @@ const PAYMENT_METHODS: { label: string; value: PosPaymentMethod }[] = [
 
 export function CartBody({
   cart,
+  customerDetails,
   error,
   isPending,
   moneyProfile,
   notes,
   onConfirm,
+  onCustomerDetailsChange,
   onNotesChange,
   onPaymentMethodChange,
   onPriceChange,
@@ -97,6 +103,11 @@ export function CartBody({
       </div>
 
       <Separator className="opacity-50" />
+
+      <PosSaleCustomerDetailsPanel
+        details={customerDetails}
+        onChange={onCustomerDetailsChange}
+      />
 
       <div className="flex flex-col gap-3">
         <p className="type-data-label">Payment Method</p>

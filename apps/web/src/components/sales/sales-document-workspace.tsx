@@ -11,6 +11,7 @@ import {
   OfficialDocumentPanel,
   SalesSummary,
 } from "@/components/sales/sales-document-workspace-panels";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DEFAULT_OFFICIAL_DOCUMENT_PROFILE } from "@/lib/documents/official-document-profile";
 import type { PrintableInvoiceData } from "@/lib/documents/sales-document";
 import { toSalesDocumentSnapshot } from "@/lib/documents/sales-document-snapshot";
@@ -90,6 +91,19 @@ export function SalesDocumentWorkspace({
           profile={profile}
         />
       </div>
+    </div>
+  );
+}
+
+export function SalesDocumentWorkspaceSkeleton() {
+  return (
+    <div className="grid gap-5 lg:grid-cols-2">
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-36 w-full" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-56 w-full" />
+      </div>
+      <Skeleton className="h-[620px] w-full" />
     </div>
   );
 }

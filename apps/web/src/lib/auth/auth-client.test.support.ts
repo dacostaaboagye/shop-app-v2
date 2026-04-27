@@ -12,6 +12,11 @@ export function createSessionResponse(accessToken: string) {
         firstName: "Store",
         lastLoginAt: null,
         lastName: "Manager",
+        notificationPreferences: {
+          emailEnabled: true,
+          inAppEnabled: true,
+          soundEnabled: true,
+        },
         preferredPortal: "admin",
         requiresPasswordChange: false,
         slug: "store-manager",

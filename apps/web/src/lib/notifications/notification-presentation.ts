@@ -38,6 +38,22 @@ export function getNotificationEventLabel(eventType: string) {
       return "Received";
     case "transfer.cancelled":
       return "Cancelled";
+    case "supplier.portal.linked":
+      return "Portal linked";
+    case "supplier.portal.invited":
+      return "Invite sent";
+    case "supplier.portal.unlinked":
+      return "Portal unlinked";
+    case "supplier.product.linked":
+      return "Product linked";
+    case "supplier.product.unlinked":
+      return "Product unlinked";
+    case "supplier.procurement.created":
+      return "Purchase order created";
+    case "supplier.procurement.status_updated":
+      return "Purchase order updated";
+    case "supplier.procurement.received":
+      return "Goods received";
     default:
       return toHumanLabel(eventType);
   }
@@ -61,14 +77,43 @@ export function getNotificationActorLabel(notification: NotificationListItem) {
 export function getNotificationPresentation(
   notification: NotificationListItem,
 ) {
+  if (notification.resource.kind === "admin_communication") {
+    return getAdminCommunicationNotificationPresentation(notification);
+  }
+
   if (notification.resource.kind === "stock_transfer_request") {
     return getTransferNotificationPresentation(notification);
   }
 
+  if (notification.resource.kind === "supplier_contact") {
+    return getSupplierContactNotificationPresentation(notification);
+  }
+
+  if (notification.resource.kind === "supplier_product_link") {
+    return getSupplierProductNotificationPresentation(notification);
+  }
+
+  if (notification.resource.kind === "supplier_procurement_order") {
+    return getSupplierProcurementNotificationPresentation(notification);
+  }
+
   return {
-    detail: `${getNotificationActorLabel(notification)} updated ${toHumanLabel(
-      notification.resource.kind,
-    )} ${notification.resource.reference}.`,
+    detail:
+      getPayloadString(notification, "messageBody") ??
+      `${getNotificationActorLabel(notification)} updated ${toHumanLabel(
+        notification.resource.kind,
+      )} ${notification.resource.reference}.`,
+    title: notification.summary,
+  };
+}
+
+function getAdminCommunicationNotificationPresentation(
+  notification: NotificationListItem,
+) {
+  return {
+    detail:
+      getPayloadString(notification, "messageBody") ??
+      `${getNotificationActorLabel(notification)} sent an operational update.`,
     title: notification.summary,
   };
 }
@@ -132,6 +177,130 @@ function getTransferNotificationPresentation(
   }
 }
 
+function getSupplierContactNotificationPresentation(
+  notification: NotificationListItem,
+) {
+  const supplierName = getPayloadString(notification, "supplierName");
+  const contactName = getPayloadString(notification, "contactName");
+  const contactEmail = getPayloadString(notification, "contactEmail");
+  const linkedUserSlug =
+    getPayloadString(notification, "linkedUserSlug") ??
+    getPayloadString(notification, "invitedUserSlug") ??
+    getPayloadString(notification, "previousUserSlug");
+  const deliveryStatus = getPayloadString(notification, "deliveryStatus");
+
+  const contactSummary = [
+    contactName,
+    contactEmail ? `(${contactEmail})` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const supplierSummary = supplierName ? ` for ${supplierName}` : "";
+
+  switch (notification.eventType) {
+    case "supplier.portal.linked":
+      return {
+        detail: `${getNotificationActorLabel(notification)} linked ${contactSummary || "this contact"}${supplierSummary}${linkedUserSlug ? ` to ${toHumanLabel(linkedUserSlug)}` : ""}.`,
+        title: notification.summary,
+      };
+    case "supplier.portal.invited":
+      return {
+        detail: `${getNotificationActorLabel(notification)} sent a supplier portal invite to ${contactSummary || "this contact"}${supplierSummary}${deliveryStatus ? ` (${deliveryStatus})` : ""}.`,
+        title: notification.summary,
+      };
+    case "supplier.portal.unlinked":
+      return {
+        detail: `${getNotificationActorLabel(notification)} removed portal access for ${contactSummary || "this contact"}${supplierSummary}${linkedUserSlug ? ` from ${toHumanLabel(linkedUserSlug)}` : ""}.`,
+        title: notification.summary,
+      };
+    default:
+      return {
+        detail: notification.summary,
+        title: `Supplier contact ${notification.resource.reference} was updated`,
+      };
+  }
+}
+
+function getSupplierProductNotificationPresentation(
+  notification: NotificationListItem,
+) {
+  const supplierName = getPayloadString(notification, "supplierName");
+  const productName = getPayloadString(notification, "productName");
+  const productSlug = getPayloadString(notification, "productSlug");
+  const brandName = getPayloadString(notification, "brandName");
+  const categoryName = getPayloadString(notification, "categoryName");
+  const variantCount = getPayloadNumber(notification, "variantCount");
+  const preferred = notification.payload.isPreferred === true;
+  const productSummary = productName
+    ? `${productName}${productSlug ? ` (${productSlug})` : ""}`
+    : notification.resource.reference;
+  const productContext = formatSupplierProductContext(categoryName, brandName);
+  const variantSummary =
+    variantCount == null
+      ? ""
+      : ` with ${variantCount} variant${variantCount === 1 ? "" : "s"}`;
+  const preferredSummary = preferred ? " as preferred supplier" : "";
+
+  switch (notification.eventType) {
+    case "supplier.product.linked":
+      return {
+        detail: `${getNotificationActorLabel(notification)} linked ${productSummary}${supplierName ? ` to ${supplierName}` : ""}${productContext}${variantSummary}${preferredSummary}.`,
+        title: notification.summary,
+      };
+    case "supplier.product.unlinked":
+      return {
+        detail: `${getNotificationActorLabel(notification)} removed ${productSummary}${supplierName ? ` from ${supplierName}` : ""}${productContext}.`,
+        title: notification.summary,
+      };
+    default:
+      return {
+        detail: notification.summary,
+        title: `Supplier product ${notification.resource.reference} was updated`,
+      };
+  }
+}
+
+function getSupplierProcurementNotificationPresentation(
+  notification: NotificationListItem,
+) {
+  const supplierName = getPayloadString(notification, "supplierName");
+  const destinationLocationName = getPayloadString(
+    notification,
+    "destinationLocationName",
+  );
+  const requested = getPayloadNumber(notification, "totalRequestedQuantity");
+  const approved = getPayloadNumber(notification, "totalApprovedQuantity");
+  const received = getPayloadNumber(notification, "totalReceivedQuantity");
+  const lineCount = getPayloadNumber(notification, "lineCount");
+  const status = getPayloadString(notification, "status");
+  const destination = destinationLocationName
+    ? ` to ${destinationLocationName}`
+    : "";
+
+  switch (notification.eventType) {
+    case "supplier.procurement.created":
+      return {
+        detail: `${getNotificationActorLabel(notification)} created this purchase order${supplierName ? ` for ${supplierName}` : ""}${destination}${formatSupplierProcurementCounts(lineCount, requested, "requested")}.`,
+        title: notification.summary,
+      };
+    case "supplier.procurement.status_updated":
+      return {
+        detail: `${getNotificationActorLabel(notification)} marked this purchase order as ${formatSupplierProcurementStatus(status)}${destination}${formatSupplierProcurementCounts(lineCount, approved ?? requested, "approved")}.`,
+        title: notification.summary,
+      };
+    case "supplier.procurement.received":
+      return {
+        detail: `${getNotificationActorLabel(notification)} recorded goods receipt${supplierName ? ` for ${supplierName}` : ""}${destination}${formatSupplierProcurementCounts(lineCount, received, "received")} (${formatSupplierProcurementStatus(status)}).`,
+        title: notification.summary,
+      };
+    default:
+      return {
+        detail: notification.summary,
+        title: `Purchase order ${notification.resource.reference} was updated`,
+      };
+  }
+}
+
 function formatTransferRoute(
   source: string | null,
   destination: string | null,
@@ -146,6 +315,43 @@ function formatQuantity(quantity: number | null) {
   return quantity == null
     ? "stock"
     : `${quantity} unit${quantity === 1 ? "" : "s"}`;
+}
+
+function formatSupplierProductContext(
+  categoryName: string | null,
+  brandName: string | null,
+) {
+  const parts = [categoryName, brandName].filter(Boolean);
+  return parts.length > 0 ? ` in ${parts.join(" / ")}` : "";
+}
+
+function formatSupplierProcurementCounts(
+  lineCount: number | null,
+  quantity: number | null,
+  label: "approved" | "received" | "requested",
+) {
+  const parts = [];
+  if (lineCount != null) {
+    parts.push(`${lineCount} line${lineCount === 1 ? "" : "s"}`);
+  }
+  if (quantity != null) {
+    parts.push(`${quantity} ${label} unit${quantity === 1 ? "" : "s"}`);
+  }
+  return parts.length > 0 ? ` with ${parts.join(" and ")}` : "";
+}
+
+function formatSupplierProcurementStatus(status: string | null) {
+  const labels: Record<string, string> = {
+    approved: "approved",
+    cancelled: "cancelled",
+    closed: "closed",
+    draft: "saved as draft",
+    ordered: "sent to supplier",
+    partially_received: "partially received",
+    received: "fully received",
+    submitted: "submitted for approval",
+  };
+  return status ? (labels[status] ?? toHumanLabel(status)) : "updated";
 }
 
 function getPayloadString(

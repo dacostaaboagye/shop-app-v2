@@ -100,17 +100,19 @@ function EmailClientPreview({
   const previewText = serverPreview?.text ?? "Server-rendered email preview";
 
   return (
-    <div className="mx-auto max-w-[560px] overflow-hidden rounded-lg border border-border bg-background shadow-sm">
+    <div className="mx-auto max-w-full overflow-hidden rounded-lg border border-border bg-background shadow-sm sm:max-w-[560px]">
       <div className="h-1.5" style={{ backgroundColor: primaryColor }} />
       <div className="border-b border-border/70 bg-card px-4 py-3">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <p className="text-balance text-sm font-semibold">{subject}</p>
+            <p className="text-sm font-semibold break-words">{subject}</p>
             <p className="text-pretty text-xs text-muted-foreground">
               {previewText}
             </p>
           </div>
-          <Badge variant="outline">{template.label}</Badge>
+          <Badge className="w-fit" variant="outline">
+            {template.label}
+          </Badge>
         </div>
       </div>
 
@@ -128,7 +130,7 @@ function EmailClientPreview({
           </div>
         ) : serverPreview ? (
           <iframe
-            className="h-[520px] w-full rounded-md border border-border bg-background"
+            className="h-[420px] w-full rounded-md border border-border bg-background sm:h-[520px]"
             sandbox=""
             srcDoc={serverPreview.html}
             title={`${template.label} rendered email preview`}
@@ -141,7 +143,7 @@ function EmailClientPreview({
       </div>
 
       <div className="border-t border-border/60 bg-card px-4 py-3">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-start gap-2">
           <span className="text-xs font-medium text-muted-foreground">
             Variables
           </span>

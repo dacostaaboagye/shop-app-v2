@@ -4,6 +4,7 @@ import {
   issuedDocumentSnapshotResponseSchema,
   officialDocumentProfileResponseSchema,
   officialDocumentSettingsResponseSchema,
+  sendIssuedSalesDocumentEmailResponseSchema,
   updateLocationDocumentSettingsRequestSchema,
   updateOfficialDocumentSettingsRequestSchema,
 } from "./official-documents.js";
@@ -150,6 +151,16 @@ test("issued document snapshot contract accepts immutable document evidence", ()
 
   assert.equal(parsed.documentType, "sales_receipt");
   assert.equal(parsed.profileSnapshot.currencyCode, "GHS");
+});
+
+test("issued document email response contract accepts a successful send result", () => {
+  const parsed = sendIssuedSalesDocumentEmailResponseSchema.parse({
+    ok: true,
+    recipientEmail: "buyer@example.com",
+  });
+
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.recipientEmail, "buyer@example.com");
 });
 
 test("official document update contracts accept partial changes", () => {

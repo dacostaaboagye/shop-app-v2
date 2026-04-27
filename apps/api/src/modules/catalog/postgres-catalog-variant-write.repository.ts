@@ -3,6 +3,7 @@ import type {
   AdminUpdateVariantRequest,
   AdminVariantSummary,
 } from "@shop/contracts";
+import type { CatalogVariantEventContextRepository } from "./catalog-variant-event-context.repository.js";
 import type { CatalogVariantCommands } from "./postgres-catalog-variant-write.commands.js";
 
 export type CatalogVariantRepository = {
@@ -23,12 +24,23 @@ export type CatalogVariantRepository = {
     productSlug: string;
     variantSlug: string;
   }): Promise<void>;
+  getVariantEventContext(input: {
+    productSlug: string;
+    variantSlug: string;
+  }): Promise<
+    Awaited<
+      ReturnType<CatalogVariantEventContextRepository["getVariantEventContext"]>
+    >
+  >;
 };
 
 export class PostgresCatalogVariantWriteRepository
-  implements CatalogVariantRepository
+  implements CatalogVariantRepository, CatalogVariantEventContextRepository
 {
-  constructor(private readonly commands: CatalogVariantCommands) {}
+  constructor(
+    private readonly commands: CatalogVariantCommands,
+    private readonly eventContextRepository: CatalogVariantEventContextRepository,
+  ) {}
 
   async createVariant(input: {
     actorId: string;
@@ -54,5 +66,12 @@ export class PostgresCatalogVariantWriteRepository
     variantSlug: string;
   }): Promise<void> {
     return this.commands.delete(input);
+  }
+
+  async getVariantEventContext(input: {
+    productSlug: string;
+    variantSlug: string;
+  }) {
+    return this.eventContextRepository.getVariantEventContext(input);
   }
 }

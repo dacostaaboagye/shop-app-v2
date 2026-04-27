@@ -1,0 +1,10 @@
+Verify your operational access before your first live shift
+
+Hi Ama, please verify your email address so you can sign in to live stock, sales, and assignment workflows.
+
+Verify your operational access and continue to your first live shift:
+https://app.example.com/verify-email?token=sample-token
+
+This link expires in 24 hours. If you did not create an account, you can safely ignore this email.
+
+If the button does not work, copy and paste the full link into your browser.

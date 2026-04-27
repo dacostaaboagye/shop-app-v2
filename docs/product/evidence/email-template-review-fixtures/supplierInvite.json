@@ -1,0 +1,9 @@
+{
+  "allowedVariables": [
+    "firstName",
+    "supplierName"
+  ],
+  "subject": "Supplier portal invitation for Acme Distribution operational access",
+  "type": "supplierInvite",
+  "unknownVariables": []
+}

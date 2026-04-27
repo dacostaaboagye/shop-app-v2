@@ -38,13 +38,56 @@ export async function setUserLockout(
 export async function updateUserPreferredPortal(
   db: ApiDatabase,
   userId: string,
-  preferredPortal: string | null,
+  input: {
+    firstName?: string;
+    notificationPreferences?: {
+      emailEnabled: boolean;
+      inAppEnabled: boolean;
+      soundEnabled: boolean;
+    };
+    lastName?: string;
+    preferredPortal?: string | null;
+    slug?: string;
+  },
 ): Promise<void> {
-  await db
-    .update(users)
-    .set({
-      preferredPortal: preferredPortal as PortalKey | null,
-      updatedAt: new Date(),
-    })
-    .where(eq(users.id, userId));
+  const update: {
+    firstName?: string;
+    lastName?: string;
+    notificationEmailEnabled?: boolean;
+    notificationInAppEnabled?: boolean;
+    notificationSoundEnabled?: boolean;
+    preferredPortal?: PortalKey | null;
+    slug?: string;
+    updatedAt: Date;
+  } = {
+    updatedAt: new Date(),
+  };
+
+  if ("firstName" in input && input.firstName !== undefined) {
+    update.firstName = input.firstName;
+  }
+
+  if ("lastName" in input && input.lastName !== undefined) {
+    update.lastName = input.lastName;
+  }
+
+  if ("preferredPortal" in input) {
+    update.preferredPortal = (input.preferredPortal ??
+      null) as PortalKey | null;
+  }
+
+  if ("slug" in input && input.slug !== undefined) {
+    update.slug = input.slug;
+  }
+
+  if (input.notificationPreferences) {
+    update.notificationEmailEnabled =
+      input.notificationPreferences.emailEnabled;
+    update.notificationInAppEnabled =
+      input.notificationPreferences.inAppEnabled;
+    update.notificationSoundEnabled =
+      input.notificationPreferences.soundEnabled;
+  }
+
+  await db.update(users).set(update).where(eq(users.id, userId));
 }

@@ -1,0 +1,2 @@
+ALTER TABLE "stock_supply_requests" ADD COLUMN "request_group_reference" varchar(25);--> statement-breakpoint
+CREATE INDEX "supply_requests_group_reference_idx" ON "stock_supply_requests" USING btree ("request_group_reference");

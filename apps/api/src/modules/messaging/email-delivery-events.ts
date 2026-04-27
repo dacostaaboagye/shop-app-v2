@@ -4,12 +4,14 @@ import type { EmailDeliveryStatus } from "./email-service.types.js";
 
 type EmailDeliveryIssueEventInput = {
   attempt: {
+    attemptId?: string | null;
     messageType: string;
     recipientEmail: string;
     subject: string;
   } | null;
   occurredAt: Date;
-  providerMessageId: string;
+  providerMessageId?: string | null;
+  reference: string;
   status: EmailDeliveryStatus;
   statusReason?: string | null;
 };
@@ -26,8 +28,9 @@ export function createEmailDeliveryIssueEvent(
     id: randomUUID(),
     occurredAt: input.occurredAt.toISOString(),
     payload: {
+      attemptId: input.attempt?.attemptId ?? null,
       messageType: input.attempt?.messageType ?? null,
-      providerMessageId: input.providerMessageId,
+      providerMessageId: input.providerMessageId ?? null,
       recipientEmail: input.attempt?.recipientEmail ?? null,
       status: input.status,
       statusReason: input.statusReason ?? null,
@@ -35,7 +38,7 @@ export function createEmailDeliveryIssueEvent(
     },
     resource: {
       kind: "email_delivery",
-      reference: input.providerMessageId,
+      reference: input.reference,
     },
     summary: buildEmailDeliveryIssueSummary({
       recipientEmail,

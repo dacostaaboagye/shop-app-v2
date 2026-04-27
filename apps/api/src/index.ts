@@ -3,12 +3,16 @@ import { createDatabaseRuntime } from "./infrastructure/database.js";
 import { createR2StorageService } from "./infrastructure/r2-storage.js";
 import { createAdminDirectoryRuntime } from "./modules/admin/create-admin-directory-runtime.js";
 import { createAssignmentsRuntime } from "./modules/assignments/create-assignments-runtime.js";
+import { AccountProfileMediaService } from "./modules/auth/account-profile-media.service.js";
 import { createAuthRuntime } from "./modules/auth/create-auth-runtime.js";
 import { createCatalogRuntime } from "./modules/catalog/create-catalog-runtime.js";
 import { PostgresVariantSearchRepository } from "./modules/catalog/postgres-variant-search.repository.js";
 import { createPlatformEventRuntime } from "./modules/events/create-platform-event-runtime.js";
 import { InMemoryPlatformEventBus } from "./modules/events/in-memory-platform-event-bus.js";
-import { createMessagingRuntime } from "./modules/messaging/create-email-runtime.js";
+import {
+  createConfiguredEmailService,
+  createMessagingRuntime,
+} from "./modules/messaging/create-email-runtime.js";
 import { NotificationQueryService } from "./modules/notifications/notification-query.service.js";
 import { NotificationWriteService } from "./modules/notifications/notification-write.service.js";
 import { PostgresNotificationQueryRepository } from "./modules/notifications/postgres-notification-query.repository.js";
@@ -29,7 +33,10 @@ if (!env.databaseUrl) {
 const databaseRuntime = createDatabaseRuntime(env.databaseUrl);
 const storage = createR2StorageService(env);
 const eventBus = new InMemoryPlatformEventBus();
-const authRuntime = createAuthRuntime(databaseRuntime, env);
+const sharedEmailService = createConfiguredEmailService(databaseRuntime, env);
+const authRuntime = createAuthRuntime(databaseRuntime, env, {
+  emailService: sharedEmailService,
+});
 const platformEventRuntime = createPlatformEventRuntime({
   databaseRuntime,
   env,
@@ -37,12 +44,33 @@ const platformEventRuntime = createPlatformEventRuntime({
   permissionService: authRuntime.accessControl.permissionService,
 });
 const messagingRuntime = createMessagingRuntime(databaseRuntime, env, {
+  emailService: sharedEmailService,
   platformEventPublisher: platformEventRuntime.platformEventPublisher,
 });
-const adminDirectoryRuntime = createAdminDirectoryRuntime(databaseRuntime, env);
-const catalogRuntime = createCatalogRuntime(databaseRuntime, storage);
-const salesRuntime = createSalesRuntime(databaseRuntime);
-const assignmentsRuntime = createAssignmentsRuntime(databaseRuntime);
+const adminDirectoryRuntime = createAdminDirectoryRuntime(databaseRuntime, {
+  emailService: sharedEmailService,
+  env,
+  platformEventPublisher: platformEventRuntime.platformEventPublisher,
+  ...(env.webBaseUrl ? { webBaseUrl: env.webBaseUrl } : {}),
+});
+const catalogRuntime = createCatalogRuntime(databaseRuntime, storage, {
+  platformEventPublisher: platformEventRuntime.platformEventPublisher,
+});
+const officialDocumentRuntime = createOfficialDocumentSettingsRuntime(
+  databaseRuntime,
+  {
+    emailFromAddress: env.emailFromAddress,
+    platformEventPublisher: platformEventRuntime.platformEventPublisher,
+  },
+);
+const salesRuntime = createSalesRuntime(databaseRuntime, {
+  documentProfileResolver:
+    officialDocumentRuntime.officialDocuments.settingsService,
+  platformEventPublisher: platformEventRuntime.platformEventPublisher,
+});
+const assignmentsRuntime = createAssignmentsRuntime(databaseRuntime, {
+  platformEventPublisher: platformEventRuntime.platformEventPublisher,
+});
 const stockRuntime = createStockRuntime(databaseRuntime, {
   platformEventPublisher: platformEventRuntime.platformEventPublisher,
 });
@@ -52,20 +80,18 @@ const notificationQueryService = new NotificationQueryService(
 const notificationWriteService = new NotificationWriteService(
   new PostgresNotificationWriteRepository(databaseRuntime.db),
 );
-const officialDocumentRuntime = createOfficialDocumentSettingsRuntime(
-  databaseRuntime,
-  {
-    emailFromAddress: env.emailFromAddress,
-    platformEventPublisher: platformEventRuntime.platformEventPublisher,
-  },
-);
 const salesDocumentSnapshotService = new SalesIssuedDocumentSnapshotService({
+  emailService: sharedEmailService,
   invoiceRepository: salesRuntime.sales.invoiceQueryRepository,
   permissionService: authRuntime.accessControl.permissionService,
   settingsService: officialDocumentRuntime.officialDocuments.settingsService,
   snapshotService:
     officialDocumentRuntime.officialDocuments.issuedDocumentSnapshotService,
 });
+const accountProfileMediaService = new AccountProfileMediaService(
+  authRuntime.auth.currentUserService,
+  catalogRuntime.catalog.catalogMediaService,
+);
 const gtnDocumentSnapshotService = new GtnIssuedDocumentSnapshotService({
   permissionService: authRuntime.accessControl.permissionService,
   settingsService: officialDocumentRuntime.officialDocuments.settingsService,
@@ -82,6 +108,9 @@ const server = createServer({
   adminSuppliers: adminDirectoryRuntime.adminDirectory,
   adminUserAccess: adminDirectoryRuntime.adminDirectory,
   auth: authRuntime.auth,
+  authProfileMedia: {
+    accountProfileMediaService,
+  },
   catalogManagerQuery: {
     variantSearchRepository: new PostgresVariantSearchRepository(
       databaseRuntime.db,
@@ -98,6 +127,9 @@ const server = createServer({
       platformEventRuntime.platformEventDeliveryHealthService,
   },
   messagingAdmin: {
+    adminCommunicationQueryService:
+      messagingRuntime.adminCommunicationQueryService,
+    adminCommunicationService: messagingRuntime.adminCommunicationService,
     operationsService: messagingRuntime.emailOperationsService,
   },
   messagingWebhooks: {

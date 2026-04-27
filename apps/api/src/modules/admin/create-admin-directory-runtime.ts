@@ -1,6 +1,8 @@
 import type { ApiEnv } from "../../env.js";
 import type { DatabaseRuntime } from "../../infrastructure/database.js";
+import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import { createConfiguredEmailService } from "../messaging/create-email-runtime.js";
+import type { EmailService } from "../messaging/email.service.js";
 import { PostgresReferenceNumberRepository } from "../public-identifiers/postgres-reference-number.repository.js";
 import { PostgresSlugRepository } from "../public-identifiers/postgres-slug.repository.js";
 import { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
@@ -40,10 +42,15 @@ type AdminDirectoryRuntime = {
 
 export function createAdminDirectoryRuntime(
   databaseRuntime: DatabaseRuntime,
-  env?: Pick<
-    ApiEnv,
-    "emailFromAddress" | "nodeEnv" | "resendApiKey" | "webBaseUrl"
-  >,
+  options: {
+    emailService?: EmailService | null;
+    env?: Pick<
+      ApiEnv,
+      "emailFromAddress" | "nodeEnv" | "resendApiKey" | "webBaseUrl"
+    >;
+    platformEventPublisher?: PlatformEventPublisher;
+    webBaseUrl?: string;
+  } = {},
 ): AdminDirectoryRuntime {
   const slugService = new SlugService(
     new PostgresSlugRepository(databaseRuntime.db),
@@ -54,9 +61,11 @@ export function createAdminDirectoryRuntime(
   const accessQueryRepository = new PostgresAdminAccessQueryRepository(
     databaseRuntime.db,
   );
-  const emailService = env
-    ? createConfiguredEmailService(databaseRuntime, env)
-    : null;
+  const emailService =
+    options.emailService ??
+    (options.env
+      ? createConfiguredEmailService(databaseRuntime, options.env)
+      : null);
 
   return {
     adminDirectory: {
@@ -69,6 +78,7 @@ export function createAdminDirectoryRuntime(
           slugService,
           accessQueryRepository,
         ),
+        options.platformEventPublisher ?? null,
       ),
       adminLocationQueryService: new AdminLocationQueryService(
         new PostgresAdminLocationQueryRepository(databaseRuntime.db),
@@ -87,15 +97,19 @@ export function createAdminDirectoryRuntime(
           databaseRuntime.db,
           slugService,
           emailService,
-          env?.webBaseUrl ?? "http://localhost:3000",
+          options.webBaseUrl ??
+            options.env?.webBaseUrl ??
+            "http://localhost:3000",
         ),
         referenceNumberService,
+        options.platformEventPublisher ?? null,
       ),
       adminUserAccessQueryService: new AdminUserAccessQueryService(
         new PostgresAdminUserAccessQueryRepository(databaseRuntime.db),
       ),
       adminUserAccessWriteService: new AdminUserAccessWriteService(
         new PostgresAdminUserAccessWriteRepository(databaseRuntime.db),
+        options.platformEventPublisher ?? null,
       ),
       adminUserQueryService: new AdminUserQueryService(
         new PostgresAdminUserQueryRepository(databaseRuntime.db),

@@ -6,6 +6,15 @@ import type {
   AdminUpdateVariantRequest,
   AdminVariantSummary,
 } from "@shop/contracts";
+import type { PlatformEventPublisher } from "../events/platform-event.types.js";
+import {
+  createCatalogProductCreatedEvent,
+  createCatalogProductDeletedEvent,
+  createCatalogProductUpdatedEvent,
+  createCatalogVariantCreatedEvent,
+  createCatalogVariantDeletedEvent,
+  createCatalogVariantUpdatedEvent,
+} from "./catalog-events.js";
 import type { CatalogProductRepository } from "./postgres-catalog-product-write.repository.js";
 import type { CatalogVariantRepository } from "./postgres-catalog-variant-write.repository.js";
 
@@ -13,60 +22,155 @@ export class CatalogProductWriteService {
   constructor(
     private readonly productRepo: CatalogProductRepository,
     private readonly variantRepo: CatalogVariantRepository,
+    private readonly eventPublisher?: PlatformEventPublisher | null,
   ) {}
 
   async createProduct(
-    actorId: string,
+    actor: { userId: string; userSlug: string },
     payload: AdminCreateProductRequest,
     now: Date,
   ): Promise<AdminProductDetail> {
-    return this.productRepo.createProduct({ actorId, now, payload });
+    const product = await this.productRepo.createProduct({
+      actorId: actor.userId,
+      now,
+      payload,
+    });
+
+    await this.eventPublisher?.publish(
+      createCatalogProductCreatedEvent({
+        actor,
+        occurredAt: now,
+        product,
+      }),
+    );
+
+    return product;
   }
 
   async updateProduct(
-    actorId: string,
+    actor: { userId: string; userSlug: string },
     slug: string,
     payload: AdminUpdateProductRequest,
     now: Date,
   ): Promise<AdminProductDetail | null> {
-    return this.productRepo.updateProduct({ actorId, now, payload, slug });
+    const product = await this.productRepo.updateProduct({
+      actorId: actor.userId,
+      now,
+      payload,
+      slug,
+    });
+
+    if (product) {
+      await this.eventPublisher?.publish(
+        createCatalogProductUpdatedEvent({
+          actor,
+          occurredAt: now,
+          product,
+        }),
+      );
+    }
+
+    return product;
   }
 
   async deleteProduct(slug: string): Promise<void> {
     return this.productRepo.deleteProduct({ slug });
   }
 
+  async deleteProductWithActor(
+    actor: { userId: string; userSlug: string },
+    slug: string,
+    now: Date,
+  ): Promise<void> {
+    const product = await this.productRepo.getProductForDeleteEvent(slug);
+    await this.productRepo.deleteProduct({ slug });
+
+    if (product) {
+      await this.eventPublisher?.publish(
+        createCatalogProductDeletedEvent({
+          actor,
+          occurredAt: now,
+          product,
+        }),
+      );
+    }
+  }
+
   async createVariant(
-    actorId: string,
+    actor: { userId: string; userSlug: string },
     productSlug: string,
     payload: AdminCreateVariantRequest,
     now: Date,
   ): Promise<AdminVariantSummary> {
-    return this.variantRepo.createVariant({
-      actorId,
+    const variant = await this.variantRepo.createVariant({
+      actorId: actor.userId,
       now,
       payload,
       productSlug,
     });
+
+    await this.eventPublisher?.publish(
+      createCatalogVariantCreatedEvent({
+        actor,
+        occurredAt: now,
+        productSlug,
+        variant,
+      }),
+    );
+
+    return variant;
   }
 
   async updateVariant(
-    actorId: string,
+    actor: { userId: string; userSlug: string },
     productSlug: string,
     variantSlug: string,
     payload: AdminUpdateVariantRequest,
     now: Date,
   ): Promise<AdminVariantSummary | null> {
-    return this.variantRepo.updateVariant({
-      actorId,
+    const variant = await this.variantRepo.updateVariant({
+      actorId: actor.userId,
       now,
       payload,
       productSlug,
       variantSlug,
     });
+
+    if (variant) {
+      await this.eventPublisher?.publish(
+        createCatalogVariantUpdatedEvent({
+          actor,
+          occurredAt: now,
+          productSlug,
+          variant,
+        }),
+      );
+    }
+
+    return variant;
   }
 
-  async deleteVariant(productSlug: string, variantSlug: string): Promise<void> {
-    return this.variantRepo.deleteVariant({ productSlug, variantSlug });
+  async deleteVariant(
+    actor: { userId: string; userSlug: string },
+    productSlug: string,
+    variantSlug: string,
+    now: Date,
+  ): Promise<void> {
+    const context = await this.variantRepo.getVariantEventContext({
+      productSlug,
+      variantSlug,
+    });
+
+    await this.variantRepo.deleteVariant({ productSlug, variantSlug });
+
+    if (context) {
+      await this.eventPublisher?.publish(
+        createCatalogVariantDeletedEvent({
+          actor,
+          occurredAt: now,
+          variant: context,
+        }),
+      );
+    }
   }
 }

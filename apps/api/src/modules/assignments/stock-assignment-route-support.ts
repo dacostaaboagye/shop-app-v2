@@ -1,8 +1,7 @@
 import { AppError } from "../_core/errors/app-error.js";
 import type { RouteDefinition } from "../_core/route-contract.js";
-import type { OwnershipEventWriteService } from "../inventory-ownership/ownership-event-write.service.js";
-import type { OwnershipHandoverService } from "../inventory-ownership/ownership-handover.service.js";
 import type { PostgresOwnershipHandoverRepository } from "../inventory-ownership/postgres-ownership-handover.repository.js";
+import type { AssignmentCommandService } from "./assignment-command.service.js";
 import type { PostgresWorkerAssignmentQueryRepository } from "./postgres-worker-assignment-query.repository.js";
 
 type StockBalanceRepository = {
@@ -18,13 +17,9 @@ export type StockAssignmentRouteDependencies = {
     PostgresOwnershipHandoverRepository,
     "getOriginalWorkerForChain"
   >;
-  ownershipEventWriteService: Pick<
-    OwnershipEventWriteService,
-    "assignProduct" | "reassignProduct"
-  >;
-  ownershipHandoverService: Pick<
-    OwnershipHandoverService,
-    "initiateHandover" | "endHandover"
+  assignmentCommandService: Pick<
+    AssignmentCommandService,
+    "assignProduct" | "endHandover" | "initiateHandover" | "reassignProduct"
   >;
   stockBalanceRepository: StockBalanceRepository;
 };
@@ -147,19 +142,17 @@ export function createUnavailableDependencies(): StockAssignmentRouteDependencie
         return unavailable();
       },
     },
-    ownershipEventWriteService: {
+    assignmentCommandService: {
       async assignProduct() {
         return unavailable();
       },
-      async reassignProduct() {
-        return unavailable();
-      },
-    },
-    ownershipHandoverService: {
       async endHandover() {
         return unavailable();
       },
       async initiateHandover() {
+        return unavailable();
+      },
+      async reassignProduct() {
         return unavailable();
       },
     },

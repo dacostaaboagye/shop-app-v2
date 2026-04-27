@@ -148,6 +148,17 @@ export class PostgresCatalogCategoryWriteRepository
     return toCategory(updatedRow as CategoryWithParent);
   }
 
+  async getCategory(slug: string) {
+    const row = await this.db.query.catalogCategories.findFirst({
+      where: eq(catalogCategories.slug, slug),
+      with: {
+        parentCategory: { columns: { slug: true } },
+      },
+    });
+
+    return row ? toCategory(row as CategoryWithParent) : null;
+  }
+
   async deleteCategory(input: { slug: string }) {
     await this.deleteGuard.assertCategoryCanBeDeleted(input.slug);
 

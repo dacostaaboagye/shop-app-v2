@@ -12,6 +12,30 @@ import type { ApiDatabase } from "../../infrastructure/database.js";
 export class PostgresNotificationRecipientRepository {
   constructor(private readonly db: ApiDatabase) {}
 
+  async findActiveRecipientBySlug(input: { userSlug: string }): Promise<{
+    email: string | null;
+    firstName: string | null;
+    notificationEmailEnabled: boolean;
+    notificationInAppEnabled: boolean;
+    userId: string;
+    userSlug: string;
+  } | null> {
+    const row = await this.db
+      .select({
+        email: users.email,
+        firstName: users.firstName,
+        notificationEmailEnabled: users.notificationEmailEnabled,
+        notificationInAppEnabled: users.notificationInAppEnabled,
+        userId: users.id,
+        userSlug: users.slug,
+      })
+      .from(users)
+      .where(and(eq(users.slug, input.userSlug), eq(users.status, "active")))
+      .limit(1);
+
+    return row[0] ?? null;
+  }
+
   async filterActiveUserIds(userIds: readonly string[]): Promise<string[]> {
     if (!userIds.length) {
       return [];
@@ -20,7 +44,13 @@ export class PostgresNotificationRecipientRepository {
     const rows = await this.db
       .select({ userId: users.id })
       .from(users)
-      .where(and(inArray(users.id, [...userIds]), eq(users.status, "active")));
+      .where(
+        and(
+          inArray(users.id, [...userIds]),
+          eq(users.status, "active"),
+          eq(users.notificationInAppEnabled, true),
+        ),
+      );
 
     return rows.map((row) => row.userId);
   }
@@ -29,8 +59,30 @@ export class PostgresNotificationRecipientRepository {
     locationId?: string;
     permission: string;
   }): Promise<string[]> {
+    const recipients = await this.listActiveRecipientsWithPermission(input);
+    return recipients.map((recipient) => recipient.userId);
+  }
+
+  async listActiveRecipientsWithPermission(input: {
+    locationId?: string;
+    permission: string;
+  }): Promise<
+    Array<{
+      email: string | null;
+      firstName: string | null;
+      notificationEmailEnabled: boolean;
+      notificationInAppEnabled: boolean;
+      userId: string;
+    }>
+  > {
     const roleRows = await this.db
-      .select({ userId: users.id })
+      .select({
+        email: users.email,
+        firstName: users.firstName,
+        notificationEmailEnabled: users.notificationEmailEnabled,
+        notificationInAppEnabled: users.notificationInAppEnabled,
+        userId: users.id,
+      })
       .from(userRoles)
       .innerJoin(users, eq(users.id, userRoles.userId))
       .innerJoin(rolePermissions, eq(rolePermissions.roleId, userRoles.roleId))
@@ -45,7 +97,13 @@ export class PostgresNotificationRecipientRepository {
       );
 
     const overrideRows = await this.db
-      .select({ userId: users.id })
+      .select({
+        email: users.email,
+        firstName: users.firstName,
+        notificationEmailEnabled: users.notificationEmailEnabled,
+        notificationInAppEnabled: users.notificationInAppEnabled,
+        userId: users.id,
+      })
       .from(userPermissionOverrides)
       .innerJoin(users, eq(users.id, userPermissionOverrides.userId))
       .innerJoin(
@@ -64,9 +122,25 @@ export class PostgresNotificationRecipientRepository {
         ),
       );
 
-    return Array.from(
-      new Set([...roleRows, ...overrideRows].map((row) => row.userId)),
-    ).sort((left, right) => left.localeCompare(right));
+    const recipients = new Map<
+      string,
+      {
+        email: string | null;
+        firstName: string | null;
+        notificationEmailEnabled: boolean;
+        notificationInAppEnabled: boolean;
+        userId: string;
+        userSlug?: string;
+      }
+    >();
+
+    for (const row of [...roleRows, ...overrideRows]) {
+      recipients.set(row.userId, row);
+    }
+
+    return Array.from(recipients.values()).sort((left, right) =>
+      left.userId.localeCompare(right.userId),
+    );
   }
 }
 

@@ -48,53 +48,106 @@ export class StockSupplyService {
     skuSnapshot: SkuSnapshot;
     sourceLocationId: string;
   }): Promise<SupplyRequestRow> {
-    const transferReference =
-      await this.referenceNumberService.generateReference({
-        now: new Date(),
-        sequenceKey: "stock-transfer",
-      });
-    const result = await this.db.transaction(async (tx) => {
-      const [row] = await tx
-        .insert(stockSupplyRequests)
-        .values({
-          locationId: input.locationId,
-          notes: input.notes,
+    const [row] = await this.createRequestBatch({
+      actor: input.actor,
+      items: [
+        {
           reference: input.reference,
           requestedQuantity: input.requestedQuantity,
-          requesterId: input.requesterId,
           skuId: input.skuId,
           skuSnapshot: input.skuSnapshot,
-          sourceLocationId: input.sourceLocationId,
-          status: "pending",
-        })
-        .returning();
-
-      if (!row) throw new Error("Failed to create supply request.");
-      const supplyRequest = toServiceSupplyRequestRow(row, transferReference);
-      await createRequestedTransfer(tx, {
-        actorUserId: input.requesterId,
-        occurredAt: row.createdAt,
-        reference: transferReference,
-        supplyRequest,
-      });
-      await appendStockSupplyEventWithinTransaction(
-        this.operationContext(),
-        tx,
-        {
-          actor: input.actor,
-          supplyRequest,
-          summary: formatStockSupplyEventSummary({
-            action: "requested",
-            supplyRequest,
-          }),
-          type: "transfer.requested",
         },
-      );
-      return supplyRequest;
+      ],
+      locationId: input.locationId,
+      notes: input.notes,
+      requestGroupReference: null,
+      requesterId: input.requesterId,
+      sourceLocationId: input.sourceLocationId,
+    });
+
+    if (!row) {
+      throw new Error("Failed to create supply request.");
+    }
+
+    return row;
+  }
+
+  async createRequestBatch(input: {
+    actor: AuthenticatedActor;
+    items: Array<{
+      reference: string;
+      requestedQuantity: number;
+      skuId: string;
+      skuSnapshot: SkuSnapshot;
+    }>;
+    locationId: string;
+    notes: string | null;
+    requestGroupReference: string | null;
+    requesterId: string;
+    sourceLocationId: string;
+  }): Promise<SupplyRequestRow[]> {
+    const transferReferences = await Promise.all(
+      input.items.map(() =>
+        this.referenceNumberService.generateReference({
+          now: new Date(),
+          sequenceKey: "stock-transfer",
+        }),
+      ),
+    );
+
+    const rows = await this.db.transaction(async (tx) => {
+      const createdRows: SupplyRequestRow[] = [];
+
+      for (const [index, item] of input.items.entries()) {
+        const [row] = await tx
+          .insert(stockSupplyRequests)
+          .values({
+            locationId: input.locationId,
+            notes: input.notes,
+            reference: item.reference,
+            requestGroupReference: input.requestGroupReference,
+            requestedQuantity: item.requestedQuantity,
+            requesterId: input.requesterId,
+            skuId: item.skuId,
+            skuSnapshot: item.skuSnapshot,
+            sourceLocationId: input.sourceLocationId,
+            status: "pending",
+          })
+          .returning();
+
+        if (!row) throw new Error("Failed to create supply request.");
+
+        const supplyRequest = toServiceSupplyRequestRow(
+          row,
+          transferReferences[index] ?? null,
+        );
+        await createRequestedTransfer(tx, {
+          actorUserId: input.requesterId,
+          occurredAt: row.createdAt,
+          reference: transferReferences[index] ?? "",
+          supplyRequest,
+        });
+        await appendStockSupplyEventWithinTransaction(
+          this.operationContext(),
+          tx,
+          {
+            actor: input.actor,
+            supplyRequest,
+            summary: formatStockSupplyEventSummary({
+              action: "requested",
+              supplyRequest,
+            }),
+            type: "transfer.requested",
+          },
+        );
+        createdRows.push(supplyRequest);
+      }
+
+      return createdRows;
     });
 
     await notifyStockSupplyEventsCommitted(this.operationContext());
-    return result;
+    return rows;
   }
 
   async approve(input: {

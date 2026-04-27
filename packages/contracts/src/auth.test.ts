@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  authNotificationPreferencesSchema,
   authSessionSchema,
   loginRequestSchema,
   registerRequestSchema,
+  updateProfileRequestSchema,
 } from "./auth.js";
 
 describe("auth contracts", () => {
@@ -27,6 +29,11 @@ describe("auth contracts", () => {
         firstName: "Store",
         lastLoginAt: null,
         lastName: "Manager",
+        notificationPreferences: {
+          emailEnabled: true,
+          inAppEnabled: true,
+          soundEnabled: true,
+        },
         preferredPortal: "admin",
         requiresPasswordChange: false,
         slug: "store-manager",
@@ -46,5 +53,35 @@ describe("auth contracts", () => {
     });
 
     assert.equal(parsed.firstName, "Store");
+  });
+
+  it("accepts notification preferences in the shared profile update contract", () => {
+    const parsed = updateProfileRequestSchema.parse({
+      firstName: "Store",
+      lastName: "Manager",
+      notificationPreferences: {
+        emailEnabled: false,
+        inAppEnabled: true,
+        soundEnabled: false,
+      },
+    });
+
+    assert.equal(parsed.firstName, "Store");
+    assert.equal(parsed.lastName, "Manager");
+    assert.deepEqual(parsed.notificationPreferences, {
+      emailEnabled: false,
+      inAppEnabled: true,
+      soundEnabled: false,
+    });
+  });
+
+  it("defaults missing notification preference fields", () => {
+    const parsed = authNotificationPreferencesSchema.parse({});
+
+    assert.deepEqual(parsed, {
+      emailEnabled: true,
+      inAppEnabled: true,
+      soundEnabled: true,
+    });
   });
 });

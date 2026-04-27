@@ -12,7 +12,7 @@ export type CatalogWriteRouteDependencies = {
     CatalogProductWriteService,
     | "createProduct"
     | "updateProduct"
-    | "deleteProduct"
+    | "deleteProductWithActor"
     | "createVariant"
     | "updateVariant"
     | "deleteVariant"
@@ -87,7 +87,7 @@ export function createUnavailableCatalogWriteDependencies(): CatalogWriteRouteDe
       async updateProduct() {
         throw unavailableCatalogError();
       },
-      async deleteProduct() {
+      async deleteProductWithActor() {
         throw unavailableCatalogError();
       },
       async createVariant() {

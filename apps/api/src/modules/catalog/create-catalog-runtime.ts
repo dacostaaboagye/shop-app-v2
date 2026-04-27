@@ -2,6 +2,7 @@ import type { DatabaseRuntime } from "../../infrastructure/database.js";
 import type { R2StorageService } from "../../infrastructure/r2-storage.js";
 import { PermissionResolutionService } from "../access-control/permission-resolution.service.js";
 import { PostgresPermissionRepository } from "../access-control/postgres-permission.repository.js";
+import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import { PostgresSlugRepository } from "../public-identifiers/postgres-slug.repository.js";
 import { SlugService } from "../public-identifiers/slug.service.js";
 import { CatalogBrandQueryService } from "./catalog-brand-query.service.js";
@@ -11,6 +12,7 @@ import { CatalogCategoryWriteService } from "./catalog-category-write.service.js
 import { CatalogMediaService } from "./catalog-media.service.js";
 import { CatalogProductQueryService } from "./catalog-product-query.service.js";
 import { CatalogProductWriteService } from "./catalog-product-write.service.js";
+import { PostgresCatalogVariantEventContextRepository } from "./catalog-variant-event-context.repository.js";
 import { PostgresCatalogBrandQueryRepository } from "./postgres-catalog-brand-query.repository.js";
 import { PostgresCatalogBrandWriteRepository } from "./postgres-catalog-brand-write.repository.js";
 import { PostgresCatalogCategoryQueryRepository } from "./postgres-catalog-category-query.repository.js";
@@ -42,6 +44,9 @@ type CatalogRuntime = {
 export function createCatalogRuntime(
   databaseRuntime: DatabaseRuntime,
   storage: R2StorageService | null = null,
+  options: {
+    platformEventPublisher?: PlatformEventPublisher;
+  } = {},
 ): CatalogRuntime {
   const slugService = new SlugService(
     new PostgresSlugRepository(databaseRuntime.db),
@@ -77,6 +82,7 @@ export function createCatalogRuntime(
           slugService,
           catalogDeleteGuard,
         ),
+        options.platformEventPublisher ?? null,
       ),
       catalogCategoryQueryService: new CatalogCategoryQueryService(
         new PostgresCatalogCategoryQueryRepository(databaseRuntime.db),
@@ -87,6 +93,7 @@ export function createCatalogRuntime(
           slugService,
           catalogDeleteGuard,
         ),
+        options.platformEventPublisher ?? null,
       ),
       catalogMediaService: new CatalogMediaService(
         new PostgresCatalogMediaRepository(databaseRuntime.db),
@@ -97,7 +104,11 @@ export function createCatalogRuntime(
       ),
       catalogProductWriteService: new CatalogProductWriteService(
         new PostgresCatalogProductWriteRepository(productCommands),
-        new PostgresCatalogVariantWriteRepository(variantCommands),
+        new PostgresCatalogVariantWriteRepository(
+          variantCommands,
+          new PostgresCatalogVariantEventContextRepository(databaseRuntime.db),
+        ),
+        options.platformEventPublisher ?? null,
       ),
       permissionResolutionService,
       productOptionsRepo: new PostgresCatalogProductOptionsRepository(

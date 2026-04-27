@@ -2,6 +2,7 @@ import {
   Bell,
   Building2,
   ClipboardList,
+  Cog,
   ShieldCheck,
   ShoppingCart,
   Truck,
@@ -47,14 +48,57 @@ export const PRIMARY_OVERVIEW_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     section: "Overview",
   },
   {
+    activeMatchers: [{ mode: "exact", path: "/admin/account" }],
+    description:
+      "Review your account identity, session state, and delivery settings.",
+    href: toRoute("/admin/account"),
+    icon: Cog,
+    label: "Profile",
+    requiredPermission: "admin.dashboard.view",
+    section: "Account",
+  },
+  {
+    activeMatchers: [
+      { mode: "descendants", path: "/admin/account/preferences" },
+    ],
+    description:
+      "Manage your default workspace and notification delivery settings.",
+    href: toRoute("/admin/account/preferences"),
+    icon: Cog,
+    label: "Preferences",
+    requiredPermission: "admin.dashboard.view",
+    section: "Account",
+  },
+  {
     activeMatchers: [{ mode: "descendants", path: "/supplier/notifications" }],
     description: "Operational updates relevant to your supplier account.",
     href: toRoute("/supplier/notifications"),
     icon: Bell,
     label: "Notifications",
     requiredPermission: "supplier.dashboard.view",
-    section: "Overview",
-    sidebar: false,
+    section: "Account",
+  },
+  {
+    activeMatchers: [{ mode: "exact", path: "/supplier/account" }],
+    description:
+      "Review your supplier account identity, session state, and delivery settings.",
+    href: toRoute("/supplier/account"),
+    icon: Cog,
+    label: "Profile",
+    requiredPermission: "supplier.dashboard.view",
+    section: "Account",
+  },
+  {
+    activeMatchers: [
+      { mode: "descendants", path: "/supplier/account/preferences" },
+    ],
+    description:
+      "Manage your supplier default workspace and delivery settings.",
+    href: toRoute("/supplier/account/preferences"),
+    icon: Cog,
+    label: "Preferences",
+    requiredPermission: "supplier.dashboard.view",
+    section: "Account",
   },
   {
     activeMatchers: [{ mode: "exact", path: "/agent" }],
@@ -73,7 +117,27 @@ export const PRIMARY_OVERVIEW_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     icon: Bell,
     label: "Notifications",
     requiredPermission: "agent.dashboard.view",
-    section: "Overview",
-    sidebar: false,
+    section: "Account",
+  },
+  {
+    activeMatchers: [{ mode: "exact", path: "/agent/account" }],
+    description:
+      "Review your delivery account identity, session state, and alert settings.",
+    href: toRoute("/agent/account"),
+    icon: Cog,
+    label: "Profile",
+    requiredPermission: "agent.dashboard.view",
+    section: "Account",
+  },
+  {
+    activeMatchers: [
+      { mode: "descendants", path: "/agent/account/preferences" },
+    ],
+    description: "Manage your default workspace and alert delivery settings.",
+    href: toRoute("/agent/account/preferences"),
+    icon: Cog,
+    label: "Preferences",
+    requiredPermission: "agent.dashboard.view",
+    section: "Account",
   },
 ];

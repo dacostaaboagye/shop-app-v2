@@ -21,6 +21,9 @@ describe("issued document routes", () => {
 
     assert.equal(response.statusCode, 200);
     assert.equal(response.json().documentReference, "INV/2026/000001");
+    assert.equal(response.json().payloadSnapshot.currencyCode, "GHS");
+    assert.equal(response.json().payloadSnapshot.currencyScale, 2);
+    assert.equal(response.json().profileSnapshot.currencyCode, "GHS");
     assert.deepEqual(calls, [
       {
         actorUserId: USER_ID,
@@ -58,6 +61,30 @@ describe("issued document routes", () => {
       'attachment; filename="INV-2026-000001.pdf"',
     );
     assert.equal(response.rawPayload.subarray(0, 4).toString("utf8"), "%PDF");
+    assert.deepEqual(calls, [
+      {
+        actorUserId: USER_ID,
+        actorUserSlug: "admin-user",
+        reference: "INV/2026/000001",
+      },
+    ]);
+  });
+
+  it("emails the official sales document to the stored buyer email", async () => {
+    const calls: IssuedDocumentCall[] = [];
+    const server = createIssuedDocumentServer(calls);
+
+    const response = await server.inject({
+      headers: { authorization: bearerToken() },
+      method: "POST",
+      url: "/api/documents/sales/INV%2F2026%2F000001/send-email",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(response.json(), {
+      ok: true,
+      recipientEmail: "buyer@example.com",
+    });
     assert.deepEqual(calls, [
       {
         actorUserId: USER_ID,
@@ -154,6 +181,13 @@ function createIssuedDocumentServer(calls: IssuedDocumentCall[]) {
           calls.push(input);
           return snapshot();
         },
+        async sendEmail(input) {
+          calls.push(input);
+          return {
+            ok: true as const,
+            recipientEmail: "buyer@example.com",
+          };
+        },
       },
     },
   });
@@ -172,6 +206,8 @@ function snapshot(): IssuedDocumentSnapshotResponse {
       attributedWorkerName: null,
       confirmedAt: NOW.toISOString(),
       createdAt: NOW.toISOString(),
+      currencyCode: "GHS",
+      currencyScale: 2,
       lines: [],
       locationId: LOCATION_ID,
       notes: null,

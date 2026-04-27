@@ -2,8 +2,17 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, CheckCheck, Inbox } from "lucide-react";
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { AppErrorBanner } from "@/components/system/app-error";
+import { NotificationCenterFilters } from "@/components/system/notification-center-filters";
+import {
+  buildNotificationEventOptions,
+  buildNotificationResourceOptions,
+  filterNotifications,
+  hasActiveNotificationFilters,
+  type NotificationFilters,
+} from "@/components/system/notification-center-page-client.support";
 import { NotificationFeedCard } from "@/components/system/notification-feed-card";
 import {
   PageHeader,
@@ -23,6 +32,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  deleteNotification,
   fetchNotifications,
   notificationsQueryKey,
   notificationsQueryKeyPrefix,
@@ -32,10 +42,11 @@ import {
 
 type NotificationCenterPageClientProps = {
   description: string;
+  headerActionsExtra?: ReactNode;
+  secondaryTabContent?: ReactNode;
+  secondaryTabLabel?: string;
   title: string;
 };
-
-type NotificationFilter = "all" | "read" | "unread";
 
 const PAGE_LIMIT = 50;
 const NOTIFICATION_PAGE_SKELETON_KEYS = [
@@ -49,9 +60,18 @@ const NOTIFICATION_PAGE_SKELETON_KEYS = [
 
 export function NotificationCenterPageClient({
   description,
+  headerActionsExtra,
+  secondaryTabContent,
+  secondaryTabLabel = "Sent",
   title,
 }: NotificationCenterPageClientProps) {
-  const [filter, setFilter] = useState<NotificationFilter>("all");
+  const [filters, setFilters] = useState<NotificationFilters>({
+    dateRange: undefined,
+    eventType: "",
+    resourceKind: "",
+    search: "",
+    status: "all",
+  });
   const queryClient = useQueryClient();
   const notificationsQuery = useQuery({
     queryFn: () => fetchNotifications(PAGE_LIMIT),
@@ -73,56 +93,36 @@ export function NotificationCenterPageClient({
       });
     },
   });
+  const deleteMutation = useMutation({
+    mutationFn: deleteNotification,
+    async onSuccess() {
+      await queryClient.invalidateQueries({
+        queryKey: notificationsQueryKeyPrefix,
+      });
+    },
+  });
 
   const items = notificationsQuery.data?.items ?? [];
   const unreadCount = notificationsQuery.data?.unreadCount ?? 0;
   const readCount = Math.max(items.length - unreadCount, 0);
+  const eventOptions = useMemo(
+    () => buildNotificationEventOptions(items),
+    [items],
+  );
+  const resourceOptions = useMemo(
+    () => buildNotificationResourceOptions(items),
+    [items],
+  );
+  const hasActiveFilters = useMemo(
+    () => hasActiveNotificationFilters(filters),
+    [filters],
+  );
   const filteredItems = useMemo(() => {
-    if (filter === "unread") {
-      return items.filter((item) => item.status === "unread");
-    }
+    return filterNotifications(items, filters);
+  }, [filters, items]);
 
-    if (filter === "read") {
-      return items.filter((item) => item.status === "read");
-    }
-
-    return items;
-  }, [filter, items]);
-
-  return (
-    <PageShell>
-      <PageHeader
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => void notificationsQuery.refetch()}
-              disabled={notificationsQuery.isFetching}
-            >
-              {notificationsQuery.isFetching ? (
-                <Spinner data-icon="inline-start" />
-              ) : null}
-              Refresh
-            </Button>
-            <Button
-              type="button"
-              onClick={() => void markAllReadMutation.mutateAsync()}
-              disabled={!unreadCount || markAllReadMutation.isPending}
-            >
-              {markAllReadMutation.isPending ? (
-                <Spinner data-icon="inline-start" />
-              ) : (
-                <CheckCheck data-icon="inline-start" />
-              )}
-              Mark all read
-            </Button>
-          </div>
-        }
-        description={description}
-        title={title}
-      />
-
+  const inboxContent = (
+    <>
       <section className="grid gap-4 md:grid-cols-3">
         <StatCard
           description="Items still waiting for acknowledgement."
@@ -144,80 +144,175 @@ export function NotificationCenterPageClient({
         />
       </section>
 
-      <Tabs
-        value={filter}
-        onValueChange={(value) => setFilter(value as NotificationFilter)}
-      >
-        <TabsList className="h-auto flex-wrap">
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="unread">Unread</TabsTrigger>
-          <TabsTrigger value="read">Read</TabsTrigger>
-        </TabsList>
-        <TabsContent value={filter}>
-          {notificationsQuery.isPending ? (
-            <div className="flex flex-col gap-3">
-              {NOTIFICATION_PAGE_SKELETON_KEYS.map((key) => (
-                <Skeleton key={key} className="h-28 w-full rounded-xl" />
-              ))}
-            </div>
-          ) : notificationsQuery.isError ? (
+      <NotificationCenterFilters
+        eventOptions={eventOptions}
+        filters={filters}
+        hasActiveFilters={hasActiveFilters}
+        onClear={() =>
+          setFilters({
+            dateRange: undefined,
+            eventType: "",
+            resourceKind: "",
+            search: "",
+            status: "all",
+          })
+        }
+        onDateRangeChange={(dateRange) =>
+          setFilters((current) => ({ ...current, dateRange }))
+        }
+        onEventTypeChange={(eventType) =>
+          setFilters((current) => ({
+            ...current,
+            eventType: eventType === "__all__" ? "" : eventType,
+          }))
+        }
+        onResourceKindChange={(resourceKind) =>
+          setFilters((current) => ({
+            ...current,
+            resourceKind: resourceKind === "__all__" ? "" : resourceKind,
+          }))
+        }
+        onSearchChange={(search) =>
+          setFilters((current) => ({ ...current, search }))
+        }
+        onStatusChange={(status) =>
+          setFilters((current) => ({ ...current, status }))
+        }
+        resourceOptions={resourceOptions}
+      />
+
+      {notificationsQuery.isPending ? (
+        <div className="flex flex-col gap-3">
+          {NOTIFICATION_PAGE_SKELETON_KEYS.map((key) => (
+            <Skeleton key={key} className="h-28 w-full rounded-xl" />
+          ))}
+        </div>
+      ) : notificationsQuery.isError ? (
+        <AppErrorBanner
+          error={notificationsQuery.error}
+          onRetry={() => void notificationsQuery.refetch()}
+          title="Notifications could not be loaded"
+        />
+      ) : filteredItems.length ? (
+        <div className="flex flex-col gap-3">
+          {markReadMutation.isError ||
+          markAllReadMutation.isError ||
+          deleteMutation.isError ? (
             <AppErrorBanner
-              error={notificationsQuery.error}
-              onRetry={() => void notificationsQuery.refetch()}
-              title="Notifications could not be loaded"
+              error={
+                markReadMutation.error ??
+                markAllReadMutation.error ??
+                deleteMutation.error
+              }
+              title="Notification state could not be updated"
             />
-          ) : filteredItems.length ? (
-            <div className="flex flex-col gap-3">
-              {markReadMutation.isError || markAllReadMutation.isError ? (
-                <AppErrorBanner
-                  error={markReadMutation.error ?? markAllReadMutation.error}
-                  title="Notification state could not be updated"
-                />
-              ) : null}
-              {filteredItems.map((notification, index) => (
-                <div key={notification.notificationKey}>
-                  <NotificationFeedCard
-                    notification={notification}
-                    pending={
-                      markReadMutation.variables ===
-                        notification.notificationKey &&
-                      markReadMutation.isPending
+          ) : null}
+          {filteredItems.map((notification, index) => (
+            <div key={notification.notificationKey}>
+              <NotificationFeedCard
+                deletePending={
+                  deleteMutation.variables === notification.notificationKey &&
+                  deleteMutation.isPending
+                }
+                notification={notification}
+                pending={
+                  markReadMutation.variables === notification.notificationKey &&
+                  markReadMutation.isPending
+                }
+                showStatus
+                variant="page"
+                onDelete={() => {
+                  void deleteMutation.mutateAsync(notification.notificationKey);
+                }}
+                {...(notification.status === "unread"
+                  ? {
+                      onMarkRead: () => {
+                        void markReadMutation.mutateAsync(
+                          notification.notificationKey,
+                        );
+                      },
                     }
-                    showStatus
-                    variant="page"
-                    {...(notification.status === "unread"
-                      ? {
-                          onMarkRead: () => {
-                            void markReadMutation.mutateAsync(
-                              notification.notificationKey,
-                            );
-                          },
-                        }
-                      : {})}
-                  />
-                  {index < filteredItems.length - 1 ? <Separator /> : null}
-                </div>
-              ))}
+                  : {})}
+              />
+              {index < filteredItems.length - 1 ? <Separator /> : null}
             </div>
-          ) : (
-            <Empty className="border-border bg-muted/25">
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <Bell className="size-4" />
-                </EmptyMedia>
-                <EmptyTitle>No matching notifications</EmptyTitle>
-                <EmptyDescription>
-                  {filter === "unread"
-                    ? "Everything in the current feed has already been acknowledged."
-                    : filter === "read"
-                      ? "Acknowledged notifications will appear here after you review updates."
-                      : "Operational updates will appear here as new platform events arrive."}
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          )}
-        </TabsContent>
-      </Tabs>
+          ))}
+        </div>
+      ) : (
+        <Empty className="border-border bg-muted/25">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Bell className="size-4" />
+            </EmptyMedia>
+            <EmptyTitle>No matching notifications</EmptyTitle>
+            <EmptyDescription>
+              {hasActiveFilters
+                ? "Adjust the current filters to widen the results in this feed."
+                : "Operational updates will appear here as new platform events arrive."}
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      )}
+    </>
+  );
+
+  return (
+    <PageShell>
+      <PageHeader
+        actions={
+          <div className="grid w-full gap-2 sm:grid-cols-2 xl:min-w-[32rem] xl:grid-cols-[auto_auto_auto] xl:justify-end">
+            {headerActionsExtra ? (
+              <div className="sm:col-span-2 xl:col-span-1">
+                {headerActionsExtra}
+              </div>
+            ) : null}
+            <Button
+              className="w-full xl:w-auto"
+              type="button"
+              variant="outline"
+              onClick={() => void markAllReadMutation.mutateAsync()}
+              disabled={!unreadCount || markAllReadMutation.isPending}
+            >
+              {markAllReadMutation.isPending ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <CheckCheck data-icon="inline-start" />
+              )}
+              Mark All Read
+            </Button>
+            <Button
+              className="w-full xl:w-auto"
+              type="button"
+              variant="outline"
+              onClick={() => void notificationsQuery.refetch()}
+              disabled={notificationsQuery.isFetching}
+            >
+              {notificationsQuery.isFetching ? (
+                <Spinner data-icon="inline-start" />
+              ) : null}
+              Refresh
+            </Button>
+          </div>
+        }
+        description={description}
+        title={title}
+      />
+      {secondaryTabContent ? (
+        <Tabs className="gap-4" defaultValue="inbox">
+          <TabsList className="w-fit" variant="default">
+            <TabsTrigger value="inbox">Inbox</TabsTrigger>
+            <TabsTrigger value="sent">{secondaryTabLabel}</TabsTrigger>
+          </TabsList>
+          <TabsContent className="flex flex-col gap-4" value="inbox">
+            {inboxContent}
+          </TabsContent>
+          <TabsContent className="flex flex-col gap-4" value="sent">
+            {secondaryTabContent}
+          </TabsContent>
+        </Tabs>
+      ) : (
+        inboxContent
+      )}
     </PageShell>
   );
 }

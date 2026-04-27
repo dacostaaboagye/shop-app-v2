@@ -1,0 +1,8 @@
+{
+  "allowedVariables": [
+    "firstName"
+  ],
+  "subject": "Verify your Shop App operational access",
+  "type": "emailVerification",
+  "unknownVariables": []
+}

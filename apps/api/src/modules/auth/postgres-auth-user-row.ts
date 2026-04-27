@@ -8,6 +8,9 @@ export type UserRow = {
   lastLoginAt: Date | null;
   lastName: string;
   lockedUntil: Date | null;
+  notificationEmailEnabled: boolean;
+  notificationInAppEnabled: boolean;
+  notificationSoundEnabled: boolean;
   passwordHash: string;
   preferredPortal: PortalKey | null;
   requiresPasswordChange: boolean;
@@ -36,6 +39,9 @@ export const userSelectSql = `
       ARRAY[]::text[]
     ) AS "availablePortals",
     preferred_portal AS "preferredPortal",
+    notification_email_enabled AS "notificationEmailEnabled",
+    notification_in_app_enabled AS "notificationInAppEnabled",
+    notification_sound_enabled AS "notificationSoundEnabled",
     last_login_at AS "lastLoginAt",
     locked_until AS "lockedUntil",
     requires_password_change AS "requiresPasswordChange"

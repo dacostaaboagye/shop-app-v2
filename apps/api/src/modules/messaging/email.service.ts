@@ -22,6 +22,7 @@ export class EmailService {
     | NonNullable<EmailServiceOptions["deliveryPolicy"]>
     | undefined;
   private readonly execution: EmailSendExecution;
+  private readonly fromAddress: string;
   private readonly templateProvider:
     | NonNullable<EmailServiceOptions["templateProvider"]>
     | undefined;
@@ -34,6 +35,7 @@ export class EmailService {
   ) {
     assertValidFromAddress(fromAddress);
     this.deliveryPolicy = options.deliveryPolicy;
+    this.fromAddress = fromAddress;
     this.templateProvider = options.templateProvider;
     this.webBaseUrl = options.webBaseUrl ?? "https://app.example.com";
 
@@ -55,6 +57,9 @@ export class EmailService {
       fromAddress,
       logger: options.logger ?? console,
       transport,
+      ...(options.eventPublisher
+        ? { eventPublisher: options.eventPublisher }
+        : {}),
     });
   }
 
@@ -159,6 +164,102 @@ export class EmailService {
     });
   }
 
+  async sendOperationalEmail(input: {
+    firstName?: string | null;
+    subject: string;
+    to: string;
+    messageBody: string;
+  }): Promise<EmailSendResult> {
+    await this.assertCanSend(input.to);
+    const greeting = input.firstName?.trim()
+      ? `Hi ${input.firstName.trim()},`
+      : "Hello,";
+    const html = [
+      "<!DOCTYPE html>",
+      '<html><body style="font-family: Arial, sans-serif; color: #1f2937; line-height: 1.6;">',
+      `<p>${escapeHtml(greeting)}</p>`,
+      ...input.messageBody
+        .trim()
+        .split(/\r?\n\r?\n/)
+        .map(
+          (paragraph) =>
+            `<p>${escapeHtml(paragraph).replaceAll("\n", "<br />")}</p>`,
+        ),
+      `<p>Reply to this email if you need help.</p>`,
+      "</body></html>",
+    ].join("");
+    const text = [
+      greeting,
+      "",
+      input.messageBody.trim(),
+      "",
+      "Reply to this email if you need help.",
+    ].join("\n");
+
+    return this.execution.send({
+      messageType: "admin_operational",
+      to: input.to,
+      subject: input.subject,
+      html,
+      text,
+    });
+  }
+
+  async sendSalesDocumentEmail(input: {
+    attachment: {
+      content: Buffer;
+      contentType: string;
+      filename: string;
+    };
+    documentLabel: string;
+    documentReference: string;
+    locationName?: string | null;
+    profileEmail?: string | null;
+    recipientName?: string | null;
+    to: string;
+  }): Promise<EmailSendResult> {
+    await this.assertCanSend(input.to);
+    const greeting = input.recipientName?.trim()
+      ? `Hi ${input.recipientName.trim()},`
+      : "Hello,";
+    const subject = `${input.documentLabel} ${input.documentReference}`;
+    const supportEmail = input.profileEmail?.trim() || this.fromAddress;
+    const locationLine = input.locationName?.trim()
+      ? ` from ${input.locationName.trim()}`
+      : "";
+    const html = [
+      "<!DOCTYPE html>",
+      '<html><body style="font-family: Arial, sans-serif; color: #1f2937; line-height: 1.5;">',
+      `<p>${escapeHtml(greeting)}</p>`,
+      `<p>Your ${escapeHtml(input.documentLabel.toLowerCase())} for ${escapeHtml(input.documentReference)}${escapeHtml(locationLine)} is attached as a PDF.</p>`,
+      "<p>If you need help with this document, reply to this email.</p>",
+      `<p>Support: ${escapeHtml(supportEmail)}</p>`,
+      "</body></html>",
+    ].join("");
+    const text = [
+      greeting,
+      "",
+      `Your ${input.documentLabel.toLowerCase()} for ${input.documentReference}${locationLine} is attached as a PDF.`,
+      "If you need help with this document, reply to this email.",
+      `Support: ${supportEmail}`,
+    ].join("\n");
+
+    return this.execution.send({
+      attachments: [
+        {
+          content: input.attachment.content,
+          contentType: input.attachment.contentType,
+          filename: input.attachment.filename,
+        },
+      ],
+      messageType: "sales_document",
+      to: input.to,
+      subject,
+      html,
+      text,
+    });
+  }
+
   private async resolveTemplate(
     templateKey: keyof EmailTemplateSettings,
     input: {
@@ -194,4 +295,13 @@ export class EmailService {
   private async assertCanSend(recipientEmail: string): Promise<void> {
     await this.deliveryPolicy?.assertCanSend(recipientEmail);
   }
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }

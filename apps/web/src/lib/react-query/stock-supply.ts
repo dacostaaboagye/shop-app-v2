@@ -1,7 +1,9 @@
 import type {
   ApproveStockSupplyRequest,
+  BulkStockSupplyRequestResponse,
   CancelStockSupplyRequest,
   ConfirmReceipt,
+  CreateBulkStockSupplyRequest,
   CreateStockSupplyRequest,
   DispatchStockSupplyRequest,
   GtnResponse,
@@ -42,6 +44,17 @@ export async function fetchSupplyRequestSources(
   const params = new URLSearchParams({ destinationLocationId });
   return fetchJson<SupplyRequestSourceListResponse>(
     `/api/worker/stock/supply-request-sources?${params.toString()}`,
+    undefined,
+    { auth: "required" },
+  );
+}
+
+export async function fetchManagerSupplyRequestSources(
+  destinationLocationId: string,
+): Promise<SupplyRequestSourceListResponse> {
+  const params = new URLSearchParams({ destinationLocationId });
+  return fetchJson<SupplyRequestSourceListResponse>(
+    `/api/manager/stock/supply-request-sources?${params.toString()}`,
     undefined,
     { auth: "required" },
   );
@@ -112,6 +125,48 @@ export async function postWorkerSupplyRequest(
 ): Promise<StockSupplyRequestResponse> {
   return fetchJson<StockSupplyRequestResponse>(
     "/api/worker/stock/supply-requests",
+    {
+      body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+    { auth: "required" },
+  );
+}
+
+export async function postWorkerSupplyRequestBatch(
+  body: CreateBulkStockSupplyRequest,
+): Promise<BulkStockSupplyRequestResponse> {
+  return fetchJson<BulkStockSupplyRequestResponse>(
+    "/api/worker/stock/supply-requests/batch",
+    {
+      body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+    { auth: "required" },
+  );
+}
+
+export async function postManagerSupplyRequest(
+  body: CreateStockSupplyRequest,
+): Promise<StockSupplyRequestResponse> {
+  return fetchJson<StockSupplyRequestResponse>(
+    "/api/manager/stock/supply-requests",
+    {
+      body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+    { auth: "required" },
+  );
+}
+
+export async function postManagerSupplyRequestBatch(
+  body: CreateBulkStockSupplyRequest,
+): Promise<BulkStockSupplyRequestResponse> {
+  return fetchJson<BulkStockSupplyRequestResponse>(
+    "/api/manager/stock/supply-requests/batch",
     {
       body: JSON.stringify(body),
       headers: { "Content-Type": "application/json" },

@@ -33,6 +33,22 @@ export function getAuthErrorMessage(error: unknown): AuthMessage {
     };
   }
 
+  if (title === "Email delivery blocked") {
+    return {
+      detail:
+        "We could not send email to this address right now. Contact support or ask an administrator to check your email delivery status before trying again.",
+      title: "Email temporarily unavailable",
+    };
+  }
+
+  if (title === "Email delivery failed") {
+    return {
+      detail:
+        "We could not send that email right now. Please wait a moment and try again. If the problem continues, contact support.",
+      title: "Email temporarily unavailable",
+    };
+  }
+
   return {
     detail: getAppErrorMessage(error, {
       fallbackDetail: "The request could not be completed. Please try again.",

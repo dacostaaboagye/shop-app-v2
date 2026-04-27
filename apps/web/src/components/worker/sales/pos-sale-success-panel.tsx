@@ -5,6 +5,7 @@ import {
   CheckCircle,
   Download,
   FileText,
+  Mail,
   Share2,
   ShoppingCart,
 } from "lucide-react";
@@ -24,7 +25,10 @@ import {
   shareDocumentFile,
 } from "@/lib/documents/sales-document";
 import { formatMoney, type MoneyProfile } from "@/lib/money/format-money";
-import { fetchSalesDocumentDownloadFile } from "@/lib/react-query/official-documents";
+import {
+  fetchSalesDocumentDownloadFile,
+  sendSalesDocumentEmail,
+} from "@/lib/react-query/official-documents";
 import { toRoute } from "@/lib/routes";
 import { PosSaleReturnDialog } from "./pos-sale-return-dialog";
 
@@ -38,6 +42,7 @@ export function SaleSuccessPanel({
   onNewSale: () => void;
 }) {
   const [isDocumentPending, setIsDocumentPending] = useState(false);
+  const [isEmailPending, setIsEmailPending] = useState(false);
   const paymentLabel =
     invoice.paymentMethod === "mobile_money"
       ? "Mobile money"
@@ -88,6 +93,18 @@ export function SaleSuccessPanel({
     }
   }
 
+  async function handleEmail() {
+    try {
+      setIsEmailPending(true);
+      const result = await sendSalesDocumentEmail(invoice.reference);
+      toast.success(`Receipt emailed to ${result.recipientEmail}.`);
+    } catch {
+      toast.error("Unable to email this receipt.");
+    } finally {
+      setIsEmailPending(false);
+    }
+  }
+
   return (
     <Card className="mx-auto max-w-lg">
       <CardHeader className="items-center text-center">
@@ -133,42 +150,57 @@ export function SaleSuccessPanel({
           download, sharing, audit evidence, and future return support.
         </div>
       </CardContent>
-      <CardFooter className="flex flex-wrap gap-2">
-        <PosSaleReturnDialog invoice={invoice} moneyProfile={moneyProfile} />
-        <Link
-          className={buttonVariants({
-            className: "min-w-0 flex-1",
-            variant: "outline",
-          })}
-          href={toRoute(
-            `/worker/sales/${encodeURIComponent(invoice.reference)}`,
-          )}
-        >
-          <FileText data-icon="inline-start" />
-          View PDF
-        </Link>
-        <Button
-          className="min-w-0 flex-1"
-          disabled={isDocumentPending}
-          onClick={() => void handleDownload()}
-          variant="outline"
-        >
-          <Download data-icon="inline-start" />
-          Download
-        </Button>
-        <Button
-          className="min-w-0 flex-1"
-          disabled={isDocumentPending}
-          onClick={() => void handleShare()}
-          variant="outline"
-        >
-          <Share2 data-icon="inline-start" />
-          Share
-        </Button>
-        <Button className="w-full" onClick={onNewSale}>
-          <ShoppingCart data-icon="inline-start" />
-          New sale
-        </Button>
+      <CardFooter className="flex flex-col gap-3">
+        <div className="grid gap-2 sm:grid-cols-2">
+          <PosSaleReturnDialog invoice={invoice} moneyProfile={moneyProfile} />
+          <Button className="w-full" onClick={onNewSale}>
+            <ShoppingCart data-icon="inline-start" />
+            New sale
+          </Button>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Link
+            className={buttonVariants({
+              className: "w-full min-w-0",
+              variant: "outline",
+            })}
+            href={toRoute(
+              `/worker/sales/${encodeURIComponent(invoice.reference)}`,
+            )}
+          >
+            <FileText data-icon="inline-start" />
+            View PDF
+          </Link>
+          <Button
+            className="w-full min-w-0"
+            disabled={isDocumentPending}
+            onClick={() => void handleDownload()}
+            variant="outline"
+          >
+            <Download data-icon="inline-start" />
+            Download
+          </Button>
+          <Button
+            className="w-full min-w-0"
+            disabled={isDocumentPending}
+            onClick={() => void handleShare()}
+            variant="outline"
+          >
+            <Share2 data-icon="inline-start" />
+            Share
+          </Button>
+          {invoice.customerEmail ? (
+            <Button
+              className="w-full min-w-0"
+              disabled={isEmailPending}
+              onClick={() => void handleEmail()}
+              variant="outline"
+            >
+              <Mail data-icon="inline-start" />
+              {isEmailPending ? "Sending..." : "Email receipt"}
+            </Button>
+          ) : null}
+        </div>
       </CardFooter>
     </Card>
   );

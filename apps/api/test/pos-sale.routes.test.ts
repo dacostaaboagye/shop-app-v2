@@ -11,6 +11,71 @@ const OTHER_USER_ID = "33333333-3333-4333-8333-333333333333";
 const LOCATION_ID = "22222222-2222-4222-8222-222222222222";
 
 describe("POS sale routes", () => {
+  it("passes optional buyer details through the worker sale route", async () => {
+    let capturedSaleInput: {
+      customerBillingAddressLines?: string[];
+      customerName?: string;
+    } | null = null;
+    const permissionCalls: PermissionCall[] = [];
+    const server = createSalesServer({
+      async processSale(input) {
+        capturedSaleInput = input as {
+          customerBillingAddressLines?: string[];
+          customerName?: string;
+        };
+        return invoice({
+          customerBillingAddressLines:
+            (input as { customerBillingAddressLines?: string[] })
+              .customerBillingAddressLines ?? null,
+          customerEmail:
+            (input as { customerEmail?: string | null }).customerEmail ?? null,
+          customerName:
+            (input as { customerName?: string | null }).customerName ?? null,
+          customerPhone:
+            (input as { customerPhone?: string | null }).customerPhone ?? null,
+          customerTaxNumber:
+            (input as { customerTaxNumber?: string | null })
+              .customerTaxNumber ?? null,
+        });
+      },
+      permissionCalls,
+    });
+
+    const response = await server.inject({
+      headers: { authorization: bearerToken() },
+      method: "POST",
+      payload: {
+        customerBillingAddressLines: ["12 Market Street", "Accra"],
+        customerEmail: "buyer@example.com",
+        customerName: "Adwoa Mensah",
+        customerPhone: "+233200000000",
+        customerTaxNumber: "TIN-123",
+        lines: [
+          {
+            quantity: 1,
+            skuId: "44444444-4444-4444-8444-444444444445",
+          },
+        ],
+        locationId: LOCATION_ID,
+        paymentMethod: "cash",
+      },
+      url: "/api/worker/sales",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.ok(capturedSaleInput);
+    const captured = capturedSaleInput as {
+      customerBillingAddressLines?: string[];
+      customerName?: string;
+    };
+    assert.equal(captured.customerName, "Adwoa Mensah");
+    assert.deepEqual(captured.customerBillingAddressLines, [
+      "12 Market Street",
+      "Accra",
+    ]);
+    assert.equal(response.json().customerEmail, "buyer@example.com");
+  });
+
   it("allows workers to read their own sale at a scoped location", async () => {
     const permissionCalls: PermissionCall[] = [];
     const server = createSalesServer({ permissionCalls });
@@ -23,6 +88,8 @@ describe("POS sale routes", () => {
 
     assert.equal(response.statusCode, 200);
     assert.equal(response.json().reference, "INV/2026/000001");
+    assert.equal(response.json().currencyCode, "GHS");
+    assert.equal(response.json().currencyScale, 2);
     assert.ok(
       permissionCalls.some(
         (call) =>
@@ -104,6 +171,8 @@ describe("POS sale routes", () => {
       documentType: "credit_note",
       locationId: LOCATION_ID,
     });
+    assert.equal(response.json().items[0]?.currencyCode, "GHS");
+    assert.equal(response.json().items[0]?.currencyScale, 2);
     assert.ok(
       permissionCalls.some(
         (call) =>
@@ -130,6 +199,7 @@ function createSalesServer(input: {
     pageSize: number;
     workerId?: string;
   }) => Promise<{ items: InvoiceWithLines[]; total: number }>;
+  processSale?: (input: Record<string, unknown>) => Promise<InvoiceWithLines>;
   permissionCalls: PermissionCall[];
 }) {
   const permissionService = {
@@ -200,7 +270,10 @@ function createSalesServer(input: {
         async processReturn() {
           throw unavailable();
         },
-        async processSale() {
+        async processSale(inputArgs) {
+          if (input.processSale) {
+            return input.processSale(inputArgs as Record<string, unknown>);
+          }
           throw unavailable();
         },
       },
@@ -217,6 +290,8 @@ function invoice(overrides: Partial<InvoiceWithLines> = {}): InvoiceWithLines {
     createdAt: NOW,
     createdBy: USER_ID,
     customerBillingAddressLines: null,
+    currencyCode: "GHS",
+    currencyScale: 2,
     customerEmail: null,
     customerName: null,
     customerPhone: null,

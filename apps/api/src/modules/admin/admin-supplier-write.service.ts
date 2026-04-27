@@ -5,11 +5,23 @@ import type {
   AdminCreateSupplierRequest,
   AdminLinkSupplierContactPortalRequest,
   AdminLinkSupplierProductRequest,
+  AdminSupplierDetail,
   AdminSupplierProcurementReceiveRequest,
   AdminUpdateSupplierInquiryRequest,
   AdminUpdateSupplierRequest,
 } from "@shop/contracts";
+import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import type { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
+import {
+  createSupplierPortalInvitedEvent,
+  createSupplierPortalLinkedEvent,
+  createSupplierPortalUnlinkedEvent,
+  createSupplierProcurementCreatedEvent,
+  createSupplierProcurementReceivedEvent,
+  createSupplierProcurementStatusUpdatedEvent,
+  createSupplierProductLinkedEvent,
+  createSupplierProductUnlinkedEvent,
+} from "./admin-supplier-events.js";
 import { generateSupplierReference } from "./admin-supplier-reference.js";
 import type { AdminSupplierWriteRepository } from "./admin-supplier-write.types.js";
 
@@ -20,6 +32,7 @@ export class AdminSupplierWriteService {
       ReferenceNumberService,
       "generateReference"
     >,
+    private readonly eventPublisher?: PlatformEventPublisher | null,
   ) {}
 
   async addContact(
@@ -38,43 +51,96 @@ export class AdminSupplierWriteService {
   async linkContactPortal(
     supplierSlug: string,
     contactReference: string,
-    actorId: string,
+    actor: { userId: string; userSlug: string },
     payload: AdminLinkSupplierContactPortalRequest,
     now: Date,
   ) {
-    return this.repository.linkContactPortal({
-      actorId,
+    const contact = await this.repository.getPortalContactEventContext({
+      contactReference,
+      supplierSlug,
+    });
+    const supplier = await this.repository.linkContactPortal({
+      actorId: actor.userId,
       contactReference,
       now,
       payload,
       supplierSlug,
     });
+
+    if (contact && supplier) {
+      await this.eventPublisher?.publish(
+        createSupplierPortalLinkedEvent({
+          actor,
+          contact,
+          linkedUserSlug: payload.userSlug,
+          occurredAt: now,
+        }),
+      );
+    }
+
+    return supplier;
   }
 
   async inviteContactPortal(
     supplierSlug: string,
     contactReference: string,
-    actorId: string,
+    actor: { userId: string; userSlug: string },
     now: Date,
   ) {
-    return this.repository.inviteContactPortal({
-      actorId,
+    const contact = await this.repository.getPortalContactEventContext({
+      contactReference,
+      supplierSlug,
+    });
+    const supplier = await this.repository.inviteContactPortal({
+      actorId: actor.userId,
       contactReference,
       now,
       supplierSlug,
     });
+
+    const updatedContact = findSupplierContact(supplier, contactReference);
+    if (contact && supplier) {
+      await this.eventPublisher?.publish(
+        createSupplierPortalInvitedEvent({
+          actor,
+          contact,
+          deliveryStatus: updatedContact?.latestInvite?.deliveryStatus ?? null,
+          invitedUserSlug: updatedContact?.userSlug ?? null,
+          occurredAt: now,
+        }),
+      );
+    }
+
+    return supplier;
   }
 
   async unlinkContactPortal(
     supplierSlug: string,
     contactReference: string,
+    actor: { userId: string; userSlug: string },
     now: Date,
   ) {
-    return this.repository.unlinkContactPortal({
+    const contact = await this.repository.getPortalContactEventContext({
+      contactReference,
+      supplierSlug,
+    });
+    const supplier = await this.repository.unlinkContactPortal({
       contactReference,
       now,
       supplierSlug,
     });
+
+    if (contact && supplier) {
+      await this.eventPublisher?.publish(
+        createSupplierPortalUnlinkedEvent({
+          actor,
+          contact,
+          occurredAt: now,
+        }),
+      );
+    }
+
+    return supplier;
   }
 
   async createSupplier(
@@ -87,7 +153,7 @@ export class AdminSupplierWriteService {
 
   async createProcurementOrder(
     supplierSlug: string,
-    actorId: string,
+    actor: { userId: string; userSlug: string },
     payload: AdminCreateSupplierProcurementOrderRequest,
     now: Date,
   ) {
@@ -99,13 +165,26 @@ export class AdminSupplierWriteService {
       referenceNumberService: this.referenceNumberService,
       sequenceKey: "purchase-order",
     });
-    return this.repository.createProcurementOrder({
-      actorId,
+    const supplier = await this.repository.createProcurementOrder({
+      actorId: actor.userId,
       now,
       payload,
       reference,
       supplierSlug,
     });
+
+    const order = findSupplierProcurementOrder(supplier, reference);
+    if (supplier && order) {
+      await this.eventPublisher?.publish(
+        createSupplierProcurementCreatedEvent({
+          actor,
+          context: toSupplierProcurementEventContext(supplier, order),
+          occurredAt: now,
+        }),
+      );
+    }
+
+    return supplier;
   }
 
   async createInquiry(
@@ -133,50 +212,127 @@ export class AdminSupplierWriteService {
 
   async linkProduct(
     supplierSlug: string,
-    actorId: string,
+    actor: { userId: string; userSlug: string },
     payload: AdminLinkSupplierProductRequest,
     now: Date,
   ) {
-    return this.repository.linkProduct({ actorId, now, payload, supplierSlug });
+    const supplier = await this.repository.linkProduct({
+      actorId: actor.userId,
+      now,
+      payload,
+      supplierSlug,
+    });
+
+    const linkedProduct = findSupplierProduct(supplier, payload.productSlug);
+    if (supplier && linkedProduct) {
+      await this.eventPublisher?.publish(
+        createSupplierProductLinkedEvent({
+          actor,
+          context: {
+            brandName: linkedProduct.brandName,
+            categoryName: linkedProduct.categoryName,
+            productName: linkedProduct.productName,
+            productSlug: linkedProduct.productSlug,
+            supplierName: supplier.name,
+            supplierSlug: supplier.slug,
+            variantCount: linkedProduct.variantCount,
+          },
+          isPreferred: linkedProduct.isPreferred,
+          occurredAt: now,
+        }),
+      );
+    }
+
+    return supplier;
   }
 
-  async unlinkProduct(supplierSlug: string, productSlug: string) {
-    return this.repository.unlinkProduct({ productSlug, supplierSlug });
+  async unlinkProduct(
+    supplierSlug: string,
+    productSlug: string,
+    actor: { userId: string; userSlug: string },
+    now: Date,
+  ) {
+    const context = await this.repository.getSupplierProductEventContext({
+      productSlug,
+      supplierSlug,
+    });
+    const deleted = await this.repository.unlinkProduct({
+      productSlug,
+      supplierSlug,
+    });
+
+    if (deleted && context) {
+      await this.eventPublisher?.publish(
+        createSupplierProductUnlinkedEvent({
+          actor,
+          context,
+          occurredAt: now,
+        }),
+      );
+    }
+
+    return deleted;
   }
 
   async transitionProcurementOrder(
     supplierSlug: string,
     reference: string,
-    actorId: string,
+    actor: { userId: string; userSlug: string },
     status: "submitted" | "approved" | "ordered" | "cancelled" | "closed",
     notes: string | null,
     now: Date,
   ) {
-    return this.repository.transitionProcurementOrder({
-      actorId,
+    const supplier = await this.repository.transitionProcurementOrder({
+      actorId: actor.userId,
       notes,
       now,
       reference,
       status,
       supplierSlug,
     });
+
+    const order = findSupplierProcurementOrder(supplier, reference);
+    if (supplier && order) {
+      await this.eventPublisher?.publish(
+        createSupplierProcurementStatusUpdatedEvent({
+          actor,
+          context: toSupplierProcurementEventContext(supplier, order),
+          occurredAt: now,
+        }),
+      );
+    }
+
+    return supplier;
   }
 
   async receiveProcurementOrder(
     supplierSlug: string,
     reference: string,
-    actorId: string,
+    actor: { userId: string; userSlug: string },
     payload: AdminSupplierProcurementReceiveRequest,
     now: Date,
   ) {
-    return this.repository.receiveProcurementOrder({
-      actorId,
+    const supplier = await this.repository.receiveProcurementOrder({
+      actorId: actor.userId,
       lines: payload.lines,
       notes: payload.notes ?? null,
       now,
       reference,
       supplierSlug,
     });
+
+    const order = findSupplierProcurementOrder(supplier, reference);
+    if (supplier && order) {
+      await this.eventPublisher?.publish(
+        createSupplierProcurementReceivedEvent({
+          actor,
+          context: toSupplierProcurementEventContext(supplier, order),
+          occurredAt: now,
+        }),
+      );
+    }
+
+    return supplier;
   }
 
   async updateSupplier(
@@ -208,4 +364,63 @@ export class AdminSupplierWriteService {
       supplierSlug,
     });
   }
+}
+
+function findSupplierContact(
+  supplier: AdminSupplierDetail | null,
+  contactReference: string,
+) {
+  return supplier?.contacts?.find(
+    (contact) => contact.contactReference === contactReference,
+  );
+}
+
+function findSupplierProduct(
+  supplier: AdminSupplierDetail | null,
+  productSlug: string,
+) {
+  return supplier?.products?.find(
+    (product) => product.productSlug === productSlug,
+  );
+}
+
+function findSupplierProcurementOrder(
+  supplier: AdminSupplierDetail | null,
+  reference: string,
+) {
+  return supplier?.procurementOrders?.find(
+    (order) => order.reference === reference,
+  );
+}
+
+function toSupplierProcurementEventContext(
+  supplier: AdminSupplierDetail,
+  order: NonNullable<AdminSupplierDetail["procurementOrders"]>[number],
+) {
+  const totalApprovedQuantity = order.lines.reduce(
+    (sum, line) => sum + (line.approvedQuantity ?? 0),
+    0,
+  );
+  const totalReceivedQuantity = order.lines.reduce(
+    (sum, line) => sum + line.receivedQuantity,
+    0,
+  );
+  const totalRequestedQuantity = order.lines.reduce(
+    (sum, line) => sum + line.requestedQuantity,
+    0,
+  );
+
+  return {
+    destinationLocationName: order.destinationLocationName,
+    destinationLocationSlug: order.destinationLocationSlug,
+    lineCount: order.lines.length,
+    notes: order.notes,
+    reference: order.reference,
+    status: order.status,
+    supplierName: supplier.name,
+    supplierSlug: supplier.slug,
+    totalApprovedQuantity,
+    totalReceivedQuantity,
+    totalRequestedQuantity,
+  };
 }

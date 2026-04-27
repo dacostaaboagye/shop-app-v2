@@ -181,6 +181,11 @@ export const issuedSalesDocumentSnapshotParamsSchema = z.object({
   reference: z.string().trim().min(1).max(120),
 });
 
+export const sendIssuedSalesDocumentEmailResponseSchema = z.object({
+  ok: z.literal(true),
+  recipientEmail: z.string().email(),
+});
+
 export const updateLocationDocumentSettingsRequestSchema = z.object({
   addressLines: z
     .array(z.string().trim().min(1).max(200))
@@ -219,6 +224,9 @@ export type IssuedDocumentSnapshotResponse = z.infer<
 >;
 export type IssuedSalesDocumentSnapshotParams = z.infer<
   typeof issuedSalesDocumentSnapshotParamsSchema
+>;
+export type SendIssuedSalesDocumentEmailResponse = z.infer<
+  typeof sendIssuedSalesDocumentEmailResponseSchema
 >;
 export type OfficialDocumentType = z.infer<typeof officialDocumentTypeSchema>;
 export type UpdateLocationDocumentSettingsRequest = z.infer<

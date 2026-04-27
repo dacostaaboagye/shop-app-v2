@@ -1,4 +1,9 @@
-import type { AuthPermissionSet, AuthUser, PortalKey } from "@shop/contracts";
+import type {
+  AuthPermissionSet,
+  AuthUser,
+  PortalKey,
+  UpdateProfileRequest,
+} from "@shop/contracts";
 import type { QueryKey } from "@tanstack/react-query";
 import { fetchJson } from "@/lib/react-query/fetch-json";
 
@@ -35,12 +40,18 @@ export async function fetchCurrentUserPermissions(): Promise<AuthPermissionSet> 
 export async function setPreferredPortal(
   portal: PortalKey | null,
 ): Promise<void> {
+  await updateCurrentUserProfile({ preferredPortal: portal });
+}
+
+export async function updateCurrentUserProfile(
+  profile: UpdateProfileRequest,
+): Promise<void> {
   await fetchJson<void>(
     "/api/auth/me",
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ preferredPortal: portal }),
+      body: JSON.stringify(profile),
     },
     { auth: "required" },
   );

@@ -7,7 +7,10 @@ import {
   workerAssignmentListResponseSchema,
 } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
-import { getAuthenticatedUserId } from "../auth/auth-route-support.js";
+import {
+  getAuthenticatedActor,
+  getAuthenticatedUserId,
+} from "../auth/auth-route-support.js";
 import {
   assignmentRoutes,
   resolveOriginalWorker,
@@ -78,12 +81,12 @@ function registerWorkerHandoverRoutes(
     method: initiateRoute.method,
     url: initiateRoute.url,
     async handler(request) {
-      const userId = getAuthenticatedUserId(request);
+      const actor = getAuthenticatedActor(request);
       const body = initiateHandoverRequestSchema.parse(request.body);
       const result =
-        await dependencies.ownershipHandoverService.initiateHandover({
-          fromWorkerId: userId,
-          initiatedBy: userId,
+        await dependencies.assignmentCommandService.initiateHandover({
+          actor,
+          fromWorkerId: actor.userId,
           locationId: body.locationId,
           skuId: body.skuId,
           toWorkerId: body.toWorkerId,
@@ -102,14 +105,14 @@ function registerWorkerHandoverRoutes(
     method: revertRoute.method,
     url: revertRoute.url,
     async handler(request) {
-      const userId = getAuthenticatedUserId(request);
+      const actor = getAuthenticatedActor(request);
       const body = revertHandoverRequestSchema.parse(request.body);
       const originalWorkerId = await resolveOriginalWorker(
         dependencies,
         body.handoverChainId,
       );
-      const result = await dependencies.ownershipHandoverService.endHandover({
-        endedBy: userId,
+      const result = await dependencies.assignmentCommandService.endHandover({
+        actor,
         handoverChainId: body.handoverChainId,
         originalWorkerId,
       });

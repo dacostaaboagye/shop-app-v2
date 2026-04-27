@@ -1,9 +1,16 @@
 import type {
+  AdminBrandSummary,
   AdminCreateBrandRequest,
   AdminCreateBrandResponse,
   AdminUpdateBrandRequest,
   AdminUpdateBrandResponse,
 } from "@shop/contracts";
+import type { PlatformEventPublisher } from "../events/platform-event.types.js";
+import {
+  createCatalogBrandCreatedEvent,
+  createCatalogBrandDeletedEvent,
+  createCatalogBrandUpdatedEvent,
+} from "./catalog-events.js";
 
 export type CatalogBrandWriteRepository = {
   createBrand(input: {
@@ -17,30 +24,80 @@ export type CatalogBrandWriteRepository = {
     payload: AdminUpdateBrandRequest;
     slug: string;
   }): Promise<AdminUpdateBrandResponse | null>;
+  getBrand(slug: string): Promise<AdminBrandSummary | null>;
   deleteBrand(input: { slug: string }): Promise<void>;
 };
 
 export class CatalogBrandWriteService {
-  constructor(private readonly repository: CatalogBrandWriteRepository) {}
+  constructor(
+    private readonly repository: CatalogBrandWriteRepository,
+    private readonly eventPublisher?: PlatformEventPublisher | null,
+  ) {}
 
   async createBrand(
-    actorId: string,
+    actor: { userId: string; userSlug: string },
     payload: AdminCreateBrandRequest,
     now: Date,
   ) {
-    return this.repository.createBrand({ actorId, now, payload });
+    const brand = await this.repository.createBrand({
+      actorId: actor.userId,
+      now,
+      payload,
+    });
+
+    await this.eventPublisher?.publish(
+      createCatalogBrandCreatedEvent({
+        actor,
+        brand,
+        occurredAt: now,
+      }),
+    );
+
+    return brand;
   }
 
   async updateBrand(
-    actorId: string,
+    actor: { userId: string; userSlug: string },
     slug: string,
     payload: AdminUpdateBrandRequest,
     now: Date,
   ) {
-    return this.repository.updateBrand({ actorId, now, payload, slug });
+    const brand = await this.repository.updateBrand({
+      actorId: actor.userId,
+      now,
+      payload,
+      slug,
+    });
+
+    if (brand) {
+      await this.eventPublisher?.publish(
+        createCatalogBrandUpdatedEvent({
+          actor,
+          brand,
+          occurredAt: now,
+        }),
+      );
+    }
+
+    return brand;
   }
 
-  async deleteBrand(slug: string) {
-    return this.repository.deleteBrand({ slug });
+  async deleteBrand(
+    actor: { userId: string; userSlug: string },
+    slug: string,
+    now: Date,
+  ) {
+    const brand = await this.repository.getBrand(slug);
+    await this.repository.deleteBrand({ slug });
+
+    if (brand) {
+      await this.eventPublisher?.publish(
+        createCatalogBrandDeletedEvent({
+          actor,
+          brand,
+          occurredAt: now,
+        }),
+      );
+    }
   }
 }

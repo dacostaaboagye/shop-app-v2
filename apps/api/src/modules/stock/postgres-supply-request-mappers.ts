@@ -1,6 +1,7 @@
 export type SupplyRequestRow = {
   id: string;
   reference: string;
+  requestGroupReference: string | null;
   transferReference: string | null;
   sourceReservationStatus:
     | "active"
@@ -61,6 +62,7 @@ export function toSupplyRequestRow(
   row: {
     id: string;
     reference: string;
+    requestGroupReference?: string | null;
     requesterId: string;
     locationId: string;
     sourceLocationId: string;
@@ -104,6 +106,7 @@ export function toSupplyRequestRow(
     notes: row.notes,
     receivedAt: row.receivedAt ?? null,
     reference: row.reference,
+    requestGroupReference: row.requestGroupReference ?? null,
     sourceReservationStatus,
     transferReference,
     requesterEmail,

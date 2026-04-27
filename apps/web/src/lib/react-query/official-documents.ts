@@ -8,6 +8,7 @@ import type {
   LocationDocumentSettingsResponse,
   OfficialDocumentProfileResponse,
   OfficialDocumentSettingsResponse,
+  SendIssuedSalesDocumentEmailResponse,
   SendTestEmailRequest,
   UpdateLocationDocumentSettingsRequest,
   UpdateOfficialDocumentSettingsRequest,
@@ -76,6 +77,16 @@ export async function fetchSalesDocumentDownloadFile(reference: string) {
       auth: "required",
       fallbackFilename: `${safeReference || "sales-document"}.pdf`,
     },
+  );
+}
+
+export async function sendSalesDocumentEmail(reference: string) {
+  return fetchJson<SendIssuedSalesDocumentEmailResponse>(
+    `/api/documents/sales/${encodeURIComponent(reference)}/send-email`,
+    {
+      method: "POST",
+    },
+    { auth: "required" },
   );
 }
 

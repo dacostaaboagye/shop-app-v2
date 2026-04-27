@@ -8,6 +8,8 @@ export type InvoiceRecord = {
   createdAt: Date;
   createdBy: string | null;
   customerBillingAddressLines: string[] | null;
+  currencyCode: string;
+  currencyScale: number;
   customerEmail: string | null;
   customerName: string | null;
   customerPhone: string | null;
@@ -66,6 +68,8 @@ export type CreateSaleTransactionInput = {
   confirmedAt: Date;
   createdBy: string;
   customerBillingAddressLines?: string[] | null;
+  currencyCode: string;
+  currencyScale: number;
   customerEmail?: string | null;
   customerName?: string | null;
   customerPhone?: string | null;
@@ -85,6 +89,8 @@ export type CreateReturnTransactionInput = {
   attributedWorkerId: string | null;
   confirmedAt: Date;
   createdBy: string;
+  currencyCode: string;
+  currencyScale: number;
   lines: {
     lineTotal: string;
     quantity: number;
@@ -114,6 +120,11 @@ export type VariantSaleDetails = {
   sku: string;
   slug: string;
   taxCategory: string | null;
+};
+
+export type SalesCurrencySnapshot = {
+  currencyCode: string;
+  currencyScale: number;
 };
 
 export interface PosCatalogVariantRepository {

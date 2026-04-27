@@ -5,9 +5,22 @@ export class NotificationWriteService {
   constructor(
     private readonly repository: Pick<
       PostgresNotificationWriteRepository,
-      "markAllRead" | "markRead"
+      "deleteNotification" | "markAllRead" | "markRead"
     >,
   ) {}
+
+  async deleteNotification(input: { notificationKey: string; userId: string }) {
+    const deleted = await this.repository.deleteNotification(input);
+
+    if (!deleted) {
+      throw new AppError({
+        code: "not_found",
+        detail: `Notification ${input.notificationKey} was not found.`,
+        statusCode: 404,
+        title: "Notification not found",
+      });
+    }
+  }
 
   async markAllRead(input: { now: Date; userId: string }) {
     return {

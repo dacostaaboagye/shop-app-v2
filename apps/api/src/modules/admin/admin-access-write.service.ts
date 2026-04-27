@@ -3,6 +3,16 @@ import type {
   AdminRoleDetail,
   AdminUpdateRoleRequest,
 } from "@shop/contracts";
+import type { PlatformEventPublisher } from "../events/platform-event.types.js";
+import {
+  createAdminRoleCreatedEvent,
+  createAdminRoleUpdatedEvent,
+} from "./admin-access-events.js";
+
+type AuthenticatedAccessActor = {
+  userId: string;
+  userSlug: string;
+};
 
 export type AdminAccessWriteRepository = {
   createRole(input: {
@@ -23,18 +33,52 @@ export type AdminAccessWriteRepository = {
 };
 
 export class AdminAccessWriteService {
-  constructor(private readonly repository: AdminAccessWriteRepository) {}
+  constructor(
+    private readonly repository: AdminAccessWriteRepository,
+    private readonly eventPublisher: PlatformEventPublisher | null = null,
+  ) {}
 
-  async createRole(actorId: string, input: AdminCreateRoleRequest, now: Date) {
-    return this.repository.createRole({ ...input, actorId, now });
+  async createRole(
+    actor: AuthenticatedAccessActor,
+    input: AdminCreateRoleRequest,
+    now: Date,
+  ) {
+    const role = await this.repository.createRole({
+      ...input,
+      actorId: actor.userId,
+      now,
+    });
+    await this.eventPublisher?.publish(
+      createAdminRoleCreatedEvent({
+        actor,
+        occurredAt: now,
+        request: input,
+        role,
+      }),
+    );
+    return role;
   }
 
   async updateRole(
-    actorId: string,
+    actor: AuthenticatedAccessActor,
     slug: string,
     input: AdminUpdateRoleRequest,
     now: Date,
   ) {
-    return this.repository.updateRole({ ...input, actorId, now, slug });
+    const role = await this.repository.updateRole({
+      ...input,
+      actorId: actor.userId,
+      now,
+      slug,
+    });
+    await this.eventPublisher?.publish(
+      createAdminRoleUpdatedEvent({
+        actor,
+        occurredAt: now,
+        request: input,
+        role,
+      }),
+    );
+    return role;
   }
 }

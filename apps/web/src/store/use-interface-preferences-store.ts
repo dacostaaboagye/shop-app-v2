@@ -20,7 +20,17 @@ export const useInterfacePreferencesStore = create<InterfacePreferencesState>()(
       tableDensity: "comfortable",
     }),
     {
+      migrate: (persistedState) => {
+        const state =
+          persistedState as Partial<InterfacePreferencesState> | null;
+
+        return {
+          sidebarExpandedSections: null,
+          tableDensity: state?.tableDensity ?? "comfortable",
+        };
+      },
       name: "shop-interface-preferences",
+      version: 2,
     },
   ),
 );

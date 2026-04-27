@@ -16,6 +16,7 @@ const baseRequest: StockSupplyRequestResponse = {
   locationName: "Airport Branch",
   notes: null,
   reference: "SR-001",
+  requestGroupReference: null,
   requestedQuantity: 3,
   requesterEmail: "worker@example.com",
   requesterId: "11111111-1111-4111-8111-111111111111",

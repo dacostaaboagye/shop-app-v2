@@ -16,19 +16,25 @@ import {
 import { toast } from "@/lib/toast";
 
 type Props = {
+  accept?: readonly string[];
   canManage: boolean;
   entitySlug: string;
   entityType: CatalogMediaEntityType;
   nextPosition: number;
   onSuccess: () => void;
+  onUploadFile?: (input: { file: File; nextPosition: number }) => Promise<void>;
+  uploadingLabel?: string;
 };
 
 export function MediaUploader({
+  accept = ALLOWED_MEDIA_MIMES,
   canManage,
   entitySlug,
   entityType,
   nextPosition,
   onSuccess,
+  onUploadFile,
+  uploadingLabel = "Uploading...",
 }: Props) {
   const [uploading, setUploading] = useState(false);
 
@@ -37,7 +43,7 @@ export function MediaUploader({
     const file = files.item(0);
     if (!file) return;
 
-    if (!(ALLOWED_MEDIA_MIMES as readonly string[]).includes(file.type)) {
+    if (!(accept as readonly string[]).includes(file.type)) {
       toast.error(`File type "${file.type}" is not supported.`);
       return;
     }
@@ -58,6 +64,12 @@ export function MediaUploader({
 
     setUploading(true);
     try {
+      if (onUploadFile) {
+        await onUploadFile({ file, nextPosition });
+        onSuccess();
+        return;
+      }
+
       const presign = await presignAdminMedia({
         entitySlug,
         entityType,
@@ -97,15 +109,15 @@ export function MediaUploader({
   return (
     <div className="flex items-center gap-2">
       <Input
-        accept={ALLOWED_MEDIA_MIMES.join(",")}
+        accept={accept.join(",")}
         className="cursor-pointer"
         disabled={uploading}
-        onChange={(e) => void handleFiles(e.target.files)}
+        onChange={(event) => void handleFiles(event.target.files)}
         type="file"
       />
       {uploading ? (
         <span className="shrink-0 text-xs text-muted-foreground">
-          Uploading…
+          {uploadingLabel}
         </span>
       ) : null}
     </div>

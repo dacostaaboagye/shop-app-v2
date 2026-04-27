@@ -76,6 +76,14 @@ export class PostgresCatalogBrandWriteRepository
     return toBrand(row);
   }
 
+  async getBrand(slug: string) {
+    const row = await this.db.query.catalogBrands.findFirst({
+      where: eq(catalogBrands.slug, slug),
+    });
+
+    return row ? toBrand(row) : null;
+  }
+
   async deleteBrand(input: { slug: string }) {
     await this.deleteGuard.assertBrandCanBeDeleted(input.slug);
 

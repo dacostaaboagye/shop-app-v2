@@ -1,7 +1,7 @@
 "use client";
 
 import type { CurrentAssignment } from "@shop/contracts";
-import { ShoppingCart } from "lucide-react";
+import { Check, ShoppingCart } from "lucide-react";
 import { ProductThumbnail } from "@/components/system/product-thumbnail";
 import { Button } from "@/components/ui/button";
 import { formatCount } from "@/lib/display/format";
@@ -17,13 +17,17 @@ export function CompactAssignmentList({
   locationId,
   locationName,
   moneyProfile,
+  onSelectSupply,
   onRequestSupply,
+  selectedSupplySkuIds = [],
 }: {
   items: CurrentAssignment[];
   locationId: string;
   locationName: string;
   moneyProfile: MoneyProfile;
+  onSelectSupply: ((target: SupplyTarget) => void) | undefined;
   onRequestSupply: (target: SupplyTarget) => void;
+  selectedSupplySkuIds?: string[];
 }) {
   return (
     <div className="overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm">
@@ -42,7 +46,9 @@ export function CompactAssignmentList({
             locationId={locationId}
             locationName={locationName}
             moneyProfile={moneyProfile}
+            onSelectSupply={onSelectSupply}
             onRequestSupply={onRequestSupply}
+            selectedForSupply={selectedSupplySkuIds.includes(item.skuId)}
           />
         ))}
       </div>
@@ -55,13 +61,17 @@ function CompactAssignmentRow({
   locationId,
   locationName,
   moneyProfile,
+  onSelectSupply,
   onRequestSupply,
+  selectedForSupply,
 }: {
   item: CurrentAssignment;
   locationId: string;
   locationName: string;
   moneyProfile: MoneyProfile;
+  onSelectSupply: ((target: SupplyTarget) => void) | undefined;
   onRequestSupply: (target: SupplyTarget) => void;
+  selectedForSupply: boolean;
 }) {
   const status = getStockStatus(item.availableQuantity);
   const isOut = status === "out_of_stock";
@@ -71,6 +81,7 @@ function CompactAssignmentRow({
     <div
       className={cn(
         "group relative flex flex-col gap-4 p-4 transition-colors hover:bg-muted sm:grid sm:grid-cols-[1fr_120px_100px_100px_120px] sm:items-center sm:gap-4 sm:py-3",
+        selectedForSupply && "bg-primary/5",
       )}
     >
       <div className="flex min-w-0 items-center gap-3">
@@ -117,7 +128,7 @@ function CompactAssignmentRow({
             {formatCount(item.availableQuantity)}
           </p>
         </div>
-        <div className="flex sm:justify-end">
+        <div className="flex flex-wrap gap-2 sm:justify-end">
           <Button
             aria-label={`Request supply for ${item.productName} - ${item.variantName}`}
             className="h-8 w-full rounded-lg gap-2 px-3 text-xs font-bold sm:w-auto"
@@ -137,6 +148,28 @@ function CompactAssignmentRow({
             <ShoppingCart className="size-3" />
             <span className="sm:hidden lg:inline">Request</span>
           </Button>
+          {onSelectSupply ? (
+            <Button
+              className="h-8 w-full rounded-lg gap-2 px-3 text-xs font-bold sm:w-auto"
+              onClick={() =>
+                onSelectSupply({
+                  locationId,
+                  locationName,
+                  productName: item.productName,
+                  sku: item.sku,
+                  skuId: item.skuId,
+                  variantName: item.variantName,
+                })
+              }
+              type="button"
+              variant={selectedForSupply ? "default" : "outline"}
+            >
+              <Check className="size-3" />
+              <span className="sm:hidden lg:inline">
+                {selectedForSupply ? "Selected" : "Select"}
+              </span>
+            </Button>
+          ) : null}
         </div>
       </div>
     </div>

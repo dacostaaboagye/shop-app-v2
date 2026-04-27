@@ -1,8 +1,10 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Bell, Menu, UserCircle2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Bell, Menu } from "lucide-react";
+import Link from "next/link";
+import { PersonAvatar } from "@/components/system/person-avatar";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -16,22 +18,22 @@ import {
   notificationsQueryKey,
 } from "@/lib/react-query/notifications";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
+import { getPortalAccountHref } from "./portal-account-routes";
 import { getActiveItem } from "./portal-shell-config";
 
 type AppTopbarProps = {
-  onAccountOpen: () => void;
   onMenuOpen: () => void;
   onNotificationsOpen: () => void;
   pathname: string;
 };
 
 export function AppTopbar({
-  onAccountOpen,
   onMenuOpen,
   onNotificationsOpen,
   pathname,
 }: AppTopbarProps) {
   const user = useAuthSessionStore((state) => state.user);
+  const accountHref = getPortalAccountHref({ pathname, user });
   const activeItem = getActiveItem(pathname);
   const locationSelector = useTopbarLocationSelector(
     activeItem?.locationSelectorPermission === undefined
@@ -83,18 +85,27 @@ export function AppTopbar({
               <span className="sr-only">Open notifications</span>
             </Button>
 
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground gap-2"
-              onClick={onAccountOpen}
+            <Link
+              href={accountHref}
+              scroll={false}
+              className={buttonVariants({
+                className:
+                  "rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground gap-2",
+                size: "sm",
+                variant: "ghost",
+              })}
             >
-              <UserCircle2 className="size-3.5" />
+              <PersonAvatar
+                firstName={user?.firstName}
+                imageUrl={user?.primaryImageUrl}
+                interactive={false}
+                lastName={user?.lastName}
+                size="sm"
+              />
               <span className="hidden sm:inline">
                 {user ? `${user.firstName} ${user.lastName}` : "Account"}
               </span>
-            </Button>
+            </Link>
           </div>
         </div>
       </div>

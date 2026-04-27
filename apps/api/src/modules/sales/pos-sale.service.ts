@@ -1,30 +1,56 @@
+import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import type { SalesAttributionService } from "../inventory-ownership/sales-attribution.service.js";
 import type { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
-import type { PostgresInvoiceRepository } from "./postgres-invoice.repository.js";
-import type { PostgresInvoiceQueryRepository } from "./postgres-invoice-query.repository.js";
 import {
+  type CreateReturnTransactionInput,
   type CreateSaleTransactionInput,
   InvalidReturnError,
   InvoiceNotFoundError,
   type InvoiceWithLines,
   MixedOwnershipSaleError,
   type PosCatalogVariantRepository,
+  type SalesCurrencySnapshot,
   SaleVariantNotFoundError,
 } from "./sales.contracts.js";
+import type { SalesEventContextRepository } from "./sales-event-context.repository.js";
+import { createSalesReturnProcessedEvent } from "./sales-return-events.js";
 
 type PosSaleServiceDeps = {
   catalogVariantRepository: PosCatalogVariantRepository;
-  invoiceRepository: Pick<
-    PostgresInvoiceRepository,
-    "createSaleTransaction" | "createReturnTransaction"
-  > &
-    Pick<PostgresInvoiceQueryRepository, "findByReference">;
-  referenceNumberService: ReferenceNumberService;
-  salesAttributionService: SalesAttributionService;
+  currencyResolver: {
+    resolveCurrencySnapshot: (input: {
+      locationId: string;
+    }) => Promise<SalesCurrencySnapshot>;
+  };
+  invoiceRepository: {
+    createReturnTransaction: (
+      input: CreateReturnTransactionInput,
+    ) => Promise<InvoiceWithLines>;
+    createSaleTransaction: (
+      input: CreateSaleTransactionInput,
+    ) => Promise<InvoiceWithLines>;
+    findByReference: (reference: string) => Promise<InvoiceWithLines | null>;
+  };
+  referenceNumberService: Pick<
+    ReferenceNumberService,
+    "generateCreditNoteReference" | "generateReference"
+  >;
+  salesEventContextRepository?: SalesEventContextRepository;
+  salesAttributionService: {
+    attributeSale: (
+      input: Parameters<SalesAttributionService["attributeSale"]>[0],
+    ) => Promise<{ workerId: string }>;
+  };
+  platformEventPublisher?: PlatformEventPublisher | null;
 };
 
 type ProcessSaleInput = {
   createdBy: string;
+  customerBillingAddressLines?: string[] | null;
+  customerEmail?: string | null;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  customerTaxNumber?: string | null;
   lines: { quantity: number; skuId: string; unitPrice?: string }[];
   locationId: string;
   notes?: string;
@@ -33,6 +59,7 @@ type ProcessSaleInput = {
 };
 
 type ProcessReturnInput = {
+  actor?: { userSlug: string };
   createdBy: string;
   lines: { quantity: number; skuId: string }[];
   parentReference: string;
@@ -45,6 +72,9 @@ export class PosSaleService {
 
   async processSale(input: ProcessSaleInput): Promise<InvoiceWithLines> {
     const now = input.now ?? new Date();
+    const currency = await this.deps.currencyResolver.resolveCurrencySnapshot({
+      locationId: input.locationId,
+    });
 
     const variantDetails =
       await this.deps.catalogVariantRepository.getVariantsForSale(
@@ -126,6 +156,13 @@ export class PosSaleService {
       attributedWorkerId,
       confirmedAt: now,
       createdBy: input.createdBy,
+      customerBillingAddressLines: input.customerBillingAddressLines ?? null,
+      currencyCode: currency.currencyCode,
+      currencyScale: currency.currencyScale,
+      customerEmail: input.customerEmail ?? null,
+      customerName: input.customerName ?? null,
+      customerPhone: input.customerPhone ?? null,
+      customerTaxNumber: input.customerTaxNumber ?? null,
       lineItems,
       locationId: input.locationId,
       notes: input.notes ?? null,
@@ -214,20 +251,43 @@ export class PosSaleService {
       0,
     );
 
-    return this.deps.invoiceRepository.createReturnTransaction({
-      attributedWorkerId: originalInvoice.attributedWorkerId,
-      confirmedAt: now,
-      createdBy: input.createdBy,
-      lines,
-      locationId: originalInvoice.locationId,
-      now,
-      parentInvoiceId: originalInvoice.id,
-      reference: creditReference,
-      subtotalAmount: returnSubtotal.toFixed(2),
-      taxAmount: "0.00",
-      totalAmount: returnSubtotal.toFixed(2),
-      voidReason: input.reason,
-    });
+    const creditNote =
+      await this.deps.invoiceRepository.createReturnTransaction({
+        attributedWorkerId: originalInvoice.attributedWorkerId,
+        confirmedAt: now,
+        createdBy: input.createdBy,
+        currencyCode: originalInvoice.currencyCode,
+        currencyScale: originalInvoice.currencyScale,
+        lines,
+        locationId: originalInvoice.locationId,
+        now,
+        parentInvoiceId: originalInvoice.id,
+        reference: creditReference,
+        subtotalAmount: returnSubtotal.toFixed(2),
+        taxAmount: "0.00",
+        totalAmount: returnSubtotal.toFixed(2),
+        voidReason: input.reason,
+      });
+
+    if (input.actor && this.deps.platformEventPublisher) {
+      const locationName =
+        await this.deps.salesEventContextRepository?.getLocationName(
+          creditNote.locationId,
+        );
+
+      await this.deps.platformEventPublisher.publish(
+        createSalesReturnProcessedEvent({
+          actor: input.actor,
+          creditNote,
+          locationName: locationName ?? creditNote.locationId,
+          occurredAt: now,
+          parentInvoice: originalInvoice,
+          reason: input.reason,
+        }),
+      );
+    }
+
+    return creditNote;
   }
 }
 

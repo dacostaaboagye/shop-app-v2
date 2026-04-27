@@ -5,6 +5,7 @@ import {
 } from "@shop/contracts";
 import { AppError } from "../_core/errors/app-error.js";
 import type { PermissionResolutionService } from "../access-control/permission-resolution.service.js";
+import type { EmailService } from "../messaging/email.service.js";
 import { toInvoiceResponse } from "../sales/invoice-response.mapper.js";
 import {
   InvoiceNotFoundError,
@@ -22,6 +23,7 @@ type InvoiceRepository = {
 };
 
 type SalesIssuedDocumentSnapshotDependencies = {
+  emailService: Pick<EmailService, "sendSalesDocumentEmail">;
   invoiceRepository: InvoiceRepository;
   permissionService: Pick<PermissionResolutionService, "assertHasPermission">;
   settingsService: Pick<
@@ -67,6 +69,11 @@ export class SalesIssuedDocumentSnapshotService {
       await this.dependencies.settingsService.resolveDocumentProfile({
         locationId: invoice.locationId,
       });
+    const profileSnapshot = {
+      ...profile,
+      currencyCode: invoice.currencyCode,
+      currencyScale: invoice.currencyScale,
+    };
 
     return this.dependencies.snapshotService.issueSnapshot({
       ...(input.actorUserSlug ? { actorUserSlug: input.actorUserSlug } : {}),
@@ -76,7 +83,7 @@ export class SalesIssuedDocumentSnapshotService {
       issuedBy: input.actorUserId,
       locationId: invoice.locationId,
       payloadSnapshot: toPayloadSnapshot(invoice),
-      profileSnapshot: profile,
+      profileSnapshot,
       resourceKind: "invoice",
       resourceReference: invoice.reference,
     });
@@ -89,6 +96,47 @@ export class SalesIssuedDocumentSnapshotService {
   }): Promise<IssuedSalesDocumentFile> {
     const snapshot = await this.getOrIssueSnapshot(input);
     return toSalesIssuedDocumentPdfFile(snapshot);
+  }
+
+  async sendEmail(input: {
+    actorUserSlug?: string;
+    actorUserId: string;
+    reference: string;
+  }): Promise<{ ok: true; recipientEmail: string }> {
+    const invoice = await this.dependencies.invoiceRepository.findByReference(
+      input.reference,
+    );
+    if (!invoice) throw new InvoiceNotFoundError(input.reference);
+
+    await this.assertCanViewOfficialSalesDocument({
+      actorUserId: input.actorUserId,
+      invoice,
+    });
+
+    const recipientEmail = invoice.customerEmail?.trim() ?? "";
+    if (!recipientEmail) {
+      throw missingRecipientEmailError();
+    }
+
+    const snapshot = await this.getOrIssueSnapshot(input);
+    const file = await toSalesIssuedDocumentPdfFile(snapshot);
+    const documentLabel = getDocumentEmailLabel(invoice.type);
+
+    await this.dependencies.emailService.sendSalesDocumentEmail({
+      attachment: {
+        content: file.body,
+        contentType: file.contentType,
+        filename: file.filename,
+      },
+      documentLabel,
+      documentReference: invoice.reference,
+      locationName: snapshot.profileSnapshot.locationName,
+      profileEmail: snapshot.profileSnapshot.email,
+      recipientName: invoice.customerName,
+      to: recipientEmail,
+    });
+
+    return { ok: true, recipientEmail };
   }
 
   private async assertCanViewOfficialSalesDocument(input: {
@@ -151,6 +199,12 @@ function getDocumentType(
   return "sales_invoice";
 }
 
+function getDocumentEmailLabel(invoiceType: InvoiceWithLines["type"]): string {
+  if (invoiceType === "credit_note") return "Credit Note";
+  if (invoiceType === "pos") return "Sales Receipt";
+  return "Sales Invoice";
+}
+
 function isActorSalesOwner(input: {
   actorUserId: string;
   invoice: InvoiceWithLines;
@@ -168,5 +222,15 @@ function forbiddenOfficialDocumentError(): AppError {
       "You do not have permission to access this official sales document.",
     statusCode: 403,
     title: "Forbidden",
+  });
+}
+
+function missingRecipientEmailError(): AppError {
+  return new AppError({
+    code: "validation_error",
+    detail:
+      "This document cannot be emailed because no buyer email is stored on the invoice.",
+    statusCode: 400,
+    title: "Buyer email required",
   });
 }
