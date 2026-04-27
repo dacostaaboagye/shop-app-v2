@@ -10,7 +10,7 @@ import {
 import type { FastifyInstance } from "fastify";
 import { AppError } from "../_core/errors/app-error.js";
 import type { RouteDefinition } from "../_core/route-contract.js";
-import { getAuthenticatedUserId } from "../auth/auth-route-support.js";
+import { getAuthenticatedActor } from "../auth/auth-route-support.js";
 import type { CatalogBrandQueryService } from "./catalog-brand-query.service.js";
 import type { CatalogBrandWriteService } from "./catalog-brand-write.service.js";
 
@@ -98,8 +98,9 @@ export function registerCatalogBrandRoutes(
     url: createBrandRoute.url,
     async handler(request) {
       const payload = adminCreateBrandRequestSchema.parse(request.body);
+      const actor = getAuthenticatedActor(request);
       const result = await dependencies.catalogBrandWriteService.createBrand(
-        getAuthenticatedUserId(request),
+        actor,
         payload,
         new Date(),
       );
@@ -114,8 +115,9 @@ export function registerCatalogBrandRoutes(
     async handler(request) {
       const { slug } = request.params as { slug: string };
       const payload = adminUpdateBrandRequestSchema.parse(request.body);
+      const actor = getAuthenticatedActor(request);
       const result = await dependencies.catalogBrandWriteService.updateBrand(
-        getAuthenticatedUserId(request),
+        actor,
         slug,
         payload,
         new Date(),
@@ -140,7 +142,12 @@ export function registerCatalogBrandRoutes(
     url: deleteBrandRoute.url,
     async handler(request) {
       const { slug } = request.params as { slug: string };
-      await dependencies.catalogBrandWriteService.deleteBrand(slug);
+      const actor = getAuthenticatedActor(request);
+      await dependencies.catalogBrandWriteService.deleteBrand(
+        actor,
+        slug,
+        new Date(),
+      );
       return { success: true };
     },
   });

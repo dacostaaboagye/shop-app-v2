@@ -1,5 +1,9 @@
 import type { EmailTemplateSettings } from "@shop/database";
 import { Resend } from "resend";
+import {
+  buildOperationalEmailContent,
+  buildSalesDocumentEmailContent,
+} from "./email.service.support.js";
 import { assertValidFromAddress } from "./email-errors.js";
 import { EmailSendExecution } from "./email-send-execution.js";
 import type {
@@ -22,6 +26,7 @@ export class EmailService {
     | NonNullable<EmailServiceOptions["deliveryPolicy"]>
     | undefined;
   private readonly execution: EmailSendExecution;
+  private readonly fromAddress: string;
   private readonly templateProvider:
     | NonNullable<EmailServiceOptions["templateProvider"]>
     | undefined;
@@ -34,6 +39,7 @@ export class EmailService {
   ) {
     assertValidFromAddress(fromAddress);
     this.deliveryPolicy = options.deliveryPolicy;
+    this.fromAddress = fromAddress;
     this.templateProvider = options.templateProvider;
     this.webBaseUrl = options.webBaseUrl ?? "https://app.example.com";
 
@@ -55,6 +61,9 @@ export class EmailService {
       fromAddress,
       logger: options.logger ?? console,
       transport,
+      ...(options.eventPublisher
+        ? { eventPublisher: options.eventPublisher }
+        : {}),
     });
   }
 
@@ -156,6 +165,59 @@ export class EmailService {
       subject: `[Test] ${configured.subject}`,
       html: configured.html,
       text: configured.text,
+    });
+  }
+
+  async sendOperationalEmail(input: {
+    firstName?: string | null;
+    subject: string;
+    to: string;
+    messageBody: string;
+  }): Promise<EmailSendResult> {
+    await this.assertCanSend(input.to);
+    const { html, text } = buildOperationalEmailContent(input);
+
+    return this.execution.send({
+      messageType: "admin_operational",
+      to: input.to,
+      subject: input.subject,
+      html,
+      text,
+    });
+  }
+
+  async sendSalesDocumentEmail(input: {
+    attachment: {
+      content: Buffer;
+      contentType: string;
+      filename: string;
+    };
+    documentLabel: string;
+    documentReference: string;
+    locationName?: string | null;
+    profileEmail?: string | null;
+    recipientName?: string | null;
+    to: string;
+  }): Promise<EmailSendResult> {
+    await this.assertCanSend(input.to);
+    const { html, subject, text } = buildSalesDocumentEmailContent({
+      ...input,
+      supportFallbackEmail: this.fromAddress,
+    });
+
+    return this.execution.send({
+      attachments: [
+        {
+          content: input.attachment.content,
+          contentType: input.attachment.contentType,
+          filename: input.attachment.filename,
+        },
+      ],
+      messageType: "sales_document",
+      to: input.to,
+      subject,
+      html,
+      text,
     });
   }
 

@@ -2,13 +2,11 @@
 
 import { Separator } from "@base-ui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AtSign, FlaskConical, History, MailCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { RecipientStatePanel } from "@/components/admin/settings/email-recipient-state-panel";
 import { AppEmptyState } from "@/components/system/app-empty-state";
 import { AppErrorBanner } from "@/components/system/app-error";
-import { StatCard } from "@/components/system/page-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,6 +21,7 @@ import {
   formatEmailTimestamp,
   isValidEmail,
 } from "./email-operations-support";
+import { canSendToRecipient } from "./email-recipient-state.support";
 
 export function EmailOperationsPanel({ canManage }: { canManage: boolean }) {
   const queryClient = useQueryClient();
@@ -71,35 +70,6 @@ export function EmailOperationsPanel({ canManage }: { canManage: boolean }) {
         />
       ) : null}
 
-      {operationsQuery.data ? (
-        <div className="grid gap-4 md:grid-cols-3">
-          <StatCard
-            description={
-              operationsQuery.data.providerConfigured
-                ? "Resend is configured for live delivery."
-                : "Email is using console fallback mode."
-            }
-            icon={
-              operationsQuery.data.providerConfigured ? MailCheck : FlaskConical
-            }
-            label="Delivery mode"
-            value={operationsQuery.data.mode.replaceAll("_", " ")}
-          />
-          <StatCard
-            description={operationsQuery.data.replyToAddress}
-            icon={AtSign}
-            label="Reply-to"
-            value={operationsQuery.data.supportEmail}
-          />
-          <StatCard
-            description="Most recent delivery attempts recorded by the API."
-            icon={History}
-            label="Recent attempts"
-            value={`Last ${operationsQuery.data.recentAttempts.length}`}
-          />
-        </div>
-      ) : null}
-
       <div className="rounded-xl border border-border/60 bg-card p-6 shadow-sm shadow-black/[0.04]">
         <div className="flex flex-col gap-2">
           <h3 className="text-base font-semibold text-foreground">
@@ -122,7 +92,7 @@ export function EmailOperationsPanel({ canManage }: { canManage: boolean }) {
               !canManage ||
               sendMutation.isPending ||
               targetEmail.trim() === "" ||
-              recipientStateQuery.data?.canSend === false
+              !canSendToRecipient(recipientStateQuery.data)
             }
             onClick={() =>
               sendMutation.mutate({ targetEmail: targetEmail.trim() })
@@ -157,22 +127,22 @@ export function EmailOperationsPanel({ canManage }: { canManage: boolean }) {
             <div className="divide-y divide-border/60">
               {operationsQuery.data.recentAttempts.map((attempt) => (
                 <div
-                  className="flex flex-col gap-2 bg-background px-4 py-3 md:flex-row md:items-start md:justify-between"
+                  className="grid gap-3 bg-background px-4 py-3 md:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] md:items-start"
                   key={`${attempt.createdAt}-${attempt.recipientEmail}-${attempt.subject}`}
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-balance text-sm font-semibold text-foreground">
+                    <p className="break-words text-sm font-semibold text-foreground">
                       {attempt.subject}
                     </p>
-                    <p className="flex flex-wrap gap-1 text-xs text-muted-foreground">
+                    <div className="mt-1 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
                       <span className="break-all">
                         {attempt.recipientEmail}
                       </span>
                       <Separator orientation="vertical" className="h-4" />
-                      <span className="text-pretty">
+                      <span className="break-words">
                         {attempt.messageType.replaceAll("_", " ")}
                       </span>
-                    </p>
+                    </div>
                   </div>
                   <div className="flex min-w-0 flex-col items-start gap-1 text-xs text-muted-foreground md:items-end">
                     <EmailDeliveryStatusBadge status={attempt.status} />
@@ -180,7 +150,7 @@ export function EmailOperationsPanel({ canManage }: { canManage: boolean }) {
                       {formatEmailTimestamp(attempt.statusRecordedAt)}
                     </span>
                     {attempt.failureReason ? (
-                      <span className="text-pretty md:text-right">
+                      <span className="break-words md:max-w-[24rem] md:text-right">
                         {attempt.failureReason}
                       </span>
                     ) : null}

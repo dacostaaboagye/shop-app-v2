@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -17,13 +18,17 @@ export type NotificationFeedItem = Awaited<
 >["items"][number];
 
 export function NotificationFeedCard({
+  deletePending = false,
   notification,
+  onDelete,
   onMarkRead,
   pending = false,
   showStatus = false,
   variant = "dialog",
 }: {
+  deletePending?: boolean;
   notification: NotificationFeedItem;
+  onDelete?: () => void;
   onMarkRead?: () => void;
   pending?: boolean;
   showStatus?: boolean;
@@ -75,18 +80,36 @@ export function NotificationFeedCard({
           ) : null}
         </div>
 
-        {notification.status === "unread" && onMarkRead ? (
-          <Button
-            disabled={pending}
-            onClick={onMarkRead}
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            {pending ? <Spinner data-icon="inline-start" /> : null}
-            Mark read
-          </Button>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          {notification.status === "unread" && onMarkRead ? (
+            <Button
+              disabled={pending || deletePending}
+              onClick={onMarkRead}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {pending ? <Spinner data-icon="inline-start" /> : null}
+              Mark Read
+            </Button>
+          ) : null}
+          {isPage && onDelete ? (
+            <Button
+              disabled={deletePending || pending}
+              onClick={onDelete}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {deletePending ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <Trash2 data-icon="inline-start" />
+              )}
+              Delete
+            </Button>
+          ) : null}
+        </div>
       </div>
     </article>
   );

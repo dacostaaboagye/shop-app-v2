@@ -10,18 +10,19 @@ export default function WorkerPage() {
     <PageShell>
       <HeroPanel
         eyebrow="Worker portal"
-        title="Focused operational hub"
-        description="Workers need a narrower, faster workspace centered on individual responsibility. This hub provides real-time status and quick access to core tasks."
-        badges={["High-precision workspace"]}
+        title="Daily operations"
+        description="Review assigned stock, current sales activity, and operational updates from the team before moving into POS, assignment, or handover work."
+        badges={["Location-scoped workflow"]}
         aside={
           <InsightCard
-            eyebrow="Redesigned"
-            title="Premium Efficiency"
-            description="The worker surface is now optimized for rapid execution with high-fidelity components."
+            eyebrow="Production focus"
+            title="Sales And Alerts"
+            description="The worker landing view now prioritizes real work signals instead of placeholder overview copy."
           >
             <p className="text-sm text-muted-foreground">
-              This focused view minimizes noise, allowing you to prioritize
-              sales, assignments, and stock handovers.
+              Use the active location scope to monitor assigned variants,
+              same-day sales, and unread notifications before starting the next
+              task.
             </p>
           </InsightCard>
         }

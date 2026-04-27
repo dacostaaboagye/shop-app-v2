@@ -14,6 +14,7 @@
     "db:seed-core": "pnpm db:seed-access-control && pnpm db:seed-catalog",
     "dev": "tsx watch --env-file ../../.env.local src/index.ts",
     "dev:events": "tsx watch --env-file ../../.env.local src/workers/platform-event-delivery-worker.ts",
+    "email:review-fixtures": "pnpm build && node scripts/generate-email-review-fixtures.mjs",
     "events:worker": "tsx --env-file ../../.env.local src/workers/platform-event-delivery-worker.ts",
     "lint": "biome check src test",
     "predev": "pnpm --filter @shop/contracts build && pnpm --filter @shop/database build && pnpm --filter @shop/domain build",

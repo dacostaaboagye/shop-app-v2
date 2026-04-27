@@ -103,6 +103,24 @@ describe("emailHtml", () => {
     assert.match(html, /prefers-color-scheme: dark/);
   });
 
+  it("includes mobile stacking rules for brand header and CTA button", () => {
+    const html = emailHtml({
+      actionLabel: "Confirm your supplier portal invitation",
+      actionUrl: "https://example.com/confirm",
+      brand: BRAND,
+      footer: "F",
+      heading: "H",
+      intro: "I",
+    });
+
+    assert.match(html, /\.email-brand-row,/);
+    assert.match(html, /\.email-brand-logo-cell,/);
+    assert.match(html, /\.email-brand-copy-cell \{/);
+    assert.match(html, /\.email-brand-spacer \{/);
+    assert.match(html, /\.email-button td \{/);
+    assert.match(html, /box-sizing: border-box !important/);
+  });
+
   it("renders logo image when logoImageUrl is provided", () => {
     const html = emailHtml({
       actionLabel: "Go",
@@ -184,6 +202,33 @@ describe("emailHtml", () => {
 
     assert.doesNotMatch(html, /<b>Hack/);
     assert.match(html, /&lt;b&gt;Hack &amp; Co\.&lt;\/b&gt;/);
+  });
+
+  it("marks long user-facing content with safe word-break styling", () => {
+    const html = emailHtml({
+      actionLabel:
+        "Confirm your account and continue to the operational readiness workspace",
+      actionUrl:
+        "https://example.com/verify/super/long/path/that/should/not/blow/up/mobile/layout?token=abcdefghijklmnopqrstuvwxyz",
+      brand: {
+        ...BRAND,
+        brandName: "Shop App Operations and Logistics Platform West Africa",
+        fromAddress: "notifications-with-a-very-long-local-part@example.com",
+        supportEmail: "support-team-with-a-very-long-local-part@example.com",
+      },
+      footer:
+        "Use this secure link within twenty four hours or request another verification email from the sign in screen.",
+      heading:
+        "Verify your operational access before your first live shift begins",
+      intro:
+        "This message is safe to ignore if you were not expecting access, but the link below is required before you can sign in.",
+    });
+
+    const wordBreakMatches =
+      html.match(/class="[^"]*email-word-break[^"]*"/g) ?? [];
+    assert.ok(wordBreakMatches.length >= 6);
+    assert.match(html, /overflow-wrap: anywhere/);
+    assert.match(html, /word-break: break-word/);
   });
 });
 

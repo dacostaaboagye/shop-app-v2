@@ -24,11 +24,15 @@ type AssignmentListProps = {
   locationId: string;
   locationName: string | undefined;
   moneyProfile: MoneyProfile;
+  onBulkRequestSupply: () => void;
   onRequestSupply: (target: SupplyTarget) => void;
   onSearchChange: (value: string) => void;
+  onSelectSupply: (target: SupplyTarget) => void;
   onStockFilterChange: (value: StockFilter) => void;
   onViewModeChange: (value: ViewMode) => void;
+  onClearSelectedSupply: () => void;
   search: string;
+  selectedSupplySkuIds: string[];
   stockFilter: StockFilter;
   viewMode: ViewMode;
 };
@@ -40,11 +44,15 @@ export function AssignmentList({
   locationId,
   locationName,
   moneyProfile,
+  onBulkRequestSupply,
   onRequestSupply,
   onSearchChange,
+  onSelectSupply,
   onStockFilterChange,
   onViewModeChange,
+  onClearSelectedSupply,
   search,
+  selectedSupplySkuIds,
   stockFilter,
   viewMode,
 }: AssignmentListProps) {
@@ -77,6 +85,25 @@ export function AssignmentList({
         stockFilter={stockFilter}
         viewMode={viewMode}
       />
+      {selectedSupplySkuIds.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2">
+          <p className="type-support">
+            {formatCount(selectedSupplySkuIds.length)} selected for grouped
+            request
+          </p>
+          <Button onClick={onBulkRequestSupply} size="sm" type="button">
+            Request Selected
+          </Button>
+          <Button
+            onClick={onClearSelectedSupply}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            Clear Selection
+          </Button>
+        </div>
+      ) : null}
       {hasActiveFilter ? (
         <p className="type-support text-xs">
           {filteredItems.length === 0
@@ -92,8 +119,10 @@ export function AssignmentList({
         moneyProfile={moneyProfile}
         onRequestSupply={onRequestSupply}
         onSearchChange={onSearchChange}
+        onSelectSupply={onSelectSupply}
         onStockFilterChange={onStockFilterChange}
         viewMode={viewMode}
+        selectedSupplySkuIds={selectedSupplySkuIds}
       />
     </div>
   );
@@ -138,8 +167,10 @@ function AssignmentResults({
   moneyProfile,
   onRequestSupply,
   onSearchChange,
+  onSelectSupply,
   onStockFilterChange,
   viewMode,
+  selectedSupplySkuIds,
 }: {
   filteredItems: CurrentAssignment[];
   hasActiveFilter: boolean;
@@ -148,8 +179,10 @@ function AssignmentResults({
   moneyProfile: MoneyProfile;
   onRequestSupply: (target: SupplyTarget) => void;
   onSearchChange: (value: string) => void;
+  onSelectSupply: (target: SupplyTarget) => void;
   onStockFilterChange: (value: StockFilter) => void;
   viewMode: ViewMode;
+  selectedSupplySkuIds: string[];
 }) {
   if (filteredItems.length === 0) {
     return (
@@ -182,7 +215,9 @@ function AssignmentResults({
         locationId={locationId}
         locationName={locationName ?? "Assigned location"}
         moneyProfile={moneyProfile}
+        onSelectSupply={onSelectSupply}
         onRequestSupply={onRequestSupply}
+        selectedSupplySkuIds={selectedSupplySkuIds}
       />
     );
   }
@@ -194,6 +229,16 @@ function AssignmentResults({
           item={item}
           key={item.skuId}
           moneyProfile={moneyProfile}
+          onSelectSupply={() =>
+            onSelectSupply({
+              locationId,
+              locationName: locationName ?? "Assigned location",
+              productName: item.productName,
+              sku: item.sku,
+              skuId: item.skuId,
+              variantName: item.variantName,
+            })
+          }
           onRequestSupply={() =>
             onRequestSupply({
               locationId,
@@ -204,6 +249,7 @@ function AssignmentResults({
               variantName: item.variantName,
             })
           }
+          selectedForSupply={selectedSupplySkuIds.includes(item.skuId)}
         />
       ))}
     </div>

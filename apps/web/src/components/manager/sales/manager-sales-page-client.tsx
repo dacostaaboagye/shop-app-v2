@@ -109,7 +109,7 @@ export function ManagerSalesPageClient() {
 
       {salesQuery.isPending && selectedLocationScope ? (
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {[1, 2, 3].map((key) => (
               <Skeleton key={key} className="h-24 w-full rounded-xl" />
             ))}
@@ -129,7 +129,7 @@ export function ManagerSalesPageClient() {
         />
       ) : salesQuery.data ? (
         <div className="flex flex-col gap-6">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <StatCard
               icon={Receipt}
               label="Total transactions"

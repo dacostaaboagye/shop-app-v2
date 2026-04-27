@@ -7,6 +7,8 @@ import { useCallback, useMemo, useState } from "react";
 import { buildStockBalanceColumns } from "@/components/admin/stock/stock-balance-columns";
 import { StockCountDialog } from "@/components/admin/stock/stock-count-dialog";
 import { AppDataTable } from "@/components/data-table/app-data-table";
+import { ManagerBulkSupplyRequestDialog } from "@/components/manager/stock/manager-bulk-supply-request-dialog";
+import { toSupplyRequestTarget } from "@/components/manager/stock/manager-stock-page-client.support";
 import { StockWorkspaceTableSkeleton } from "@/components/stock/stock-workspace-feedback";
 import {
   StockMetricGrid,
@@ -17,6 +19,7 @@ import { AppTableWrapper } from "@/components/system/app-table-wrapper";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { Button } from "@/components/ui/button";
+import type { SupplyRequestTarget } from "@/components/worker/stock/supply-request-dialog.types";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
 import {
   fetchManagerStockBalances,
@@ -39,6 +42,10 @@ export function ManagerStockPageClient() {
   const [countTarget, setCountTarget] =
     useState<AdminStockBalanceSummary | null>(null);
   const [countOpen, setCountOpen] = useState(false);
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [requestTargets, setRequestTargets] = useState<SupplyRequestTarget[]>(
+    [],
+  );
 
   const query = useMemo(
     () => ({
@@ -78,6 +85,8 @@ export function ManagerStockPageClient() {
 
   const canCount =
     selectedLocationScope?.permissions.includes("inventory.write") ?? false;
+  const canRequestSupply =
+    selectedLocationScope?.permissions.includes("stock.supply.manage") ?? false;
   const columns = useMemo(
     () => buildStockBalanceColumns(canCount ? openCountDialog : null),
     [canCount, openCountDialog],
@@ -182,6 +191,34 @@ export function ManagerStockPageClient() {
           </div>
         ) : (
           <AppDataTable
+            bulkActions={
+              canRequestSupply && selectedLocationScope
+                ? {
+                    render: ({ clearSelection, selectedRows }) => (
+                      <Button
+                        onClick={() => {
+                          setRequestTargets(
+                            selectedRows.map((row) =>
+                              toSupplyRequestTarget(row, {
+                                locationId: selectedLocationScope.locationId,
+                                locationName:
+                                  selectedLocationScope.locationName,
+                              }),
+                            ),
+                          );
+                          setRequestOpen(true);
+                          clearSelection();
+                        }}
+                        size="sm"
+                        type="button"
+                      >
+                        Request supply
+                      </Button>
+                    ),
+                    selectionAriaLabel: "stock items",
+                  }
+                : undefined
+            }
             columns={columns}
             data={stockItems}
             density="compact"
@@ -208,6 +245,16 @@ export function ManagerStockPageClient() {
         onSubmit={(req) => countMutation.mutate(req)}
         open={countOpen}
         row={countTarget}
+      />
+      <ManagerBulkSupplyRequestDialog
+        onOpenChange={(open) => {
+          setRequestOpen(open);
+          if (!open) {
+            setRequestTargets([]);
+          }
+        }}
+        open={requestOpen}
+        targets={requestTargets}
       />
     </PageShell>
   );

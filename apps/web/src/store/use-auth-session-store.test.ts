@@ -20,6 +20,11 @@ describe("useAuthSessionStore", () => {
         firstName: "Store",
         lastLoginAt: null,
         lastName: "Manager",
+        notificationPreferences: {
+          emailEnabled: true,
+          inAppEnabled: true,
+          soundEnabled: true,
+        },
         preferredPortal: "admin",
         emailVerified: false,
         requiresPasswordChange: false,

@@ -87,3 +87,37 @@ export function filterAssignments(input: {
       item.sku.toLowerCase().includes(query),
   );
 }
+
+export function toSupplyTarget(input: {
+  item: CurrentAssignment;
+  locationId: string;
+  locationName: string;
+}): SupplyTarget {
+  return {
+    locationId: input.locationId,
+    locationName: input.locationName,
+    productName: input.item.productName,
+    sku: input.item.sku,
+    skuId: input.item.skuId,
+    variantName: input.item.variantName,
+  };
+}
+
+export function toggleSupplySelection(
+  selectedSkuIds: string[],
+  skuId: string,
+): string[] {
+  return selectedSkuIds.includes(skuId)
+    ? selectedSkuIds.filter((value) => value !== skuId)
+    : [...selectedSkuIds, skuId];
+}
+
+export function buildBulkSupplyItems(
+  targets: SupplyTarget[],
+  quantities: Record<string, number>,
+) {
+  return targets.map((target) => ({
+    requestedQuantity: quantities[target.skuId] ?? 1,
+    skuId: target.skuId,
+  }));
+}

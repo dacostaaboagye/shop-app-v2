@@ -11,7 +11,10 @@ import {
 } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
 import type { RouteDefinition } from "../_core/route-contract.js";
-import { getAuthenticatedUserId } from "../auth/auth-route-support.js";
+import {
+  getAuthenticatedActor,
+  getAuthenticatedUserId,
+} from "../auth/auth-route-support.js";
 import { registerAdminSupplierContactRoutes } from "./admin-supplier-contact.routes.js";
 import {
   type AdminSupplierRouteDependencies,
@@ -111,9 +114,10 @@ export function registerAdminSupplierRoutes(
     async (request) => {
       const { slug } = request.params as { slug: string };
       const payload = adminLinkSupplierProductRequestSchema.parse(request.body);
+      const actor = getAuthenticatedActor(request);
       const supplier = await dependencies.adminSupplierWriteService.linkProduct(
         slug,
-        getAuthenticatedUserId(request),
+        actor,
         payload,
         new Date(),
       );
@@ -130,10 +134,11 @@ export function registerAdminSupplierRoutes(
       const payload = adminCreateSupplierProcurementOrderRequestSchema.parse(
         request.body,
       );
+      const actor = getAuthenticatedActor(request);
       const supplier =
         await dependencies.adminSupplierWriteService.createProcurementOrder(
           slug,
-          getAuthenticatedUserId(request),
+          actor,
           payload,
           new Date(),
         );
@@ -197,7 +202,7 @@ export function registerAdminSupplierRoutes(
       };
       const supplier = await handleSupplierProcurementAction({
         action,
-        actorId: getAuthenticatedUserId(request),
+        actor: getAuthenticatedActor(request),
         body: request.body,
         reference,
         slug,
@@ -216,10 +221,13 @@ export function registerAdminSupplierRoutes(
         productSlug: string;
         slug: string;
       };
+      const actor = getAuthenticatedActor(request);
       const deleted =
         await dependencies.adminSupplierWriteService.unlinkProduct(
           slug,
           productSlug,
+          actor,
+          new Date(),
         );
       if (!deleted) throw supplierProductLinkNotFound(slug, productSlug);
       return { success: true };

@@ -14,8 +14,29 @@ export const portalKeySchema = z.enum([
   "agent",
 ]);
 
+export const authNotificationPreferencesSchema = z.object({
+  emailEnabled: z.boolean().default(true),
+  inAppEnabled: z.boolean().default(true),
+  soundEnabled: z.boolean().default(true),
+});
+
 export const updateProfileRequestSchema = z.object({
-  preferredPortal: portalKeySchema.nullable(),
+  firstName: z.string().trim().min(1).max(120).optional(),
+  notificationPreferences: authNotificationPreferencesSchema.optional(),
+  lastName: z.string().trim().min(1).max(120).optional(),
+  preferredPortal: portalKeySchema.nullable().optional(),
+});
+
+export const authLocationPermissionScopeSchema = z.object({
+  locationId: z.string().uuid(),
+  locationName: z.string().min(1).max(160),
+  locationSlug: z.string().min(1).max(120),
+  permissions: z.array(z.string().min(1)).default([]),
+});
+
+export const authPermissionSetSchema = z.object({
+  locationScopes: z.array(authLocationPermissionScopeSchema).default([]),
+  permissions: z.array(z.string().min(1)).default([]),
 });
 
 export const authUserSchema = z.object({
@@ -23,10 +44,18 @@ export const authUserSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   email: z.email(),
+  hasPassword: z.boolean().optional(),
+  primaryImageUrl: z.string().nullable().optional(),
   emailVerified: z.boolean(),
   status: authUserStatusSchema,
   availablePortals: portalKeySchema.array().default([]),
+  permissionSet: authPermissionSetSchema.optional(),
   preferredPortal: portalKeySchema.nullable(),
+  notificationPreferences: authNotificationPreferencesSchema.default({
+    emailEnabled: true,
+    inAppEnabled: true,
+    soundEnabled: true,
+  }),
   lastLoginAt: z.iso.datetime().nullable(),
   requiresPasswordChange: z.boolean(),
 });
@@ -80,23 +109,14 @@ export const authSessionSchema = z.object({
   user: authUserSchema,
 });
 
-export const authLocationPermissionScopeSchema = z.object({
-  locationId: z.string().uuid(),
-  locationName: z.string().min(1).max(160),
-  locationSlug: z.string().min(1).max(120),
-  permissions: z.array(z.string().min(1)).default([]),
-});
-
-export const authPermissionSetSchema = z.object({
-  locationScopes: z.array(authLocationPermissionScopeSchema).default([]),
-  permissions: z.array(z.string().min(1)).default([]),
-});
-
 export type AuthSession = z.infer<typeof authSessionSchema>;
 export type AuthLocationPermissionScope = z.infer<
   typeof authLocationPermissionScopeSchema
 >;
 export type AuthPermissionSet = z.infer<typeof authPermissionSetSchema>;
+export type AuthNotificationPreferences = z.infer<
+  typeof authNotificationPreferencesSchema
+>;
 export type AuthUser = z.infer<typeof authUserSchema>;
 export type AuthUserStatus = z.infer<typeof authUserStatusSchema>;
 export type ForgotPasswordRequest = z.infer<typeof forgotPasswordRequestSchema>;

@@ -17,6 +17,7 @@ export type CatalogProductRepository = {
     payload: AdminUpdateProductRequest;
     slug: string;
   }): Promise<AdminProductDetail | null>;
+  getProductForDeleteEvent(slug: string): Promise<AdminProductDetail | null>;
   deleteProduct(input: { slug: string }): Promise<void>;
 };
 
@@ -40,6 +41,12 @@ export class PostgresCatalogProductWriteRepository
     slug: string;
   }): Promise<AdminProductDetail | null> {
     return this.commands.update(input);
+  }
+
+  async getProductForDeleteEvent(
+    slug: string,
+  ): Promise<AdminProductDetail | null> {
+    return this.commands.getProductForDeleteEvent(slug);
   }
 
   async deleteProduct(input: { slug: string }): Promise<void> {

@@ -24,6 +24,7 @@ import {
 import {
   formatAdminDate,
   formatDisplayName,
+  formatPortalLabel,
   getInitials,
   PASSWORD_RESET_BADGE_CLASS_NAME,
   ROLE_BADGE_CLASSES,
@@ -43,8 +44,6 @@ export function UserProfileBody({
   slug: string;
   user: AdminUserAccessDetail;
 }) {
-  const statusMeta =
-    USER_STATUS_META[user.status as keyof typeof USER_STATUS_META];
   const displayName = formatDisplayName(user.firstName, user.lastName);
   const hasNonBasicRole = user.roleAssignments.some(
     (assignment) => assignment.roleSlug !== "basic_user",
@@ -114,117 +113,7 @@ export function UserProfileBody({
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_0.6fr]">
-        <Card className="h-full border-border/70 bg-card shadow-none">
-          <CardHeader>
-            <CardTitle>Identity</CardTitle>
-            <CardDescription>
-              Profile details, account status, and portal access.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-5">
-            <div className="flex items-center gap-4">
-              {user.primaryImageUrl ? (
-                <PreviewImage
-                  alt={displayName}
-                  className="size-12 rounded-full"
-                  height={48}
-                  imageClassName="rounded-full"
-                  previewTitle={displayName}
-                  src={user.primaryImageUrl}
-                  width={48}
-                />
-              ) : (
-                <Avatar className="size-12">
-                  <AvatarFallback className="text-base">
-                    {getInitials(user.firstName, user.lastName)}
-                  </AvatarFallback>
-                </Avatar>
-              )}
-              <div className="min-w-0">
-                <p className="overflow-wrap-anywhere font-semibold leading-tight">
-                  {displayName}
-                </p>
-                <p className="type-identifier text-sm text-muted-foreground">
-                  {user.email}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {statusMeta ? (
-                <Badge className={statusMeta.className} variant="outline">
-                  {statusMeta.label}
-                </Badge>
-              ) : null}
-              {user.requiresPasswordChange ? (
-                <Badge
-                  className={PASSWORD_RESET_BADGE_CLASS_NAME}
-                  variant="outline"
-                >
-                  <Clock className="size-3" />
-                  Password reset required
-                </Badge>
-              ) : null}
-              {user.roleAssignments.map((assignment) => (
-                <Badge
-                  key={`${assignment.roleSlug}:${assignment.locationSlug ?? "global"}`}
-                  className={cn(
-                    "capitalize text-[0.68rem]",
-                    ROLE_BADGE_CLASSES[assignment.roleSlug as RoleKey] ??
-                      "border-border bg-muted/25",
-                  )}
-                  variant="outline"
-                >
-                  {assignment.roleName}
-                </Badge>
-              ))}
-            </div>
-
-            {user.availablePortals.length > 0 ? (
-              <div className="flex flex-col gap-1.5">
-                <p className="type-data-label text-muted-foreground">
-                  Portal access
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {user.availablePortals.map((portal) => (
-                    <Badge
-                      key={portal}
-                      className="capitalize"
-                      variant="secondary"
-                    >
-                      {portal}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                No portal access. Assign a staff role to enable portal entry.
-              </p>
-            )}
-
-            {user.assignedLocations.length > 0 ? (
-              <div className="flex flex-col gap-1.5">
-                <p className="type-data-label text-muted-foreground">
-                  Assigned locations
-                </p>
-                <div className="flex flex-col gap-1">
-                  {user.assignedLocations.map((location) => (
-                    <span
-                      key={location.locationSlug}
-                      className="flex items-start gap-1.5 text-sm text-muted-foreground"
-                    >
-                      <MapPin className="size-3.5 shrink-0 text-muted-foreground/60" />
-                      <span className="overflow-wrap-anywhere">
-                        {location.locationName}
-                      </span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
+        <UserProfileIdentityCard user={user} />
 
         <UserProfileRecentActivityCard recentActivity={user.recentActivity} />
       </div>
@@ -235,5 +124,125 @@ export function UserProfileBody({
         entityType="user"
       />
     </PageShell>
+  );
+}
+
+export function UserProfileIdentityCard({
+  user,
+}: {
+  user: AdminUserAccessDetail;
+}) {
+  const statusMeta =
+    USER_STATUS_META[user.status as keyof typeof USER_STATUS_META];
+  const displayName = formatDisplayName(user.firstName, user.lastName);
+
+  return (
+    <Card className="h-full border-border/70 bg-card shadow-none">
+      <CardHeader>
+        <CardTitle>Identity</CardTitle>
+        <CardDescription>
+          Profile details, account status, and portal access.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-5">
+        <div className="flex items-center gap-4">
+          {user.primaryImageUrl ? (
+            <PreviewImage
+              alt={displayName}
+              className="size-12 rounded-full"
+              height={48}
+              imageClassName="rounded-full"
+              previewTitle={displayName}
+              src={user.primaryImageUrl}
+              width={48}
+            />
+          ) : (
+            <Avatar className="size-12">
+              <AvatarFallback className="text-base">
+                {getInitials(user.firstName, user.lastName)}
+              </AvatarFallback>
+            </Avatar>
+          )}
+          <div className="min-w-0">
+            <p className="overflow-wrap-anywhere font-semibold leading-tight">
+              {displayName}
+            </p>
+            <p className="type-identifier text-sm text-muted-foreground">
+              {user.email}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {statusMeta ? (
+            <Badge className={statusMeta.className} variant="outline">
+              {statusMeta.label}
+            </Badge>
+          ) : null}
+          {user.requiresPasswordChange ? (
+            <Badge
+              className={PASSWORD_RESET_BADGE_CLASS_NAME}
+              variant="outline"
+            >
+              <Clock className="size-3" />
+              Password reset required
+            </Badge>
+          ) : null}
+          {user.roleAssignments.map((assignment) => (
+            <Badge
+              key={`${assignment.roleSlug}:${assignment.locationSlug ?? "global"}`}
+              className={cn(
+                "capitalize text-[0.68rem]",
+                ROLE_BADGE_CLASSES[assignment.roleSlug as RoleKey] ??
+                  "border-border bg-muted/25",
+              )}
+              variant="outline"
+            >
+              {assignment.roleName}
+            </Badge>
+          ))}
+        </div>
+
+        {user.availablePortals.length > 0 ? (
+          <div className="flex flex-col gap-1.5">
+            <p className="type-data-label text-muted-foreground">
+              Portal access
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {user.availablePortals.map((portal) => (
+                <Badge key={portal} variant="secondary">
+                  {formatPortalLabel(portal)}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No portal access. Assign a staff role to enable portal entry.
+          </p>
+        )}
+
+        {user.assignedLocations.length > 0 ? (
+          <div className="flex flex-col gap-1.5">
+            <p className="type-data-label text-muted-foreground">
+              Assigned locations
+            </p>
+            <div className="flex flex-col gap-1">
+              {user.assignedLocations.map((location) => (
+                <span
+                  key={location.locationSlug}
+                  className="flex items-start gap-1.5 text-sm text-muted-foreground"
+                >
+                  <MapPin className="size-3.5 shrink-0 text-muted-foreground/60" />
+                  <span className="overflow-wrap-anywhere">
+                    {location.locationName}
+                  </span>
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }

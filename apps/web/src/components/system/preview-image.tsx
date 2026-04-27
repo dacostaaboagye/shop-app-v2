@@ -39,17 +39,45 @@ export function PreviewImage({
   width,
 }: PreviewImageProps) {
   const title = previewTitle ?? alt;
+  const triggerClassName = cn(
+    "group relative overflow-hidden rounded-md bg-muted text-left ring-1 ring-border/60 transition hover:ring-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+    fill ? "size-full" : "inline-flex",
+    className,
+  );
+
+  if (typeof window === "undefined") {
+    return (
+      <button
+        className={triggerClassName}
+        onClick={(event) => event.stopPropagation()}
+        type="button"
+      >
+        {/* biome-ignore lint/performance/noImgElement: SSR-safe fallback for
+        static markup tests and unconfigured remote preview hosts. */}
+        <img
+          alt={alt}
+          className={cn(
+            "object-cover transition-transform group-hover:scale-[1.03]",
+            imageClassName,
+          )}
+          {...(fill
+            ? { sizes: sizes ?? "160px" }
+            : {
+                height: height ?? 40,
+                width: width ?? 40,
+              })}
+          src={src}
+        />
+      </button>
+    );
+  }
 
   return (
     <Dialog>
       <DialogTrigger
         render={
           <button
-            className={cn(
-              "group relative overflow-hidden rounded-md bg-muted text-left ring-1 ring-border/60 transition hover:ring-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              fill ? "size-full" : "inline-flex",
-              className,
-            )}
+            className={triggerClassName}
             onClick={(event) => event.stopPropagation()}
             type="button"
           />

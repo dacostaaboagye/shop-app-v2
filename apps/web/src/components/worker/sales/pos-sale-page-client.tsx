@@ -22,6 +22,10 @@ import {
 } from "@/lib/react-query/worker-assignments";
 import { PosSaleAssignmentWorkspace } from "./pos-sale-assignment-workspace";
 import type { CartItem } from "./pos-sale-cart-card";
+import {
+  createEmptyPosSaleCustomerDetails,
+  normalizePosSaleCustomerDetails,
+} from "./pos-sale-customer-details.support";
 import { SaleSuccessPanel } from "./pos-sale-success-panel";
 
 type SaleSuccess = {
@@ -40,6 +44,9 @@ export function PosSalePageClient() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<PosPaymentMethod>("cash");
   const [notes, setNotes] = useState("");
+  const [customerDetails, setCustomerDetails] = useState(
+    createEmptyPosSaleCustomerDetails(),
+  );
   const [success, setSuccess] = useState<SaleSuccess | null>(null);
   const [cartSheetOpen, setCartSheetOpen] = useState(false);
 
@@ -72,6 +79,7 @@ export function PosSalePageClient() {
     onSuccess: (invoice) => {
       setSuccess({ invoice });
       setCart([]);
+      setCustomerDetails(createEmptyPosSaleCustomerDetails());
       setNotes("");
       setCartSheetOpen(false);
     },
@@ -138,6 +146,7 @@ export function PosSalePageClient() {
   function handleConfirm() {
     if (!selectedLocationScope || cart.length === 0) return;
     saleMutation.mutate({
+      ...normalizePosSaleCustomerDetails(customerDetails),
       lines: cart.map((item) => ({
         quantity: item.quantity,
         skuId: item.assignment.skuId,
@@ -151,11 +160,13 @@ export function PosSalePageClient() {
 
   const cartProps = {
     cart,
+    customerDetails,
     error: saleMutation.error,
     isPending: saleMutation.isPending,
     moneyProfile,
     notes,
     onConfirm: handleConfirm,
+    onCustomerDetailsChange: setCustomerDetails,
     onNotesChange: setNotes,
     onPaymentMethodChange: setPaymentMethod,
     onPriceChange: updatePrice,

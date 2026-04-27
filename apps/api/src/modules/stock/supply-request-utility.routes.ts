@@ -19,7 +19,8 @@ export function registerSupplyRequestUtilityRoutes(
   accessPolicy: SupplyRequestAccessPolicy,
 ) {
   registerGetGtnRoute(server, dependencies, accessPolicy);
-  registerSourceLocationsRoute(server, dependencies, accessPolicy);
+  registerWorkerSourceLocationsRoute(server, dependencies, accessPolicy);
+  registerManagerSourceLocationsRoute(server, dependencies, accessPolicy);
 }
 
 function registerGetGtnRoute(
@@ -66,7 +67,7 @@ function registerGetGtnRoute(
   });
 }
 
-function registerSourceLocationsRoute(
+function registerWorkerSourceLocationsRoute(
   server: FastifyInstance,
   dependencies: StockSupplyRouteDependencies,
   accessPolicy: SupplyRequestAccessPolicy,
@@ -84,14 +85,52 @@ function registerSourceLocationsRoute(
         destinationLocationId: query.destinationLocationId,
       });
       const items = await dependencies.locationRepository.listActiveLocations();
-      return supplyRequestSourceListResponseSchema.parse({
-        items: items
-          .filter((location) => location.id !== query.destinationLocationId)
-          .map((location) => ({
-            locationId: location.id,
-            locationName: location.name,
-          })),
-      });
+      return supplyRequestSourceListResponseSchema.parse(
+        buildSourceLocationResponse(items, query.destinationLocationId),
+      );
     },
   });
+}
+
+function registerManagerSourceLocationsRoute(
+  server: FastifyInstance,
+  dependencies: StockSupplyRouteDependencies,
+  accessPolicy: SupplyRequestAccessPolicy,
+) {
+  const route = supplyRequestRoutes.managerSourceLocations;
+  server.route({
+    config: { access: route.access },
+    method: route.method,
+    url: route.url,
+    async handler(request) {
+      const actor = getAuthenticatedActor(request);
+      const query = supplyRequestSourceListQuerySchema.parse(request.query);
+      await accessPolicy.assertCanCreateManagedRequest({
+        actor,
+        destinationLocationId: query.destinationLocationId,
+      });
+      const items = await dependencies.locationRepository.listActiveLocations();
+      return supplyRequestSourceListResponseSchema.parse(
+        buildSourceLocationResponse(items, query.destinationLocationId),
+      );
+    },
+  });
+}
+
+function buildSourceLocationResponse(
+  locations: Awaited<
+    ReturnType<
+      StockSupplyRouteDependencies["locationRepository"]["listActiveLocations"]
+    >
+  >,
+  destinationLocationId: string,
+) {
+  return {
+    items: locations
+      .filter((location) => location.id !== destinationLocationId)
+      .map((location) => ({
+        locationId: location.id,
+        locationName: location.name,
+      })),
+  };
 }

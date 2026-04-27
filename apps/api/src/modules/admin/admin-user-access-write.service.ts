@@ -8,6 +8,21 @@ import type {
   AdminUpdateUserStatusRequest,
 } from "@shop/contracts";
 import { AppError } from "../_core/errors/app-error.js";
+import type { PlatformEventPublisher } from "../events/platform-event.types.js";
+import {
+  createAdminUserOverrideRemovedEvent,
+  createAdminUserOverrideSetEvent,
+  createAdminUserPasswordResetRequiredEvent,
+  createAdminUserProfileUpdatedEvent,
+  createAdminUserRoleAssignedEvent,
+  createAdminUserRoleRevokedEvent,
+  createAdminUserStatusUpdatedEvent,
+} from "./admin-user-access-events.js";
+
+type AuthenticatedAccessActor = {
+  userId: string;
+  userSlug: string;
+};
 
 export type AdminUserAccessWriteRepository = {
   assignRole(input: {
@@ -65,10 +80,13 @@ export type AdminUserAccessWriteRepository = {
 };
 
 export class AdminUserAccessWriteService {
-  constructor(private readonly repository: AdminUserAccessWriteRepository) {}
+  constructor(
+    private readonly repository: AdminUserAccessWriteRepository,
+    private readonly eventPublisher: PlatformEventPublisher | null = null,
+  ) {}
 
   async assignRole(
-    actorId: string,
+    actor: AuthenticatedAccessActor,
     userSlug: string,
     input: AdminAssignUserRoleRequest,
     now: Date,
@@ -82,80 +100,152 @@ export class AdminUserAccessWriteService {
       });
     }
 
-    return this.repository.assignRole({ ...input, actorId, now, userSlug });
+    await this.repository.assignRole({
+      ...input,
+      actorId: actor.userId,
+      now,
+      userSlug,
+    });
+    await this.eventPublisher?.publish(
+      createAdminUserRoleAssignedEvent({
+        actor,
+        occurredAt: now,
+        request: input,
+        userSlug,
+      }),
+    );
   }
 
   async revokeRole(
-    actorId: string,
+    actor: AuthenticatedAccessActor,
     userSlug: string,
     roleSlug: string,
     input: AdminRevokeUserRoleRequest,
     now: Date,
   ) {
-    return this.repository.revokeRole({
+    await this.repository.revokeRole({
       ...input,
-      actorId,
+      actorId: actor.userId,
       now,
       roleSlug,
       userSlug,
     });
+    await this.eventPublisher?.publish(
+      createAdminUserRoleRevokedEvent({
+        actor,
+        occurredAt: now,
+        request: input,
+        roleSlug,
+        userSlug,
+      }),
+    );
   }
 
   async setPermissionOverride(
-    actorId: string,
+    actor: AuthenticatedAccessActor,
     userSlug: string,
     input: AdminSetUserPermissionOverrideRequest,
     now: Date,
   ) {
-    return this.repository.setPermissionOverride({
+    await this.repository.setPermissionOverride({
       ...input,
-      actorId,
+      actorId: actor.userId,
       now,
       userSlug,
     });
+    await this.eventPublisher?.publish(
+      createAdminUserOverrideSetEvent({
+        actor,
+        occurredAt: now,
+        request: input,
+        userSlug,
+      }),
+    );
   }
 
   async removePermissionOverride(
-    actorId: string,
+    actor: AuthenticatedAccessActor,
     userSlug: string,
     permissionKey: string,
     input: AdminRemoveUserPermissionOverrideRequest,
     now: Date,
   ) {
-    return this.repository.removePermissionOverride({
+    await this.repository.removePermissionOverride({
       ...input,
-      actorId,
+      actorId: actor.userId,
       now,
       permissionKey,
       userSlug,
     });
+    await this.eventPublisher?.publish(
+      createAdminUserOverrideRemovedEvent({
+        actor,
+        occurredAt: now,
+        permissionKey,
+        request: input,
+        userSlug,
+      }),
+    );
   }
 
-  async updateProfile(userSlug: string, input: AdminUpdateUserProfileRequest) {
-    return this.repository.updateProfile({ ...input, userSlug });
+  async updateProfile(
+    actor: AuthenticatedAccessActor,
+    userSlug: string,
+    input: AdminUpdateUserProfileRequest,
+  ) {
+    await this.repository.updateProfile({ ...input, userSlug });
+    await this.eventPublisher?.publish(
+      createAdminUserProfileUpdatedEvent({
+        actor,
+        occurredAt: new Date(),
+        request: input,
+        userSlug,
+      }),
+    );
   }
 
   async updateStatus(
-    actorId: string,
+    actor: AuthenticatedAccessActor,
     userSlug: string,
     input: AdminUpdateUserStatusRequest,
     now: Date,
   ) {
-    return this.repository.updateStatus({ ...input, actorId, now, userSlug });
+    await this.repository.updateStatus({
+      ...input,
+      actorId: actor.userId,
+      now,
+      userSlug,
+    });
+    await this.eventPublisher?.publish(
+      createAdminUserStatusUpdatedEvent({
+        actor,
+        occurredAt: now,
+        request: input,
+        userSlug,
+      }),
+    );
   }
 
   async forcePasswordReset(
-    actorId: string,
+    actor: AuthenticatedAccessActor,
     userSlug: string,
     input: AdminForceUserPasswordResetRequest,
     now: Date,
   ) {
-    return this.repository.forcePasswordReset({
+    await this.repository.forcePasswordReset({
       ...input,
-      actorId,
+      actorId: actor.userId,
       now,
       userSlug,
     });
+    await this.eventPublisher?.publish(
+      createAdminUserPasswordResetRequiredEvent({
+        actor,
+        occurredAt: now,
+        request: input,
+        userSlug,
+      }),
+    );
   }
 }
 

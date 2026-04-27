@@ -4,7 +4,10 @@ import {
   adminSupplierDetailSchema,
 } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
-import { getAuthenticatedUserId } from "../auth/auth-route-support.js";
+import {
+  getAuthenticatedActor,
+  getAuthenticatedUserId,
+} from "../auth/auth-route-support.js";
 import {
   type AdminSupplierRouteDependencies,
   supplierContactNotFound,
@@ -69,11 +72,12 @@ export function registerAdminSupplierContactRoutes(
       const payload = adminLinkSupplierContactPortalRequestSchema.parse(
         request.body,
       );
+      const actor = getAuthenticatedActor(request);
       const supplier =
         await dependencies.adminSupplierWriteService.linkContactPortal(
           slug,
           contactReference,
-          getAuthenticatedUserId(request),
+          actor,
           payload,
           new Date(),
         );
@@ -90,11 +94,12 @@ export function registerAdminSupplierContactRoutes(
         contactReference: string;
         slug: string;
       };
+      const actor = getAuthenticatedActor(request);
       const supplier =
         await dependencies.adminSupplierWriteService.inviteContactPortal(
           slug,
           contactReference,
-          getAuthenticatedUserId(request),
+          actor,
           new Date(),
         );
       if (!supplier) throw supplierNotFound(slug);
@@ -110,10 +115,12 @@ export function registerAdminSupplierContactRoutes(
         contactReference: string;
         slug: string;
       };
+      const actor = getAuthenticatedActor(request);
       const supplier =
         await dependencies.adminSupplierWriteService.unlinkContactPortal(
           slug,
           contactReference,
+          actor,
           new Date(),
         );
       if (!supplier) throw supplierNotFound(slug);

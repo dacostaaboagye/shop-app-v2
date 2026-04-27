@@ -48,15 +48,19 @@ export function OfficialDocumentEmailTemplateFields({
       onValueChange={(value) => onTemplateChange(value as EmailTemplateTabKey)}
       value={activeTemplate}
     >
-      <TabsList>
+      <TabsList className="grid h-auto w-full grid-cols-1 gap-2 bg-transparent p-0 sm:grid-cols-3">
         {EMAIL_TEMPLATE_TABS.map((tab) => (
-          <TabsTrigger key={tab.key} value={tab.key}>
+          <TabsTrigger
+            className="min-w-0 rounded-lg border border-border/60 bg-muted/35 px-3 py-2 whitespace-normal"
+            key={tab.key}
+            value={tab.key}
+          >
             {tab.label}
           </TabsTrigger>
         ))}
       </TabsList>
       {EMAIL_TEMPLATE_TABS.map((tab) => (
-        <TabsContent key={tab.key} value={tab.key}>
+        <TabsContent className="mt-4" key={tab.key} value={tab.key}>
           <FieldGroup>
             <TemplateInput
               description="Email subject line shown in the recipient inbox."

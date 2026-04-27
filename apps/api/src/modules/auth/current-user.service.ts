@@ -1,4 +1,9 @@
-import { type AuthUser, authUserSchema } from "@shop/contracts";
+import {
+  type AuthNotificationPreferences,
+  type AuthPermissionSet,
+  type AuthUser,
+  authUserSchema,
+} from "@shop/contracts";
 import { AppError } from "../_core/errors/app-error.js";
 import type { AuthUserRecord } from "./authentication.service.js";
 import {
@@ -8,18 +13,35 @@ import {
 
 export interface CurrentUserRepository {
   findUserById(userId: string): Promise<AuthUserRecord | null>;
-  updatePreferredPortal(
+  updateProfile(
     userId: string,
-    preferredPortal: string | null,
+    input: {
+      firstName?: string;
+      notificationPreferences?: AuthNotificationPreferences;
+      lastName?: string;
+      preferredPortal?: string | null;
+    },
   ): Promise<void>;
 }
 
-export class CurrentUserService {
-  constructor(private readonly repository: CurrentUserRepository) {}
+export interface CurrentUserPermissionLookup {
+  getCurrentPermissions(userId: string): Promise<AuthPermissionSet>;
+}
 
-  async updatePreferredPortal(
+export class CurrentUserService {
+  constructor(
+    private readonly repository: CurrentUserRepository,
+    private readonly permissionLookup?: CurrentUserPermissionLookup,
+  ) {}
+
+  async updateProfile(
     userId: string,
-    preferredPortal: string | null,
+    input: {
+      firstName?: string;
+      notificationPreferences?: AuthNotificationPreferences;
+      lastName?: string;
+      preferredPortal?: string | null;
+    },
   ): Promise<void> {
     const user = await this.repository.findUserById(userId);
 
@@ -27,13 +49,25 @@ export class CurrentUserService {
       throw invalidAccessTokenError();
     }
 
-    await this.repository.updatePreferredPortal(
-      userId,
-      assertPreferredPortalAllowed({
-        availablePortals: user.availablePortals,
-        preferredPortal,
-      }),
-    );
+    await this.repository.updateProfile(userId, {
+      ...("firstName" in input && input.firstName !== undefined
+        ? { firstName: input.firstName }
+        : {}),
+      ...("lastName" in input && input.lastName !== undefined
+        ? { lastName: input.lastName }
+        : {}),
+      ...(input.notificationPreferences
+        ? { notificationPreferences: input.notificationPreferences }
+        : {}),
+      ...("preferredPortal" in input
+        ? {
+            preferredPortal: assertPreferredPortalAllowed({
+              availablePortals: user.availablePortals,
+              preferredPortal: input.preferredPortal ?? null,
+            }),
+          }
+        : {}),
+    });
   }
 
   async getCurrentUser(userId: string): Promise<AuthUser> {
@@ -43,13 +77,21 @@ export class CurrentUserService {
       throw invalidAccessTokenError();
     }
 
+    const permissionSet = this.permissionLookup
+      ? await this.permissionLookup.getCurrentPermissions(userId)
+      : { locationScopes: [], permissions: [] };
+
     return authUserSchema.parse({
       availablePortals: user.availablePortals,
       email: user.email,
       emailVerified: user.emailVerified,
       firstName: user.firstName,
+      hasPassword: Boolean(user.passwordHash),
       lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
       lastName: user.lastName,
+      permissionSet,
+      primaryImageUrl: user.primaryImageUrl,
+      notificationPreferences: user.notificationPreferences,
       preferredPortal: normalizePreferredPortal({
         availablePortals: user.availablePortals,
         preferredPortal: user.preferredPortal,

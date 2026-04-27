@@ -50,6 +50,8 @@ export const invoices = pgTable(
     customerBillingAddressLines: jsonb("customer_billing_address_lines").$type<
       string[]
     >(),
+    currencyCode: varchar("currency_code", { length: 3 }).notNull(),
+    currencyScale: integer("currency_scale").notNull(),
     status: invoiceStatusEnum("status").default("confirmed").notNull(),
     subtotalAmount: numeric("subtotal_amount", {
       precision: 12,
@@ -73,6 +75,10 @@ export const invoices = pgTable(
     check("invoices_subtotal_nonnegative", sql`${table.subtotalAmount} >= 0`),
     check("invoices_tax_nonnegative", sql`${table.taxAmount} >= 0`),
     check("invoices_total_nonnegative", sql`${table.totalAmount} >= 0`),
+    check(
+      "invoices_currency_scale_range",
+      sql`${table.currencyScale} >= 0 and ${table.currencyScale} <= 4`,
+    ),
   ],
 );
 

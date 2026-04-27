@@ -10,10 +10,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
 import { useInterfacePreferencesStore } from "@/store/use-interface-preferences-store";
+import { PersonAvatar } from "./person-avatar";
+import { getPortalAccountHref } from "./portal-account-routes";
 import {
   getActiveItem,
   getShellConfig,
@@ -23,7 +24,6 @@ import {
 import { PortalSidebarBrand } from "./portal-sidebar-brand";
 
 type AppSidebarProps = {
-  onAccountOpen: () => void;
   onNavigate?: () => void;
 };
 const SIDEBAR_SKELETON_KEYS = [
@@ -33,7 +33,7 @@ const SIDEBAR_SKELETON_KEYS = [
   "sidebar-loading-4",
 ] as const;
 
-export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
+export function AppSidebar({ onNavigate }: AppSidebarProps) {
   const pathname = usePathname();
   const user = useAuthSessionStore((state) => state.user);
   const { ability, isLoading } = useAuthorization();
@@ -43,49 +43,47 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
   const config = getShellConfig();
   const navSections = getVisibleNavSections(ability);
   const navigateProps = onNavigate ? { onClick: onNavigate } : {};
+  const accountHref = getPortalAccountHref({ pathname, user });
+  const visibleSectionTitles = React.useMemo(
+    () => navSections.map((section) => section.title),
+    [navSections],
+  );
 
   const activeLinkRef = React.useRef<HTMLAnchorElement>(null);
 
   const activeItem = React.useMemo(() => getActiveItem(pathname), [pathname]);
+  const activeHref = activeItem?.href ?? null;
 
-  // Default to expanding sections that contain the active item
-  const activeSectionTitles = React.useMemo(() => {
-    return navSections
-      .filter((section) =>
-        section.items.some((item) => isPortalItemActive(item, pathname)),
-      )
-      .map((section) => section.title);
-  }, [navSections, pathname]);
-
-  // Sync expanded sections: ensure active sections are always included
+  // Ensure stored section state only references currently visible sections.
   React.useEffect(() => {
-    if (activeSectionTitles.length > 0) {
-      const currentExpanded = sidebarExpandedSections ?? [];
-      const missingTitles = activeSectionTitles.filter(
-        (title) => !currentExpanded.includes(title),
-      );
+    if (sidebarExpandedSections === null) {
+      return;
+    }
 
-      if (missingTitles.length > 0) {
-        setSidebarExpandedSections([...currentExpanded, ...missingTitles]);
-      }
+    const normalizedSections = sidebarExpandedSections.filter((title) =>
+      visibleSectionTitles.includes(title),
+    );
+
+    if (normalizedSections.length !== sidebarExpandedSections.length) {
+      setSidebarExpandedSections(normalizedSections);
     }
   }, [
-    activeSectionTitles,
-    sidebarExpandedSections,
     setSidebarExpandedSections,
+    sidebarExpandedSections,
+    visibleSectionTitles,
   ]);
 
-  const expandedValue = sidebarExpandedSections ?? activeSectionTitles;
+  const expandedValue = sidebarExpandedSections ?? visibleSectionTitles;
 
   // Auto-scroll active item into view
   React.useEffect(() => {
-    if (activeLinkRef.current) {
+    if (activeHref && activeLinkRef.current) {
       activeLinkRef.current.scrollIntoView({
-        behavior: "smooth",
+        behavior: "auto",
         block: "nearest",
       });
     }
-  });
+  }, [activeHref]);
 
   return (
     <aside className="flex h-full flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
@@ -179,20 +177,21 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
       </nav>
 
       <div className="p-4">
-        <button
-          type="button"
-          onClick={onAccountOpen}
+        <Link
+          href={accountHref}
+          scroll={false}
+          {...navigateProps}
           className="group flex w-full items-center gap-3 rounded-xl border border-sidebar-border/60 bg-sidebar-accent/30 p-2 text-left transition-all hover:bg-sidebar-accent active:scale-[0.98]"
         >
           <div className="relative">
-            <Avatar
+            <PersonAvatar
+              className="ring-2 ring-transparent transition-all group-hover:ring-sidebar-primary/20"
+              firstName={user?.firstName}
+              imageUrl={user?.primaryImageUrl}
+              interactive={false}
+              lastName={user?.lastName}
               size="lg"
-              className="rounded-lg ring-2 ring-transparent transition-all group-hover:ring-sidebar-primary/20"
-            >
-              <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground font-bold">
-                {getUserInitials(user)}
-              </AvatarFallback>
-            </Avatar>
+            />
             <div className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-sidebar bg-primary" />
           </div>
           <div className="min-w-0 flex-1">
@@ -203,18 +202,8 @@ export function AppSidebar({ onAccountOpen, onNavigate }: AppSidebarProps) {
               {user?.email ?? "Signed-out session"}
             </p>
           </div>
-        </button>
+        </Link>
       </div>
     </aside>
   );
-}
-
-function getUserInitials(
-  user: ReturnType<typeof useAuthSessionStore.getState>["user"],
-) {
-  if (!user) {
-    return "NA";
-  }
-
-  return `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase();
 }

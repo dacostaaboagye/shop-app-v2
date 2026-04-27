@@ -37,6 +37,7 @@ export type StockSupplyRouteDependencies = {
     | "cancel"
     | "cancelById"
     | "confirmReceipt"
+    | "createRequestBatch"
     | "createRequest"
     | "dispatch"
     | "reject"
@@ -55,6 +56,16 @@ export const supplyRequestRoutes = {
   managerApprove: supplyRoute(
     "PATCH",
     "/api/manager/stock/supply-requests/:id/approve",
+    "stock.supply.manage",
+  ),
+  managerCreate: supplyRoute(
+    "POST",
+    "/api/manager/stock/supply-requests",
+    "stock.supply.manage",
+  ),
+  managerCreateBatch: supplyRoute(
+    "POST",
+    "/api/manager/stock/supply-requests/batch",
     "stock.supply.manage",
   ),
   managerDispatch: supplyRoute(
@@ -77,6 +88,11 @@ export const supplyRequestRoutes = {
     "/api/manager/stock/supply-requests/:id/reject",
     "stock.supply.manage",
   ),
+  managerSourceLocations: supplyRoute(
+    "GET",
+    "/api/manager/stock/supply-request-sources",
+    "stock.supply.manage",
+  ),
   workerCancel: supplyRoute(
     "PATCH",
     "/api/worker/stock/supply-requests/:id/cancel",
@@ -90,6 +106,11 @@ export const supplyRequestRoutes = {
   workerCreate: supplyRoute(
     "POST",
     "/api/worker/stock/supply-requests",
+    "stock.supply.request",
+  ),
+  workerCreateBatch: supplyRoute(
+    "POST",
+    "/api/worker/stock/supply-requests/batch",
     "stock.supply.request",
   ),
   workerList: supplyRoute(
@@ -116,6 +137,7 @@ export function toRequestResponse(row: SupplyRequestRow) {
     notes: row.notes,
     receivedAt: row.receivedAt?.toISOString() ?? null,
     reference: row.reference,
+    requestGroupReference: row.requestGroupReference,
     sourceReservationStatus: row.sourceReservationStatus,
     requesterEmail: row.requesterEmail,
     requesterId: row.requesterId,

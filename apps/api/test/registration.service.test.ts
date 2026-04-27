@@ -96,11 +96,61 @@ describe("PasswordRegistrationService", () => {
     ]);
     assert.equal(session.user.slug, "store-manager-2");
   });
+
+  it("still issues the session when verification email delivery fails", async () => {
+    const logged: unknown[][] = [];
+    const originalConsoleError = console.error;
+    console.error = (...args: unknown[]) => {
+      logged.push(args);
+    };
+
+    try {
+      const harness = createHarness({
+        createUser: async (input) => ({
+          status: "created",
+          user: createUserRecord({
+            email: input.email,
+            firstName: input.firstName,
+            lastName: input.lastName,
+            passwordHash: input.passwordHash,
+            slug: input.slug,
+          }),
+        }),
+        emailVerificationIssuer: {
+          async issueAndSend() {
+            throw new Error("smtp offline");
+          },
+        },
+      });
+
+      const session = await harness.service.register({
+        email: "manager@example.com",
+        firstName: "Store",
+        lastName: "Manager",
+        password: "Password123!",
+      });
+
+      await Promise.resolve();
+
+      assert.equal(session.user.email, "manager@example.com");
+      assert.equal(harness.state.issuedSessions.length, 1);
+      assert.equal(logged.length, 1);
+      assert.match(
+        String(logged[0]?.[0] ?? ""),
+        /Failed to send verification email/,
+      );
+    } finally {
+      console.error = originalConsoleError;
+    }
+  });
 });
 
 function createHarness(input: {
   allocateSlug?: SlugAllocator["allocateSlug"];
   createUser: RegistrationRepository["createUser"];
+  emailVerificationIssuer?: {
+    issueAndSend(userId: string): Promise<void>;
+  } | null;
 }) {
   const state = {
     allocatedSlugs: [] as string[],
@@ -128,7 +178,7 @@ function createHarness(input: {
           return slug;
         },
       },
-      null,
+      input.emailVerificationIssuer ?? null,
       () => new Date("2026-04-08T12:00:00.000Z"),
     ),
     state,
@@ -148,6 +198,8 @@ function createSession(user: AuthUserRecord): IssuedSession {
       firstName: user.firstName,
       lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
       lastName: user.lastName,
+      notificationPreferences: user.notificationPreferences,
+      primaryImageUrl: user.primaryImageUrl ?? null,
       preferredPortal: user.preferredPortal,
       requiresPasswordChange: user.requiresPasswordChange,
       slug: user.slug,
@@ -166,7 +218,13 @@ function createUserRecord(overrides: Partial<AuthUserRecord>): AuthUserRecord {
     lastLoginAt: null,
     lastName: "Manager",
     lockedUntil: null,
+    notificationPreferences: {
+      emailEnabled: true,
+      inAppEnabled: true,
+      soundEnabled: true,
+    },
     passwordHash: "hash",
+    primaryImageUrl: null,
     preferredPortal: null,
     requiresPasswordChange: false,
     slug: "store-manager-ab12",

@@ -53,6 +53,86 @@ describe("POS sale assignment filtering", () => {
     );
   });
 
+  it("matches search text across product name, variant name, and sku", () => {
+    assert.deepEqual(
+      filterSaleAssignments(ASSIGNMENTS, {
+        brandSlug: "",
+        categorySlug: "",
+        search: "phone",
+      }).map((assignment) => assignment.sku),
+      ["ACME-PHONE-BLK"],
+    );
+
+    assert.deepEqual(
+      filterSaleAssignments(ASSIGNMENTS, {
+        brandSlug: "",
+        categorySlug: "",
+        search: "20w",
+      }).map((assignment) => assignment.sku),
+      ["BRAVO-CHARGE-20W"],
+    );
+
+    assert.deepEqual(
+      filterSaleAssignments(ASSIGNMENTS, {
+        brandSlug: "",
+        categorySlug: "",
+        search: "acme-cable",
+      }).map((assignment) => assignment.sku),
+      ["ACME-CABLE-USBC"],
+    );
+  });
+
+  it("treats search text as case-insensitive and trims surrounding whitespace", () => {
+    const result = filterSaleAssignments(ASSIGNMENTS, {
+      brandSlug: "",
+      categorySlug: "",
+      search: "  usb-c  ",
+    });
+
+    assert.deepEqual(
+      result.map((assignment) => assignment.sku),
+      ["ACME-CABLE-USBC"],
+    );
+  });
+
+  it("preserves assignment order after filtering larger result sets", () => {
+    const result = filterSaleAssignments(
+      [
+        ...ASSIGNMENTS,
+        createAssignment({
+          brandName: "Acme",
+          brandSlug: "acme",
+          categoryName: "Accessories",
+          categorySlug: "accessories",
+          productName: "Acme Adapter",
+          sku: "ACME-ADAPTER-65W",
+          skuId: "44444444-4444-4444-8444-444444444444",
+          variantName: "65W",
+        }),
+        createAssignment({
+          brandName: "Acme",
+          brandSlug: "acme",
+          categoryName: "Accessories",
+          categorySlug: "accessories",
+          productName: "Acme Dock",
+          sku: "ACME-DOCK-USB4",
+          skuId: "55555555-5555-4555-8555-555555555555",
+          variantName: "USB4",
+        }),
+      ],
+      {
+        brandSlug: "acme",
+        categorySlug: "accessories",
+        search: "acme",
+      },
+    );
+
+    assert.deepEqual(
+      result.map((assignment) => assignment.sku),
+      ["ACME-CABLE-USBC", "ACME-ADAPTER-65W", "ACME-DOCK-USB4"],
+    );
+  });
+
   it("builds unique sorted brand filter options", () => {
     assert.deepEqual(
       getSaleAssignmentFilterOptions(ASSIGNMENTS, "brandSlug", "brandName"),
@@ -61,6 +141,46 @@ describe("POS sale assignment filtering", () => {
         { label: "Bravo", value: "bravo" },
       ],
     );
+  });
+
+  it("builds unique sorted category options and skips missing values", () => {
+    const result = getSaleAssignmentFilterOptions(
+      [
+        ...ASSIGNMENTS,
+        createAssignment({
+          brandName: "Acme",
+          brandSlug: "acme",
+          categoryName: "Audio",
+          categorySlug: "audio",
+          productName: "Acme Speaker",
+          sku: "ACME-SPEAKER-BT",
+          skuId: "66666666-6666-4666-8666-666666666666",
+          variantName: "Bluetooth",
+        }),
+        {
+          ...createAssignment({
+            brandName: "Delta",
+            brandSlug: "delta",
+            categoryName: "Ignored",
+            categorySlug: "ignored",
+            productName: "Delta Placeholder",
+            sku: "DELTA-PLACEHOLDER",
+            skuId: "77777777-7777-4777-8777-777777777777",
+            variantName: "Ignored",
+          }),
+          categoryName: null,
+          categorySlug: null,
+        },
+      ],
+      "categorySlug",
+      "categoryName",
+    );
+
+    assert.deepEqual(result, [
+      { label: "Accessories", value: "accessories" },
+      { label: "Audio", value: "audio" },
+      { label: "Phones", value: "phones" },
+    ]);
   });
 });
 

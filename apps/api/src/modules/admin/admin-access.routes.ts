@@ -12,7 +12,7 @@ import {
 import type { FastifyInstance } from "fastify";
 import { AppError } from "../_core/errors/app-error.js";
 import type { RouteDefinition } from "../_core/route-contract.js";
-import { getAuthenticatedUserId } from "../auth/auth-route-support.js";
+import { getAuthenticatedActor } from "../auth/auth-route-support.js";
 import type { AdminAccessQueryService } from "./admin-access-query.service.js";
 import type { AdminAccessWriteService } from "./admin-access-write.service.js";
 
@@ -120,10 +120,10 @@ export function registerAdminAccessRoutes(
     url: routes.roleCreate.url,
     async handler(request) {
       const payload = adminCreateRoleRequestSchema.parse(request.body);
-      const actorId = getAuthenticatedUserId(request);
+      const actor = getAuthenticatedActor(request);
       return adminRoleDetailSchema.parse(
         await dependencies.adminAccessWriteService.createRole(
-          actorId,
+          actor,
           payload,
           new Date(),
         ),
@@ -137,10 +137,10 @@ export function registerAdminAccessRoutes(
     url: routes.roleUpdate.url,
     async handler(request) {
       const payload = adminUpdateRoleRequestSchema.parse(request.body);
-      const actorId = getAuthenticatedUserId(request);
+      const actor = getAuthenticatedActor(request);
       return adminRoleDetailSchema.parse(
         await dependencies.adminAccessWriteService.updateRole(
-          actorId,
+          actor,
           (request.params as { slug: string }).slug,
           payload,
           new Date(),

@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Printer, Share2 } from "lucide-react";
+import { Download, Mail, Printer, Share2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import {
   shareDocumentFile,
   shareSalesDocument,
 } from "@/lib/documents/sales-document";
+import { sendSalesDocumentEmail } from "@/lib/react-query/official-documents";
 
 type Props = {
   disabled?: boolean;
@@ -30,8 +31,9 @@ export function SalesDocumentActions({
   profile,
 }: Props) {
   const [isFilePending, setIsFilePending] = useState(false);
+  const [isEmailPending, setIsEmailPending] = useState(false);
   const documentTitle = getSalesDocumentTitle(invoice).toLowerCase();
-  const actionsDisabled = disabled || isFilePending;
+  const actionsDisabled = disabled || isFilePending || isEmailPending;
 
   async function handleShare() {
     try {
@@ -76,6 +78,18 @@ export function SalesDocumentActions({
     }
   }
 
+  async function handleEmail() {
+    try {
+      setIsEmailPending(true);
+      const result = await sendSalesDocumentEmail(invoice.reference);
+      toast.success(`Document emailed to ${result.recipientEmail}.`);
+    } catch {
+      toast.error("Unable to email this document.");
+    } finally {
+      setIsEmailPending(false);
+    }
+  }
+
   return (
     <div className="flex flex-wrap gap-2">
       <Button
@@ -105,6 +119,17 @@ export function SalesDocumentActions({
         <Share2 data-icon="inline-start" />
         Share {documentTitle}
       </Button>
+      {invoice.customerEmail ? (
+        <Button
+          disabled={actionsDisabled}
+          onClick={() => void handleEmail()}
+          size="sm"
+          variant="outline"
+        >
+          <Mail data-icon="inline-start" />
+          {isEmailPending ? "Sending..." : `Email ${documentTitle}`}
+        </Button>
+      ) : null}
     </div>
   );
 }

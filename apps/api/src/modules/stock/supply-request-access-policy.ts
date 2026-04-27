@@ -40,6 +40,17 @@ export class SupplyRequestAccessPolicy {
     });
   }
 
+  async assertCanCreateManagedRequest(input: {
+    actor: AuthenticatedActor;
+    destinationLocationId: string;
+  }): Promise<void> {
+    await this.permissionService.assertHasPermission({
+      locationId: input.destinationLocationId,
+      permission: "stock.supply.manage",
+      user: input.actor,
+    });
+  }
+
   async assertCanListIncomingForSource(input: {
     actor: AuthenticatedActor;
     sourceLocationId: string;

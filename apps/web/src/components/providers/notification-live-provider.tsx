@@ -5,12 +5,17 @@ import { useEffect } from "react";
 import { openPlatformEventStream } from "@/lib/notifications/platform-event-stream";
 import { notificationsQueryKeyPrefix } from "@/lib/react-query/notifications";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
+import {
+  playNotificationChime,
+  shouldPlayNotificationSound,
+} from "./notification-live-provider.support";
 
 const RECONNECT_DELAY_MS = 3_000;
 
 export function NotificationLiveProvider() {
   const queryClient = useQueryClient();
   const status = useAuthSessionStore((state) => state.status);
+  const user = useAuthSessionStore((state) => state.user);
 
   useEffect(() => {
     if (status !== "authenticated") {
@@ -31,6 +36,9 @@ export function NotificationLiveProvider() {
           },
           onEvent(eventName) {
             if (eventName === "platform-event") {
+              if (shouldPlayNotificationSound({ eventName, user })) {
+                playNotificationChime();
+              }
               void queryClient.invalidateQueries({
                 queryKey: notificationsQueryKeyPrefix,
               });
@@ -53,7 +61,7 @@ export function NotificationLiveProvider() {
         clearTimeout(reconnectTimer);
       }
     };
-  }, [queryClient, status]);
+  }, [queryClient, status, user]);
 
   return null;
 }

@@ -49,19 +49,17 @@ describe("manager staff routes", () => {
             return null;
           },
         },
-        ownershipEventWriteService: {
+        assignmentCommandService: {
           async assignProduct() {
             throw new Error("not used");
           },
-          async reassignProduct() {
-            throw new Error("not used");
-          },
-        },
-        ownershipHandoverService: {
           async endHandover() {
             throw new Error("not used");
           },
           async initiateHandover() {
+            throw new Error("not used");
+          },
+          async reassignProduct() {
             throw new Error("not used");
           },
         },

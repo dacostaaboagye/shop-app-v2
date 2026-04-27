@@ -1,61 +1,170 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import {
-  AlertCircle,
+  Bell,
   ClipboardList,
   History,
   Package,
-  Plus,
-  ScanLine,
-  Truck,
+  Receipt,
+  ShoppingCart,
 } from "lucide-react";
-import { AppEmptyState } from "@/components/system/app-empty-state";
+import { useMemo } from "react";
+import { useAuthorization } from "@/components/providers/authorization-provider";
+import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { MenuCard, StatCard } from "@/components/system/page-shell";
+import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
+import { formatCount } from "@/lib/display/format";
+import { DEFAULT_OFFICIAL_DOCUMENT_PROFILE } from "@/lib/documents/official-document-profile";
+import { getNotificationCenterHref } from "@/lib/notifications/notification-route";
+import {
+  fetchNotifications,
+  notificationsQueryKey,
+} from "@/lib/react-query/notifications";
+import {
+  fetchOfficialDocumentProfile,
+  officialDocumentProfileQueryKey,
+} from "@/lib/react-query/official-documents";
+import {
+  fetchWorkerSales,
+  workerSalesQueryKey,
+} from "@/lib/react-query/pos-sales";
+import {
+  fetchWorkerAssignments,
+  workerAssignmentsQueryKey,
+} from "@/lib/react-query/worker-assignments";
 import { toRoute } from "@/lib/routes";
+import {
+  RecentSalesPanel,
+  startOfTodayIso,
+  WorkerNotificationsPanel,
+} from "./worker-dashboard-overview.sections";
 
-const RECENT_ACTIVITY_ITEMS = [
-  "Sale processed for iPhone 15 Pro",
-  "Stock assignment updated for Samsung Galaxy A55",
-  "Receipt PDF prepared for customer handover",
-] as const;
+const DASHBOARD_NOTIFICATION_LIMIT = 4;
 
 export function WorkerDashboardOverview() {
+  const { can } = useAuthorization();
+  const canViewSales = can("pos.sales.view");
+  const canProcessSales = can("pos.sales.process");
+  const {
+    accessibleLocationScopes,
+    isLoading,
+    selectedLocationScope,
+    selectedLocationSlug,
+    setSelectedLocationSlug,
+  } = usePermissionLocationScope("stock.assignments.own.view");
+
+  const assignmentsQuery = useQuery({
+    enabled: !!selectedLocationScope,
+    queryFn: () => {
+      if (!selectedLocationScope) {
+        throw new Error("Assignment location is required.");
+      }
+      return fetchWorkerAssignments(selectedLocationScope.locationId);
+    },
+    queryKey: workerAssignmentsQueryKey(
+      selectedLocationScope?.locationId ?? "",
+    ),
+    staleTime: 30_000,
+  });
+  const salesQuery = useQuery({
+    enabled: !!selectedLocationScope && canViewSales,
+    queryFn: () =>
+      fetchWorkerSales({
+        dateFrom: startOfTodayIso(),
+        locationId: selectedLocationScope?.locationId ?? "",
+        page: 1,
+        pageSize: 5,
+      }),
+    queryKey: workerSalesQueryKey({
+      dateFrom: startOfTodayIso(),
+      locationId: selectedLocationScope?.locationId ?? "",
+      page: 1,
+      pageSize: 5,
+    }),
+    staleTime: 30_000,
+  });
+  const moneyProfileQuery = useQuery({
+    enabled: !!selectedLocationScope && canViewSales,
+    queryFn: () =>
+      fetchOfficialDocumentProfile(selectedLocationScope?.locationId),
+    queryKey: officialDocumentProfileQueryKey(
+      selectedLocationScope?.locationId,
+    ),
+    staleTime: 5 * 60_000,
+  });
+  const notificationsQuery = useQuery({
+    queryFn: () => fetchNotifications(DASHBOARD_NOTIFICATION_LIMIT),
+    queryKey: notificationsQueryKey(DASHBOARD_NOTIFICATION_LIMIT),
+    staleTime: 30_000,
+  });
+
+  const assignments = assignmentsQuery.data?.items ?? [];
+  const lowStockCount = useMemo(
+    () => assignments.filter((item) => item.availableQuantity <= 5).length,
+    [assignments],
+  );
+  const salesItems = salesQuery.data?.items ?? [];
+  const unreadNotifications =
+    notificationsQuery.data?.items.filter((item) => item.status === "unread") ??
+    [];
+
   return (
     <div className="flex flex-col gap-8">
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <LocationScopePanel
+        description="The worker dashboard follows the assigned operating location already attached to your access."
+        emptyDescription="No assigned location is available for worker operations."
+        isLoading={isLoading}
+        locationScopes={accessibleLocationScopes}
+        onLocationChange={setSelectedLocationSlug}
+        selectedLocationSlug={selectedLocationSlug}
+        title="Active work location"
+      />
+
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          description="Variants currently assigned to your stock responsibility."
+          description="Variants currently assigned to your worker stock responsibility."
+          href={toRoute("/worker/assignments")}
           icon={Package}
           label="Assigned Variants"
-          value={12}
+          value={formatCount(assignments.length)}
         />
         <StatCard
-          description="Assigned variants that need replenishment soon."
-          icon={AlertCircle}
+          description="Assigned variants with low available quantity that may need replenishment."
+          href={toRoute("/worker/assignments")}
+          icon={ClipboardList}
           label="Low Stock"
-          value={3}
+          value={formatCount(lowStockCount)}
         />
         <StatCard
-          description="Incoming stock custody transfers waiting for you."
-          icon={Truck}
-          label="Pending Handovers"
-          value={0}
+          description="Unread operational updates sent to your worker account."
+          href={toRoute(getNotificationCenterHref("/worker"))}
+          icon={Bell}
+          label="Unread Notifications"
+          value={formatCount(notificationsQuery.data?.unreadCount ?? 0)}
         />
         <StatCard
-          description="Completed sales recorded during the last day."
-          icon={History}
-          label="Recent Sales"
-          value={8}
+          description="Sales recorded today at your active location."
+          href={toRoute("/worker/sales/history")}
+          icon={Receipt}
+          label="Today's Sales"
+          value={
+            canViewSales
+              ? formatCount(salesQuery.data?.total ?? 0)
+              : "Not enabled"
+          }
         />
       </section>
 
-      <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <MenuCard
-          description="Start a new point-of-sale transaction."
-          href={toRoute("/worker/sales")}
-          icon={Plus}
-          title="New Sale"
-        />
+      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+        {canProcessSales ? (
+          <MenuCard
+            description="Start a new point-of-sale transaction from your assigned stock."
+            href={toRoute("/worker/sales")}
+            icon={ShoppingCart}
+            title="New Sale"
+          />
+        ) : null}
         <MenuCard
           description="Review the stock variants currently assigned to you."
           href={toRoute("/worker/assignments")}
@@ -63,39 +172,34 @@ export function WorkerDashboardOverview() {
           title="My Assignments"
         />
         <MenuCard
-          description="Review pending stock custody transfers and completed handovers."
-          href={toRoute("/worker/handovers")}
-          icon={ScanLine}
-          title="Stock Handovers"
+          description="Review completed sales, receipts, and credit notes for this location."
+          href={toRoute("/worker/sales/history")}
+          icon={History}
+          title="Sales History"
+        />
+        <MenuCard
+          description="Review operational updates, approvals, and route changes sent to your worker account."
+          href={toRoute(getNotificationCenterHref("/worker"))}
+          icon={Bell}
+          title="Notifications"
         />
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-border/60 bg-card p-6 shadow-sm">
-          <div className="flex flex-col gap-1">
-            <h2 className="feedback-title">Recent Activity</h2>
-            <p className="feedback-description">
-              Recent worker-side actions that affect sales, assignments, and
-              stock custody.
-            </p>
-          </div>
-          <div className="mt-6 grid gap-4">
-            {RECENT_ACTIVITY_ITEMS.map((item) => (
-              <div key={item} className="flex items-start gap-4">
-                <div className="size-2 shrink-0 rounded-full bg-primary" />
-                <p className="type-support flex-1 text-foreground">{item}</p>
-                <span className="type-data-label shrink-0 text-[10px]">
-                  2h ago
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <AppEmptyState
-          description="You will see new operational alerts here when tasks, route changes, or stock events need your attention."
-          icon={ClipboardList}
-          title="No new notifications"
+      <section className="grid gap-6 xl:grid-cols-2">
+        <RecentSalesPanel
+          canViewSales={canViewSales}
+          isPending={salesQuery.isPending}
+          items={salesItems}
+          moneyProfile={
+            moneyProfileQuery.data ?? DEFAULT_OFFICIAL_DOCUMENT_PROFILE
+          }
+        />
+        <WorkerNotificationsPanel
+          error={notificationsQuery.error}
+          isError={notificationsQuery.isError}
+          isPending={notificationsQuery.isPending}
+          items={unreadNotifications}
+          onRetry={() => void notificationsQuery.refetch()}
         />
       </section>
     </div>

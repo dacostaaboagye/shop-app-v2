@@ -32,9 +32,14 @@ export function emailHtml(input: {
     a {
       text-decoration: none;
     }
+    .email-word-break {
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
     @media only screen and (max-width: 620px) {
       .email-shell {
         width: 100% !important;
+        max-width: 100% !important;
       }
       .email-outer {
         padding: 20px 12px 32px !important;
@@ -52,12 +57,31 @@ export function emailHtml(input: {
       .email-copy {
         font-size: 16px !important;
       }
+      .email-brand-row,
+      .email-brand-logo-cell,
+      .email-brand-copy-cell {
+        display: block !important;
+        width: 100% !important;
+      }
+      .email-brand-spacer {
+        display: none !important;
+        width: 0 !important;
+      }
+      .email-brand-copy-cell {
+        padding-top: 16px !important;
+      }
       .email-button {
+        display: block !important;
+        width: 100% !important;
+      }
+      .email-button td {
         display: block !important;
         width: 100% !important;
       }
       .email-button a {
         display: block !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
       }
     }
     @media (prefers-color-scheme: dark) {
@@ -100,12 +124,12 @@ export function emailHtml(input: {
                       <tr>
                         <td style="padding:0 0 28px;">
                           <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;">
-                            <tr>
-                              <td style="vertical-align:middle;">${brandLogoHtml(input.brand)}</td>
-                              <td style="width:18px;font-size:0;line-height:0;">&nbsp;</td>
-                              <td style="vertical-align:middle;padding-top:2px;">
-                                <p class="email-brand" style="margin:0 0 6px;font-size:22px;line-height:1.2;font-weight:700;color:#111827;">${escapeHtml(input.brand.brandName)}</p>
-                                <p class="email-muted" style="margin:0;font-size:13px;line-height:1.5;color:#6b7280;">${escapeHtml(input.brand.fromAddress)}</p>
+                            <tr class="email-brand-row">
+                              <td class="email-brand-logo-cell" style="vertical-align:middle;">${brandLogoHtml(input.brand)}</td>
+                              <td class="email-brand-spacer" style="width:18px;font-size:0;line-height:0;">&nbsp;</td>
+                              <td class="email-brand-copy-cell" style="vertical-align:middle;padding-top:2px;">
+                                <p class="email-brand email-word-break" style="margin:0 0 6px;font-size:22px;line-height:1.2;font-weight:700;color:#111827;">${escapeHtml(input.brand.brandName)}</p>
+                                <p class="email-muted email-word-break" style="margin:0;font-size:13px;line-height:1.5;color:#6b7280;">${escapeHtml(input.brand.fromAddress)}</p>
                               </td>
                             </tr>
                           </table>
@@ -122,12 +146,12 @@ export function emailHtml(input: {
                       </tr>
                       <tr>
                         <td style="padding:0 0 16px;">
-                          <h1 class="email-heading" style="margin:0;font-size:40px;line-height:1.05;font-weight:700;color:#111827;">${escapeHtml(input.heading)}</h1>
+                          <h1 class="email-heading email-word-break" style="margin:0;font-size:40px;line-height:1.05;font-weight:700;color:#111827;">${escapeHtml(input.heading)}</h1>
                         </td>
                       </tr>
                       <tr>
                         <td style="padding:0 0 28px;">
-                          <p class="email-copy email-muted" style="margin:0;font-size:18px;line-height:1.6;color:#374151;">${escapeHtml(input.intro)}</p>
+                          <p class="email-copy email-muted email-word-break" style="margin:0;font-size:18px;line-height:1.6;color:#374151;">${escapeHtml(input.intro)}</p>
                         </td>
                       </tr>
                       <tr>
@@ -135,7 +159,7 @@ export function emailHtml(input: {
                           <table role="presentation" class="email-button" cellspacing="0" cellpadding="0" border="0" style="border-collapse:separate;">
                             <tr>
                               <td align="center" bgcolor="${escapeHtml(input.brand.primaryColor)}" style="border-radius:10px;background:${escapeHtml(input.brand.primaryColor)};">
-                                <a href="${escapeHtml(input.actionUrl)}" style="display:inline-block;padding:14px 24px;font-size:15px;line-height:1.2;font-weight:700;color:#ffffff;">${escapeHtml(input.actionLabel)}</a>
+                                <a href="${escapeHtml(input.actionUrl)}" class="email-word-break" style="display:inline-block;padding:14px 24px;font-size:15px;line-height:1.4;font-weight:700;color:#ffffff;text-align:center;">${escapeHtml(input.actionLabel)}</a>
                               </td>
                             </tr>
                           </table>
@@ -148,13 +172,13 @@ export function emailHtml(input: {
                       </tr>
                       <tr>
                         <td style="padding:0 0 14px;">
-                          <p class="email-footer email-muted" style="margin:0;font-size:15px;line-height:1.7;color:#6b7280;">${escapeHtml(input.footer)}</p>
+                          <p class="email-footer email-muted email-word-break" style="margin:0;font-size:15px;line-height:1.7;color:#6b7280;">${escapeHtml(input.footer)}</p>
                         </td>
                       </tr>
                       ${supportEmailBlock}
                       <tr>
                         <td style="padding:0;">
-                          <p class="email-link" style="margin:0;font-size:12px;line-height:1.7;color:#9ca3af;">Or copy this link: ${escapeHtml(input.actionUrl)}</p>
+                          <p class="email-link email-word-break" style="margin:0;font-size:12px;line-height:1.7;color:#9ca3af;">Or copy this link: ${escapeHtml(input.actionUrl)}</p>
                         </td>
                       </tr>
                     </table>
@@ -205,7 +229,7 @@ function supportEmailHtml(brand: EmailTemplateBrand): string {
 
   return `<tr>
     <td style="padding:0 0 12px;">
-      <p class="email-muted" style="margin:0;font-size:13px;line-height:1.6;color:#6b7280;">Support: ${escapeHtml(brand.supportEmail)}</p>
+      <p class="email-muted email-word-break" style="margin:0;font-size:13px;line-height:1.6;color:#6b7280;">Support: ${escapeHtml(brand.supportEmail)}</p>
     </td>
   </tr>`;
 }

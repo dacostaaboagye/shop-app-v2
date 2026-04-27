@@ -75,6 +75,66 @@ describe("stock supply routes", () => {
     assert.equal(response.json().title, "Forbidden");
   });
 
+  it("allows a manager to create a supply request for a managed destination", async () => {
+    const server = createStockSupplyServer({
+      allowedLocationPermissions: {
+        "stock.supply.manage": [UUIDS.destinationA],
+      },
+      userSlug: "manager-a",
+    });
+
+    const response = await server.inject({
+      headers: {
+        authorization: bearerToken(UUIDS.actor, "manager-a"),
+      },
+      method: "POST",
+      payload: {
+        locationId: UUIDS.destinationA,
+        requestedQuantity: 3,
+        skuId: UUIDS.sku,
+        sourceLocationId: UUIDS.managerSourceA,
+      },
+      url: "/api/manager/stock/supply-requests",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().locationId, UUIDS.destinationA);
+    assert.equal(response.json().status, "pending");
+  });
+
+  it("allows a manager to create a grouped supply request for a managed destination", async () => {
+    const server = createStockSupplyServer({
+      allowedLocationPermissions: {
+        "stock.supply.manage": [UUIDS.destinationA],
+      },
+      userSlug: "manager-a",
+    });
+
+    const response = await server.inject({
+      headers: {
+        authorization: bearerToken(UUIDS.actor, "manager-a"),
+      },
+      method: "POST",
+      payload: {
+        items: [
+          { requestedQuantity: 3, skuId: UUIDS.sku },
+          {
+            requestedQuantity: 1,
+            skuId: "77777777-7777-4777-8777-777777777778",
+          },
+        ],
+        locationId: UUIDS.destinationA,
+        notes: "Manager request",
+        sourceLocationId: UUIDS.managerSourceA,
+      },
+      url: "/api/manager/stock/supply-requests/batch",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().requestGroupReference, "SUPB-0001");
+    assert.equal(response.json().items.length, 2);
+  });
+
   it("lists manager inbox requests across all manageable source locations", async () => {
     let listedSourceLocationIds: string[] = [];
     const server = createStockSupplyServer({
@@ -139,6 +199,40 @@ describe("stock supply routes", () => {
     assert.equal(response.json().total, 1);
   });
 
+  it("lists eligible source locations for an in-scope managed destination", async () => {
+    const server = createStockSupplyServer({
+      allowedLocationPermissions: {
+        "stock.supply.manage": [UUIDS.destinationA],
+      },
+      userSlug: "manager-a",
+    });
+
+    const response = await server.inject({
+      headers: {
+        authorization: bearerToken(UUIDS.actor, "manager-a"),
+      },
+      method: "GET",
+      query: {
+        destinationLocationId: UUIDS.destinationA,
+      },
+      url: "/api/manager/stock/supply-request-sources",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(response.json(), {
+      items: [
+        {
+          locationId: UUIDS.managerSourceA,
+          locationName: "Warehouse A",
+        },
+        {
+          locationId: UUIDS.managerSourceB,
+          locationName: "Warehouse B",
+        },
+      ],
+    });
+  });
+
   it("lists eligible source locations for an in-scope worker destination", async () => {
     const server = createStockSupplyServer({
       allowedLocationPermissions: {
@@ -201,6 +295,40 @@ describe("stock supply routes", () => {
     assert.equal(publishedEvents[0]?.type, "transfer.requested");
     assert.equal(publishedEvents[0]?.resource.reference, "SUP-0001");
     assert.equal(publishedEvents[0]?.payload.status, "pending");
+  });
+
+  it("creates a grouped worker supply request with multiple items", async () => {
+    const server = createStockSupplyServer({
+      allowedLocationPermissions: {
+        "stock.supply.request": [UUIDS.destinationA],
+      },
+    });
+
+    const response = await server.inject({
+      headers: {
+        authorization: bearerToken(UUIDS.actor, "worker-a"),
+      },
+      method: "POST",
+      payload: {
+        items: [
+          { requestedQuantity: 3, skuId: UUIDS.sku },
+          {
+            requestedQuantity: 1,
+            skuId: "77777777-7777-4777-8777-777777777778",
+          },
+        ],
+        locationId: UUIDS.destinationA,
+        notes: "Need multiple items",
+        sourceLocationId: UUIDS.managerSourceA,
+      },
+      url: "/api/worker/stock/supply-requests/batch",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().requestGroupReference, "SUPB-0001");
+    assert.equal(response.json().items.length, 2);
+    assert.equal(response.json().items[0]?.requestGroupReference, "SUPB-0001");
+    assert.equal(response.json().items[1]?.requestGroupReference, "SUPB-0001");
   });
 
   it("rejects receipt confirmation by a different worker", async () => {
@@ -425,6 +553,7 @@ describe("stock supply routes", () => {
 
 function createStockSupplyServer(input: {
   allowedLocationPermissions: Record<string, string[]>;
+  batchCreateImpl?: () => Promise<SupplyRequestRow[]>;
   cancelByIdImpl?: (input: {
     adminOverrideReason?: string;
   }) => Promise<SupplyRequestRow>;
@@ -493,8 +622,15 @@ function createStockSupplyServer(input: {
       },
       permissionService,
       referenceNumberService: {
-        async generateReference() {
-          return "SUP-0001";
+        async generateReference(command) {
+          switch (command.sequenceKey) {
+            case "supply-request-group":
+              return "SUPB-0001";
+            case "supply-request":
+              return "SUP-0001";
+            default:
+              return "SUP-0001";
+          }
         },
       },
       supplyRequestRepository: {
@@ -561,6 +697,31 @@ function createStockSupplyServer(input: {
             gtn: makeGtnRow(),
             supplyRequest: makeSupplyRequestRow({ status: "received" }),
           };
+        },
+        async createRequestBatch() {
+          if (input.batchCreateImpl) {
+            return input.batchCreateImpl();
+          }
+          const supplyRequest = makeSupplyRequestRow({
+            requestGroupReference: "SUPB-0001",
+            status: "pending",
+          });
+          const secondRequest = makeSupplyRequestRow({
+            id: "66666666-6666-4666-8666-666666666667",
+            reference: "SUP-0002",
+            requestGroupReference: "SUPB-0001",
+            requestedQuantity: 1,
+            skuId: "77777777-7777-4777-8777-777777777778",
+            skuSnapshot: {
+              productName: "Travel Pack",
+              sku: "TRAVEL-PACK-002",
+              variantName: "Large",
+            },
+            status: "pending",
+          });
+          publishTestEvent(input, "transfer.requested", supplyRequest);
+          publishTestEvent(input, "transfer.requested", secondRequest);
+          return [supplyRequest, secondRequest];
         },
         async createRequest() {
           const supplyRequest = makeSupplyRequestRow({ status: "pending" });
@@ -742,6 +903,7 @@ function makeSupplyRequestRowBase(): SupplyRequestRow {
     notes: null,
     receivedAt: null,
     reference: "SUP-0001",
+    requestGroupReference: null,
     sourceReservationStatus: null,
     transferReference: "TRF-0001",
     requesterEmail: "worker@example.com",

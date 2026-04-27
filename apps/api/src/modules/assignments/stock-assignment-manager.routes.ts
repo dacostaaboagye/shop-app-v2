@@ -12,7 +12,7 @@ import {
 } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
 import { AppError } from "../_core/errors/app-error.js";
-import { getAuthenticatedUserId } from "../auth/auth-route-support.js";
+import { getAuthenticatedActor } from "../auth/auth-route-support.js";
 import {
   assignmentRoutes,
   resolveOriginalWorker,
@@ -42,17 +42,16 @@ function registerAssignRoute(
     method: route.method,
     url: route.url,
     async handler(request) {
-      const userId = getAuthenticatedUserId(request);
+      const actor = getAuthenticatedActor(request);
       const body = assignVariantRequestSchema.parse(request.body);
-      const result =
-        await dependencies.ownershipEventWriteService.assignProduct({
-          assignedBy: userId,
-          locationId: body.locationId,
-          ...(body.effectiveFrom ? { now: new Date(body.effectiveFrom) } : {}),
-          quantity: body.quantity,
-          skuId: body.skuId,
-          workerId: body.workerId,
-        });
+      const result = await dependencies.assignmentCommandService.assignProduct({
+        actor,
+        locationId: body.locationId,
+        ...(body.effectiveFrom ? { now: new Date(body.effectiveFrom) } : {}),
+        quantity: body.quantity,
+        skuId: body.skuId,
+        workerId: body.workerId,
+      });
       return {
         event: ownershipEventResponseSchema.parse(
           toEventResponse(result.event),
@@ -73,12 +72,12 @@ function registerBatchAssignRoute(
     method: route.method,
     url: route.url,
     async handler(request) {
-      const userId = getAuthenticatedUserId(request);
+      const actor = getAuthenticatedActor(request);
       const body = batchAssignVariantRequestSchema.parse(request.body);
       await assertBatchStockAvailable(dependencies, body);
       for (const item of body.items) {
-        await dependencies.ownershipEventWriteService.assignProduct({
-          assignedBy: userId,
+        await dependencies.assignmentCommandService.assignProduct({
+          actor,
           locationId: body.locationId,
           quantity: item.quantity,
           skuId: item.skuId,
@@ -104,13 +103,13 @@ function registerReassignRoute(
     method: route.method,
     url: route.url,
     async handler(request) {
-      const userId = getAuthenticatedUserId(request);
+      const actor = getAuthenticatedActor(request);
       const body = reassignVariantRequestSchema.parse(request.body);
       const result =
-        await dependencies.ownershipEventWriteService.reassignProduct({
+        await dependencies.assignmentCommandService.reassignProduct({
+          actor,
           locationId: body.locationId,
           newWorkerId: body.toWorkerId,
-          reassignedBy: userId,
           skuId: body.skuId,
         });
       return {
@@ -168,7 +167,7 @@ function registerManagerHandoverRoutes(
     method: initiateRoute.method,
     url: initiateRoute.url,
     async handler(request) {
-      const userId = getAuthenticatedUserId(request);
+      const actor = getAuthenticatedActor(request);
       const body = initiateHandoverRequestSchema.parse(request.body);
       if (!body.fromWorkerId) {
         throw new AppError({
@@ -179,9 +178,9 @@ function registerManagerHandoverRoutes(
         });
       }
       const result =
-        await dependencies.ownershipHandoverService.initiateHandover({
+        await dependencies.assignmentCommandService.initiateHandover({
+          actor,
           fromWorkerId: body.fromWorkerId,
-          initiatedBy: userId,
           locationId: body.locationId,
           skuId: body.skuId,
           toWorkerId: body.toWorkerId,
@@ -200,14 +199,14 @@ function registerManagerHandoverRoutes(
     method: revertRoute.method,
     url: revertRoute.url,
     async handler(request) {
-      const userId = getAuthenticatedUserId(request);
+      const actor = getAuthenticatedActor(request);
       const body = revertHandoverRequestSchema.parse(request.body);
       const originalWorkerId = await resolveOriginalWorker(
         dependencies,
         body.handoverChainId,
       );
-      const result = await dependencies.ownershipHandoverService.endHandover({
-        endedBy: userId,
+      const result = await dependencies.assignmentCommandService.endHandover({
+        actor,
         handoverChainId: body.handoverChainId,
         originalWorkerId,
       });

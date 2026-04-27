@@ -1,93 +1,114 @@
 import type {
-  AdminCreateSupplierContactRequest,
-  AdminCreateSupplierInquiryRequest,
   AdminCreateSupplierProcurementOrderRequest,
-  AdminCreateSupplierRequest,
   AdminLinkSupplierContactPortalRequest,
   AdminLinkSupplierProductRequest,
   AdminSupplierProcurementReceiveRequest,
-  AdminUpdateSupplierInquiryRequest,
-  AdminUpdateSupplierRequest,
 } from "@shop/contracts";
+import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import type { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
+import { AdminSupplierCrudService } from "./admin-supplier-crud.service.js";
+import {
+  publishSupplierPortalInvited,
+  publishSupplierPortalLinked,
+  publishSupplierPortalUnlinked,
+  publishSupplierProcurementCreated,
+  publishSupplierProcurementReceived,
+  publishSupplierProcurementStatusUpdated,
+  publishSupplierProductLinked,
+  publishSupplierProductUnlinked,
+} from "./admin-supplier-event-publishers.js";
 import { generateSupplierReference } from "./admin-supplier-reference.js";
 import type { AdminSupplierWriteRepository } from "./admin-supplier-write.types.js";
 
-export class AdminSupplierWriteService {
+export class AdminSupplierWriteService extends AdminSupplierCrudService {
   constructor(
-    private readonly repository: AdminSupplierWriteRepository,
-    private readonly referenceNumberService?: Pick<
-      ReferenceNumberService,
-      "generateReference"
-    >,
-  ) {}
-
-  async addContact(
-    supplierSlug: string,
-    actorId: string,
-    payload: AdminCreateSupplierContactRequest,
-    now: Date,
+    repository: AdminSupplierWriteRepository,
+    referenceNumberService?: Pick<ReferenceNumberService, "generateReference">,
+    private readonly eventPublisher?: PlatformEventPublisher | null,
   ) {
-    return this.repository.addContact({ actorId, now, payload, supplierSlug });
+    super(repository, referenceNumberService);
   }
-
-  async removeContact(supplierSlug: string, contactReference: string) {
-    return this.repository.removeContact({ contactReference, supplierSlug });
-  }
-
   async linkContactPortal(
     supplierSlug: string,
     contactReference: string,
-    actorId: string,
+    actor: { userId: string; userSlug: string },
     payload: AdminLinkSupplierContactPortalRequest,
     now: Date,
   ) {
-    return this.repository.linkContactPortal({
-      actorId,
+    const contact = await this.repository.getPortalContactEventContext({
+      contactReference,
+      supplierSlug,
+    });
+    const supplier = await this.repository.linkContactPortal({
+      actorId: actor.userId,
       contactReference,
       now,
       payload,
       supplierSlug,
     });
+    await publishSupplierPortalLinked({
+      actor,
+      contact,
+      eventPublisher: this.eventPublisher,
+      now,
+      payload,
+      supplier,
+    });
+    return supplier;
   }
-
   async inviteContactPortal(
     supplierSlug: string,
     contactReference: string,
-    actorId: string,
+    actor: { userId: string; userSlug: string },
     now: Date,
   ) {
-    return this.repository.inviteContactPortal({
-      actorId,
+    const contact = await this.repository.getPortalContactEventContext({
+      contactReference,
+      supplierSlug,
+    });
+    const supplier = await this.repository.inviteContactPortal({
+      actorId: actor.userId,
       contactReference,
       now,
       supplierSlug,
     });
+    await publishSupplierPortalInvited({
+      actor,
+      contact,
+      contactReference,
+      eventPublisher: this.eventPublisher,
+      now,
+      supplier,
+    });
+    return supplier;
   }
-
   async unlinkContactPortal(
     supplierSlug: string,
     contactReference: string,
+    actor: { userId: string; userSlug: string },
     now: Date,
   ) {
-    return this.repository.unlinkContactPortal({
+    const contact = await this.repository.getPortalContactEventContext({
+      contactReference,
+      supplierSlug,
+    });
+    const supplier = await this.repository.unlinkContactPortal({
       contactReference,
       now,
       supplierSlug,
     });
+    await publishSupplierPortalUnlinked({
+      actor,
+      contact,
+      eventPublisher: this.eventPublisher,
+      now,
+      supplier,
+    });
+    return supplier;
   }
-
-  async createSupplier(
-    actorId: string,
-    payload: AdminCreateSupplierRequest,
-    now: Date,
-  ) {
-    return this.repository.createSupplier({ actorId, now, payload });
-  }
-
   async createProcurementOrder(
     supplierSlug: string,
-    actorId: string,
+    actor: { userId: string; userSlug: string },
     payload: AdminCreateSupplierProcurementOrderRequest,
     now: Date,
   ) {
@@ -99,113 +120,113 @@ export class AdminSupplierWriteService {
       referenceNumberService: this.referenceNumberService,
       sequenceKey: "purchase-order",
     });
-    return this.repository.createProcurementOrder({
-      actorId,
+    const supplier = await this.repository.createProcurementOrder({
+      actorId: actor.userId,
       now,
       payload,
       reference,
       supplierSlug,
     });
-  }
-
-  async createInquiry(
-    supplierSlug: string,
-    actorId: string,
-    payload: AdminCreateSupplierInquiryRequest,
-    now: Date,
-  ) {
-    const reference = await generateSupplierReference({
-      missingDetail:
-        "Reference generation is not configured for supplier inquiries.",
-      missingTitle: "Supplier inquiry unavailable",
+    await publishSupplierProcurementCreated({
+      actor,
+      eventPublisher: this.eventPublisher,
       now,
-      referenceNumberService: this.referenceNumberService,
-      sequenceKey: "supplier-inquiry",
-    });
-    return this.repository.createInquiry({
-      actorId,
-      now,
-      payload,
       reference,
-      supplierSlug,
+      supplier,
     });
+    return supplier;
   }
-
   async linkProduct(
     supplierSlug: string,
-    actorId: string,
+    actor: { userId: string; userSlug: string },
     payload: AdminLinkSupplierProductRequest,
     now: Date,
   ) {
-    return this.repository.linkProduct({ actorId, now, payload, supplierSlug });
+    const supplier = await this.repository.linkProduct({
+      actorId: actor.userId,
+      now,
+      payload,
+      supplierSlug,
+    });
+    await publishSupplierProductLinked({
+      actor,
+      eventPublisher: this.eventPublisher,
+      now,
+      productSlug: payload.productSlug,
+      supplier,
+    });
+    return supplier;
   }
-
-  async unlinkProduct(supplierSlug: string, productSlug: string) {
-    return this.repository.unlinkProduct({ productSlug, supplierSlug });
+  async unlinkProduct(
+    supplierSlug: string,
+    productSlug: string,
+    actor: { userId: string; userSlug: string },
+    now: Date,
+  ) {
+    const context = await this.repository.getSupplierProductEventContext({
+      productSlug,
+      supplierSlug,
+    });
+    const deleted = await this.repository.unlinkProduct({
+      productSlug,
+      supplierSlug,
+    });
+    await publishSupplierProductUnlinked({
+      actor,
+      context,
+      deleted,
+      eventPublisher: this.eventPublisher,
+      now,
+    });
+    return deleted;
   }
-
   async transitionProcurementOrder(
     supplierSlug: string,
     reference: string,
-    actorId: string,
+    actor: { userId: string; userSlug: string },
     status: "submitted" | "approved" | "ordered" | "cancelled" | "closed",
     notes: string | null,
     now: Date,
   ) {
-    return this.repository.transitionProcurementOrder({
-      actorId,
+    const supplier = await this.repository.transitionProcurementOrder({
+      actorId: actor.userId,
       notes,
       now,
       reference,
       status,
       supplierSlug,
     });
+    await publishSupplierProcurementStatusUpdated({
+      actor,
+      eventPublisher: this.eventPublisher,
+      now,
+      reference,
+      supplier,
+    });
+    return supplier;
   }
-
   async receiveProcurementOrder(
     supplierSlug: string,
     reference: string,
-    actorId: string,
+    actor: { userId: string; userSlug: string },
     payload: AdminSupplierProcurementReceiveRequest,
     now: Date,
   ) {
-    return this.repository.receiveProcurementOrder({
-      actorId,
+    const supplier = await this.repository.receiveProcurementOrder({
+      actorId: actor.userId,
       lines: payload.lines,
       notes: payload.notes ?? null,
       now,
       reference,
       supplierSlug,
     });
-  }
-
-  async updateSupplier(
-    supplierSlug: string,
-    actorId: string,
-    payload: AdminUpdateSupplierRequest,
-    now: Date,
-  ) {
-    return this.repository.updateSupplier({
-      actorId,
+    await publishSupplierProcurementReceived({
+      actor,
+      eventPublisher: this.eventPublisher,
       now,
-      payload,
-      supplierSlug,
-    });
-  }
-
-  async updateInquiry(
-    supplierSlug: string,
-    reference: string,
-    actorId: string,
-    payload: AdminUpdateSupplierInquiryRequest,
-    now: Date,
-  ) {
-    return this.repository.updateInquiry({
-      actorId,
-      now,
-      payload,
       reference,
-      supplierSlug,
+      supplier,
     });
+    return supplier;
   }
 }

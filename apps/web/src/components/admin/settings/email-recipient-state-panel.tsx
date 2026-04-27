@@ -6,6 +6,10 @@ import { AppEmptyState } from "@/components/system/app-empty-state";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { Badge } from "@/components/ui/badge";
 import { formatEmailTimestamp, isValidEmail } from "./email-operations-support";
+import {
+  canSendToRecipient,
+  formatBlockedRecipientStatus,
+} from "./email-recipient-state.support";
 
 export function RecipientStatePanel({
   email,
@@ -67,31 +71,20 @@ export function RecipientStatePanel({
           </p>
         </div>
         <Badge variant={query.data.canSend ? "secondary" : "destructive"}>
-          {query.data.canSend
+          {canSendToRecipient(query.data)
             ? "Clear to send"
-            : formatBlockedStatus(query.data.status)}
+            : formatBlockedRecipientStatus(query.data.status)}
         </Badge>
       </div>
-      {!query.data.canSend ? (
+      {!canSendToRecipient(query.data) ? (
         <div className="mt-3 flex flex-col gap-1 text-xs text-muted-foreground">
-          <p>{query.data.recipientEmail}</p>
+          <p className="break-all">{query.data.recipientEmail}</p>
           <p>Blocked since {formatEmailTimestamp(query.data.occurredAt)}</p>
-          {query.data.statusReason ? <p>{query.data.statusReason}</p> : null}
+          {query.data.statusReason ? (
+            <p className="break-words">{query.data.statusReason}</p>
+          ) : null}
         </div>
       ) : null}
     </div>
   );
-}
-
-function formatBlockedStatus(status: string | null) {
-  switch (status) {
-    case "bounced":
-      return "Bounced";
-    case "complained":
-      return "Complained";
-    case "suppressed":
-      return "Suppressed";
-    default:
-      return "Blocked";
-  }
 }

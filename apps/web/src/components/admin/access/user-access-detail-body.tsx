@@ -48,8 +48,6 @@ export function UserAccessDetailBody({
 }) {
   const [dialog, setDialog] = useState<DialogState>({ kind: "closed" });
   const closeDialog = () => setDialog({ kind: "closed" });
-  const statusMeta =
-    USER_STATUS_META[user.status as keyof typeof USER_STATUS_META];
   const displayName = formatDisplayName(user.firstName, user.lastName);
 
   return (
@@ -124,60 +122,7 @@ export function UserAccessDetailBody({
         description="Identity, portal reach, account status, and current location scope."
         title="User summary"
       >
-        <div className="flex flex-wrap items-center gap-3">
-          <PersonAvatar
-            firstName={user.firstName}
-            imageUrl={user.primaryImageUrl}
-            lastName={user.lastName}
-            size="md"
-          />
-          <div className="min-w-0">
-            <p className="font-medium leading-tight text-foreground">
-              {displayName}
-            </p>
-            <p className="type-identifier text-muted-foreground">
-              {user.email}
-            </p>
-          </div>
-          <div className="ml-auto flex flex-wrap items-center gap-2">
-            {statusMeta ? (
-              <Badge className={statusMeta.className} variant="outline">
-                {statusMeta.label}
-              </Badge>
-            ) : null}
-            {user.requiresPasswordChange ? (
-              <Badge
-                className={PASSWORD_RESET_BADGE_CLASS_NAME}
-                variant="outline"
-              >
-                Password reset required
-              </Badge>
-            ) : null}
-            {user.availablePortals.length > 0 ? (
-              user.availablePortals.map((portal) => (
-                <Badge key={portal} variant="secondary">
-                  {formatPortalLabel(portal)}
-                </Badge>
-              ))
-            ) : (
-              <Badge className="text-muted-foreground" variant="outline">
-                No portal access
-              </Badge>
-            )}
-            {user.assignedLocations.length > 0 ? (
-              <span className="type-support flex items-center gap-1 text-muted-foreground">
-                <MapPin className="size-3.5" />
-                {user.assignedLocations
-                  .slice(0, 2)
-                  .map((location) => location.locationName)
-                  .join(", ")}
-                {user.assignedLocations.length > 2
-                  ? ` +${formatCount(user.assignedLocations.length - 2)} more`
-                  : ""}
-              </span>
-            ) : null}
-          </div>
-        </div>
+        <UserAccessSummaryCard user={user} />
       </CatalogFormCard>
 
       <MediaPanel
@@ -211,5 +156,67 @@ export function UserAccessDetailBody({
         slug={slug}
       />
     </>
+  );
+}
+
+export function UserAccessSummaryCard({
+  user,
+}: {
+  user: AdminUserAccessDetail;
+}) {
+  const statusMeta =
+    USER_STATUS_META[user.status as keyof typeof USER_STATUS_META];
+  const displayName = formatDisplayName(user.firstName, user.lastName);
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <PersonAvatar
+        firstName={user.firstName}
+        imageUrl={user.primaryImageUrl}
+        lastName={user.lastName}
+        size="md"
+      />
+      <div className="min-w-0">
+        <p className="font-medium leading-tight text-foreground">
+          {displayName}
+        </p>
+        <p className="type-identifier text-muted-foreground">{user.email}</p>
+      </div>
+      <div className="ml-auto flex flex-wrap items-center gap-2">
+        {statusMeta ? (
+          <Badge className={statusMeta.className} variant="outline">
+            {statusMeta.label}
+          </Badge>
+        ) : null}
+        {user.requiresPasswordChange ? (
+          <Badge className={PASSWORD_RESET_BADGE_CLASS_NAME} variant="outline">
+            Password reset required
+          </Badge>
+        ) : null}
+        {user.availablePortals.length > 0 ? (
+          user.availablePortals.map((portal) => (
+            <Badge key={portal} variant="secondary">
+              {formatPortalLabel(portal)}
+            </Badge>
+          ))
+        ) : (
+          <Badge className="text-muted-foreground" variant="outline">
+            No portal access
+          </Badge>
+        )}
+        {user.assignedLocations.length > 0 ? (
+          <span className="type-support flex items-center gap-1 text-muted-foreground">
+            <MapPin className="size-3.5" />
+            {user.assignedLocations
+              .slice(0, 2)
+              .map((location) => location.locationName)
+              .join(", ")}
+            {user.assignedLocations.length > 2
+              ? ` +${formatCount(user.assignedLocations.length - 2)} more`
+              : ""}
+          </span>
+        ) : null}
+      </div>
+    </div>
   );
 }

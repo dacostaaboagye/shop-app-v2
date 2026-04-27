@@ -7,6 +7,8 @@ export function toInvoiceResponse(invoice: {
   confirmedAt: Date | null;
   createdAt: Date;
   customerBillingAddressLines?: string[] | null;
+  currencyCode: string;
+  currencyScale: number;
   customerEmail?: string | null;
   customerName?: string | null;
   customerPhone?: string | null;
@@ -39,6 +41,8 @@ export function toInvoiceResponse(invoice: {
     confirmedAt: invoice.confirmedAt?.toISOString() ?? null,
     createdAt: invoice.createdAt.toISOString(),
     customerBillingAddressLines: invoice.customerBillingAddressLines ?? null,
+    currencyCode: invoice.currencyCode,
+    currencyScale: invoice.currencyScale,
     customerEmail: invoice.customerEmail ?? null,
     customerName: invoice.customerName ?? null,
     customerPhone: invoice.customerPhone ?? null,

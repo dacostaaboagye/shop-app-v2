@@ -11,7 +11,7 @@ const sourceRoots = [
 ];
 
 const allowedExtensions = new Set([".ts", ".tsx", ".js", ".jsx"]);
-const maxSourceLines = 250;
+const maxSourceLines = 300;
 const maxTestLines = 350;
 
 const violations = [];

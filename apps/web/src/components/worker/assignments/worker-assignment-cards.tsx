@@ -1,7 +1,7 @@
 "use client";
 
 import type { CurrentAssignment } from "@shop/contracts";
-import { ShoppingCart } from "lucide-react";
+import { Check, ShoppingCart } from "lucide-react";
 import { ProductThumbnail } from "@/components/system/product-thumbnail";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,11 +13,15 @@ import { getStockStatus } from "./worker-assignments-support";
 export function AssignmentCard({
   item,
   moneyProfile,
+  onSelectSupply,
   onRequestSupply,
+  selectedForSupply = false,
 }: {
   item: CurrentAssignment;
   moneyProfile: MoneyProfile;
+  onSelectSupply?: () => void;
   onRequestSupply: () => void;
+  selectedForSupply?: boolean;
 }) {
   const status = getStockStatus(item.availableQuantity);
   const isOut = status === "out_of_stock";
@@ -27,6 +31,7 @@ export function AssignmentCard({
     <article
       className={cn(
         "group relative overflow-hidden rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/40 hover:shadow-md",
+        selectedForSupply && "border-primary/50 ring-2 ring-primary/10",
       )}
     >
       <div className="flex flex-col gap-5">
@@ -77,16 +82,29 @@ export function AssignmentCard({
           />
         </div>
 
-        <Button
-          aria-label={`Request supply for ${item.productName} - ${item.variantName}`}
-          className="h-11 w-full rounded-xl gap-2 font-bold transition-all active:scale-[0.98]"
-          id={`request-supply-${item.skuId}`}
-          onClick={onRequestSupply}
-          variant={isOut || isLow ? "default" : "outline"}
-        >
-          <ShoppingCart className="size-4" />
-          Request Supply
-        </Button>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Button
+            aria-label={`Request supply for ${item.productName} - ${item.variantName}`}
+            className="h-11 w-full rounded-xl gap-2 font-bold transition-all active:scale-[0.98]"
+            id={`request-supply-${item.skuId}`}
+            onClick={onRequestSupply}
+            variant={isOut || isLow ? "default" : "outline"}
+          >
+            <ShoppingCart className="size-4" />
+            Request Supply
+          </Button>
+          {onSelectSupply ? (
+            <Button
+              className="h-11 w-full rounded-xl gap-2 font-bold"
+              onClick={onSelectSupply}
+              type="button"
+              variant={selectedForSupply ? "default" : "outline"}
+            >
+              <Check className="size-4" />
+              {selectedForSupply ? "Selected" : "Select"}
+            </Button>
+          ) : null}
+        </div>
       </div>
     </article>
   );

@@ -195,6 +195,38 @@ export class CatalogProductCommands {
     return toProductDetail(product);
   }
 
+  async getProductForDeleteEvent(
+    slug: string,
+  ): Promise<AdminProductDetail | null> {
+    const product = await this.db.query.catalogProducts.findFirst({
+      where: eq(catalogProducts.slug, slug),
+      with: {
+        brand: { columns: { slug: true } },
+        category: { columns: { slug: true } },
+        variants: {
+          orderBy: [
+            desc(productVariants.isDefault),
+            asc(productVariants.createdAt),
+          ],
+        },
+      },
+    });
+
+    if (!product) {
+      return null;
+    }
+
+    return toProductDetail({
+      row: {
+        brandSlug: product.brand?.slug ?? null,
+        categorySlug: product.category?.slug ?? null,
+        variantCount: product.variants.length,
+      },
+      updated: product,
+      variants: product.variants,
+    });
+  }
+
   async delete(input: { slug: string }): Promise<void> {
     const product = await this.db.query.catalogProducts.findFirst({
       where: eq(catalogProducts.slug, input.slug),

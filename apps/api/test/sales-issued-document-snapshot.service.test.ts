@@ -45,6 +45,72 @@ describe("SalesIssuedDocumentSnapshotService", () => {
     assert.equal(profileReads, 1);
   });
 
+  it("uses the persisted invoice currency snapshot instead of live settings currency", async () => {
+    const service = createService({
+      settingsService: {
+        async resolveDocumentProfile() {
+          return profile({
+            currencyCode: "USD",
+            currencyScale: 2,
+            footer: "Live settings changed after the sale.",
+          });
+        },
+      },
+    });
+
+    const snapshot = await service.getOrIssueSnapshot({
+      actorUserId: USER_ID,
+      reference: "INV/2026/000001",
+    });
+
+    assert.equal(snapshot.profileSnapshot.currencyCode, "GHS");
+    assert.equal(snapshot.profileSnapshot.currencyScale, 2);
+    assert.equal(snapshot.payloadSnapshot.currencyCode, "GHS");
+    assert.equal(snapshot.payloadSnapshot.currencyScale, 2);
+  });
+
+  it("issues credit note documents with the persisted credit note currency snapshot", async () => {
+    const service = createService({
+      invoiceRepository: {
+        async findByReference(reference) {
+          return reference === "CN/2026/000001"
+            ? invoice({
+                currencyCode: "GHS",
+                currencyScale: 2,
+                paymentMethod: null,
+                reference: "CN/2026/000001",
+                subtotalAmount: "20.48",
+                taxAmount: "0.00",
+                totalAmount: "20.48",
+                type: "credit_note",
+              })
+            : null;
+        },
+      },
+      settingsService: {
+        async resolveDocumentProfile(_input = {}) {
+          return profile({
+            currencyCode: "USD",
+            currencyScale: 2,
+          });
+        },
+      },
+    });
+
+    const snapshot = await service.getOrIssueSnapshot({
+      actorUserId: USER_ID,
+      reference: "CN/2026/000001",
+    });
+
+    assert.equal(snapshot.documentType, "credit_note");
+    assert.equal(snapshot.documentReference, "CN/2026/000001");
+    assert.equal(snapshot.profileSnapshot.currencyCode, "GHS");
+    assert.equal(snapshot.profileSnapshot.currencyScale, 2);
+    assert.equal(snapshot.payloadSnapshot.currencyCode, "GHS");
+    assert.equal(snapshot.payloadSnapshot.currencyScale, 2);
+    assert.equal(snapshot.payloadSnapshot.totalAmount, "20.48");
+  });
+
   it("allows the attributed worker to issue their own official sales document", async () => {
     const permissionCalls: string[] = [];
     const service = createService({
@@ -87,10 +153,75 @@ describe("SalesIssuedDocumentSnapshotService", () => {
     );
     assert.deepEqual(permissionCalls, ["pos.sales.manage"]);
   });
+
+  it("emails the issued sales document to the stored buyer email", async () => {
+    let sentDocument: {
+      documentLabel: string;
+      documentReference: string;
+      recipientName?: string | null;
+      to: string;
+    } | null = null;
+    const service = createService({
+      emailService: {
+        async sendSalesDocumentEmail(input) {
+          sentDocument = {
+            documentLabel: input.documentLabel,
+            documentReference: input.documentReference,
+            to: input.to,
+            ...(input.recipientName !== undefined
+              ? { recipientName: input.recipientName }
+              : {}),
+          };
+          return {
+            attemptId: "attempt-1",
+            status: "sent",
+          };
+        },
+      },
+    });
+
+    const result = await service.sendEmail({
+      actorUserId: USER_ID,
+      reference: "INV/2026/000001",
+    });
+
+    assert.deepEqual(result, { ok: true, recipientEmail: "buyer@example.com" });
+    assert.deepEqual(sentDocument, {
+      documentLabel: "Sales Receipt",
+      documentReference: "INV/2026/000001",
+      recipientName: "Adwoa Mensah",
+      to: "buyer@example.com",
+    });
+  });
 });
 
 function createService(
   input: {
+    invoiceRepository?: {
+      findByReference: (reference: string) => Promise<InvoiceWithLines | null>;
+    };
+    emailService?: {
+      sendSalesDocumentEmail: (input: {
+        attachment: { content: Buffer; contentType: string; filename: string };
+        documentLabel: string;
+        documentReference: string;
+        locationName?: string | null;
+        profileEmail?: string | null;
+        recipientName?: string | null;
+        to: string;
+      }) => Promise<{
+        attemptId: string | null;
+        status:
+          | "bounced"
+          | "complained"
+          | "console_fallback"
+          | "delayed"
+          | "delivered"
+          | "failed"
+          | "sent"
+          | "suppressed";
+      }>;
+    };
     permissionService?: {
       assertHasPermission: (input: {
         locationId?: string;
@@ -99,13 +230,20 @@ function createService(
       }) => Promise<void>;
     };
     settingsService?: {
-      resolveDocumentProfile: () => Promise<OfficialDocumentProfileResponse>;
+      resolveDocumentProfile: (input?: {
+        locationId?: string;
+      }) => Promise<OfficialDocumentProfileResponse>;
     };
     snapshotService?: IssuedDocumentSnapshotService;
   } = {},
 ) {
   return new SalesIssuedDocumentSnapshotService({
-    invoiceRepository: {
+    emailService: input.emailService ?? {
+      async sendSalesDocumentEmail() {
+        return { attemptId: "attempt-1", status: "sent" as const };
+      },
+    },
+    invoiceRepository: input.invoiceRepository ?? {
       async findByReference(reference) {
         return reference === "INV/2026/000001" ? invoice() : null;
       },
@@ -124,7 +262,7 @@ function createService(
   });
 }
 
-function invoice(): InvoiceWithLines {
+function invoice(overrides: Partial<InvoiceWithLines> = {}): InvoiceWithLines {
   return {
     attributedWorkerEmail: "worker@example.com",
     attributedWorkerId: USER_ID,
@@ -133,6 +271,8 @@ function invoice(): InvoiceWithLines {
     createdAt: NOW,
     createdBy: USER_ID,
     customerBillingAddressLines: ["12 Market Street"],
+    currencyCode: "GHS",
+    currencyScale: 2,
     customerEmail: "buyer@example.com",
     customerName: "Adwoa Mensah",
     customerPhone: "+233 20 000 0000",
@@ -172,6 +312,7 @@ function invoice(): InvoiceWithLines {
     updatedAt: NOW,
     voidedAt: null,
     voidReason: null,
+    ...overrides,
   };
 }
 

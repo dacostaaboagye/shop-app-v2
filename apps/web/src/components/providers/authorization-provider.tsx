@@ -43,9 +43,14 @@ export const AppCan = createContextualCan(AuthorizationAbilityContext.Consumer);
 export function AuthorizationProvider({ children }: { children: ReactNode }) {
   const status = useAuthSessionStore((state) => state.status);
   const user = useAuthSessionStore((state) => state.user);
+  const sessionPermissionSet = user?.permissionSet ?? {
+    locationScopes: [],
+    permissions: [],
+  };
   const permissionsQuery = useQuery({
     enabled: status === "authenticated",
     queryFn: fetchCurrentUserPermissions,
+    initialData: status === "authenticated" ? sessionPermissionSet : undefined,
     queryKey: getCurrentUserPermissionsQueryKey(user?.slug ?? null),
   });
   const locationScopes = permissionsQuery.data?.locationScopes ?? [];

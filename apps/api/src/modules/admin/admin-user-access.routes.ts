@@ -1,6 +1,6 @@
 import { adminUserAccessDetailSchema } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
-import { getAuthenticatedUserId } from "../auth/auth-route-support.js";
+import { getAuthenticatedActor } from "../auth/auth-route-support.js";
 import {
   type AdminUserAccessRouteDependencies,
   adminUserAccessRoutes,
@@ -37,7 +37,7 @@ export function registerAdminUserAccessRoutes(
     url: adminUserAccessRoutes.assignRole.url,
     async handler(request, reply) {
       await dependencies.adminUserAccessWriteService.assignRole(
-        getAuthenticatedUserId(request),
+        getAuthenticatedActor(request),
         (request.params as { slug: string }).slug,
         adminUserAccessSchemas.assignRole.parse(request.body),
         new Date(),
@@ -54,7 +54,7 @@ export function registerAdminUserAccessRoutes(
       const params = request.params as { roleSlug: string; slug: string };
 
       await dependencies.adminUserAccessWriteService.revokeRole(
-        getAuthenticatedUserId(request),
+        getAuthenticatedActor(request),
         params.slug,
         params.roleSlug,
         adminUserAccessSchemas.revokeRole.parse(request.body),
@@ -70,7 +70,7 @@ export function registerAdminUserAccessRoutes(
     url: adminUserAccessRoutes.setOverride.url,
     async handler(request, reply) {
       await dependencies.adminUserAccessWriteService.setPermissionOverride(
-        getAuthenticatedUserId(request),
+        getAuthenticatedActor(request),
         (request.params as { slug: string }).slug,
         adminUserAccessSchemas.setOverride.parse(request.body),
         new Date(),
@@ -87,7 +87,7 @@ export function registerAdminUserAccessRoutes(
       const params = request.params as { permissionKey: string; slug: string };
 
       await dependencies.adminUserAccessWriteService.removePermissionOverride(
-        getAuthenticatedUserId(request),
+        getAuthenticatedActor(request),
         params.slug,
         params.permissionKey,
         adminUserAccessSchemas.removeOverride.parse(request.body),
@@ -103,6 +103,7 @@ export function registerAdminUserAccessRoutes(
     url: adminUserAccessRoutes.updateProfile.url,
     async handler(request, reply) {
       await dependencies.adminUserAccessWriteService.updateProfile(
+        getAuthenticatedActor(request),
         (request.params as { slug: string }).slug,
         adminUserAccessSchemas.updateProfile.parse(request.body),
       );
@@ -116,7 +117,7 @@ export function registerAdminUserAccessRoutes(
     url: adminUserAccessRoutes.updateStatus.url,
     async handler(request, reply) {
       await dependencies.adminUserAccessWriteService.updateStatus(
-        getAuthenticatedUserId(request),
+        getAuthenticatedActor(request),
         (request.params as { slug: string }).slug,
         adminUserAccessSchemas.updateStatus.parse(request.body),
         new Date(),
@@ -131,7 +132,7 @@ export function registerAdminUserAccessRoutes(
     url: adminUserAccessRoutes.forcePasswordReset.url,
     async handler(request, reply) {
       await dependencies.adminUserAccessWriteService.forcePasswordReset(
-        getAuthenticatedUserId(request),
+        getAuthenticatedActor(request),
         (request.params as { slug: string }).slug,
         adminUserAccessSchemas.forcePasswordReset.parse(request.body),
         new Date(),

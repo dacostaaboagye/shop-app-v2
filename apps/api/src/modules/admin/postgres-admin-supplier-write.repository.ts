@@ -7,6 +7,8 @@ import type {
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { EmailService } from "../messaging/email.service.js";
 import type { SlugAllocator } from "../public-identifiers/slug.service.js";
+import { PostgresAdminSupplierContactEventContextRepository } from "./admin-supplier-contact-event-context.repository.js";
+import { PostgresAdminSupplierProductEventContextRepository } from "./admin-supplier-product-event-context.repository.js";
 import type { AdminSupplierWriteRepository } from "./admin-supplier-write.types.js";
 import {
   addSupplierContact,
@@ -36,6 +38,8 @@ export class PostgresAdminSupplierWriteRepository
   implements AdminSupplierWriteRepository
 {
   private readonly reader: PostgresAdminSupplierQueryRepository;
+  private readonly contactEventContextRepository: PostgresAdminSupplierContactEventContextRepository;
+  private readonly productEventContextRepository: PostgresAdminSupplierProductEventContextRepository;
 
   constructor(
     private readonly db: ApiDatabase,
@@ -44,6 +48,10 @@ export class PostgresAdminSupplierWriteRepository
     private readonly webBaseUrl = "http://localhost:3000",
   ) {
     this.reader = new PostgresAdminSupplierQueryRepository(db);
+    this.contactEventContextRepository =
+      new PostgresAdminSupplierContactEventContextRepository(db);
+    this.productEventContextRepository =
+      new PostgresAdminSupplierProductEventContextRepository(db);
   }
 
   async addContact(input: {
@@ -162,6 +170,15 @@ export class PostgresAdminSupplierWriteRepository
     return unlinkSupplierProductRecord({ ...input, db: this.db });
   }
 
+  async getSupplierProductEventContext(input: {
+    productSlug: string;
+    supplierSlug: string;
+  }) {
+    return this.productEventContextRepository.getSupplierProductEventContext(
+      input,
+    );
+  }
+
   async transitionProcurementOrder(input: {
     actorId: string;
     now: Date;
@@ -215,5 +232,14 @@ export class PostgresAdminSupplierWriteRepository
       db: this.db,
       reader: this.reader,
     });
+  }
+
+  async getPortalContactEventContext(input: {
+    contactReference: string;
+    supplierSlug: string;
+  }) {
+    return this.contactEventContextRepository.getPortalContactEventContext(
+      input,
+    );
   }
 }

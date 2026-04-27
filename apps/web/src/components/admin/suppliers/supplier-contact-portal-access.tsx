@@ -2,6 +2,10 @@
 
 import type { AdminSupplierDetail, AdminUserSummary } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
+import {
+  canSendToRecipient,
+  formatBlockedRecipientStatus,
+} from "@/components/admin/settings/email-recipient-state.support";
 import { AppFormField } from "@/components/forms/app-form-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,7 +40,7 @@ export function SupplierContactPortalAccess(props: {
     queryFn: () => fetchEmailRecipientState(normalizedEmail),
     queryKey: emailRecipientStateQueryKey(normalizedEmail),
   });
-  const inviteBlocked = recipientStateQuery.data?.canSend === false;
+  const inviteBlocked = !canSendToRecipient(recipientStateQuery.data);
 
   return (
     <AppFormField
@@ -95,7 +99,7 @@ export function SupplierContactPortalAccess(props: {
         <div className="flex flex-col gap-1 rounded-xl border border-border/60 bg-background px-3 py-2">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="destructive">
-              {formatBlockedStatus(recipientStateQuery.data.status)}
+              {formatBlockedRecipientStatus(recipientStateQuery.data.status)}
             </Badge>
             <span className="text-xs text-muted-foreground">
               Invite blocked for this address
@@ -113,17 +117,4 @@ export function SupplierContactPortalAccess(props: {
       ) : null}
     </AppFormField>
   );
-}
-
-function formatBlockedStatus(status: string | null) {
-  switch (status) {
-    case "bounced":
-      return "Bounced";
-    case "complained":
-      return "Complained";
-    case "suppressed":
-      return "Suppressed";
-    default:
-      return "Blocked";
-  }
 }
