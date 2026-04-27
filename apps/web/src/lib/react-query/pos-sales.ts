@@ -68,6 +68,40 @@ export async function fetchManagerSales(
   );
 }
 
+export async function fetchAllManagerSales(
+  query: InvoiceListQuery,
+): Promise<InvoiceListResponse["items"]> {
+  const firstPage = await fetchManagerSales({
+    ...query,
+    page: 1,
+    pageSize: Math.min(query.pageSize ?? 100, 100),
+  });
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(firstPage.total / Math.max(firstPage.pageSize, 1)),
+  );
+
+  if (totalPages === 1) {
+    return firstPage.items;
+  }
+
+  const remainingPages = await Promise.all(
+    Array.from({ length: totalPages - 1 }, (_, index) =>
+      fetchManagerSales({
+        ...query,
+        page: index + 2,
+        pageSize: firstPage.pageSize,
+      }),
+    ),
+  );
+
+  return [
+    ...firstPage.items,
+    ...remainingPages.flatMap((response) => response.items),
+  ];
+}
+
 export async function fetchWorkerInvoice(
   reference: string,
 ): Promise<InvoiceResponse> {

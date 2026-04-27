@@ -149,6 +149,4 @@ jobs:
             --token "$PROD_VERCEL_TOKEN" \
             --archive=tgz \
             --build-env API_BASE_URL="$PROD_API_BASE_URL" \
-            --build-env NEXT_PUBLIC_API_BASE_URL="$PROD_API_BASE_URL" \
-            --env API_BASE_URL="$PROD_API_BASE_URL" \
-            --env NEXT_PUBLIC_API_BASE_URL="$PROD_API_BASE_URL"
+            --env API_BASE_URL="$PROD_API_BASE_URL"

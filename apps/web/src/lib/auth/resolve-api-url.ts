@@ -5,6 +5,10 @@ export function resolveApiUrl(path: string): string {
     return path;
   }
 
+  if (typeof window !== "undefined") {
+    return path;
+  }
+
   const configuredBaseUrl = getWebEnv().apiBaseUrl;
 
   if (!configuredBaseUrl) {
