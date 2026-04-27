@@ -54,20 +54,39 @@ export function PersonAvatar({
     );
   }
 
-  return (
-    <Avatar
-      className={cn(SIZE_CLASS_NAMES[size], className)}
-      size={size === "sm" ? "sm" : size === "lg" ? "lg" : "default"}
-    >
-      {src ? (
-        // biome-ignore lint/performance/noImgElement: SSR-safe avatar markup for shared server-render tests and external media URLs.
+  if (src) {
+    return (
+      <span
+        data-slot="avatar"
+        data-size={size === "sm" ? "sm" : size === "lg" ? "lg" : "default"}
+        className={cn(
+          "group/avatar relative flex shrink-0 rounded-full select-none after:absolute after:inset-0 after:rounded-full after:border after:border-border after:mix-blend-darken data-[size=lg]:size-10 data-[size=sm]:size-6 dark:after:mix-blend-lighten",
+          SIZE_CLASS_NAMES[size],
+          className,
+        )}
+      >
+        {/* biome-ignore lint/performance/noImgElement: SSR-safe non-interactive
+        avatar path used by server-rendered tests and shared shell markup. */}
         <img
           alt={alt}
           className="aspect-square size-full rounded-full object-cover"
           data-slot="avatar-image"
           src={src}
+          {...(size === "lg"
+            ? { height: 48, width: 48 }
+            : size === "md"
+              ? { height: 40, width: 40 }
+              : { height: 32, width: 32 })}
         />
-      ) : null}
+      </span>
+    );
+  }
+
+  return (
+    <Avatar
+      className={cn(SIZE_CLASS_NAMES[size], className)}
+      size={size === "sm" ? "sm" : size === "lg" ? "lg" : "default"}
+    >
       <AvatarFallback className={FALLBACK_TEXT_CLASS_NAMES[size]}>
         {getInitials({ firstName, lastName, name: displayName })}
       </AvatarFallback>

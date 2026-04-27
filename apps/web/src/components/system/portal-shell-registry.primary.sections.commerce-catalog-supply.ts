@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   Boxes,
   ClipboardList,
   MessageSquareText,
@@ -12,6 +13,16 @@ import type { NavRegistryEntry } from "./portal-shell-config.types";
 
 export const COMMERCE_CATALOG_SUPPLY_NAV_REGISTRY: readonly NavRegistryEntry[] =
   [
+    {
+      activeMatchers: [{ mode: "descendants", path: "/admin/sales" }],
+      description:
+        "Daily sales ledger and revenue movement across visible shops.",
+      href: toRoute("/admin/sales"),
+      icon: BarChart3,
+      label: "Sales ledger",
+      requiredPermission: "pos.sales.manage",
+      section: "Commerce",
+    },
     {
       activeMatchers: [{ mode: "descendants", path: "/admin/orders" }],
       description: "View and manage customer orders across all locations.",

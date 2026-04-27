@@ -144,10 +144,11 @@ The workflow deploys to that Vercel project using:
 
 ### Web API routing
 
-The workflow injects the Fly API public base URL into the Vercel deployment via:
+The web app proxies browser `/api/*` traffic through the same public web
+origin. The workflow injects the Fly API public base URL into the Vercel build
+as:
 
 - `API_BASE_URL`
-- `NEXT_PUBLIC_API_BASE_URL`
 
 Set the public testing API URL in:
 
@@ -156,6 +157,10 @@ Set the public testing API URL in:
 Example:
 
 - `https://shop-app-testing.fly.dev`
+
+This value is used by Next.js rewrites at the web layer. Browser code should
+still call relative `/api/*` paths so auth cookies stay first-party at the
+public web origin.
 
 ## First Deployment Checklist
 
