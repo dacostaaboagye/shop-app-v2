@@ -60,9 +60,9 @@ export function SalesLedgerFilters({
   const dateRange = toSalesDateRange({ dateFrom, dateTo });
 
   return (
-    <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-        <div className="grid gap-6 sm:grid-cols-2">
+    <div className="overflow-hidden rounded-xl border border-border/50 bg-card p-6 shadow-sm">
+      <div className="flex min-w-0 flex-col gap-6">
+        <div className="grid min-w-0 gap-6 2xl:grid-cols-2">
           <AppFormField inputId="sales-ledger-date-range" label="Date Range">
             <DatePickerWithRange
               {...(dateRange ? { date: dateRange } : {})}
@@ -90,7 +90,7 @@ export function SalesLedgerFilters({
           </AppFormField>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
+        <div className="grid min-w-0 gap-6 2xl:grid-cols-[minmax(12rem,1fr)_minmax(12rem,1fr)_auto] 2xl:items-end">
           <AppFormField
             inputId="sales-ledger-document-type"
             label="Document Type"
@@ -144,10 +144,10 @@ export function SalesLedgerFilters({
           </AppFormField>
 
           <Button
+            className="h-11 w-full px-6 2xl:w-auto 2xl:col-span-1"
             disabled={!hasFilters}
             onClick={onClear}
             variant="outline"
-            className="h-11 px-6"
           >
             <X className="mr-2 size-4" />
             Clear
