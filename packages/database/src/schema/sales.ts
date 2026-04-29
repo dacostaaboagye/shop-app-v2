@@ -24,11 +24,18 @@ export const invoiceTypeEnum = pgEnum("invoice_type", [
   "ecommerce",
   "manual",
   "credit_note",
+  "adjusted",
 ]);
 
 export const invoiceStatusEnum = pgEnum("invoice_status", [
   "confirmed",
+  "superseded",
   "voided",
+]);
+
+export const invoiceClassificationEnum = pgEnum("invoice_classification", [
+  "outgoing",
+  "internal",
 ]);
 
 export const invoices = pgTable(
@@ -52,6 +59,9 @@ export const invoices = pgTable(
     >(),
     currencyCode: varchar("currency_code", { length: 3 }).notNull(),
     currencyScale: integer("currency_scale").notNull(),
+    classification: invoiceClassificationEnum("classification")
+      .default("outgoing")
+      .notNull(),
     status: invoiceStatusEnum("status").default("confirmed").notNull(),
     subtotalAmount: numeric("subtotal_amount", {
       precision: 12,
@@ -64,6 +74,9 @@ export const invoices = pgTable(
     voidedAt: timestamp("voided_at", { withTimezone: true }),
     voidReason: text("void_reason"),
     parentInvoiceId: uuid("parent_invoice_id"),
+    replacementInvoiceId: uuid("replacement_invoice_id"),
+    revisionRootInvoiceId: uuid("revision_root_invoice_id"),
+    revisionCreditNoteId: uuid("revision_credit_note_id"),
     ...auditColumns,
   },
   (table) => [
@@ -99,6 +112,21 @@ export const invoicesRelations = relations(invoices, ({ one, many }) => ({
   parentInvoice: one(invoices, {
     fields: [invoices.parentInvoiceId],
     references: [invoices.id],
+  }),
+  replacementInvoice: one(invoices, {
+    fields: [invoices.replacementInvoiceId],
+    references: [invoices.id],
+    relationName: "invoice_replacement",
+  }),
+  revisionRootInvoice: one(invoices, {
+    fields: [invoices.revisionRootInvoiceId],
+    references: [invoices.id],
+    relationName: "invoice_revision_root",
+  }),
+  revisionCreditNote: one(invoices, {
+    fields: [invoices.revisionCreditNoteId],
+    references: [invoices.id],
+    relationName: "invoice_revision_credit_note",
   }),
 }));
 

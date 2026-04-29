@@ -9,6 +9,7 @@ import { SalesDocumentPdfPreview } from "@/components/sales/sales-document-pdf-p
 import {
   InvoiceLineItems,
   OfficialDocumentPanel,
+  RelatedDocumentsPanel,
   SalesSummary,
 } from "@/components/sales/sales-document-workspace-panels";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,12 +22,14 @@ import {
 } from "@/lib/react-query/official-documents";
 
 type Props = {
+  detailBasePath: string;
   invoice: PrintableInvoiceData;
   secondaryAction?: ReactNode;
   showWorkerAttribution?: boolean;
 };
 
 export function SalesDocumentWorkspace({
+  detailBasePath,
   invoice,
   secondaryAction,
   showWorkerAttribution = false,
@@ -56,7 +59,7 @@ export function SalesDocumentWorkspace({
   });
 
   return (
-    <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] xl:items-start">
       <div className="flex flex-col gap-4">
         <DocumentErrors
           hasInvalidSnapshot={hasInvalidSnapshot}
@@ -65,11 +68,16 @@ export function SalesDocumentWorkspace({
           snapshotIsError={snapshotQuery.isError}
         />
         <OfficialDocumentPanel
+          detailBasePath={detailBasePath}
           actionsDisabled={documentActionsDisabled}
           invoice={documentInvoice}
           onPrint={handlePrint}
           profile={profile}
           secondaryAction={secondaryAction}
+        />
+        <RelatedDocumentsPanel
+          detailBasePath={detailBasePath}
+          invoice={documentInvoice}
         />
         <SalesSummary
           invoice={documentInvoice}
@@ -97,13 +105,13 @@ export function SalesDocumentWorkspace({
 
 export function SalesDocumentWorkspaceSkeleton() {
   return (
-    <div className="grid gap-5 lg:grid-cols-2">
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
       <div className="flex flex-col gap-3">
         <Skeleton className="h-36 w-full" />
         <Skeleton className="h-32 w-full" />
         <Skeleton className="h-56 w-full" />
       </div>
-      <Skeleton className="h-[620px] w-full" />
+      <Skeleton className="h-[760px] w-full" />
     </div>
   );
 }

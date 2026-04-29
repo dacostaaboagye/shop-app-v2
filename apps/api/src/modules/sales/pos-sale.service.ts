@@ -154,6 +154,7 @@ export class PosSaleService {
 
     const transactionInput: CreateSaleTransactionInput = {
       attributedWorkerId,
+      classification: "outgoing",
       confirmedAt: now,
       createdBy: input.createdBy,
       customerBillingAddressLines: input.customerBillingAddressLines ?? null,
@@ -180,13 +181,17 @@ export class PosSaleService {
   async processReturn(input: ProcessReturnInput): Promise<InvoiceWithLines> {
     const now = input.now ?? new Date();
 
-    const originalInvoice = await this.deps.invoiceRepository.findByReference(
+    const requestedInvoice = await this.deps.invoiceRepository.findByReference(
       input.parentReference,
     );
 
-    if (!originalInvoice || originalInvoice.type !== "pos") {
+    if (!requestedInvoice || requestedInvoice.type === "credit_note") {
       throw new InvoiceNotFoundError(input.parentReference);
     }
+
+    const originalInvoice = await this.resolveCurrentPayableInvoice(
+      requestedInvoice,
+    );
 
     if (originalInvoice.status === "voided") {
       throw new InvalidReturnError(
@@ -194,25 +199,32 @@ export class PosSaleService {
       );
     }
 
+    if (originalInvoice.status === "superseded") {
+      throw new InvalidReturnError(
+        "Cannot return items from a superseded invoice revision.",
+      );
+    }
+
     const originalLineMap = new Map(
       originalInvoice.lines.map((l) => [l.skuId, l]),
     );
+    const requestedReturnQuantities = aggregateReturnQuantities(input.lines);
 
-    for (const line of input.lines) {
-      const originalLine = originalLineMap.get(line.skuId);
+    for (const [skuId, quantity] of requestedReturnQuantities) {
+      const originalLine = originalLineMap.get(skuId);
       if (!originalLine) {
         throw new InvalidReturnError(
-          `SKU ${line.skuId} was not on the original invoice ${input.parentReference}.`,
-          { skuId: line.skuId },
+          `SKU ${skuId} was not on the original invoice ${input.parentReference}.`,
+          { skuId },
         );
       }
-      if (line.quantity > originalLine.quantity) {
+      if (quantity > originalLine.quantity) {
         throw new InvalidReturnError(
-          `Cannot return more than the original quantity for SKU ${line.skuId}.`,
+          `Cannot return more than the original quantity for SKU ${skuId}.`,
           {
             originalQuantity: originalLine.quantity,
-            returnQuantity: line.quantity,
-            skuId: line.skuId,
+            returnQuantity: quantity,
+            skuId,
           },
         );
       }
@@ -223,37 +235,98 @@ export class PosSaleService {
         originalInvoice.reference,
       );
 
-    const lines = input.lines.map((line) => {
-      const originalLine = originalLineMap.get(line.skuId);
-      if (!originalLine) {
-        throw new InvalidReturnError(
-          `SKU ${line.skuId} was not on the original invoice ${input.parentReference}.`,
-          { skuId: line.skuId },
+    const lines = Array.from(requestedReturnQuantities.entries()).map(
+      ([skuId, quantity]) => {
+        const originalLine = originalLineMap.get(skuId);
+        if (!originalLine) {
+          throw new InvalidReturnError(
+            `SKU ${skuId} was not on the original invoice ${input.parentReference}.`,
+            { skuId },
+          );
+        }
+        const unitPrice = parseFloat(originalLine.unitPrice);
+        const lineTotal = roundCurrency(unitPrice * quantity);
+        const taxAmount = roundCurrency(
+          parseFloat(originalLine.taxAmount) / originalLine.quantity,
         );
-      }
-      const unitPrice = parseFloat(originalLine.unitPrice);
-      const lineTotal = roundCurrency(unitPrice * line.quantity);
 
-      return {
-        lineTotal: lineTotal.toFixed(2),
-        quantity: line.quantity,
-        skuId: line.skuId,
-        skuSnapshot: originalLine.skuSnapshot,
-        taxAmount: "0.00",
-        taxCategory: originalLine.taxCategory,
-        taxRate: originalLine.taxRate,
-        unitPrice: originalLine.unitPrice,
-      };
-    });
+        return {
+          lineTotal: lineTotal.toFixed(2),
+          quantity,
+          skuId,
+          skuSnapshot: originalLine.skuSnapshot,
+          taxAmount: roundCurrency(taxAmount * quantity).toFixed(2),
+          taxCategory: originalLine.taxCategory,
+          taxRate: originalLine.taxRate,
+          unitPrice: originalLine.unitPrice,
+        };
+      },
+    );
+
+    const adjustedLines = originalInvoice.lines
+      .map((line) => {
+        const returnQuantity = requestedReturnQuantities.get(line.skuId) ?? 0;
+        const remainingQuantity = line.quantity - returnQuantity;
+
+        if (remainingQuantity <= 0) return null;
+
+        const unitPrice = parseFloat(line.unitPrice);
+        const taxPerUnit = parseFloat(line.taxAmount) / line.quantity;
+
+        return {
+          lineTotal: roundCurrency(unitPrice * remainingQuantity).toFixed(2),
+          quantity: remainingQuantity,
+          skuId: line.skuId,
+          skuSnapshot: line.skuSnapshot,
+          taxAmount: roundCurrency(taxPerUnit * remainingQuantity).toFixed(2),
+          taxCategory: line.taxCategory,
+          taxRate: line.taxRate,
+          unitPrice: line.unitPrice,
+        };
+      })
+      .filter((line): line is NonNullable<typeof line> => line !== null);
+
+    const adjustedSubtotal = adjustedLines.reduce(
+      (sum, line) => sum + parseFloat(line.lineTotal),
+      0,
+    );
+    const adjustedTaxAmount = adjustedLines.reduce(
+      (sum, line) => sum + parseFloat(line.taxAmount),
+      0,
+    );
+    const hasAdjustedInvoice = adjustedLines.length > 0;
+    const adjustedReference = hasAdjustedInvoice
+      ? await this.deps.referenceNumberService.generateReference({
+          now,
+          sequenceKey: "invoice-pos",
+        })
+      : null;
 
     const returnSubtotal = lines.reduce(
       (sum, l) => sum + parseFloat(l.lineTotal),
       0,
     );
+    const returnTaxAmount = lines.reduce(
+      (sum, l) => sum + parseFloat(l.taxAmount),
+      0,
+    );
 
-    const creditNote =
-      await this.deps.invoiceRepository.createReturnTransaction({
+    const creditNote = await this.deps.invoiceRepository.createReturnTransaction(
+      {
+        adjustedInvoice:
+          hasAdjustedInvoice && adjustedReference
+            ? {
+                lines: adjustedLines,
+                reference: adjustedReference,
+                subtotalAmount: adjustedSubtotal.toFixed(2),
+                taxAmount: adjustedTaxAmount.toFixed(2),
+                totalAmount: roundCurrency(
+                  adjustedSubtotal + adjustedTaxAmount,
+                ).toFixed(2),
+              }
+            : null,
         attributedWorkerId: originalInvoice.attributedWorkerId,
+        classification: originalInvoice.classification,
         confirmedAt: now,
         createdBy: input.createdBy,
         currencyCode: originalInvoice.currencyCode,
@@ -263,11 +336,14 @@ export class PosSaleService {
         now,
         parentInvoiceId: originalInvoice.id,
         reference: creditReference,
+        revisionRootInvoiceId:
+          originalInvoice.revisionRootInvoiceId ?? originalInvoice.id,
         subtotalAmount: returnSubtotal.toFixed(2),
-        taxAmount: "0.00",
-        totalAmount: returnSubtotal.toFixed(2),
+        taxAmount: returnTaxAmount.toFixed(2),
+        totalAmount: roundCurrency(returnSubtotal + returnTaxAmount).toFixed(2),
         voidReason: input.reason,
-      });
+      },
+    );
 
     if (input.actor && this.deps.platformEventPublisher) {
       const locationName =
@@ -289,8 +365,81 @@ export class PosSaleService {
 
     return creditNote;
   }
+
+  private async resolveCurrentPayableInvoice(
+    invoice: InvoiceWithLines,
+  ): Promise<InvoiceWithLines> {
+    const currentPayableReference = invoice.currentPayableReference;
+
+    if (
+      currentPayableReference &&
+      currentPayableReference !== invoice.reference
+    ) {
+      const currentPayableInvoice =
+        await this.deps.invoiceRepository.findByReference(
+          currentPayableReference,
+        );
+
+      if (!currentPayableInvoice) {
+        throw new InvalidReturnError(
+          "The latest payable invoice revision could not be resolved.",
+          {
+            currentPayableReference,
+            reference: invoice.reference,
+          },
+        );
+      }
+
+      return currentPayableInvoice;
+    }
+
+    let currentInvoice = invoice;
+    const seenReferences = new Set<string>();
+
+    while (currentInvoice.replacementInvoiceReference) {
+      if (seenReferences.has(currentInvoice.reference)) {
+        throw new InvalidReturnError(
+          "Invoice revision chain contains a cycle and cannot be processed.",
+          { reference: currentInvoice.reference },
+        );
+      }
+
+      seenReferences.add(currentInvoice.reference);
+
+      const replacementInvoice =
+        await this.deps.invoiceRepository.findByReference(
+          currentInvoice.replacementInvoiceReference,
+        );
+
+      if (!replacementInvoice) {
+        throw new InvalidReturnError(
+          "The latest payable invoice revision could not be resolved.",
+          {
+            reference: currentInvoice.reference,
+            replacementReference: currentInvoice.replacementInvoiceReference,
+          },
+        );
+      }
+
+      currentInvoice = replacementInvoice;
+    }
+
+    return currentInvoice;
+  }
 }
 
 function roundCurrency(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+function aggregateReturnQuantities(
+  lines: ProcessReturnInput["lines"],
+): Map<string, number> {
+  const quantities = new Map<string, number>();
+
+  for (const line of lines) {
+    quantities.set(line.skuId, (quantities.get(line.skuId) ?? 0) + line.quantity);
+  }
+
+  return quantities;
 }

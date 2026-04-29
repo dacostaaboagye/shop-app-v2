@@ -4,8 +4,8 @@ import { ShieldAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AuthLoginForm } from "@/components/forms/auth-login-form";
 import { AuthRegisterForm } from "@/components/forms/auth-register-form";
-import { getPortalHref, getPrimaryPortal } from "@/lib/portals";
-import { toRoute } from "@/lib/routes";
+import { resolvePostLoginHref } from "@/lib/auth/auth-redirect";
+import { resolveOAuthCallbackNotice } from "@/lib/auth/oauth-error";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
 import { AppBanner } from "./app-banner";
 import {
@@ -23,9 +23,15 @@ import { AuthLoadingCard } from "./auth-workspace-support";
 
 type AuthWorkspaceProps = {
   mode?: AuthWorkspaceMode;
+  nextPath?: string | null;
+  oauthError?: string | null;
 };
 
-export function AuthWorkspace({ mode = "login" }: AuthWorkspaceProps) {
+export function AuthWorkspace({
+  mode = "login",
+  nextPath = null,
+  oauthError = null,
+}: AuthWorkspaceProps) {
   const router = useSafeRouter();
   const status = useAuthSessionStore((state) => state.status);
   const user = useAuthSessionStore((state) => state.user);
@@ -36,23 +42,21 @@ export function AuthWorkspace({ mode = "login" }: AuthWorkspaceProps) {
     if (status === "authenticated" && user) {
       wasAuthenticated.current = true;
       setSessionNotice(null);
-      const primaryPortal = getPrimaryPortal(user);
-      router.replace(
-        primaryPortal ? getPortalHref(primaryPortal) : toRoute("/"),
-      );
+      router.replace(resolvePostLoginHref(user, nextPath));
     }
 
     if (status === "anonymous" && wasAuthenticated.current) {
       wasAuthenticated.current = false;
       setSessionNotice("Your session ended. Sign in again to continue.");
     }
-  }, [status, user, router]);
+  }, [nextPath, router, status, user]);
 
   if (status === "refreshing" || status === "authenticated") {
     return <AuthLoadingCard />;
   }
 
   const content = anonymousCopy[mode];
+  const oauthNotice = resolveOAuthCallbackNotice(oauthError);
 
   return (
     <AuthCard>
@@ -63,6 +67,15 @@ export function AuthWorkspace({ mode = "login" }: AuthWorkspaceProps) {
             description={sessionNotice}
             icon={ShieldAlert}
             title="Session ended"
+            tone="warning"
+          />
+        ) : null}
+
+        {!sessionNotice && oauthNotice ? (
+          <AppBanner
+            description={oauthNotice.description}
+            icon={ShieldAlert}
+            title={oauthNotice.title}
             tone="warning"
           />
         ) : null}

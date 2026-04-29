@@ -18,17 +18,21 @@ import {
 } from "./sales-list-filters.support";
 
 type Props = {
+  classification: "all" | "internal" | "outgoing";
   dateFrom: string;
   dateTo: string;
-  documentType: "all" | "credit_note" | "invoice";
+  documentType: "adjusted" | "all" | "credit_note" | "invoice";
   hasFilters: boolean;
   paymentMethod: "all" | "card" | "cash" | "mobile_money" | "transfer";
   paymentOptions: readonly ("card" | "cash" | "mobile_money" | "transfer")[];
   search: string;
+  onClassificationChange: (value: "all" | "internal" | "outgoing") => void;
   onClear: () => void;
   onDateFromChange: (value: string) => void;
   onDateToChange: (value: string) => void;
-  onDocumentTypeChange: (value: "all" | "credit_note" | "invoice") => void;
+  onDocumentTypeChange: (
+    value: "adjusted" | "all" | "credit_note" | "invoice",
+  ) => void;
   onPaymentMethodChange: (
     value: "all" | "card" | "cash" | "mobile_money" | "transfer",
   ) => void;
@@ -43,6 +47,7 @@ const PAYMENT_LABELS = {
 } as const;
 
 export function SalesLedgerFilters({
+  classification,
   dateFrom,
   dateTo,
   documentType,
@@ -50,6 +55,7 @@ export function SalesLedgerFilters({
   paymentMethod,
   paymentOptions,
   search,
+  onClassificationChange,
   onClear,
   onDateFromChange,
   onDateToChange,
@@ -83,14 +89,34 @@ export function SalesLedgerFilters({
                 className="pl-9"
                 id="sales-ledger-search"
                 onChange={(event) => onSearchChange(event.target.value)}
-                placeholder="Reference, customer, worker, or shop"
+                placeholder="Reference or customer"
                 value={search}
               />
             </div>
           </AppFormField>
         </div>
 
-        <div className="grid min-w-0 gap-6 2xl:grid-cols-[minmax(12rem,1fr)_minmax(12rem,1fr)_auto] 2xl:items-end">
+        <div className="grid min-w-0 gap-6 2xl:grid-cols-[minmax(12rem,1fr)_minmax(12rem,1fr)_minmax(12rem,1fr)_auto] 2xl:items-end">
+          <AppFormField
+            inputId="sales-ledger-classification"
+            label="Classification"
+          >
+            <Select
+              value={classification}
+              onValueChange={(value) =>
+                onClassificationChange(value as "all" | "internal" | "outgoing")
+              }
+            >
+              <SelectTrigger id="sales-ledger-classification">
+                <SelectValue placeholder="All classifications" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All classifications</SelectItem>
+                <SelectItem value="outgoing">Outgoing invoices</SelectItem>
+                <SelectItem value="internal">Internal invoices</SelectItem>
+              </SelectContent>
+            </Select>
+          </AppFormField>
           <AppFormField
             inputId="sales-ledger-document-type"
             label="Document Type"
@@ -98,7 +124,9 @@ export function SalesLedgerFilters({
             <Select
               value={documentType}
               onValueChange={(value) =>
-                onDocumentTypeChange(value as "all" | "credit_note" | "invoice")
+                onDocumentTypeChange(
+                  value as "adjusted" | "all" | "credit_note" | "invoice",
+                )
               }
             >
               <SelectTrigger id="sales-ledger-document-type">
@@ -107,6 +135,7 @@ export function SalesLedgerFilters({
               <SelectContent>
                 <SelectItem value="all">All documents</SelectItem>
                 <SelectItem value="invoice">Invoices</SelectItem>
+                <SelectItem value="adjusted">Adjusted invoices</SelectItem>
                 <SelectItem value="credit_note">Credit notes</SelectItem>
               </SelectContent>
             </Select>

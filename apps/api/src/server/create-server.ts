@@ -14,6 +14,7 @@ import { registerAdminUserAccessRoutes } from "../modules/admin/admin-user-acces
 import { registerSupplierPortalRoutes } from "../modules/admin/supplier-portal.routes.js";
 import { registerManagerStaffRoutes } from "../modules/assignments/manager-staff.routes.js";
 import { registerStockAssignmentRoutes } from "../modules/assignments/stock-assignment.routes.js";
+import { registerWorkerDashboardRoutes } from "../modules/assignments/worker-dashboard.routes.js";
 import { registerAccountProfileMediaRoutes } from "../modules/auth/account-profile-media.routes.js";
 import { registerAuthRoutes } from "../modules/auth/auth.routes.js";
 import { registerCatalogProductOptionsRoutes } from "../modules/catalog/catalog-admin-product-options.routes.js";
@@ -22,8 +23,10 @@ import { registerCatalogAdminWriteRoutes } from "../modules/catalog/catalog-admi
 import { registerCatalogBrandRoutes } from "../modules/catalog/catalog-brand.routes.js";
 import { registerCatalogManagerQueryRoutes } from "../modules/catalog/catalog-manager-query.routes.js";
 import { registerCatalogMediaRoutes } from "../modules/catalog/catalog-media.routes.js";
+import { registerInternalApiDocsRoutes } from "../modules/docs/internal-api-docs.routes.js";
 import { registerPlatformEventAdminRoutes } from "../modules/events/platform-event-admin.routes.js";
 import { registerPlatformEventRoutes } from "../modules/events/platform-events.routes.js";
+import { registerManagerDashboardRoutes } from "../modules/manager/manager-dashboard.routes.js";
 import { registerEmailAdminRoutes } from "../modules/messaging/email-admin.routes.js";
 import { registerEmailWebhookRoutes } from "../modules/messaging/email-webhook.routes.js";
 import { registerNotificationRoutes } from "../modules/notifications/notification.routes.js";
@@ -54,6 +57,7 @@ type CreateServerOptions = {
   catalogMedia?: Parameters<typeof registerCatalogMediaRoutes>[1];
   events?: Parameters<typeof registerPlatformEventRoutes>[1];
   eventsAdmin?: Parameters<typeof registerPlatformEventAdminRoutes>[1];
+  managerDashboard?: Parameters<typeof registerManagerDashboardRoutes>[1];
   messagingAdmin?: Parameters<typeof registerEmailAdminRoutes>[1];
   messagingWebhooks?: Parameters<typeof registerEmailWebhookRoutes>[1];
   notifications?: Parameters<typeof registerNotificationRoutes>[1];
@@ -70,6 +74,7 @@ type CreateServerOptions = {
   stock?: Parameters<typeof registerStockRoutes>[1];
   stockSupply?: Parameters<typeof registerStockSupplyRoutes>[1];
   stockAssignments?: Parameters<typeof registerStockAssignmentRoutes>[1];
+  workerDashboard?: Parameters<typeof registerWorkerDashboardRoutes>[1];
   stockBalance?: Parameters<typeof registerStockBalanceRoutes>[1];
   stockBalanceLocation?: Parameters<
     typeof registerStockBalanceLocationRoutes
@@ -124,8 +129,10 @@ export function createServer(options: CreateServerOptions = {}) {
   registerCatalogAdminQueryRoutes(server, options.catalogQuery);
   registerCatalogAdminWriteRoutes(server, options.catalogWrite);
   registerCatalogProductOptionsRoutes(server, options.catalogProductOptions);
+  registerInternalApiDocsRoutes(server);
   registerPlatformEventRoutes(server, options.events);
   registerPlatformEventAdminRoutes(server, options.eventsAdmin);
+  registerManagerDashboardRoutes(server, options.managerDashboard);
   registerEmailAdminRoutes(server, options.messagingAdmin);
   registerEmailWebhookRoutes(server, options.messagingWebhooks);
   registerNotificationRoutes(server, options.notifications);
@@ -138,6 +145,7 @@ export function createServer(options: CreateServerOptions = {}) {
   registerCatalogManagerQueryRoutes(server, options.catalogManagerQuery);
   registerManagerStaffRoutes(server, options.stockAssignments);
   registerStockAssignmentRoutes(server, options.stockAssignments);
+  registerWorkerDashboardRoutes(server, options.workerDashboard);
   registerPosSaleRoutes(server, options.posSales);
   registerStockSupplyRoutes(server, options.stockSupply);
   registerHealthRoutes(server);

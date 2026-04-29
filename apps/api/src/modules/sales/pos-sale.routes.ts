@@ -100,6 +100,9 @@ export function registerPosSaleRoutes(
         userId,
       });
       const result = await dependencies.invoiceRepository.listByWorker({
+        ...(query.classification !== "all"
+          ? { classification: query.classification }
+          : {}),
         ...(query.dateFrom ? { dateFrom: new Date(query.dateFrom) } : {}),
         ...(query.dateTo ? { dateTo: new Date(query.dateTo) } : {}),
         ...(query.documentType !== "all"
@@ -108,6 +111,7 @@ export function registerPosSaleRoutes(
         locationId: query.locationId,
         page: query.page,
         pageSize: query.pageSize,
+        ...(query.q ? { q: query.q } : {}),
         workerId: userId,
       });
       return invoiceListResponseSchema.parse({
@@ -183,6 +187,9 @@ export function registerPosSaleRoutes(
         userId: getAuthenticatedUserId(request),
       });
       const result = await dependencies.invoiceRepository.listByLocation({
+        ...(query.classification !== "all"
+          ? { classification: query.classification }
+          : {}),
         ...(query.dateFrom ? { dateFrom: new Date(query.dateFrom) } : {}),
         ...(query.dateTo ? { dateTo: new Date(query.dateTo) } : {}),
         ...(query.documentType !== "all"
@@ -191,6 +198,7 @@ export function registerPosSaleRoutes(
         locationId: query.locationId,
         page: query.page,
         pageSize: query.pageSize,
+        ...(query.q ? { q: query.q } : {}),
         ...(query.workerId ? { workerId: query.workerId } : {}),
       });
       return invoiceListResponseSchema.parse({

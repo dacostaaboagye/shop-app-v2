@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   getAvailablePortals,
+  getPortalLandingHref,
   getPortalSelectionState,
   getPreferredPortal,
   getPrimaryPortal,
@@ -47,6 +48,48 @@ describe("portals", () => {
         preferredPortal: null,
       }),
       "admin",
+    );
+  });
+
+  it("prefills the landing location for worker portal redirects", () => {
+    assert.equal(
+      getPortalLandingHref({
+        availablePortals: ["worker"],
+        permissionSet: {
+          locationScopes: [
+            {
+              locationId: "77f7b9a6-4f68-48cf-a16b-e34fb8f9e22c",
+              locationName: "Downtown",
+              locationSlug: "downtown-store",
+              permissions: ["stock.assignments.own.view", "pos.sales.view"],
+            },
+          ],
+          permissions: [],
+        },
+        preferredPortal: "worker",
+      }),
+      "/worker?location=downtown-store",
+    );
+  });
+
+  it("does not add a location when the portal landing is global", () => {
+    assert.equal(
+      getPortalLandingHref({
+        availablePortals: ["admin"],
+        permissionSet: {
+          locationScopes: [
+            {
+              locationId: "77f7b9a6-4f68-48cf-a16b-e34fb8f9e22c",
+              locationName: "Downtown",
+              locationSlug: "downtown-store",
+              permissions: ["stock.view"],
+            },
+          ],
+          permissions: [],
+        },
+        preferredPortal: "admin",
+      }),
+      "/admin",
     );
   });
 });

@@ -9,9 +9,13 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { PosSaleCustomerDetails } from "./pos-sale-customer-details.support";
+import {
+  createEmptyPosSaleCustomerDetails,
+  type PosSaleCustomerDetails,
+} from "./pos-sale-customer-details.support";
 
 type Props = {
   details: PosSaleCustomerDetails;
@@ -19,6 +23,14 @@ type Props = {
 };
 
 export function PosSaleCustomerDetailsPanel({ details, onChange }: Props) {
+  const hasBuyerDetails = Boolean(
+    details.name.trim() ||
+      details.email.trim() ||
+      details.phone.trim() ||
+      details.taxNumber.trim() ||
+      details.billingAddress.trim(),
+  );
+
   return (
     <div className="rounded-xl border border-border bg-card shadow-sm">
       <Accordion defaultValue={[]}>
@@ -31,19 +43,40 @@ export function PosSaleCustomerDetailsPanel({ details, onChange }: Props) {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-semibold">Buyer Details</span>
-                  <Badge className="rounded-md border-none bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground shadow-none">
-                    Optional
+                  <Badge
+                    className={
+                      hasBuyerDetails
+                        ? "rounded-md border-none bg-success px-2 py-0.5 text-[10px] font-semibold text-success-foreground shadow-none"
+                        : "rounded-md border-none bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground shadow-none"
+                    }
+                  >
+                    {hasBuyerDetails ? "Added" : "Optional"}
                   </Badge>
                 </div>
                 <p className="type-support">
-                  Add invoice details only when this sale needs named customer
-                  information.
+                  {hasBuyerDetails
+                    ? "Buyer information is attached to this sale and will appear on the invoice."
+                    : "Leave this empty for a walk-in sale. Add details only when the invoice needs a named buyer."}
                 </p>
               </div>
             </div>
           </AccordionTrigger>
           <AccordionContent>
-            <div className="grid gap-4 pb-4 pt-1 lg:grid-cols-2">
+            <div className="flex flex-col gap-4 pb-4 pt-1">
+              {hasBuyerDetails ? (
+                <div className="flex justify-end">
+                  <Button
+                    className="border-border/60 bg-background"
+                    onClick={() => onChange(createEmptyPosSaleCustomerDetails())}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    Clear buyer details
+                  </Button>
+                </div>
+              ) : null}
+              <div className="grid gap-4 lg:grid-cols-2">
               <AppFormField
                 description="Shown on the invoice when a named buyer is required."
                 inputId="pos-sale-customer-name"
@@ -120,6 +153,7 @@ export function PosSaleCustomerDetailsPanel({ details, onChange }: Props) {
                     value={details.billingAddress}
                   />
                 </AppFormField>
+              </div>
               </div>
             </div>
           </AccordionContent>

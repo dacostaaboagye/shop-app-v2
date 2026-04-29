@@ -1,4 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Outfit:wght@100..900&display=swap");
+@import "swagger-ui-react/swagger-ui.css";
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -560,4 +561,26 @@
     width: min(var(--grid-width), calc(100% - 5rem));
     padding-block-end: 5rem;
   }
+}
+
+.swagger-host .swagger-ui {
+  font-family: var(--font-sans);
+  color: var(--foreground);
+}
+
+.swagger-host .swagger-ui .topbar {
+  display: none;
+}
+
+.swagger-host .swagger-ui .information-container,
+.swagger-host .swagger-ui .scheme-container {
+  background: transparent;
+}
+
+.swagger-host .swagger-ui .info .title,
+.swagger-host .swagger-ui .opblock-tag,
+.swagger-host .swagger-ui .btn,
+.swagger-host .swagger-ui .response-col_status,
+.swagger-host .swagger-ui .tab li button.tablinks {
+  font-family: var(--font-sans);
 }

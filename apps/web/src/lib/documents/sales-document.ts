@@ -24,7 +24,18 @@ export type PrintableInvoiceLine = {
 };
 
 export type PrintableInvoiceData = {
+  parentInvoiceReference?: string | null;
   reference: string;
+  replacementInvoiceReference?: string | null;
+  revisionChain?: {
+    currentPayableReference: string | null;
+    isLatestPayable: boolean;
+    replacementInvoiceReference: string | null;
+    revisionCreditNoteReference: string | null;
+    revisionRootReference: string | null;
+    sourceInvoiceReference: string | null;
+  };
+  role?: "adjusted" | "credit_note" | "standard";
   type: string;
   status: string;
   paymentMethod: string | null;
@@ -45,6 +56,7 @@ export type PrintableInvoiceData = {
 
 export function getSalesDocumentTitle(invoice: PrintableInvoiceData): string {
   if (invoice.type === "credit_note") return "Credit Note";
+  if (invoice.type === "adjusted") return "Adjusted Invoice";
   return invoice.status === "voided"
     ? "Voided Sales Document"
     : "Sales Receipt";

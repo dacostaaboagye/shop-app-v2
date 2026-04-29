@@ -3,7 +3,12 @@ import { describe, it } from "node:test";
 import type { CurrentAssignment } from "@shop/contracts";
 import {
   filterSaleAssignments,
+  getFirstAddableSaleAssignment,
   getSaleAssignmentFilterOptions,
+  getSaleAssignmentSearchMatchState,
+  isLikelySkuSearch,
+  paginateSaleAssignments,
+  summarizeSaleAssignments,
 } from "./pos-sale-assignment-workspace.support";
 
 const ASSIGNMENTS: CurrentAssignment[] = [
@@ -44,7 +49,9 @@ describe("POS sale assignment filtering", () => {
     const result = filterSaleAssignments(ASSIGNMENTS, {
       brandSlug: "acme",
       categorySlug: "accessories",
+      quickFilter: "all",
       search: "cable",
+      sort: "name",
     });
 
     assert.deepEqual(
@@ -58,7 +65,9 @@ describe("POS sale assignment filtering", () => {
       filterSaleAssignments(ASSIGNMENTS, {
         brandSlug: "",
         categorySlug: "",
+        quickFilter: "all",
         search: "phone",
+        sort: "name",
       }).map((assignment) => assignment.sku),
       ["ACME-PHONE-BLK"],
     );
@@ -67,7 +76,9 @@ describe("POS sale assignment filtering", () => {
       filterSaleAssignments(ASSIGNMENTS, {
         brandSlug: "",
         categorySlug: "",
+        quickFilter: "all",
         search: "20w",
+        sort: "name",
       }).map((assignment) => assignment.sku),
       ["BRAVO-CHARGE-20W"],
     );
@@ -76,9 +87,60 @@ describe("POS sale assignment filtering", () => {
       filterSaleAssignments(ASSIGNMENTS, {
         brandSlug: "",
         categorySlug: "",
+        quickFilter: "all",
         search: "acme-cable",
+        sort: "name",
       }).map((assignment) => assignment.sku),
       ["ACME-CABLE-USBC"],
+    );
+  });
+
+  it("prioritizes exact and prefix sku matches for scan-style searches", () => {
+    const result = filterSaleAssignments(
+      [
+        createAssignment({
+          brandName: "Atlas",
+          brandSlug: "atlas",
+          categoryName: "Accessories",
+          categorySlug: "accessories",
+          productName: "Atlas Dock",
+          sku: "SCAN-2000",
+          skuId: "99999999-9999-4999-8999-999999999999",
+          variantName: "Desk",
+        }),
+        createAssignment({
+          brandName: "Bravo",
+          brandSlug: "bravo",
+          categoryName: "Accessories",
+          categorySlug: "accessories",
+          productName: "Scan Adapter",
+          sku: "BRAVO-SCAN-20W",
+          skuId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          variantName: "20W",
+        }),
+        createAssignment({
+          brandName: "Cinder",
+          brandSlug: "cinder",
+          categoryName: "Accessories",
+          categorySlug: "accessories",
+          productName: "Portable Reader",
+          sku: "SCAN-2",
+          skuId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          variantName: "Mini",
+        }),
+      ],
+      {
+        brandSlug: "",
+        categorySlug: "",
+        quickFilter: "all",
+        search: "scan-2",
+        sort: "name",
+      },
+    );
+
+    assert.deepEqual(
+      result.map((assignment) => assignment.sku),
+      ["SCAN-2", "SCAN-2000", "BRAVO-SCAN-20W"],
     );
   });
 
@@ -86,7 +148,9 @@ describe("POS sale assignment filtering", () => {
     const result = filterSaleAssignments(ASSIGNMENTS, {
       brandSlug: "",
       categorySlug: "",
+      quickFilter: "all",
       search: "  usb-c  ",
+      sort: "name",
     });
 
     assert.deepEqual(
@@ -95,7 +159,7 @@ describe("POS sale assignment filtering", () => {
     );
   });
 
-  it("preserves assignment order after filtering larger result sets", () => {
+  it("sorts filtered assignments by name when name ordering is selected", () => {
     const result = filterSaleAssignments(
       [
         ...ASSIGNMENTS,
@@ -123,13 +187,15 @@ describe("POS sale assignment filtering", () => {
       {
         brandSlug: "acme",
         categorySlug: "accessories",
+        quickFilter: "all",
         search: "acme",
+        sort: "name",
       },
     );
 
     assert.deepEqual(
       result.map((assignment) => assignment.sku),
-      ["ACME-CABLE-USBC", "ACME-ADAPTER-65W", "ACME-DOCK-USB4"],
+      ["ACME-ADAPTER-65W", "ACME-CABLE-USBC", "ACME-DOCK-USB4"],
     );
   });
 
@@ -182,6 +248,313 @@ describe("POS sale assignment filtering", () => {
       { label: "Phones", value: "phones" },
     ]);
   });
+
+  it("supports quick filters for low stock and in-cart variants", () => {
+    const lowStock = filterSaleAssignments(
+      [
+        createAssignment({
+          availableQuantity: 8,
+          brandName: "Acme",
+          brandSlug: "acme",
+          categoryName: "Phones",
+          categorySlug: "phones",
+          productName: "Acme Phone",
+          sku: "ACME-PHONE-BLK",
+          skuId: "11111111-1111-4111-8111-111111111111",
+          variantName: "Black",
+        }),
+        createAssignment({
+          availableQuantity: 2,
+          brandName: "Bravo",
+          brandSlug: "bravo",
+          categoryName: "Accessories",
+          categorySlug: "accessories",
+          productName: "Bravo Charger",
+          sku: "BRAVO-CHARGE-20W",
+          skuId: "22222222-2222-4222-8222-222222222222",
+          variantName: "20W",
+        }),
+        createAssignment({
+          availableQuantity: 1,
+          brandName: "Acme",
+          brandSlug: "acme",
+          categoryName: "Accessories",
+          categorySlug: "accessories",
+          productName: "Acme Cable",
+          sku: "ACME-CABLE-USBC",
+          skuId: "33333333-3333-4333-8333-333333333333",
+          variantName: "USB-C",
+        }),
+      ],
+      {
+        brandSlug: "",
+        categorySlug: "",
+        quickFilter: "low_stock",
+        search: "",
+        sort: "name",
+      },
+    );
+
+    assert.deepEqual(
+      lowStock.map((assignment) => assignment.sku),
+      ["ACME-CABLE-USBC", "BRAVO-CHARGE-20W"],
+    );
+
+    const inCart = filterSaleAssignments(
+      ASSIGNMENTS,
+      {
+        brandSlug: "",
+        categorySlug: "",
+        quickFilter: "in_cart",
+        search: "",
+        sort: "name",
+      },
+      ["22222222-2222-4222-8222-222222222222"],
+    );
+
+    assert.deepEqual(
+      inCart.map((assignment) => assignment.sku),
+      ["BRAVO-CHARGE-20W"],
+    );
+  });
+
+  it("sorts by price and stock for large assignment lists", () => {
+    const byPriceDescending = filterSaleAssignments(
+      [
+        createAssignment({
+          brandName: "Acme",
+          brandSlug: "acme",
+          categoryName: "Phones",
+          categorySlug: "phones",
+          productName: "Acme Phone",
+          sellingPrice: "90.00",
+          sku: "ACME-PHONE-BLK",
+          skuId: "11111111-1111-4111-8111-111111111111",
+          variantName: "Black",
+        }),
+        createAssignment({
+          brandName: "Bravo",
+          brandSlug: "bravo",
+          categoryName: "Accessories",
+          categorySlug: "accessories",
+          productName: "Bravo Charger",
+          sellingPrice: "140.00",
+          sku: "BRAVO-CHARGE-20W",
+          skuId: "22222222-2222-4222-8222-222222222222",
+          variantName: "20W",
+        }),
+        createAssignment({
+          brandName: "Acme",
+          brandSlug: "acme",
+          categoryName: "Accessories",
+          categorySlug: "accessories",
+          productName: "Acme Cable",
+          sellingPrice: "35.00",
+          sku: "ACME-CABLE-USBC",
+          skuId: "33333333-3333-4333-8333-333333333333",
+          variantName: "USB-C",
+        }),
+      ],
+      {
+        brandSlug: "",
+        categorySlug: "",
+        quickFilter: "all",
+        search: "",
+        sort: "price_desc",
+      },
+    );
+
+    assert.deepEqual(
+      byPriceDescending.map((assignment) => assignment.sku),
+      ["BRAVO-CHARGE-20W", "ACME-PHONE-BLK", "ACME-CABLE-USBC"],
+    );
+
+    const byStockAscending = filterSaleAssignments(
+      [
+        createAssignment({
+          availableQuantity: 10,
+          brandName: "Acme",
+          brandSlug: "acme",
+          categoryName: "Phones",
+          categorySlug: "phones",
+          productName: "Acme Phone",
+          sku: "ACME-PHONE-BLK",
+          skuId: "11111111-1111-4111-8111-111111111111",
+          variantName: "Black",
+        }),
+        createAssignment({
+          availableQuantity: 1,
+          brandName: "Bravo",
+          brandSlug: "bravo",
+          categoryName: "Accessories",
+          categorySlug: "accessories",
+          productName: "Bravo Charger",
+          sku: "BRAVO-CHARGE-20W",
+          skuId: "22222222-2222-4222-8222-222222222222",
+          variantName: "20W",
+        }),
+        createAssignment({
+          availableQuantity: 6,
+          brandName: "Acme",
+          brandSlug: "acme",
+          categoryName: "Accessories",
+          categorySlug: "accessories",
+          productName: "Acme Cable",
+          sku: "ACME-CABLE-USBC",
+          skuId: "33333333-3333-4333-8333-333333333333",
+          variantName: "USB-C",
+        }),
+      ],
+      {
+        brandSlug: "",
+        categorySlug: "",
+        quickFilter: "all",
+        search: "",
+        sort: "stock_asc",
+      },
+    );
+
+    assert.deepEqual(
+      byStockAscending.map((assignment) => assignment.sku),
+      ["BRAVO-CHARGE-20W", "ACME-CABLE-USBC", "ACME-PHONE-BLK"],
+    );
+  });
+
+  it("paginates filtered assignments without changing their order", () => {
+    const result = paginateSaleAssignments(
+      [
+        ...ASSIGNMENTS,
+        createAssignment({
+          brandName: "Cinder",
+          brandSlug: "cinder",
+          categoryName: "Audio",
+          categorySlug: "audio",
+          productName: "Cinder Speaker",
+          sku: "CINDER-SPEAKER",
+          skuId: "88888888-8888-4888-8888-888888888888",
+          variantName: "Portable",
+        }),
+      ],
+      2,
+      2,
+    );
+
+    assert.deepEqual(
+      result.map((assignment) => assignment.sku),
+      ["ACME-CABLE-USBC", "CINDER-SPEAKER"],
+    );
+  });
+
+  it("summarizes assignment counts for stock and cart overview", () => {
+    const result = summarizeSaleAssignments(
+      [
+        createAssignment({
+          availableQuantity: 0,
+          brandName: "Acme",
+          brandSlug: "acme",
+          categoryName: "Phones",
+          categorySlug: "phones",
+          productName: "Acme Phone",
+          sku: "ACME-PHONE-BLK",
+          skuId: "11111111-1111-4111-8111-111111111111",
+          variantName: "Black",
+        }),
+        createAssignment({
+          availableQuantity: 2,
+          brandName: "Bravo",
+          brandSlug: "bravo",
+          categoryName: "Accessories",
+          categorySlug: "accessories",
+          productName: "Bravo Charger",
+          sku: "BRAVO-CHARGE-20W",
+          skuId: "22222222-2222-4222-8222-222222222222",
+          variantName: "20W",
+        }),
+        createAssignment({
+          availableQuantity: 8,
+          brandName: "Acme",
+          brandSlug: "acme",
+          categoryName: "Accessories",
+          categorySlug: "accessories",
+          productName: "Acme Cable",
+          sku: "ACME-CABLE-USBC",
+          skuId: "33333333-3333-4333-8333-333333333333",
+          variantName: "USB-C",
+        }),
+      ],
+      [
+        "22222222-2222-4222-8222-222222222222",
+        "33333333-3333-4333-8333-333333333333",
+      ],
+    );
+
+    assert.deepEqual(result, {
+      availableCount: 2,
+      inCartCount: 2,
+      lowStockCount: 1,
+      outOfStockCount: 1,
+      totalCount: 3,
+    });
+  });
+
+  it("returns the first addable assignment for keyboard-first selling flow", () => {
+    const result = getFirstAddableSaleAssignment([
+      createAssignment({
+        availableQuantity: 0,
+        brandName: "Acme",
+        brandSlug: "acme",
+        categoryName: "Phones",
+        categorySlug: "phones",
+        productName: "Acme Phone",
+        sku: "ACME-PHONE-BLK",
+        skuId: "11111111-1111-4111-8111-111111111111",
+        variantName: "Black",
+      }),
+      createAssignment({
+        availableQuantity: 3,
+        brandName: "Bravo",
+        brandSlug: "bravo",
+        categoryName: "Accessories",
+        categorySlug: "accessories",
+        productName: "Bravo Charger",
+        sku: "BRAVO-CHARGE-20W",
+        skuId: "22222222-2222-4222-8222-222222222222",
+        variantName: "20W",
+      }),
+    ]);
+
+    assert.equal(result?.sku, "BRAVO-CHARGE-20W");
+    assert.equal(getFirstAddableSaleAssignment([]), null);
+  });
+
+  it("detects sku-like scan queries separately from browsing text", () => {
+    assert.equal(isLikelySkuSearch("ACME-20W"), true);
+    assert.equal(isLikelySkuSearch("scan/42"), true);
+    assert.equal(isLikelySkuSearch("20w"), true);
+    assert.equal(isLikelySkuSearch("charger"), false);
+    assert.equal(isLikelySkuSearch("usb cable"), false);
+  });
+
+  it("returns exact and prefix sku match state for scan feedback", () => {
+    const exactMatch = getSaleAssignmentSearchMatchState(
+      ASSIGNMENTS,
+      "BRAVO-CHARGE-20W",
+    );
+    assert.equal(exactMatch?.kind, "exact_sku");
+    assert.equal(exactMatch?.assignment.sku, "BRAVO-CHARGE-20W");
+
+    const prefixMatch = getSaleAssignmentSearchMatchState(
+      ASSIGNMENTS,
+      "ACME-C",
+    );
+    assert.equal(prefixMatch?.kind, "prefix_sku");
+    assert.equal(prefixMatch?.assignment.sku, "ACME-CABLE-USBC");
+
+    assert.equal(
+      getSaleAssignmentSearchMatchState(ASSIGNMENTS, "charger"),
+      null,
+    );
+  });
 });
 
 function createAssignment(
@@ -195,10 +568,13 @@ function createAssignment(
     | "sku"
     | "skuId"
     | "variantName"
-  >,
+  > & {
+    availableQuantity?: number;
+    sellingPrice?: string;
+  },
 ): CurrentAssignment {
   return {
-    availableQuantity: 5,
+    availableQuantity: input.availableQuantity ?? 5,
     brandName: input.brandName,
     brandSlug: input.brandSlug,
     categoryName: input.categoryName,
@@ -210,7 +586,7 @@ function createAssignment(
     productName: input.productName,
     productSlug: input.productName.toLowerCase().replaceAll(" ", "-"),
     quantity: 5,
-    sellingPrice: "120.00",
+    sellingPrice: input.sellingPrice ?? "120.00",
     sku: input.sku,
     skuId: input.skuId,
     variantName: input.variantName,

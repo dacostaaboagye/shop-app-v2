@@ -15,6 +15,8 @@ import {
   emailDeliveryAttempts,
   emailDeliveryStatusEnum,
   emailDeliveryStatusEvents,
+  invoiceStatusEnum,
+  invoiceTypeEnum,
   issuedDocuments,
   locationDocumentSettings,
   mediaAssets,
@@ -127,6 +129,19 @@ assert.deepEqual(deliveryStatusEnum.enumValues, [
   "in_transit",
   "completed",
   "cancelled",
+]);
+assert.deepEqual(invoiceTypeEnum.enumValues, [
+  "pos",
+  "portal",
+  "ecommerce",
+  "manual",
+  "credit_note",
+  "adjusted",
+]);
+assert.deepEqual(invoiceStatusEnum.enumValues, [
+  "confirmed",
+  "superseded",
+  "voided",
 ]);
 assert.deepEqual(emailDeliveryStatusEnum.enumValues, [
   "bounced",
@@ -276,6 +291,11 @@ assert.match(migrationSql, /official_document_settings/);
 assert.match(migrationSql, /location_document_settings/);
 assert.match(migrationSql, /official_document_type/);
 assert.match(migrationSql, /issued_documents/);
+assert.match(migrationSql, /replacement_invoice_id/);
+assert.match(migrationSql, /revision_root_invoice_id/);
+assert.match(migrationSql, /revision_credit_note_id/);
+assert.match(migrationSql, /superseded/);
+assert.match(migrationSql, /adjusted/);
 assert.match(migrationSql, /catalog_media_assignments/);
 assert.match(migrationSql, /catalog_media_assignments_primary_unique/);
 assert.match(migrationSql, /delivery_status/);
@@ -319,12 +339,9 @@ assert.match(migrationSql, /supplier_procurement_status/);
 assert.match(migrationSql, /supplier_procurement_orders_reference_unique/);
 assert.match(migrationSql, /supplier_inquiry_status/);
 assert.match(migrationSql, /supplier_inquiries_reference_unique/);
-
 console.log("database schema foundation assertions passed");
-
 function readAllMigrationSql(): string {
   const drizzleDirectory = resolve(process.cwd(), "drizzle");
-
   return readdirSync(drizzleDirectory)
     .filter((entry) => extname(entry) === ".sql")
     .map((entry) => readFileSync(resolve(drizzleDirectory, entry), "utf8"))

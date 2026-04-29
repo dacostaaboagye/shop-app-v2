@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { formatCount } from "@/lib/display/format";
 import {
   formatMoney,
   type MoneyProfile,
@@ -66,6 +67,13 @@ export function CartBody({
     const price = toNumericAmount(item.unitPrice);
     return sum + (price == null ? 0 : price * item.quantity);
   }, 0);
+  const hasBuyerDetails = Boolean(
+    customerDetails.name.trim() ||
+      customerDetails.email.trim() ||
+      customerDetails.phone.trim() ||
+      customerDetails.taxNumber.trim() ||
+      customerDetails.billingAddress.trim(),
+  );
 
   if (cart.length === 0) {
     return (
@@ -93,12 +101,20 @@ export function CartBody({
         ))}
       </div>
 
-      <div className="rounded-xl bg-muted/25 p-4 ring-1 ring-border/70">
-        <div className="flex items-center justify-between">
-          <span className="type-data-label">Grand Total</span>
-          <span className="type-stat-value text-primary">
-            {formatMoney(total, moneyProfile)}
-          </span>
+      <div className="rounded-xl border border-border bg-muted/20 p-4 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-col gap-1">
+            <span className="type-data-label">Amount due</span>
+            <span className="type-stat-value text-primary">
+              {formatMoney(total, moneyProfile)}
+            </span>
+          </div>
+          <div className="rounded-lg bg-background px-3 py-2 text-right shadow-sm ring-1 ring-border/70">
+            <p className="type-data-label">Items</p>
+            <p className="text-sm font-bold tabular-nums text-foreground">
+              {formatCount(cart.length)}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -109,8 +125,13 @@ export function CartBody({
         onChange={onCustomerDetailsChange}
       />
 
-      <div className="flex flex-col gap-3">
-        <p className="type-data-label">Payment Method</p>
+      <div className="flex flex-col gap-3 rounded-xl border border-border bg-background/60 p-4 shadow-sm">
+        <div className="flex flex-col gap-1">
+          <p className="type-data-label">Payment method</p>
+          <p className="type-support">
+            Select how the customer is settling this sale.
+          </p>
+        </div>
         <div className="grid grid-cols-2 gap-2">
           {PAYMENT_METHODS.map((method) => (
             <button
@@ -133,27 +154,54 @@ export function CartBody({
                 {method.label}
               </span>
               <span className="type-support text-[10px] opacity-70 group-hover:opacity-100">
-                Select to pay
+                {paymentMethod === method.value ? "Selected" : "Available"}
               </span>
             </button>
           ))}
         </div>
       </div>
 
-      <AppFormField
-        description="Capture anything the next shift or supervisor should know about this sale."
-        inputId="pos-sale-notes"
-        label="Notes"
-      >
-        <Textarea
-          className="min-h-[80px] resize-none border-border/60 bg-muted transition-all focus:bg-background focus:ring-primary/20"
-          id="pos-sale-notes"
-          maxLength={500}
-          onChange={(event) => onNotesChange(event.target.value)}
-          placeholder="Any notes about this sale..."
-          value={notes}
-        />
-      </AppFormField>
+      <div className="rounded-xl border border-border bg-background/60 p-4 shadow-sm">
+        <AppFormField
+          description="Optional context for handover or review."
+          inputId="pos-sale-notes"
+          label="Notes"
+        >
+          <Textarea
+            className="min-h-[88px] resize-none border-border/60 bg-muted transition-all focus:bg-background focus:ring-primary/20"
+            id="pos-sale-notes"
+            maxLength={500}
+            onChange={(event) => onNotesChange(event.target.value)}
+            placeholder="Add anything the next shift should know."
+            value={notes}
+          />
+        </AppFormField>
+      </div>
+
+      <div className="rounded-xl border border-border bg-background/60 p-4 shadow-sm">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1">
+            <p className="type-data-label">Ready to confirm</p>
+            <p className="type-support">
+              Review the transaction summary before processing payment.
+            </p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-3">
+            <CheckoutStatusTile
+              label="Items"
+              value={`${formatCount(cart.length)} selected`}
+            />
+            <CheckoutStatusTile
+              label="Payment"
+              value={PAYMENT_METHODS.find((method) => method.value === paymentMethod)?.label ?? "Not set"}
+            />
+            <CheckoutStatusTile
+              label="Buyer details"
+              value={hasBuyerDetails ? "Included" : "Walk-in sale"}
+            />
+          </div>
+        </div>
+      </div>
 
       {error ? (
         <div className="flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-xs font-medium text-destructive">
@@ -192,5 +240,20 @@ export function PosSaleCartCard(props: CartBodyProps) {
         <CartBody {...props} />
       </CardContent>
     </Card>
+  );
+}
+
+function CheckoutStatusTile({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-xl bg-card px-3 py-3 shadow-sm ring-1 ring-border/70">
+      <p className="type-data-label">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
+    </div>
   );
 }

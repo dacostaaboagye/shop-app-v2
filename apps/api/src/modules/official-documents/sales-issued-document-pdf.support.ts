@@ -5,9 +5,35 @@ import type {
 
 export function getDocumentTitle(invoice: InvoiceResponse): string {
   if (invoice.type === "credit_note") return "Credit Note";
+  if (invoice.type === "adjusted") return "Adjusted Invoice";
   return invoice.status === "voided"
     ? "Voided Sales Document"
     : "Sales Receipt";
+}
+
+export function getDocumentTraceabilityRows(
+  invoice: InvoiceResponse,
+): Array<[string, string]> {
+  const rows: Array<[string, string]> = [];
+
+  const pushRow = (label: string, value: string | null | undefined) => {
+    const normalized = value?.trim();
+    if (!normalized || normalized === invoice.reference) return;
+    if (rows.some(([, existing]) => existing === normalized)) return;
+    rows.push([label, normalized]);
+  };
+
+  pushRow("Source Invoice", invoice.parentInvoiceReference);
+  pushRow("Revision Root", invoice.revisionChain.revisionRootReference);
+  pushRow("Credit Note", invoice.revisionChain.revisionCreditNoteReference);
+  pushRow(
+    "Replacement Invoice",
+    invoice.replacementInvoiceReference ??
+      invoice.revisionChain.replacementInvoiceReference,
+  );
+  pushRow("Current Payable", invoice.revisionChain.currentPayableReference);
+
+  return rows;
 }
 
 export function formatMoney(

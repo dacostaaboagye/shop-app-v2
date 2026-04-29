@@ -135,6 +135,12 @@ const server = createServer({
   messagingWebhooks: {
     resendWebhookService: messagingRuntime.resendWebhookService,
   },
+  managerDashboard: {
+    invoiceRepository: salesRuntime.sales.invoiceQueryRepository,
+    permissionService: authRuntime.accessControl.permissionService,
+    stockBalanceQueryRepo: stockRuntime.stock.stockBalanceQueryRepo,
+    supplyRequestRepository: stockRuntime.stock.supplyRequestRepository,
+  },
   notifications: {
     notificationQueryService,
     notificationWriteService,
@@ -162,6 +168,13 @@ const server = createServer({
     reservationQueryRepo: stockRuntime.stock.reservationQueryRepo,
   },
   stockAssignments: assignmentsRuntime.assignments,
+  workerDashboard: {
+    assignmentQueryRepository:
+      assignmentsRuntime.assignments.assignmentQueryRepository,
+    invoiceRepository: salesRuntime.sales.invoiceQueryRepository,
+    notificationQueryService,
+    permissionService: authRuntime.accessControl.permissionService,
+  },
   stockBalance: stockRuntime.stock,
   stockBalanceLocation: {
     permissionService: authRuntime.accessControl.permissionService,

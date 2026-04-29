@@ -366,6 +366,25 @@ describe("auth routes", () => {
 
     assert.equal(response.statusCode, 503);
   });
+
+  it("redirects OAuth denial back to login with an explicit callback error", async () => {
+    const server = createServer({
+      auth: {
+        ...createUnavailableAuthDependencies(),
+      },
+    });
+
+    const response = await server.inject({
+      method: "GET",
+      url: "/api/auth/oauth/google/callback?error=access_denied&state=oauth-state",
+    });
+
+    assert.equal(response.statusCode, 302);
+    assert.equal(
+      response.headers.location,
+      "http://localhost:3000/login?oauth_error=access_denied",
+    );
+  });
 });
 
 function createSession(email: string): IssuedSession {

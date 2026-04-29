@@ -20,11 +20,13 @@ export function SalesLedgerDayTable({
       {
         accessorKey: "displayDate",
         cell: ({ row }) => (
-          <div className="flex min-w-0 flex-col gap-1">
-            <span className="type-data-value text-sm">
+          <div className="flex min-w-[8.5rem] flex-col gap-1">
+            <span className="type-data-value text-sm whitespace-nowrap">
               {row.original.displayDate}
             </span>
-            <span className="type-support text-xs">{row.original.dateKey}</span>
+            <span className="type-support text-xs whitespace-nowrap">
+              {row.original.dateKey}
+            </span>
           </div>
         ),
         header: "Day",
@@ -40,10 +42,22 @@ export function SalesLedgerDayTable({
         meta: { align: "right" },
       },
       {
+        accessorKey: "adjustedInvoiceCount",
+        header: "Adjusted",
+        meta: { align: "right" },
+      },
+      {
         accessorKey: "grossSalesAmount",
         cell: ({ row }) =>
           formatMoney(row.original.grossSalesAmount, moneyProfile),
         header: "Sales",
+        meta: { align: "right" },
+      },
+      {
+        accessorKey: "adjustedInvoiceAmount",
+        cell: ({ row }) =>
+          formatMoney(row.original.adjustedInvoiceAmount, moneyProfile),
+        header: "Adjusted",
         meta: { align: "right" },
       },
       {

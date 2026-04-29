@@ -4,9 +4,11 @@ export function toInvoiceResponse(invoice: {
   attributedWorkerId: string | null;
   attributedWorkerName?: string | null;
   attributedWorkerEmail?: string | null;
+  classification?: "outgoing" | "internal";
   confirmedAt: Date | null;
   createdAt: Date;
   customerBillingAddressLines?: string[] | null;
+  currentPayableReference?: string | null;
   currencyCode: string;
   currencyScale: number;
   customerEmail?: string | null;
@@ -26,18 +28,49 @@ export function toInvoiceResponse(invoice: {
   }[];
   locationId: string;
   notes: string | null;
+  parentInvoiceReference?: string | null;
   paymentMethod: string | null;
   reference: string;
-  status: "confirmed" | "voided";
+  replacementInvoiceReference?: string | null;
+  revisionCreditNoteReference?: string | null;
+  revisionRootReference?: string | null;
+  role?: "standard" | "credit_note" | "adjusted";
+  status: "confirmed" | "superseded" | "voided";
   subtotalAmount: string;
   taxAmount: string;
   totalAmount: string;
-  type: "pos" | "portal" | "ecommerce" | "manual" | "credit_note";
+  type:
+    | "pos"
+    | "portal"
+    | "ecommerce"
+    | "manual"
+    | "credit_note"
+    | "adjusted";
 }): InvoiceResponse {
+  const role =
+    invoice.role ??
+    (invoice.type === "credit_note"
+      ? "credit_note"
+      : invoice.type === "adjusted"
+        ? "adjusted"
+        : "standard");
+  const parentInvoiceReference = invoice.parentInvoiceReference ?? null;
+  const currentPayableReference = invoice.currentPayableReference ?? null;
+  const replacementInvoiceReference = invoice.replacementInvoiceReference ?? null;
+  const revisionCreditNoteReference =
+    invoice.revisionCreditNoteReference ?? null;
+  const revisionRootReference = invoice.revisionRootReference ?? null;
+  const isLatestPayable =
+    invoice.type !== "credit_note" &&
+    invoice.status === "confirmed" &&
+    (currentPayableReference === invoice.reference ||
+      replacementInvoiceReference === null);
+
   return {
     attributedWorkerId: invoice.attributedWorkerId,
     attributedWorkerEmail: invoice.attributedWorkerEmail ?? null,
     attributedWorkerName: invoice.attributedWorkerName ?? null,
+    classification: invoice.classification ?? "outgoing",
     confirmedAt: invoice.confirmedAt?.toISOString() ?? null,
     createdAt: invoice.createdAt.toISOString(),
     customerBillingAddressLines: invoice.customerBillingAddressLines ?? null,
@@ -60,8 +93,21 @@ export function toInvoiceResponse(invoice: {
     })),
     locationId: invoice.locationId,
     notes: invoice.notes,
+    parentInvoiceReference,
     paymentMethod: toPaymentMethod(invoice.paymentMethod),
     reference: invoice.reference,
+    replacementInvoiceReference,
+    revisionChain: {
+      currentPayableReference:
+        currentPayableReference ??
+        (isLatestPayable ? invoice.reference : replacementInvoiceReference),
+      isLatestPayable,
+      replacementInvoiceReference,
+      revisionCreditNoteReference,
+      revisionRootReference,
+      sourceInvoiceReference: parentInvoiceReference,
+    },
+    role,
     status: invoice.status,
     subtotalAmount: invoice.subtotalAmount,
     taxAmount: invoice.taxAmount,

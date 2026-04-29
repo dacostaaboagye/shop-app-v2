@@ -31,8 +31,8 @@ export async function renderSalesIssuedDocumentPdf(
 
   drawDocumentShell(doc);
   await drawHeader(doc, input, primary);
-  drawCustomerAndMeta(doc, input, primary);
-  const tableEndY = drawLineItems(doc, input, 368);
+  const headerContentEndY = drawCustomerAndMeta(doc, input, primary);
+  const tableEndY = drawLineItems(doc, input, headerContentEndY + 32);
   const totalsEndY = drawTotals(
     doc,
     input,
@@ -61,12 +61,14 @@ function drawCustomerAndMeta(
   doc: PDFKit.PDFDocument,
   input: RenderInput,
   primary: string,
-): void {
-  drawCustomerBlock(doc, input);
-  drawMetaBlock(doc, input, primary);
+): number {
+  const customerEndY = drawCustomerBlock(doc, input);
+  const metaEndY = drawMetaBlock(doc, input, primary);
+
+  return Math.max(customerEndY, metaEndY);
 }
 
-function drawCustomerBlock(doc: PDFKit.PDFDocument, input: RenderInput): void {
+function drawCustomerBlock(doc: PDFKit.PDFDocument, input: RenderInput): number {
   const customerName =
     input.invoice.customerName ??
     (input.invoice.type === "pos" ? "Walk-in customer" : "Customer account");
@@ -85,17 +87,22 @@ function drawCustomerBlock(doc: PDFKit.PDFDocument, input: RenderInput): void {
   doc.text(customerName, 42, 242, { width: 224 });
   doc.fillColor("#6f665f").font("Helvetica").fontSize(8.5);
   const detailLines = [...addressLines, ...contactLines];
-  doc.text(detailLines.join("\n") || "No customer details captured.", 42, 258, {
-    height: 58,
+  const detailText = detailLines.join("\n") || "No customer details captured.";
+  const detailHeight = doc.heightOfString(detailText, {
     width: 224,
   });
+  doc.text(detailText, 42, 258, {
+    width: 224,
+  });
+
+  return 258 + detailHeight;
 }
 
 function drawMetaBlock(
   doc: PDFKit.PDFDocument,
   input: RenderInput,
   primary: string,
-): void {
+): number {
   const issuedAt = new Date(
     input.invoice.confirmedAt ?? input.invoice.createdAt,
   ).toLocaleString(input.profile.locale, { timeZone: input.profile.timezone });
@@ -115,6 +122,8 @@ function drawMetaBlock(
     doc.fillColor("#15110f").font("Helvetica").fontSize(8);
     doc.text(value, 432, y + 7, { width: 96 });
   });
+
+  return 224 + rows.length * 28;
 }
 
 function drawLineItems(

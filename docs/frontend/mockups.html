@@ -1,0 +1,1352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Shop App V2 — Mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&family=Source+Code+Pro:wght@500&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --background: oklch(0.976 0.006 120);
+  --foreground: oklch(0.245 0.021 220);
+  --card: oklch(0.997 0.003 120);
+  --card-foreground: oklch(0.245 0.021 220);
+  --primary: oklch(0.43 0.09 188);
+  --primary-foreground: oklch(0.99 0.004 120);
+  --primary-soft: color-mix(in oklch, var(--primary) 14%, var(--card));
+  --secondary: oklch(0.935 0.008 215);
+  --muted: oklch(0.952 0.006 125);
+  --muted-foreground: oklch(0.48 0.018 220);
+  --accent: oklch(0.91 0.04 78);
+  --accent-strong: oklch(0.78 0.09 78);
+  --destructive: oklch(0.62 0.214 27);
+  --success: oklch(0.58 0.098 160);
+  --warning: oklch(0.72 0.124 72);
+  --border: oklch(0.875 0.01 130);
+  --border-strong: oklch(0.82 0.012 130);
+  --input: oklch(0.985 0.004 125);
+  --ring: oklch(0.43 0.09 188);
+  --sidebar: oklch(0.988 0.004 125);
+  --shadow-soft: 0 4px 12px oklch(0.22 0.018 220 / 4%);
+  --shadow-panel: 0 8px 24px oklch(0.22 0.018 220 / 6%);
+  --shadow-pop: 0 14px 36px oklch(0.22 0.018 220 / 12%);
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.2);
+  --grid-width: 76rem;
+  --kicker-foreground: var(--primary);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--foreground);
+  background: var(--background);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; }
+a { color: inherit; text-decoration: none; }
+small { font-size: 0.8125rem; }
+.font-heading { font-family: "Outfit", sans-serif; letter-spacing: -0.01em; }
+.font-mono { font-family: "Source Code Pro", monospace; }
+.kicker { font-size: 0.6875rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--kicker-foreground); font-weight: 700; }
+.muted { color: var(--muted-foreground); }
+
+/* ============ APP CHROME ============ */
+.app {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 100vh;
+}
+.rail {
+  background: linear-gradient(180deg, oklch(0.97 0.008 130) 0%, oklch(0.95 0.01 130) 100%);
+  border-right: 1px solid var(--border);
+  padding: 24px 18px;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+}
+.rail-brand {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 28px;
+}
+.rail-mark {
+  width: 32px; height: 32px; border-radius: var(--radius-sm);
+  background: var(--primary); color: white;
+  display: grid; place-items: center;
+  box-shadow: 0 6px 14px color-mix(in oklch, var(--primary) 30%, transparent);
+}
+.rail-brand-text { font-family: "Outfit"; font-weight: 600; font-size: 15px; }
+.rail-brand-text small { display: block; font-size: 11px; color: var(--muted-foreground); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; }
+.rail h4 {
+  font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--muted-foreground); margin: 16px 8px 8px; font-weight: 700;
+}
+.rail-link {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: var(--radius-md);
+  font-size: 13.5px; color: var(--foreground); font-weight: 500;
+  border: 1px solid transparent;
+  transition: background 120ms, border-color 120ms;
+}
+.rail-link:hover { background: oklch(0.94 0.012 130); }
+.rail-link.active {
+  background: var(--card); border-color: var(--border);
+  box-shadow: var(--shadow-soft);
+  color: var(--primary);
+}
+.rail-link .dot { width: 6px; height: 6px; border-radius: 99px; background: var(--accent-strong); flex-shrink: 0; }
+.rail-link.active .dot { background: var(--primary); }
+
+.stage {
+  background: var(--background);
+  min-height: 100vh;
+}
+.stage-header {
+  padding: 20px 28px 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.stage-header .meta {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  font-size: 12px; color: var(--muted-foreground);
+}
+.stage-header .meta .pill {
+  background: var(--card); border: 1px solid var(--border); border-radius: 99px;
+  padding: 3px 10px; font-weight: 500;
+}
+.stage-header h2 { font-family: "Outfit"; font-size: 22px; font-weight: 600; }
+
+/* ============ SHARED PRIMITIVES ============ */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 36px; padding: 0 14px;
+  border-radius: var(--radius-md); border: 1px solid transparent;
+  font-size: 13.5px; font-weight: 600;
+  transition: background 120ms, border-color 120ms;
+  white-space: nowrap;
+}
+.btn.primary { background: var(--primary); color: var(--primary-foreground); }
+.btn.primary:hover { background: oklch(0.39 0.09 188); }
+.btn.ghost { color: var(--foreground); }
+.btn.ghost:hover { background: var(--muted); }
+.btn.outline { border-color: var(--border-strong); background: var(--card); color: var(--foreground); }
+.btn.outline:hover { background: var(--muted); }
+.btn.destructive { background: var(--destructive); color: white; }
+.btn.sm { height: 30px; padding: 0 10px; font-size: 12.5px; }
+.btn.lg { height: 42px; padding: 0 18px; font-size: 14.5px; }
+.btn.icon { width: 36px; padding: 0; justify-content: center; }
+.btn.icon.sm { width: 30px; }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11.5px; font-weight: 600; line-height: 1;
+  padding: 4px 8px; border-radius: 99px;
+  background: var(--muted); color: var(--muted-foreground);
+}
+.badge.success { background: color-mix(in oklch, var(--success) 22%, var(--card)); color: var(--success); }
+.badge.warning { background: color-mix(in oklch, var(--warning) 28%, var(--card)); color: oklch(0.45 0.124 72); }
+.badge.danger  { background: color-mix(in oklch, var(--destructive) 22%, var(--card)); color: var(--destructive); }
+.badge.primary { background: var(--primary-soft); color: var(--primary); }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+}
+
+.input {
+  height: 36px; padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--input);
+  font: inherit;
+  color: var(--foreground);
+  width: 100%;
+}
+.input:focus { outline: none; border-color: var(--ring); box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 22%, transparent); }
+.label { font-size: 12.5px; font-weight: 600; color: var(--foreground); }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field-help { font-size: 12px; color: var(--muted-foreground); }
+
+.kbd {
+  display: inline-block; min-width: 18px; padding: 1px 6px;
+  font-family: "Source Code Pro"; font-size: 11px;
+  border: 1px solid var(--border); border-bottom-width: 2px;
+  border-radius: 4px; color: var(--muted-foreground); background: var(--card);
+}
+.divider { height: 1px; background: var(--border); }
+
+/* ============ APP HEADER (shared nav shell) ============ */
+.app-header {
+  position: sticky; top: 0; z-index: 40;
+  background: color-mix(in oklch, var(--sidebar) 92%, transparent);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.app-header-inner {
+  max-width: var(--grid-width);
+  margin: 0 auto;
+  padding: 0 28px;
+  height: 60px;
+  display: flex; align-items: center; gap: 16px;
+}
+.app-brand {
+  display: flex; align-items: center; gap: 8px;
+  font-family: "Outfit"; font-weight: 600; font-size: 15px;
+}
+.app-brand .mark {
+  width: 28px; height: 28px; border-radius: 7px;
+  background: var(--primary); color: white;
+  display: grid; place-items: center;
+  font-family: "Outfit"; font-weight: 700;
+}
+.crumbs { display: flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--muted-foreground); }
+.crumbs .sep { color: oklch(0.78 0.012 130); }
+.crumbs strong { color: var(--foreground); font-weight: 600; }
+
+.portal-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px 4px 6px; border-radius: 99px;
+  background: var(--primary-soft); color: var(--primary); font-weight: 600; font-size: 12.5px;
+  border: 1px solid color-mix(in oklch, var(--primary) 30%, transparent);
+}
+.portal-pill .dot { width: 18px; height: 18px; border-radius: 99px; background: var(--primary); color: white; display: grid; place-items: center; font-size: 10px; font-weight: 700; }
+
+.app-header-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.icon-btn {
+  width: 36px; height: 36px; border-radius: var(--radius-md);
+  display: grid; place-items: center;
+  color: var(--foreground); position: relative;
+  transition: background 120ms;
+}
+.icon-btn:hover { background: var(--muted); }
+.icon-btn .dot { position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; border-radius: 99px; background: var(--destructive); border: 2px solid var(--sidebar); }
+
+.avatar {
+  width: 32px; height: 32px; border-radius: 99px;
+  background: var(--accent); color: oklch(0.32 0.04 78);
+  display: grid; place-items: center; font-weight: 700; font-size: 12px;
+  border: 1px solid color-mix(in oklch, var(--accent) 60%, transparent);
+}
+.avatar.lg { width: 56px; height: 56px; font-size: 18px; }
+.avatar.xl { width: 72px; height: 72px; font-size: 22px; }
+
+/* ============ POPOVERS / SHEETS ============ */
+.popover-card {
+  border-radius: var(--radius-xl);
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-pop);
+  overflow: hidden;
+}
+
+/* ============ TABLE ============ */
+.table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.table th, .table td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.table th { font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted-foreground); font-weight: 700; background: var(--muted); }
+.table tbody tr:hover { background: oklch(0.97 0.008 125); }
+
+/* ============ DASHBOARD ============ */
+.metric {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.metric .value { font-family: "Outfit"; font-size: 28px; font-weight: 600; line-height: 1.05; }
+.metric .label { font-size: 11.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted-foreground); font-weight: 600; }
+.metric .delta { font-size: 12px; }
+.metric .delta.up { color: var(--success); }
+.metric .delta.down { color: var(--destructive); }
+
+.spark { width: 100%; height: 36px; }
+.spark path { fill: none; stroke: var(--primary); stroke-width: 1.6; }
+.spark .area { fill: var(--primary-soft); stroke: none; opacity: 0.6; }
+
+.location-card {
+  display: grid; grid-template-rows: auto auto 1fr auto; gap: 12px;
+  padding: 18px;
+}
+.location-card .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.location-card .name { font-family: "Outfit"; font-size: 17px; font-weight: 600; }
+.location-card .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding-top: 8px; border-top: 1px dashed var(--border); }
+.location-card .stat { display: flex; flex-direction: column; gap: 2px; }
+.location-card .stat .v { font-family: "Outfit"; font-size: 18px; font-weight: 600; }
+.location-card .stat .k { font-size: 11px; color: var(--muted-foreground); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
+.location-card.alert { border-color: color-mix(in oklch, var(--warning) 60%, var(--border)); box-shadow: var(--shadow-panel); }
+.location-card.alert::before {
+  content: ""; display: block; height: 3px; background: linear-gradient(90deg, var(--warning), var(--accent-strong));
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  margin: -18px -18px 0;
+}
+
+.alert-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: var(--radius-md); background: color-mix(in oklch, var(--warning) 16%, var(--card)); font-size: 13px;
+}
+
+/* ============ MAP-LIKE ============ */
+.routemap {
+  width: 100%; aspect-ratio: 16/9; border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, oklch(0.94 0.018 200) 0%, oklch(0.92 0.024 168) 100%);
+  position: relative; overflow: hidden; border: 1px solid var(--border);
+}
+.routemap .road { position: absolute; left: 6%; right: 6%; top: 50%; height: 4px; background: oklch(0.84 0.018 220 / 0.6); border-radius: 99px; }
+.routemap .pin { position: absolute; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.routemap .pin .dot { width: 16px; height: 16px; border-radius: 99px; background: var(--primary); border: 3px solid var(--card); box-shadow: var(--shadow-pop); }
+.routemap .pin .lbl { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: var(--card); border: 1px solid var(--border); }
+.routemap .pin.warn .dot { background: var(--warning); }
+.routemap .pin.done .dot { background: var(--success); }
+.routemap .pin.next .dot { background: var(--accent-strong); }
+
+/* ============ NOTIFICATION SHEET ============ */
+.sheet {
+  position: fixed; right: 24px; top: 80px; width: 420px; max-height: calc(100vh - 100px);
+  border-radius: var(--radius-xl);
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-pop);
+  display: flex; flex-direction: column;
+}
+.sheet header { padding: 18px 20px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.sheet header h3 { font-family: "Outfit"; font-size: 17px; font-weight: 600; }
+.sheet .filters { padding: 10px 20px; display: flex; gap: 6px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.chip { padding: 4px 10px; border-radius: 99px; border: 1px solid var(--border-strong); background: var(--card); font-size: 12px; font-weight: 600; color: var(--muted-foreground); }
+.chip.active { background: var(--primary-soft); border-color: color-mix(in oklch, var(--primary) 40%, transparent); color: var(--primary); }
+.sheet .body { padding: 8px 0; overflow-y: auto; flex: 1; }
+.notif {
+  display: grid; grid-template-columns: 32px 1fr; gap: 12px; padding: 12px 20px;
+  border-left: 3px solid transparent;
+}
+.notif.unread { border-left-color: var(--primary); background: color-mix(in oklch, var(--primary) 4%, var(--card)); }
+.notif .icon { width: 32px; height: 32px; border-radius: var(--radius-md); display: grid; place-items: center; }
+.notif.success .icon { background: color-mix(in oklch, var(--success) 18%, var(--card)); color: var(--success); }
+.notif.warn .icon { background: color-mix(in oklch, var(--warning) 22%, var(--card)); color: oklch(0.45 0.124 72); }
+.notif.info .icon { background: var(--primary-soft); color: var(--primary); }
+.notif.danger .icon { background: color-mix(in oklch, var(--destructive) 18%, var(--card)); color: var(--destructive); }
+.notif h4 { font-size: 13.5px; font-weight: 600; }
+.notif p { font-size: 12.5px; color: var(--muted-foreground); margin-top: 2px; }
+.notif time { font-size: 11.5px; color: var(--muted-foreground); margin-top: 4px; display: block; }
+
+/* ============ PORTAL SWITCHER POPOVER ============ */
+.popover-portal { padding: 8px; width: 320px; }
+.portal-row {
+  display: grid; grid-template-columns: 36px 1fr auto; gap: 10px; align-items: center;
+  padding: 10px; border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.portal-row:hover { background: var(--muted); }
+.portal-row.current { background: var(--primary-soft); }
+.portal-row .pmark { width: 36px; height: 36px; border-radius: var(--radius-md); display: grid; place-items: center; font-family: "Outfit"; font-weight: 700; }
+.portal-row .pmark.admin   { background: color-mix(in oklch, var(--primary) 22%, var(--card)); color: var(--primary); }
+.portal-row .pmark.manager { background: color-mix(in oklch, var(--accent-strong) 26%, var(--card)); color: oklch(0.36 0.07 78); }
+.portal-row .pmark.worker  { background: color-mix(in oklch, var(--success) 24%, var(--card)); color: var(--success); }
+.portal-row .pmark.agent   { background: color-mix(in oklch, var(--warning) 28%, var(--card)); color: oklch(0.45 0.124 72); }
+.portal-row .pmark.supplier{ background: color-mix(in oklch, var(--destructive) 18%, var(--card)); color: var(--destructive); }
+.portal-row .pname { font-weight: 600; font-size: 13.5px; }
+.portal-row .pdesc { font-size: 12px; color: var(--muted-foreground); }
+.portal-row .checkmark { color: var(--primary); }
+
+/* ============ HEADINGS ============ */
+.page-title { font-family: "Outfit"; font-size: 32px; font-weight: 600; line-height: 1.05; letter-spacing: -0.02em; }
+.section-title { font-family: "Outfit"; font-size: 19px; font-weight: 600; }
+.page-desc { color: var(--muted-foreground); font-size: 14.5px; max-width: 60ch; }
+
+/* ============ ACCOUNT POPOVER ============ */
+.popover-account { width: 280px; padding: 8px; }
+.popover-account .me { display: grid; grid-template-columns: 40px 1fr; gap: 10px; align-items: center; padding: 10px; }
+.popover-account .me .name { font-weight: 600; font-size: 13.5px; }
+.popover-account .me .email { font-size: 12px; color: var(--muted-foreground); }
+.menu-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-md); font-size: 13.5px; cursor: pointer; }
+.menu-item:hover { background: var(--muted); }
+.menu-item.danger { color: var(--destructive); }
+
+/* ============ STAFF CARD (manager promote) ============ */
+.staff-row { display: grid; grid-template-columns: 36px 1fr auto; gap: 12px; padding: 14px; border-bottom: 1px solid var(--border); align-items: center; }
+.staff-row:last-child { border-bottom: 0; }
+
+/* ============ MOCKUP CONTAINER ============ */
+.mock {
+  display: none;
+}
+.mock.active { display: block; }
+
+/* ============ UTILITY ============ */
+.container { max-width: var(--grid-width); margin: 0 auto; padding: 28px; }
+.row { display: flex; gap: 12px; }
+.row.between { justify-content: space-between; align-items: center; }
+.row.gap-sm { gap: 6px; }
+.row.gap-lg { gap: 24px; }
+.col { display: flex; flex-direction: column; }
+.gap-1 { gap: 4px; } .gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; } .gap-6 { gap: 24px; } .gap-8 { gap: 32px; }
+.grid { display: grid; gap: 16px; }
+.grid-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+.grid-4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+.grid-2-aside { grid-template-columns: minmax(0,1fr) 320px; }
+.grid-cards { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.flex { display: flex; }
+.center { display: grid; place-items: center; }
+.mt-2 { margin-top: 8px; } .mt-4 { margin-top: 16px; } .mt-6 { margin-top: 24px; }
+.mb-2 { margin-bottom: 8px; } .mb-4 { margin-bottom: 16px; } .mb-6 { margin-bottom: 24px; }
+.p-4 { padding: 16px; } .p-6 { padding: 24px; }
+.shrink-0 { flex-shrink: 0; }
+.text-sm { font-size: 13px; }
+.text-xs { font-size: 12px; }
+.text-success { color: var(--success); }
+.text-danger { color: var(--destructive); }
+.text-warning { color: oklch(0.45 0.124 72); }
+.text-primary { color: var(--primary); }
+
+/* Caption strip on each mockup */
+.caption {
+  margin: 0 28px 24px;
+  background: linear-gradient(180deg, color-mix(in oklch, var(--primary) 4%, var(--card)) 0%, var(--card) 100%);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--primary);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  display: flex; gap: 14px; align-items: flex-start;
+}
+.caption .ticket { font-family: "Source Code Pro"; font-size: 11.5px; padding: 2px 8px; border-radius: 6px; background: var(--primary-soft); color: var(--primary); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+.caption .text { font-size: 13px; }
+.caption .text strong { font-weight: 600; }
+
+/* Phone frame for agent screen */
+.phone {
+  width: 380px; max-width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: var(--shadow-panel);
+  padding: 8px;
+  margin: 0 auto;
+}
+.phone-inner {
+  border-radius: 18px;
+  background: var(--background);
+  padding: 12px;
+  min-height: 720px;
+}
+.phone-status { height: 24px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; font-size: 11px; color: var(--muted-foreground); font-weight: 600; }
+
+/* small responsive */
+@media (max-width: 980px) {
+  .app { grid-template-columns: 1fr; }
+  .rail { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--border); }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============ LEFT NAV (mockup picker) ============ -->
+  <aside class="rail">
+    <div class="rail-brand">
+      <div class="rail-mark">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
+        </svg>
+      </div>
+      <div class="rail-brand-text">
+        Shop App V2
+        <small>Mockups · Apr 2026</small>
+      </div>
+    </div>
+
+    <h4>Shared chrome</h4>
+    <button class="rail-link active" data-mock="nav"><span class="dot"></span> Shared navigation shell <span class="badge primary" style="margin-left:auto">E-01-05</span></button>
+    <button class="rail-link" data-mock="portal-switcher"><span class="dot"></span> Portal switcher <span class="badge primary" style="margin-left:auto">E-01-04</span></button>
+    <button class="rail-link" data-mock="notifications"><span class="dot"></span> Notifications drawer <span class="badge primary" style="margin-left:auto">E-01-09</span></button>
+
+    <h4>Account</h4>
+    <button class="rail-link" data-mock="profile"><span class="dot"></span> Profile &amp; preferences <span class="badge primary" style="margin-left:auto">E-01-07</span></button>
+    <button class="rail-link" data-mock="promote"><span class="dot"></span> Manager promotes worker <span class="badge primary" style="margin-left:auto">E-01-08</span></button>
+
+    <h4>Locations</h4>
+    <button class="rail-link" data-mock="cross-loc"><span class="dot"></span> Cross-location overview <span class="badge primary" style="margin-left:auto">E-02-04</span></button>
+    <button class="rail-link" data-mock="loc-overview"><span class="dot"></span> Real-time location overview <span class="badge primary" style="margin-left:auto">E-02-02</span></button>
+
+    <h4>Deliveries</h4>
+    <button class="rail-link" data-mock="agent-route"><span class="dot"></span> Agent route screen <span class="badge primary" style="margin-left:auto">E-00C</span></button>
+    <button class="rail-link" data-mock="manager-deliveries"><span class="dot"></span> Manager delivery queue <span class="badge primary" style="margin-left:auto">E-00C</span></button>
+
+    <div style="margin-top: 24px; padding: 12px; border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--border); font-size: 12px; color: var(--muted-foreground);">
+      <strong style="color: var(--foreground); display:block; margin-bottom: 4px;">Tokens used</strong>
+      Inter / Outfit fonts, oklch palette, primary teal, copper accent, soft surfaces — pulled from <span class="font-mono">apps/web/src/app/globals.css</span>.
+    </div>
+  </aside>
+
+  <!-- ============ STAGE ============ -->
+  <main class="stage">
+
+    <!-- ===================== 1. SHARED NAV SHELL ===================== -->
+    <section class="mock active" data-mock="nav">
+      <div class="caption">
+        <span class="ticket">E-01-05</span>
+        <div class="text"><strong>Shared navigation shell.</strong> Same chrome on every portal. Logo, contextual breadcrumb, current portal pill, search, notifications bell with unread dot, and account avatar. Hover/focus states use the muted token; the bell shows a small destructive dot when there are unread notifications.</div>
+      </div>
+
+      <header class="app-header">
+        <div class="app-header-inner">
+          <div class="app-brand"><div class="mark">S</div> Shop</div>
+          <div class="crumbs">
+            <span class="sep">/</span>
+            <strong>Admin</strong>
+            <span class="sep">/</span>
+            <span>Locations</span>
+          </div>
+          <span class="portal-pill"><span class="dot">A</span> Admin</span>
+
+          <div class="app-header-actions">
+            <div style="position: relative;">
+              <input class="input" placeholder="Search anything…" style="width: 300px; padding-left: 36px;" />
+              <svg style="position:absolute; left:12px; top:10px;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <span class="kbd" style="position:absolute; right:8px; top:8px;">⌘K</span>
+            </div>
+            <button class="icon-btn" aria-label="Help">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </button>
+            <button class="icon-btn" aria-label="Notifications">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+              <span class="dot"></span>
+            </button>
+            <div class="avatar">SA</div>
+          </div>
+        </div>
+      </header>
+
+      <div class="container">
+        <div class="kicker mb-2">Live preview</div>
+        <h1 class="page-title mb-2">Locations</h1>
+        <p class="page-desc mb-6">A working example of the shared chrome: the body content below changes per portal but the header stays consistent across admin, manager, worker, agent, and supplier surfaces.</p>
+
+        <div class="grid grid-3">
+          <div class="card p-6"><div class="metric"><span class="label">Active locations</span><span class="value">14</span><span class="delta up">+2 this quarter</span></div></div>
+          <div class="card p-6"><div class="metric"><span class="label">Open low-stock alerts</span><span class="value">7</span><span class="delta down">+3 today</span></div></div>
+          <div class="card p-6"><div class="metric"><span class="label">Pending transfers</span><span class="value">12</span><span class="delta up">3 awaiting receipt</span></div></div>
+        </div>
+
+        <div class="card mt-6" style="overflow: hidden;">
+          <div class="row between p-4">
+            <div class="col">
+              <div class="section-title">Recent activity</div>
+              <small class="muted">Cross-portal events surfaced from the platform-event log.</small>
+            </div>
+            <div class="row gap-sm">
+              <button class="btn outline sm">Filter</button>
+              <button class="btn outline sm">Export</button>
+            </div>
+          </div>
+          <table class="table">
+            <thead><tr><th>When</th><th>Event</th><th>Actor</th><th>Resource</th><th></th></tr></thead>
+            <tbody>
+              <tr><td class="muted">2m ago</td><td><span class="badge success">stock.received</span></td><td>warehouse-01 / K. Mensah</td><td><span class="font-mono text-xs">SR-2026-04-0142</span></td><td><a href="#" class="text-primary text-xs">View</a></td></tr>
+              <tr><td class="muted">14m ago</td><td><span class="badge primary">handover.started</span></td><td>shop-east / A. Owusu</td><td><span class="font-mono text-xs">SKU-78310</span></td><td><a href="#" class="text-primary text-xs">View</a></td></tr>
+              <tr><td class="muted">42m ago</td><td><span class="badge warning">stock.low</span></td><td>shop-east</td><td><span class="font-mono text-xs">SKU-94120</span></td><td><a href="#" class="text-primary text-xs">View</a></td></tr>
+              <tr><td class="muted">1h ago</td><td><span class="badge danger">reservation.expired</span></td><td>system</td><td><span class="font-mono text-xs">RES-04-1199</span></td><td><a href="#" class="text-primary text-xs">View</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 2. PORTAL SWITCHER ===================== -->
+    <section class="mock" data-mock="portal-switcher">
+      <div class="caption">
+        <span class="ticket">E-01-04</span>
+        <div class="text"><strong>Portal switcher.</strong> Clicking the portal pill in the header opens this popover. Single-role users skip this entirely; multi-role users see only the portals they actually have permission for. Current portal is highlighted with the primary-soft surface and a check icon.</div>
+      </div>
+
+      <header class="app-header">
+        <div class="app-header-inner">
+          <div class="app-brand"><div class="mark">S</div> Shop</div>
+          <div class="crumbs"><span class="sep">/</span><strong>Manager</strong><span class="sep">/</span><span>Stock</span></div>
+          <span class="portal-pill" id="portal-trigger" style="border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 18%, transparent);"><span class="dot">M</span> Manager <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+          <div class="app-header-actions">
+            <button class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></button>
+            <div class="avatar">SA</div>
+          </div>
+        </div>
+      </header>
+
+      <div class="container" style="position: relative;">
+        <!-- popover anchored visually -->
+        <div class="popover-card popover-portal" style="position: absolute; right: 80px; top: 8px; width: 360px;">
+          <div style="padding: 12px 14px 8px;">
+            <div class="kicker" style="font-size: 10px;">Switch portal</div>
+            <small class="muted" style="display:block; margin-top: 2px;">Solomon Aboagye · 4 portals available</small>
+          </div>
+          <div class="divider"></div>
+          <div style="padding: 6px;">
+            <div class="portal-row">
+              <div class="pmark admin">A</div>
+              <div><div class="pname">Admin</div><div class="pdesc">Global access · 14 locations</div></div>
+              <span></span>
+            </div>
+            <div class="portal-row current">
+              <div class="pmark manager">M</div>
+              <div><div class="pname">Manager</div><div class="pdesc">Shop East · Warehouse North</div></div>
+              <svg class="checkmark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="portal-row">
+              <div class="pmark worker">W</div>
+              <div><div class="pname">Worker</div><div class="pdesc">Shop East</div></div>
+              <span></span>
+            </div>
+            <div class="portal-row">
+              <div class="pmark agent">D</div>
+              <div><div class="pname">Delivery agent</div><div class="pdesc">Greater Accra zone</div></div>
+              <span></span>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div style="padding: 8px;">
+            <button class="menu-item" style="width:100%;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Set default portal</button>
+          </div>
+        </div>
+
+        <!-- backdrop content (faded) -->
+        <div style="opacity: 0.35; pointer-events: none;">
+          <div class="kicker mb-2">Manager portal</div>
+          <h1 class="page-title mb-6">Stock at Shop East</h1>
+          <div class="grid grid-3">
+            <div class="card p-6"><div class="metric"><span class="label">On hand</span><span class="value">2,418</span></div></div>
+            <div class="card p-6"><div class="metric"><span class="label">Reserved</span><span class="value">312</span></div></div>
+            <div class="card p-6"><div class="metric"><span class="label">Available</span><span class="value">2,106</span></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 3. NOTIFICATIONS DRAWER ===================== -->
+    <section class="mock" data-mock="notifications">
+      <div class="caption">
+        <span class="ticket">E-01-09 · E-01-10</span>
+        <div class="text"><strong>Notifications drawer.</strong> Materialised by the platform-event projector. Each row shows the source event, audience cue, and a deep-link slug. Filters scope to the user's current portal — no irrelevant chatter.</div>
+      </div>
+
+      <header class="app-header">
+        <div class="app-header-inner">
+          <div class="app-brand"><div class="mark">S</div> Shop</div>
+          <div class="crumbs"><span class="sep">/</span><strong>Worker</strong><span class="sep">/</span><span>Today</span></div>
+          <span class="portal-pill"><span class="dot">W</span> Worker</span>
+          <div class="app-header-actions">
+            <button class="icon-btn" style="background: var(--muted);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="dot"></span></button>
+            <div class="avatar">SA</div>
+          </div>
+        </div>
+      </header>
+
+      <div class="container" style="position: relative;">
+        <div class="sheet" style="position: absolute; right: 28px; top: 8px;">
+          <header>
+            <div>
+              <h3>Notifications</h3>
+              <small class="muted">7 unread · 3 today</small>
+            </div>
+            <button class="btn ghost sm">Mark all read</button>
+          </header>
+          <div class="filters">
+            <button class="chip active">All</button>
+            <button class="chip">Unread <span style="color: var(--muted-foreground); margin-left: 4px;">7</span></button>
+            <button class="chip">Stock</button>
+            <button class="chip">Handovers</button>
+            <button class="chip">Sales</button>
+          </div>
+          <div class="body">
+
+            <div class="notif unread warn">
+              <div class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+              <div>
+                <h4>Low stock at Shop East</h4>
+                <p>SKU-94120 “Premium Tea 250g” has 4 units left. Threshold is 12.</p>
+                <time>3 minutes ago · stock.low</time>
+              </div>
+            </div>
+
+            <div class="notif unread info">
+              <div class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></svg></div>
+              <div>
+                <h4>Handover requested by Ama</h4>
+                <p>Ama Owusu wants to hand over 14 SKUs to you while she is on leave (Apr 28 – May 2).</p>
+                <time>14 minutes ago · handover.requested</time>
+              </div>
+            </div>
+
+            <div class="notif unread success">
+              <div class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <div>
+                <h4>Supply request received</h4>
+                <p>SR-2026-04-0142 from warehouse-north was confirmed at Shop East.</p>
+                <time>42 minutes ago · supply.received</time>
+              </div>
+            </div>
+
+            <div class="notif info">
+              <div class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>
+              <div>
+                <h4>Sale attributed to you</h4>
+                <p>Invoice POS-2026-04-9128 attributed at Apr 27 11:04. Worth 320.50 GHS.</p>
+                <time>2 hours ago · sale.recorded</time>
+              </div>
+            </div>
+
+            <div class="notif danger">
+              <div class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+              <div>
+                <h4>Reservation expired</h4>
+                <p>RES-04-1199 expired with no confirmation and stock was returned to balance.</p>
+                <time>1 hour ago · reservation.expired</time>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div style="opacity: 0.4; pointer-events: none;">
+          <div class="kicker mb-2">Worker portal</div>
+          <h1 class="page-title mb-2">Today</h1>
+          <p class="page-desc mb-6">Your stock, sales, and handovers for today.</p>
+          <div class="grid grid-3">
+            <div class="card p-6"><div class="metric"><span class="label">Assigned SKUs</span><span class="value">142</span></div></div>
+            <div class="card p-6"><div class="metric"><span class="label">Sales today</span><span class="value">18</span></div></div>
+            <div class="card p-6"><div class="metric"><span class="label">Active handovers</span><span class="value">2</span></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 4. PROFILE & PREFERENCES ===================== -->
+    <section class="mock" data-mock="profile">
+      <div class="caption">
+        <span class="ticket">E-01-07</span>
+        <div class="text"><strong>Profile &amp; preferences.</strong> The screen any user can reach without admin. Personal details, password change, default portal, theme, language, active sessions. Reuses the existing <span class="font-mono">account-management-workspace</span> layout pattern.</div>
+      </div>
+
+      <header class="app-header"><div class="app-header-inner">
+        <div class="app-brand"><div class="mark">S</div> Shop</div>
+        <div class="crumbs"><span class="sep">/</span><span>Account</span><span class="sep">/</span><strong>Profile</strong></div>
+        <div class="app-header-actions">
+          <button class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></button>
+          <div class="avatar">SA</div>
+        </div>
+      </div></header>
+
+      <div class="container">
+        <div class="row gap-6 mb-6" style="align-items:flex-end;">
+          <div class="avatar xl shrink-0">SA</div>
+          <div class="col gap-1" style="flex:1;">
+            <div class="kicker">Account</div>
+            <h1 class="page-title">Solomon Aboagye</h1>
+            <small class="muted">solomon.aboagye@amalitech.com · Member since Mar 2026</small>
+          </div>
+          <div class="row gap-sm">
+            <button class="btn outline">Change avatar</button>
+            <button class="btn primary">Save changes</button>
+          </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns: 220px 1fr; gap: 28px;">
+          <nav class="card p-4" style="height: fit-content; position: sticky; top: 80px;">
+            <a class="rail-link active"><span class="dot"></span> Profile</a>
+            <a class="rail-link"><span class="dot"></span> Security</a>
+            <a class="rail-link"><span class="dot"></span> Preferences</a>
+            <a class="rail-link"><span class="dot"></span> Sessions</a>
+            <a class="rail-link"><span class="dot"></span> Notifications</a>
+          </nav>
+
+          <div class="col gap-6">
+            <div class="card p-6">
+              <div class="row between mb-4">
+                <div><div class="section-title">Personal details</div><small class="muted">Visible to admins and managers in your portals.</small></div>
+              </div>
+              <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="field"><label class="label">First name</label><input class="input" value="Solomon"/></div>
+                <div class="field"><label class="label">Last name</label><input class="input" value="Aboagye"/></div>
+                <div class="field" style="grid-column: span 2;"><label class="label">Email</label><input class="input" value="solomon.aboagye@amalitech.com"/><span class="field-help">Used for sign-in and recovery. Changing it requires re-verification.</span></div>
+                <div class="field"><label class="label">Phone</label><input class="input" value="+233 24 567 8901"/></div>
+                <div class="field"><label class="label">Display language</label><input class="input" value="English (UK)"/></div>
+              </div>
+            </div>
+
+            <div class="card p-6">
+              <div class="section-title mb-2">Default portal</div>
+              <small class="muted" style="display:block; margin-bottom: 12px;">Where you land at sign-in. You can still switch portals at any time from the header.</small>
+              <div class="grid grid-4" style="gap: 8px;">
+                <label class="card p-4" style="cursor:pointer; box-shadow:none; border-color: var(--primary); background: var(--primary-soft);"><div class="row between"><strong style="font-size: 13.5px;">Manager</strong><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><small class="muted">Shop East</small></label>
+                <label class="card p-4" style="cursor:pointer; box-shadow:none;"><strong style="font-size: 13.5px;">Admin</strong><div><small class="muted">Global</small></div></label>
+                <label class="card p-4" style="cursor:pointer; box-shadow:none;"><strong style="font-size: 13.5px;">Worker</strong><div><small class="muted">Shop East</small></div></label>
+                <label class="card p-4" style="cursor:pointer; box-shadow:none;"><strong style="font-size: 13.5px;">Agent</strong><div><small class="muted">Greater Accra</small></div></label>
+              </div>
+            </div>
+
+            <div class="card p-6">
+              <div class="section-title mb-4">Active sessions</div>
+              <table class="table">
+                <thead><tr><th>Device</th><th>Location</th><th>Last seen</th><th></th></tr></thead>
+                <tbody>
+                  <tr><td><strong>Chrome on macOS</strong><br/><small class="muted">Current session</small></td><td>Accra, GH</td><td class="muted">Active now</td><td></td></tr>
+                  <tr><td>Safari on iPhone</td><td>Accra, GH</td><td class="muted">2h ago</td><td><button class="btn outline sm">Revoke</button></td></tr>
+                  <tr><td>Firefox on Windows</td><td>Kumasi, GH</td><td class="muted">3 days ago</td><td><button class="btn outline sm">Revoke</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 5. MANAGER PROMOTES WORKER ===================== -->
+    <section class="mock" data-mock="promote">
+      <div class="caption">
+        <span class="ticket">E-01-08</span>
+        <div class="text"><strong>Manager promotes worker.</strong> Search a registered user by email or name → confirm location and effective date → submit. Backed by <span class="font-mono">manager-staff.routes</span> + a new <span class="font-mono">POST /api/admin/staff/promote</span>. Permission check uses the manager's own <span class="font-mono">access-control.write</span> at this location.</div>
+      </div>
+
+      <header class="app-header"><div class="app-header-inner">
+        <div class="app-brand"><div class="mark">S</div> Shop</div>
+        <div class="crumbs"><span class="sep">/</span><strong>Manager</strong><span class="sep">/</span><span>Staff</span></div>
+        <span class="portal-pill"><span class="dot">M</span> Manager · Shop East</span>
+        <div class="app-header-actions"><button class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/></svg></button><div class="avatar">SA</div></div>
+      </div></header>
+
+      <div class="container">
+        <div class="row between mb-6">
+          <div>
+            <div class="kicker mb-2">Staff at Shop East</div>
+            <h1 class="page-title">Workers</h1>
+            <small class="muted">7 active · 1 on leave · 0 suspended</small>
+          </div>
+          <button class="btn primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Promote a user to worker</button>
+        </div>
+
+        <div class="grid" style="grid-template-columns: 1fr 420px; gap: 24px;">
+
+          <div class="card" style="overflow:hidden;">
+            <div class="staff-row">
+              <div class="avatar">AO</div>
+              <div><div style="font-weight:600;">Ama Owusu</div><small class="muted">Worker · ama.owusu@shop.gh · joined Jan 2026</small></div>
+              <div class="row gap-sm"><span class="badge warning">On leave</span><button class="btn outline sm">Manage</button></div>
+            </div>
+            <div class="staff-row">
+              <div class="avatar">KM</div>
+              <div><div style="font-weight:600;">Kojo Mensah</div><small class="muted">Worker · kojo.mensah@shop.gh · joined Feb 2026</small></div>
+              <div class="row gap-sm"><span class="badge success">Active</span><button class="btn outline sm">Manage</button></div>
+            </div>
+            <div class="staff-row">
+              <div class="avatar">EA</div>
+              <div><div style="font-weight:600;">Esi Amponsah</div><small class="muted">Worker · esi.a@shop.gh · joined Mar 2026</small></div>
+              <div class="row gap-sm"><span class="badge success">Active</span><button class="btn outline sm">Manage</button></div>
+            </div>
+            <div class="staff-row">
+              <div class="avatar">YT</div>
+              <div><div style="font-weight:600;">Yaw Tetteh</div><small class="muted">Worker · yaw.t@shop.gh · joined Apr 2026</small></div>
+              <div class="row gap-sm"><span class="badge success">Active</span><button class="btn outline sm">Manage</button></div>
+            </div>
+          </div>
+
+          <!-- Sheet (promote) -->
+          <div class="card" style="padding: 20px; height: fit-content;">
+            <div class="row between mb-4">
+              <div>
+                <div class="section-title">Promote to worker</div>
+                <small class="muted">Adds the worker role at Shop East.</small>
+              </div>
+              <button class="btn ghost icon sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+
+            <div class="col gap-4">
+              <div class="field">
+                <label class="label">Find a registered user</label>
+                <input class="input" placeholder="Email or full name…" value="abena"/>
+                <div class="card mt-2" style="padding: 6px;">
+                  <div class="portal-row" style="grid-template-columns: 32px 1fr auto;">
+                    <div class="avatar" style="width:32px; height:32px; font-size: 11px;">AB</div>
+                    <div><div class="pname">Abena Boateng</div><div class="pdesc">abena.boateng@shop.gh · no current role</div></div>
+                    <button class="btn outline sm">Select</button>
+                  </div>
+                  <div class="portal-row" style="grid-template-columns: 32px 1fr auto;">
+                    <div class="avatar" style="width:32px; height:32px; font-size: 11px;">AB</div>
+                    <div><div class="pname">Abena Bediako</div><div class="pdesc">abena.b@gmail.com · no current role</div></div>
+                    <button class="btn outline sm">Select</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="field">
+                <label class="label">Location</label>
+                <input class="input" value="Shop East" />
+                <span class="field-help">Locked to your operating location. Admins can pick any location.</span>
+              </div>
+              <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="field"><label class="label">Effective date</label><input class="input" value="Apr 27, 2026"/></div>
+                <div class="field"><label class="label">Expires (optional)</label><input class="input" placeholder="No expiry"/></div>
+              </div>
+
+              <div class="alert-row">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                The user keeps their existing roles. Adding worker at Shop East lets them take stock assignments here.
+              </div>
+
+              <div class="row gap-sm" style="justify-content:flex-end;">
+                <button class="btn ghost">Cancel</button>
+                <button class="btn primary">Promote &amp; notify</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 6. CROSS-LOCATION ADMIN OVERVIEW ===================== -->
+    <section class="mock" data-mock="cross-loc">
+      <div class="caption">
+        <span class="ticket">E-02-04</span>
+        <div class="text"><strong>Cross-location admin overview.</strong> Replaces the bare list page. Locations with active alerts surface to the top with a colored top stripe; sortable, filterable, exportable to CSV. Each card click-throughs to the per-location dashboard.</div>
+      </div>
+
+      <header class="app-header"><div class="app-header-inner">
+        <div class="app-brand"><div class="mark">S</div> Shop</div>
+        <div class="crumbs"><span class="sep">/</span><strong>Admin</strong><span class="sep">/</span><span>Locations</span><span class="sep">/</span><span>Overview</span></div>
+        <div class="app-header-actions"><button class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/></svg></button><div class="avatar">SA</div></div>
+      </div></header>
+
+      <div class="container">
+        <div class="row between mb-6">
+          <div>
+            <div class="kicker mb-2">Network status</div>
+            <h1 class="page-title">All locations</h1>
+            <small class="muted">14 locations · 9 stores · 5 warehouses</small>
+          </div>
+          <div class="row gap-sm">
+            <button class="btn outline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Filter</button>
+            <button class="btn outline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export CSV</button>
+            <button class="btn primary">New location</button>
+          </div>
+        </div>
+
+        <div class="grid grid-4 mb-6">
+          <div class="card p-6"><div class="metric"><span class="label">Total SKUs in stock</span><span class="value">24,318</span><span class="delta up">+412 this week</span></div></div>
+          <div class="card p-6"><div class="metric"><span class="label">Locations with alerts</span><span class="value text-warning">3</span><span class="delta">2 stores · 1 warehouse</span></div></div>
+          <div class="card p-6"><div class="metric"><span class="label">Pending transfers</span><span class="value">12</span><span class="delta">3 awaiting receipt</span></div></div>
+          <div class="card p-6"><div class="metric"><span class="label">Sales today</span><span class="value">142</span><span class="delta up">+18% WoW</span></div></div>
+        </div>
+
+        <div class="row gap-sm mb-4">
+          <button class="chip active">All · 14</button>
+          <button class="chip">Stores · 9</button>
+          <button class="chip">Warehouses · 5</button>
+          <button class="chip">With alerts · 3</button>
+          <button class="chip">Inactive · 0</button>
+        </div>
+
+        <div class="grid grid-cards">
+          <!-- Alert: low stock -->
+          <article class="card location-card alert">
+            <div class="head">
+              <div>
+                <div class="kicker" style="color: oklch(0.45 0.124 72);">Store</div>
+                <div class="name">Shop East</div>
+              </div>
+              <span class="badge warning">2 alerts</span>
+            </div>
+            <div class="alert-row">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+              4 SKUs below threshold
+            </div>
+            <div class="stats">
+              <div class="stat"><span class="v">2,418</span><span class="k">On hand</span></div>
+              <div class="stat"><span class="v">312</span><span class="k">Reserved</span></div>
+              <div class="stat"><span class="v">21</span><span class="k">Sales</span></div>
+            </div>
+            <div class="row between"><small class="muted">Inspected · 2 days ago</small><a class="text-primary text-sm" href="#">Open →</a></div>
+          </article>
+
+          <!-- Alert: overdue inspection -->
+          <article class="card location-card alert">
+            <div class="head">
+              <div>
+                <div class="kicker" style="color: oklch(0.45 0.124 72);">Warehouse</div>
+                <div class="name">Warehouse North</div>
+              </div>
+              <span class="badge danger">Overdue</span>
+            </div>
+            <div class="alert-row" style="background: color-mix(in oklch, var(--destructive) 12%, var(--card));">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
+              Inspection 7 days overdue
+            </div>
+            <div class="stats">
+              <div class="stat"><span class="v">8,914</span><span class="k">On hand</span></div>
+              <div class="stat"><span class="v">128</span><span class="k">Reserved</span></div>
+              <div class="stat"><span class="v">4</span><span class="k">Pending in</span></div>
+            </div>
+            <div class="row between"><small class="muted">Inspected · 14 days ago</small><a class="text-primary text-sm" href="#">Open →</a></div>
+          </article>
+
+          <!-- Healthy stores -->
+          <article class="card location-card">
+            <div class="head">
+              <div><div class="kicker">Store</div><div class="name">Shop Central</div></div>
+              <span class="badge success">Healthy</span>
+            </div>
+            <svg class="spark" viewBox="0 0 100 36" preserveAspectRatio="none"><path class="area" d="M0 30 L10 24 L20 26 L30 18 L40 22 L50 14 L60 17 L70 10 L80 13 L90 8 L100 12 L100 36 L0 36 Z"/><path d="M0 30 L10 24 L20 26 L30 18 L40 22 L50 14 L60 17 L70 10 L80 13 L90 8 L100 12"/></svg>
+            <div class="stats">
+              <div class="stat"><span class="v">1,872</span><span class="k">On hand</span></div>
+              <div class="stat"><span class="v">214</span><span class="k">Reserved</span></div>
+              <div class="stat"><span class="v">34</span><span class="k">Sales</span></div>
+            </div>
+            <div class="row between"><small class="muted">Inspected · 1 day ago</small><a class="text-primary text-sm" href="#">Open →</a></div>
+          </article>
+
+          <article class="card location-card">
+            <div class="head"><div><div class="kicker">Warehouse</div><div class="name">Warehouse Tema</div></div><span class="badge success">Healthy</span></div>
+            <svg class="spark" viewBox="0 0 100 36" preserveAspectRatio="none"><path class="area" d="M0 18 L10 16 L20 20 L30 14 L40 16 L50 10 L60 12 L70 8 L80 11 L90 6 L100 9 L100 36 L0 36 Z"/><path d="M0 18 L10 16 L20 20 L30 14 L40 16 L50 10 L60 12 L70 8 L80 11 L90 6 L100 9"/></svg>
+            <div class="stats"><div class="stat"><span class="v">5,210</span><span class="k">On hand</span></div><div class="stat"><span class="v">88</span><span class="k">Reserved</span></div><div class="stat"><span class="v">2</span><span class="k">Pending in</span></div></div>
+            <div class="row between"><small class="muted">Inspected · 3 days ago</small><a class="text-primary text-sm" href="#">Open →</a></div>
+          </article>
+
+          <article class="card location-card">
+            <div class="head"><div><div class="kicker">Store</div><div class="name">Shop Kumasi</div></div><span class="badge success">Healthy</span></div>
+            <svg class="spark" viewBox="0 0 100 36" preserveAspectRatio="none"><path class="area" d="M0 22 L10 20 L20 24 L30 18 L40 16 L50 12 L60 14 L70 10 L80 9 L90 8 L100 5 L100 36 L0 36 Z"/><path d="M0 22 L10 20 L20 24 L30 18 L40 16 L50 12 L60 14 L70 10 L80 9 L90 8 L100 5"/></svg>
+            <div class="stats"><div class="stat"><span class="v">1,402</span><span class="k">On hand</span></div><div class="stat"><span class="v">76</span><span class="k">Reserved</span></div><div class="stat"><span class="v">19</span><span class="k">Sales</span></div></div>
+            <div class="row between"><small class="muted">Inspected · 1 day ago</small><a class="text-primary text-sm" href="#">Open →</a></div>
+          </article>
+
+          <article class="card location-card alert">
+            <div class="head"><div><div class="kicker" style="color: oklch(0.45 0.124 72);">Store</div><div class="name">Shop Takoradi</div></div><span class="badge warning">1 alert</span></div>
+            <div class="alert-row">Stale handover · 36h</div>
+            <div class="stats"><div class="stat"><span class="v">980</span><span class="k">On hand</span></div><div class="stat"><span class="v">44</span><span class="k">Reserved</span></div><div class="stat"><span class="v">12</span><span class="k">Sales</span></div></div>
+            <div class="row between"><small class="muted">Inspected · 4 days ago</small><a class="text-primary text-sm" href="#">Open →</a></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 7. REAL-TIME LOCATION OVERVIEW ===================== -->
+    <section class="mock" data-mock="loc-overview">
+      <div class="caption">
+        <span class="ticket">E-02-02</span>
+        <div class="text"><strong>Real-time location overview.</strong> Manager-facing operational dashboard for one location. Live stock, ownership distribution among workers, today's sales, pending supply requests, recent platform events. Auto-refresh every 30 seconds via React Query.</div>
+      </div>
+
+      <header class="app-header"><div class="app-header-inner">
+        <div class="app-brand"><div class="mark">S</div> Shop</div>
+        <div class="crumbs"><span class="sep">/</span><strong>Manager</strong><span class="sep">/</span><span>Shop East</span></div>
+        <span class="portal-pill"><span class="dot">M</span> Manager · Shop East</span>
+        <div class="app-header-actions"><button class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/></svg></button><div class="avatar">SA</div></div>
+      </div></header>
+
+      <div class="container">
+        <div class="row between mb-6">
+          <div>
+            <div class="kicker mb-2">Live · refreshed 4s ago</div>
+            <h1 class="page-title">Shop East</h1>
+            <small class="muted">North Industrial Area · open 08:00 – 20:00 GMT · 5 workers on shift</small>
+          </div>
+          <div class="row gap-sm">
+            <button class="btn outline">Manual stock count</button>
+            <button class="btn primary">Request supply</button>
+          </div>
+        </div>
+
+        <div class="grid grid-4 mb-6">
+          <div class="card p-6"><div class="metric"><span class="label">On hand</span><span class="value">2,418</span><svg class="spark mt-2" viewBox="0 0 100 36" preserveAspectRatio="none"><path d="M0 18 L20 16 L40 14 L60 10 L80 12 L100 8" /></svg></div></div>
+          <div class="card p-6"><div class="metric"><span class="label">Reserved</span><span class="value">312</span><span class="delta">28 expiring &lt; 30 min</span></div></div>
+          <div class="card p-6"><div class="metric"><span class="label">Sales today</span><span class="value">21</span><span class="delta up">2,418 GHS · +14% DoD</span></div></div>
+          <div class="card p-6"><div class="metric"><span class="label">Open alerts</span><span class="value text-warning">2</span><span class="delta">1 low stock · 1 stale handover</span></div></div>
+        </div>
+
+        <div class="grid" style="grid-template-columns: 1fr 360px; gap: 24px;">
+          <div class="col gap-6">
+            <div class="card p-6">
+              <div class="row between mb-4">
+                <div><div class="section-title">Stock ownership</div><small class="muted">Who owns what right now, from the ownership ledger.</small></div>
+                <a class="text-primary text-sm" href="#">View history →</a>
+              </div>
+              <table class="table">
+                <thead><tr><th>Worker</th><th>SKUs</th><th>Units</th><th>Active handovers</th><th>Last activity</th></tr></thead>
+                <tbody>
+                  <tr><td><div class="row gap-sm" style="align-items:center;"><span class="avatar" style="width:28px;height:28px;font-size:11px">KM</span> Kojo Mensah</div></td><td>42</td><td>614</td><td>—</td><td class="muted">12m ago</td></tr>
+                  <tr><td><div class="row gap-sm" style="align-items:center;"><span class="avatar" style="width:28px;height:28px;font-size:11px">EA</span> Esi Amponsah</div></td><td>38</td><td>492</td><td>—</td><td class="muted">28m ago</td></tr>
+                  <tr><td><div class="row gap-sm" style="align-items:center;"><span class="avatar" style="width:28px;height:28px;font-size:11px">YT</span> Yaw Tetteh</div></td><td>34</td><td>521</td><td>1 from Ama</td><td class="muted">just now</td></tr>
+                  <tr><td><div class="row gap-sm" style="align-items:center;"><span class="avatar" style="width:28px;height:28px;font-size:11px">AO</span> Ama Owusu <span class="badge warning" style="margin-left:4px;">On leave</span></div></td><td>0</td><td>0</td><td>14 to Yaw</td><td class="muted">3d ago</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="card p-6">
+              <div class="section-title mb-4">Pending supply requests</div>
+              <div class="col gap-3">
+                <div class="card p-4" style="box-shadow:none;">
+                  <div class="row between">
+                    <div>
+                      <span class="font-mono text-xs muted">SR-2026-04-0142</span>
+                      <div style="font-weight:600;">From Warehouse North · 8 SKUs · 412 units</div>
+                      <small class="muted">Dispatched 14m ago · ETA 11:30</small>
+                    </div>
+                    <span class="badge primary">Dispatched</span>
+                  </div>
+                </div>
+                <div class="card p-4" style="box-shadow:none;">
+                  <div class="row between">
+                    <div>
+                      <span class="font-mono text-xs muted">SR-2026-04-0144</span>
+                      <div style="font-weight:600;">Drafted · 3 SKUs</div>
+                      <small class="muted">Awaiting your submission</small>
+                    </div>
+                    <button class="btn primary sm">Submit</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <aside class="col gap-6">
+            <div class="card p-6">
+              <div class="section-title mb-4">Alerts</div>
+              <div class="alert-row mb-2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+                <div><strong>SKU-94120</strong> below threshold (4 / 12)</div>
+              </div>
+              <div class="alert-row" style="background: color-mix(in oklch, var(--accent) 26%, var(--card));">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <div>Handover Ama → Yaw stale 36h</div>
+              </div>
+            </div>
+
+            <div class="card p-6">
+              <div class="row between mb-2"><div class="section-title">Live event log</div><span class="badge primary">Live</span></div>
+              <div class="col gap-3 text-xs">
+                <div class="row gap-3"><span class="muted shrink-0" style="width:48px;">just now</span><div><span class="badge primary" style="margin-right: 4px;">sale</span> POS-9128 · 320.50 GHS · Yaw</div></div>
+                <div class="row gap-3"><span class="muted shrink-0" style="width:48px;">2m</span><div><span class="badge success" style="margin-right: 4px;">stock</span> Adjustment +12 SKU-77104</div></div>
+                <div class="row gap-3"><span class="muted shrink-0" style="width:48px;">12m</span><div><span class="badge primary" style="margin-right: 4px;">supply</span> SR-0142 dispatched</div></div>
+                <div class="row gap-3"><span class="muted shrink-0" style="width:48px;">28m</span><div><span class="badge warning" style="margin-right: 4px;">low</span> SKU-94120 below threshold</div></div>
+                <div class="row gap-3"><span class="muted shrink-0" style="width:48px;">1h</span><div><span class="badge danger" style="margin-right: 4px;">expiry</span> RES-04-1199 expired</div></div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 8. AGENT ROUTE SCREEN ===================== -->
+    <section class="mock" data-mock="agent-route">
+      <div class="caption">
+        <span class="ticket">E-00C-02 · E-00C-03 · E-00C-05</span>
+        <div class="text"><strong>Delivery agent route screen.</strong> Mobile-first because agents work from a phone. Daily route, status transitions, consolidation hint when two stops share an address. Status updates publish a <span class="font-mono">delivery.transition</span> platform event so the manager queue reflects in real time.</div>
+      </div>
+
+      <header class="app-header"><div class="app-header-inner">
+        <div class="app-brand"><div class="mark">S</div> Shop</div>
+        <div class="crumbs"><span class="sep">/</span><strong>Agent</strong><span class="sep">/</span><span>Today</span></div>
+        <span class="portal-pill"><span class="dot">D</span> Agent · Greater Accra</span>
+        <div class="app-header-actions"><button class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/></svg></button><div class="avatar">SA</div></div>
+      </div></header>
+
+      <div class="container">
+        <div class="grid" style="grid-template-columns: minmax(0,1fr) 380px; gap: 24px; align-items:flex-start;">
+
+          <!-- Desktop view -->
+          <div class="col gap-6">
+            <div>
+              <div class="kicker mb-2">Apr 27 · 6 stops · 14 items</div>
+              <h1 class="page-title mb-2">Today's route</h1>
+              <small class="muted">Estimated 4h 20m · 38 km · last sync 14s ago</small>
+            </div>
+
+            <div class="routemap">
+              <div class="road"></div>
+              <div class="pin done" style="left: 12%; top: 50%;"><div class="dot"></div><div class="lbl">1 · Done</div></div>
+              <div class="pin done" style="left: 26%; top: 50%;"><div class="dot"></div><div class="lbl">2 · Done</div></div>
+              <div class="pin next" style="left: 42%; top: 50%;"><div class="dot"></div><div class="lbl">3 · Next</div></div>
+              <div class="pin" style="left: 58%; top: 50%;"><div class="dot"></div><div class="lbl">4</div></div>
+              <div class="pin warn" style="left: 74%; top: 50%;"><div class="dot"></div><div class="lbl">5 · Same address as 6</div></div>
+              <div class="pin" style="left: 88%; top: 50%;"><div class="dot"></div><div class="lbl">6</div></div>
+            </div>
+
+            <div class="card" style="overflow:hidden;">
+              <div class="row between p-4">
+                <div class="section-title">Stops</div>
+                <button class="btn outline sm">Reorder by distance</button>
+              </div>
+              <div>
+                <div class="staff-row" style="opacity:0.6;">
+                  <div class="avatar" style="background: var(--success); color: white;">1</div>
+                  <div><div style="font-weight:600;">Akua Frimpong · 2 items</div><small class="muted">Osu · Completed 09:14 · DLV-04-7811</small></div>
+                  <span class="badge success">Delivered</span>
+                </div>
+                <div class="staff-row" style="opacity:0.6;">
+                  <div class="avatar" style="background: var(--success); color: white;">2</div>
+                  <div><div style="font-weight:600;">Maxine Quaye · 1 item</div><small class="muted">Cantonments · Completed 09:42 · DLV-04-7812</small></div>
+                  <span class="badge success">Delivered</span>
+                </div>
+                <div class="staff-row" style="background: var(--primary-soft);">
+                  <div class="avatar" style="background: var(--primary); color: white;">3</div>
+                  <div><div style="font-weight:600;">Kwame Boakye · 4 items</div><small class="muted">Labone · ETA 10:35 · DLV-04-7813</small></div>
+                  <button class="btn primary sm">Start →</button>
+                </div>
+                <div class="staff-row">
+                  <div class="avatar">4</div>
+                  <div><div style="font-weight:600;">Esi Mensah · 2 items</div><small class="muted">Airport Residential · ETA 11:10 · DLV-04-7814</small></div>
+                  <span class="badge">Pending</span>
+                </div>
+                <div class="staff-row" style="background: color-mix(in oklch, var(--accent) 16%, var(--card));">
+                  <div class="avatar">5</div>
+                  <div>
+                    <div style="font-weight:600;">Nana Asante · 3 items</div>
+                    <small class="muted">East Legon · ETA 11:55 · DLV-04-7815</small>
+                    <div class="badge warning mt-2"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg> Same address as stop 6</div>
+                  </div>
+                  <button class="btn outline sm">Consolidate</button>
+                </div>
+                <div class="staff-row">
+                  <div class="avatar">6</div>
+                  <div><div style="font-weight:600;">Nana Asante · 2 items</div><small class="muted">East Legon · ETA 12:10 · DLV-04-7816</small></div>
+                  <span class="badge">Pending</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Phone preview -->
+          <div class="col gap-3" style="position: sticky; top: 80px;">
+            <small class="muted" style="text-align:center;">Mobile preview · 380px</small>
+            <div class="phone">
+              <div class="phone-status"><span>09:48</span><span>● ● ●</span></div>
+              <div class="phone-inner">
+                <div class="row between mb-4">
+                  <div>
+                    <div class="kicker" style="font-size: 9px;">Apr 27</div>
+                    <div style="font-family:Outfit; font-weight:600; font-size:18px;">Stop 3 of 6</div>
+                  </div>
+                  <button class="icon-btn sm" style="width:30px;height:30px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+                </div>
+
+                <div class="card p-4 mb-4">
+                  <div class="kicker mb-2">Now delivering</div>
+                  <div style="font-family:Outfit; font-weight:600; font-size:18px;">Kwame Boakye</div>
+                  <small class="muted">Labone, Accra · ETA 10:35</small>
+                  <div class="divider mt-4 mb-4"></div>
+                  <div class="col gap-2">
+                    <div class="row between text-sm"><span class="muted">DLV-04-7813</span><span class="font-mono">4 items</span></div>
+                    <div class="row between text-sm"><span class="muted">Items reserved</span><span>Yes · RES-2210</span></div>
+                    <div class="row between text-sm"><span class="muted">Payment</span><span>Paid (POS-9101)</span></div>
+                  </div>
+                </div>
+
+                <div class="col gap-2">
+                  <button class="btn primary lg" style="width:100%; justify-content:center;">Mark delivered</button>
+                  <button class="btn outline lg" style="width:100%; justify-content:center;">Could not deliver</button>
+                </div>
+
+                <div class="kicker mt-6 mb-2">Up next</div>
+                <div class="card p-4" style="box-shadow:none;">
+                  <div class="row between">
+                    <div>
+                      <strong style="font-size:13.5px;">Esi Mensah</strong>
+                      <div><small class="muted">Airport · 11:10 · 2 items</small></div>
+                    </div>
+                    <span class="badge">4</span>
+                  </div>
+                </div>
+                <div class="card p-4 mt-2" style="box-shadow:none; background: color-mix(in oklch, var(--accent) 14%, var(--card));">
+                  <div class="row between">
+                    <div>
+                      <strong style="font-size:13.5px;">Nana Asante · 5 + 6</strong>
+                      <div><small class="muted">East Legon · combine?</small></div>
+                    </div>
+                    <button class="btn outline sm">Combine</button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 9. MANAGER DELIVERY QUEUE ===================== -->
+    <section class="mock" data-mock="manager-deliveries">
+      <div class="caption">
+        <span class="ticket">E-00C-04</span>
+        <div class="text"><strong>Manager delivery queue.</strong> Filterable, paginated view of every delivery and its assigned agent. Reassign opens a sheet that requires a reason. Bulk-assign suggests an agent based on agent location and current load.</div>
+      </div>
+
+      <header class="app-header"><div class="app-header-inner">
+        <div class="app-brand"><div class="mark">S</div> Shop</div>
+        <div class="crumbs"><span class="sep">/</span><strong>Admin</strong><span class="sep">/</span><span>Deliveries</span></div>
+        <div class="app-header-actions"><button class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/></svg></button><div class="avatar">SA</div></div>
+      </div></header>
+
+      <div class="container">
+        <div class="row between mb-6">
+          <div>
+            <div class="kicker mb-2">Apr 27 · 38 deliveries</div>
+            <h1 class="page-title">Delivery queue</h1>
+            <small class="muted">22 in transit · 11 assigned · 5 unassigned</small>
+          </div>
+          <div class="row gap-sm">
+            <button class="btn outline">Filter</button>
+            <button class="btn outline">Export</button>
+            <button class="btn primary">Auto-assign</button>
+          </div>
+        </div>
+
+        <div class="grid grid-4 mb-6">
+          <div class="card p-6"><div class="metric"><span class="label">Unassigned</span><span class="value text-warning">5</span></div></div>
+          <div class="card p-6"><div class="metric"><span class="label">Assigned</span><span class="value">11</span></div></div>
+          <div class="card p-6"><div class="metric"><span class="label">In transit</span><span class="value">22</span></div></div>
+          <div class="card p-6"><div class="metric"><span class="label">Completed today</span><span class="value text-success">14</span></div></div>
+        </div>
+
+        <div class="card" style="overflow:hidden;">
+          <div class="row between p-4">
+            <div class="row gap-sm">
+              <button class="chip active">All · 38</button>
+              <button class="chip">Unassigned · 5</button>
+              <button class="chip">In transit · 22</button>
+              <button class="chip">Failed · 0</button>
+            </div>
+            <input class="input" placeholder="Search by reference, customer, agent…" style="width: 280px;"/>
+          </div>
+          <table class="table">
+            <thead><tr><th></th><th>Reference</th><th>Customer</th><th>Items</th><th>Source</th><th>Agent</th><th>Status</th><th>ETA</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><input type="checkbox"/></td><td><span class="font-mono text-xs">DLV-04-7820</span></td><td>Akosua Mensah</td><td>3</td><td>POS-9131</td><td><span class="badge warning">Unassigned</span></td><td><span class="badge">Draft</span></td><td class="muted">—</td><td><button class="btn outline sm">Assign</button></td></tr>
+              <tr><td><input type="checkbox"/></td><td><span class="font-mono text-xs">DLV-04-7821</span></td><td>Kwesi Asare</td><td>2</td><td>POS-9132</td><td><span class="badge warning">Unassigned</span></td><td><span class="badge">Draft</span></td><td class="muted">—</td><td><button class="btn outline sm">Assign</button></td></tr>
+              <tr><td><input type="checkbox"/></td><td><span class="font-mono text-xs">DLV-04-7813</span></td><td>Kwame Boakye</td><td>4</td><td>POS-9101</td><td><div class="row gap-sm" style="align-items:center"><span class="avatar" style="width:24px;height:24px;font-size:10px;">SA</span> Solomon A.</div></td><td><span class="badge primary">In transit</span></td><td>10:35</td><td><a class="text-primary text-xs">Track</a></td></tr>
+              <tr><td><input type="checkbox"/></td><td><span class="font-mono text-xs">DLV-04-7811</span></td><td>Akua Frimpong</td><td>2</td><td>POS-9099</td><td><div class="row gap-sm" style="align-items:center"><span class="avatar" style="width:24px;height:24px;font-size:10px;">SA</span> Solomon A.</div></td><td><span class="badge success">Delivered</span></td><td class="muted">09:14 ✓</td><td><a class="text-primary text-xs">View</a></td></tr>
+              <tr><td><input type="checkbox"/></td><td><span class="font-mono text-xs">DLV-04-7805</span></td><td>Esi Mensah</td><td>2</td><td>POS-9088</td><td><div class="row gap-sm" style="align-items:center"><span class="avatar" style="width:24px;height:24px;font-size:10px;">RM</span> Rita M.</div></td><td><span class="badge primary">Assigned</span></td><td>11:10</td><td><a class="text-primary text-xs">Reassign</a></td></tr>
+            </tbody>
+          </table>
+          <div class="row between p-4" style="border-top: 1px solid var(--border);">
+            <small class="muted">Showing 5 of 38</small>
+            <div class="row gap-sm"><button class="btn outline sm">Previous</button><button class="btn outline sm">Next</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+(function () {
+  const links = document.querySelectorAll('.rail-link');
+  const mocks = document.querySelectorAll('.mock');
+  links.forEach((link) => {
+    link.addEventListener('click', () => {
+      const target = link.dataset.mock;
+      links.forEach((l) => l.classList.toggle('active', l === link));
+      mocks.forEach((m) => m.classList.toggle('active', m.dataset.mock === target));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+})();
+</script>
+</body>
+</html>

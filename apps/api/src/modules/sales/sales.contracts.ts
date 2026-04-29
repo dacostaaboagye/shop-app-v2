@@ -4,9 +4,11 @@ export type InvoiceRecord = {
   attributedWorkerId: string | null;
   attributedWorkerName: string | null;
   attributedWorkerEmail: string | null;
+  classification: "outgoing" | "internal";
   confirmedAt: Date | null;
   createdAt: Date;
   createdBy: string | null;
+  currentPayableReference: string | null;
   customerBillingAddressLines: string[] | null;
   currencyCode: string;
   currencyScale: number;
@@ -18,13 +20,27 @@ export type InvoiceRecord = {
   locationId: string;
   notes: string | null;
   parentInvoiceId: string | null;
+  parentInvoiceReference: string | null;
   paymentMethod: string | null;
   reference: string;
-  status: "confirmed" | "voided";
+  replacementInvoiceId: string | null;
+  replacementInvoiceReference: string | null;
+  revisionCreditNoteId: string | null;
+  revisionCreditNoteReference: string | null;
+  revisionRootInvoiceId: string | null;
+  revisionRootReference: string | null;
+  role: "standard" | "credit_note" | "adjusted";
+  status: "confirmed" | "superseded" | "voided";
   subtotalAmount: string;
   taxAmount: string;
   totalAmount: string;
-  type: "pos" | "portal" | "ecommerce" | "manual" | "credit_note";
+  type:
+    | "pos"
+    | "portal"
+    | "ecommerce"
+    | "manual"
+    | "credit_note"
+    | "adjusted";
   updatedAt: Date;
   voidedAt: Date | null;
   voidReason: string | null;
@@ -65,6 +81,7 @@ export type SaleLineInput = {
 
 export type CreateSaleTransactionInput = {
   attributedWorkerId: string;
+  classification: "outgoing" | "internal";
   confirmedAt: Date;
   createdBy: string;
   customerBillingAddressLines?: string[] | null;
@@ -86,7 +103,24 @@ export type CreateSaleTransactionInput = {
 };
 
 export type CreateReturnTransactionInput = {
+  adjustedInvoice?: {
+    lines: {
+      lineTotal: string;
+      quantity: number;
+      skuId: string;
+      skuSnapshot: { sku: string; variantName: string; productName: string };
+      taxAmount: string;
+      taxCategory: string | null;
+      taxRate: string | null;
+      unitPrice: string;
+    }[];
+    reference: string;
+    subtotalAmount: string;
+    taxAmount: string;
+    totalAmount: string;
+  } | null;
   attributedWorkerId: string | null;
+  classification: "outgoing" | "internal";
   confirmedAt: Date;
   createdBy: string;
   currencyCode: string;
@@ -104,6 +138,7 @@ export type CreateReturnTransactionInput = {
   locationId: string;
   now: Date;
   parentInvoiceId: string;
+  revisionRootInvoiceId: string;
   reference: string;
   subtotalAmount: string;
   taxAmount: string;
