@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { AuthUser } from "@shop/contracts";
-import { buildLoginRedirectHref, normalizeSafeNextPath, resolvePostLoginHref } from "./auth-redirect";
+import {
+  buildLoginRedirectHref,
+  normalizeSafeNextPath,
+  resolvePostLoginHref,
+} from "./auth-redirect";
 
 const baseUser: AuthUser = {
   availablePortals: ["admin"],
@@ -36,13 +40,13 @@ describe("auth redirect helpers", () => {
   });
 
   it("prefers a safe next path after login", () => {
-    assert.equal(
-      resolvePostLoginHref(baseUser, "/docs/api"),
-      "/docs/api",
-    );
+    assert.equal(resolvePostLoginHref(baseUser, "/docs/api"), "/docs/api");
   });
 
   it("falls back to the portal landing route when next is unsafe", () => {
-    assert.equal(resolvePostLoginHref(baseUser, "https://evil.example"), "/admin");
+    assert.equal(
+      resolvePostLoginHref(baseUser, "https://evil.example"),
+      "/admin",
+    );
   });
 });

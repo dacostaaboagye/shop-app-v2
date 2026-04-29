@@ -34,13 +34,7 @@ export type InvoiceRecord = {
   subtotalAmount: string;
   taxAmount: string;
   totalAmount: string;
-  type:
-    | "pos"
-    | "portal"
-    | "ecommerce"
-    | "manual"
-    | "credit_note"
-    | "adjusted";
+  type: "pos" | "portal" | "ecommerce" | "manual" | "credit_note" | "adjusted";
   updatedAt: Date;
   voidedAt: Date | null;
   voidReason: string | null;

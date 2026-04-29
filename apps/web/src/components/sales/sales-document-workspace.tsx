@@ -6,10 +6,10 @@ import { useReactToPrint } from "react-to-print";
 import { PrintableInvoice } from "@/components/sales/printable-invoice";
 import { DocumentErrors } from "@/components/sales/sales-document-errors";
 import { SalesDocumentPdfPreview } from "@/components/sales/sales-document-pdf-preview";
+import { RelatedDocumentsPanel } from "@/components/sales/sales-document-workspace-chain";
 import {
   InvoiceLineItems,
   OfficialDocumentPanel,
-  RelatedDocumentsPanel,
   SalesSummary,
 } from "@/components/sales/sales-document-workspace-panels";
 import { Skeleton } from "@/components/ui/skeleton";

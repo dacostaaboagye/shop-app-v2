@@ -41,7 +41,7 @@ export async function createReturnTransaction(
 
     const revisionRootReference =
       revisionRootInvoiceId === input.parentInvoiceId
-        ? parentInvoice?.reference ?? null
+        ? (parentInvoice?.reference ?? null)
         : await resolveInvoiceReference(tx, revisionRootInvoiceId);
 
     for (const line of input.lines) {
@@ -168,7 +168,8 @@ export async function createReturnTransaction(
         .returning();
 
       const adjustedInvoice = adjustedInvoiceRows[0];
-      if (!adjustedInvoice) throw new Error("Failed to insert adjusted invoice.");
+      if (!adjustedInvoice)
+        throw new Error("Failed to insert adjusted invoice.");
 
       replacementInvoiceReference = adjustedInvoice.reference;
 

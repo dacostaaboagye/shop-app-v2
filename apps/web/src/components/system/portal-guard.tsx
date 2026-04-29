@@ -61,6 +61,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
     router,
     status,
     user,
+    pathname,
   ]);
 
   if (authorization.isError) {

@@ -37,13 +37,18 @@ import {
   createEmptyPosSaleCustomerDetails,
   normalizePosSaleCustomerDetails,
 } from "./pos-sale-customer-details.support";
+import {
+  addCartAssignment,
+  removeCartAssignment,
+  updateCartAssignmentPrice,
+  updateCartAssignmentQuantity,
+} from "./pos-sale-page-client.support";
 import { replacePosSaleQuery } from "./pos-sale-page-query.support";
 import { SaleSuccessPanel } from "./pos-sale-success-panel";
 
 type SaleSuccess = {
   invoice: InvoiceResponse;
 };
-
 export function PosSalePageClient() {
   const pathname = usePathname();
   const router = useRouter();
@@ -89,11 +94,9 @@ export function PosSalePageClient() {
   );
   const [success, setSuccess] = useState<SaleSuccess | null>(null);
   const [cartSheetOpen, setCartSheetOpen] = useState(false);
-
   useEffect(() => {
     setDraftSearch(querySearch);
   }, [querySearch]);
-
   useEffect(() => {
     if (draftSearch === querySearch) {
       return;
@@ -108,7 +111,6 @@ export function PosSalePageClient() {
 
     return () => window.clearTimeout(timeoutId);
   }, [draftSearch, pathname, querySearch, router, searchParams]);
-
   const assignmentsQuery = useQuery({
     enabled: !!selectedLocationScope,
     queryFn: async () => {
@@ -145,61 +147,19 @@ export function PosSalePageClient() {
   });
 
   function addToCart(assignment: CurrentAssignment) {
-    setCart((prev) => {
-      const existing = prev.find(
-        (item) => item.assignment.skuId === assignment.skuId,
-      );
-      if (existing) {
-        return prev.map((item) =>
-          item.assignment.skuId === assignment.skuId
-            ? {
-                ...item,
-                quantity: Math.min(
-                  item.quantity + 1,
-                  item.assignment.availableQuantity,
-                ),
-              }
-            : item,
-        );
-      }
-      return [
-        ...prev,
-        { assignment, quantity: 1, unitPrice: assignment.sellingPrice },
-      ];
-    });
+    setCart((prev) => addCartAssignment(prev, assignment));
   }
 
   function updateQty(skuId: string, delta: number) {
-    setCart((prev) =>
-      prev
-        .map((item) =>
-          item.assignment.skuId === skuId
-            ? {
-                ...item,
-                quantity: Math.max(
-                  0,
-                  Math.min(
-                    item.quantity + delta,
-                    item.assignment.availableQuantity,
-                  ),
-                ),
-              }
-            : item,
-        )
-        .filter((item) => item.quantity > 0),
-    );
+    setCart((prev) => updateCartAssignmentQuantity(prev, skuId, delta));
   }
 
   function updatePrice(skuId: string, unitPrice: string) {
-    setCart((prev) =>
-      prev.map((item) =>
-        item.assignment.skuId === skuId ? { ...item, unitPrice } : item,
-      ),
-    );
+    setCart((prev) => updateCartAssignmentPrice(prev, skuId, unitPrice));
   }
 
   function removeFromCart(skuId: string) {
-    setCart((prev) => prev.filter((item) => item.assignment.skuId !== skuId));
+    setCart((prev) => removeCartAssignment(prev, skuId));
   }
 
   function handleConfirm() {

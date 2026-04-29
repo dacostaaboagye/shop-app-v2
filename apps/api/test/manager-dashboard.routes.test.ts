@@ -174,7 +174,10 @@ function createPermissionService(input: {
         return;
       }
 
-      if (args.permission === "stock.supply.manage" && input.canManageTransfers) {
+      if (
+        args.permission === "stock.supply.manage" &&
+        input.canManageTransfers
+      ) {
         return;
       }
 
@@ -260,7 +263,13 @@ function supplyRequest(
   overrides: Partial<{
     id: string;
     reference: string;
-    status: "approved" | "cancelled" | "dispatched" | "pending" | "received" | "rejected";
+    status:
+      | "approved"
+      | "cancelled"
+      | "dispatched"
+      | "pending"
+      | "received"
+      | "rejected";
     transferReference: string | null;
   }>,
 ) {

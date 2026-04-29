@@ -234,15 +234,23 @@ export class PostgresInvoiceQueryRepository {
         return null;
       }
 
-      seenReferences.add(currentReference);
-
-      const invoice = await this.db.query.invoices.findFirst({
+      const activeReference: string = currentReference;
+      seenReferences.add(activeReference);
+      const invoice:
+        | {
+            reference: string;
+            replacementInvoice: { reference: string } | null;
+            status: string;
+            type: string;
+          }
+        | null
+        | undefined = await this.db.query.invoices.findFirst({
         columns: {
           reference: true,
           status: true,
           type: true,
         },
-        where: (t, { eq }) => eq(t.reference, currentReference!),
+        where: (t, { eq }) => eq(t.reference, activeReference),
         with: {
           replacementInvoice: {
             columns: { reference: true },
@@ -284,9 +292,7 @@ function mapInvoiceWithRelations(
   };
 }
 
-function mapDocumentType(
-  documentType: "adjusted" | "credit_note" | "invoice",
-) {
+function mapDocumentType(documentType: "adjusted" | "credit_note" | "invoice") {
   if (documentType === "credit_note") return "credit_note";
   if (documentType === "adjusted") return "adjusted";
   return "pos";

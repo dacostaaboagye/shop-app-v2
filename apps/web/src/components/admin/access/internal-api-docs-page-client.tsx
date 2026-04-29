@@ -1,23 +1,31 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
 import { Download, Lock } from "lucide-react";
 import Link from "next/link";
 import Script from "next/script";
+import { useEffect, useRef, useState } from "react";
 import { useAuthorization } from "@/components/providers/authorization-provider";
 import { AppEmptyState } from "@/components/system/app-empty-state";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buildLoginRedirectHref } from "@/lib/auth/auth-redirect";
-import { fetchInternalApiDocs, internalApiDocsQueryKey } from "@/lib/react-query/internal-api-docs";
+import {
+  fetchInternalApiDocs,
+  internalApiDocsQueryKey,
+} from "@/lib/react-query/internal-api-docs";
 import { toRoute } from "@/lib/routes";
-import { isAuthSessionPending, useAuthSessionStore } from "@/store/use-auth-session-store";
+import {
+  isAuthSessionPending,
+  useAuthSessionStore,
+} from "@/store/use-auth-session-store";
 
 declare global {
   interface Window {
-    SwaggerUIBundle?: ((config: Record<string, unknown>) => { destroy?: () => void }) & {
+    SwaggerUIBundle?: ((config: Record<string, unknown>) => {
+      destroy?: () => void;
+    }) & {
       presets?: {
         apis?: unknown;
       };
@@ -32,7 +40,8 @@ export function InternalApiDocsPageClient() {
   const swaggerInstanceRef = useRef<{ destroy?: () => void } | null>(null);
   const isDevelopment = process.env.NODE_ENV === "development";
   const isAuthenticated = status === "authenticated";
-  const canViewDocs = isAuthenticated && (isDevelopment || can("api.docs.view"));
+  const canViewDocs =
+    isAuthenticated && (isDevelopment || can("api.docs.view"));
   const [bundleLoaded, setBundleLoaded] = useState(false);
   const docsQuery = useQuery({
     enabled: canViewDocs,
@@ -42,7 +51,12 @@ export function InternalApiDocsPageClient() {
   });
 
   useEffect(() => {
-    if (!bundleLoaded || !docsQuery.data || !hostRef.current || !window.SwaggerUIBundle) {
+    if (
+      !bundleLoaded ||
+      !docsQuery.data ||
+      !hostRef.current ||
+      !window.SwaggerUIBundle
+    ) {
       return;
     }
 

@@ -11,11 +11,7 @@ Object.assign(globalThis, { React });
 describe("LoginPage", () => {
   it("renders the dedicated sign-in route", async () => {
     const page = await LoginPage({ searchParams: Promise.resolve({}) });
-    const markup = renderToStaticMarkup(
-      <AppProviders>
-        {page}
-      </AppProviders>,
-    );
+    const markup = renderToStaticMarkup(<AppProviders>{page}</AppProviders>);
 
     assert.match(markup, /Sign In/);
     assert.match(markup, /No account\?/i);
@@ -26,11 +22,7 @@ describe("LoginPage", () => {
     const page = await LoginPage({
       searchParams: Promise.resolve({ oauth_error: "access_denied" }),
     });
-    const markup = renderToStaticMarkup(
-      <AppProviders>
-        {page}
-      </AppProviders>,
-    );
+    const markup = renderToStaticMarkup(<AppProviders>{page}</AppProviders>);
 
     assert.match(markup, /Google sign-in cancelled/);
     assert.match(markup, /cancelled or denied/i);

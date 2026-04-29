@@ -68,7 +68,10 @@ function drawCustomerAndMeta(
   return Math.max(customerEndY, metaEndY);
 }
 
-function drawCustomerBlock(doc: PDFKit.PDFDocument, input: RenderInput): number {
+function drawCustomerBlock(
+  doc: PDFKit.PDFDocument,
+  input: RenderInput,
+): number {
   const customerName =
     input.invoice.customerName ??
     (input.invoice.type === "pos" ? "Walk-in customer" : "Customer account");

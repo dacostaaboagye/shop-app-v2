@@ -207,9 +207,9 @@ function createWorkerDashboardServer(input: {
       },
       permissionService: {
         async assertHasPermission(args) {
-          return createPermissionService(input.canViewSales).assertHasPermission(
-            args,
-          );
+          return createPermissionService(
+            input.canViewSales,
+          ).assertHasPermission(args);
         },
       },
     },

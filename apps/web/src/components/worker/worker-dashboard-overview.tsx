@@ -14,10 +14,12 @@ import {
   workerDashboardSummaryQueryKey,
 } from "@/lib/react-query/worker-dashboard";
 import {
-  RecentSalesPanel,
   WorkerActionCenterPanel,
-  WorkerNotificationsPanel,
   WorkerStockHealthPanel,
+} from "./worker-dashboard-overview.attention-panels";
+import {
+  RecentSalesPanel,
+  WorkerNotificationsPanel,
 } from "./worker-dashboard-overview.sections";
 import { WorkerSalesInsightsPanel } from "./worker-dashboard-performance-panels";
 

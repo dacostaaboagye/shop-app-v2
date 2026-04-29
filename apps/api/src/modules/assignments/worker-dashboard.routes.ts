@@ -6,9 +6,9 @@ import type { FastifyInstance } from "fastify";
 import { AppError } from "../_core/errors/app-error.js";
 import type { PermissionResolutionService } from "../access-control/permission-resolution.service.js";
 import { getAuthenticatedUserId } from "../auth/auth-route-support.js";
+import type { NotificationQueryService } from "../notifications/notification-query.service.js";
 import { toInvoiceResponse } from "../sales/invoice-response.mapper.js";
 import type { PostgresInvoiceQueryRepository } from "../sales/postgres-invoice-query.repository.js";
-import type { NotificationQueryService } from "../notifications/notification-query.service.js";
 import type { PostgresWorkerAssignmentQueryRepository } from "./postgres-worker-assignment-query.repository.js";
 import { assignmentRoutes } from "./stock-assignment-route-support.js";
 import {
@@ -142,7 +142,8 @@ function createUnavailableDependencies(): WorkerDashboardRouteDependencies {
   const unavailable = (): never => {
     throw new AppError({
       code: "internal_error",
-      detail: "Worker dashboard services are not configured for this environment.",
+      detail:
+        "Worker dashboard services are not configured for this environment.",
       statusCode: 503,
       title: "Worker dashboard unavailable",
     });

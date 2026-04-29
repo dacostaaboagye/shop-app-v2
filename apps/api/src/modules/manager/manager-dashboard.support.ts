@@ -4,8 +4,8 @@ import type {
   ManagerDashboardTransferSummary,
   StockSupplyRequestResponse,
 } from "@shop/contracts";
-import type { InvoiceRecord } from "../sales/sales.contracts.js";
 import { toInvoiceResponse } from "../sales/invoice-response.mapper.js";
+import type { InvoiceRecord } from "../sales/sales.contracts.js";
 import { toRequestResponse } from "../stock/supply-request-route-support.js";
 
 const DASHBOARD_PAGE_SIZE = 100;
@@ -131,7 +131,10 @@ export async function listAllLocationTransfers(
     page: 1,
     pageSize: DASHBOARD_PAGE_SIZE,
   });
-  const totalPages = Math.max(1, Math.ceil(firstPage.total / DASHBOARD_PAGE_SIZE));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(firstPage.total / DASHBOARD_PAGE_SIZE),
+  );
 
   if (totalPages === 1) {
     return firstPage.items.map(toTransferResponse);

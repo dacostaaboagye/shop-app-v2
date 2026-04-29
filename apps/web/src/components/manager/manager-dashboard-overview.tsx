@@ -69,7 +69,7 @@ export function ManagerDashboardOverview() {
   const activeTransfers = useMemo(
     () =>
       canManageTransfers
-        ? dashboardQuery.data?.transfers?.activeTransfers ?? []
+        ? (dashboardQuery.data?.transfers?.activeTransfers ?? [])
         : [],
     [canManageTransfers, dashboardQuery.data?.transfers?.activeTransfers],
   );

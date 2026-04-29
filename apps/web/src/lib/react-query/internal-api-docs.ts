@@ -21,7 +21,10 @@ export type InternalApiSpec = {
         requestBody?: {
           content?: Record<string, { schema?: unknown }>;
         };
-        responses?: Record<string, { content?: Record<string, { schema?: unknown }> }>;
+        responses?: Record<
+          string,
+          { content?: Record<string, { schema?: unknown }> }
+        >;
         summary?: string;
         tags?: string[];
         "x-route-access"?: {
@@ -37,7 +40,11 @@ export type InternalApiSpec = {
 export const internalApiDocsQueryKey = ["internal", "api-docs"] as const;
 
 export async function fetchInternalApiDocs(): Promise<InternalApiSpec> {
-  return fetchJson<InternalApiSpec>("/api/internal/docs/openapi.json", undefined, {
-    auth: "required",
-  });
+  return fetchJson<InternalApiSpec>(
+    "/api/internal/docs/openapi.json",
+    undefined,
+    {
+      auth: "required",
+    },
+  );
 }

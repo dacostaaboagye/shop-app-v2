@@ -34,7 +34,12 @@ export function mapInvoice(row: typeof invoices.$inferSelect): InvoiceRecord {
     revisionCreditNoteReference: null,
     revisionRootInvoiceId: row.revisionRootInvoiceId,
     revisionRootReference: null,
-    role: row.type === "credit_note" ? "credit_note" : row.type === "adjusted" ? "adjusted" : "standard",
+    role:
+      row.type === "credit_note"
+        ? "credit_note"
+        : row.type === "adjusted"
+          ? "adjusted"
+          : "standard",
     status: row.status,
     subtotalAmount: row.subtotalAmount,
     taxAmount: row.taxAmount,

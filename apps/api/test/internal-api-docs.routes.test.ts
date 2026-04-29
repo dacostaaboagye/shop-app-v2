@@ -27,18 +27,24 @@ describe("internal api docs routes", () => {
       "limit",
     );
     assert.equal(
-      response.json().paths["/api/worker/sales"].post.requestBody.content["application/json"].schema.$ref,
+      response.json().paths["/api/worker/sales"].post.requestBody.content[
+        "application/json"
+      ].schema.$ref,
       "#/components/schemas/SalesPostApiWorkerSalesRequest",
     );
     assert.ok(
       response.json().components.schemas.SalesPostApiWorkerSalesResponse,
     );
     assert.equal(
-      response.json().paths["/api/worker/sales"].post.responses["200"].content["application/json"].schema.$ref,
+      response.json().paths["/api/worker/sales"].post.responses["200"].content[
+        "application/json"
+      ].schema.$ref,
       "#/components/schemas/SalesPostApiWorkerSalesResponse",
     );
     assert.equal(
-      response.json().paths["/api/internal/docs/openapi.json"].get["x-route-access"].permission,
+      response.json().paths["/api/internal/docs/openapi.json"].get[
+        "x-route-access"
+      ].permission,
       "api.docs.view",
     );
   });

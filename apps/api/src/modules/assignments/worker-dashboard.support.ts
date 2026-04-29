@@ -43,10 +43,7 @@ export async function listAllWorkerSales(
     pageSize: SALES_PAGE_SIZE,
     workerId: input.workerId,
   });
-  const totalPages = Math.max(
-    1,
-    Math.ceil(firstPage.total / SALES_PAGE_SIZE),
-  );
+  const totalPages = Math.max(1, Math.ceil(firstPage.total / SALES_PAGE_SIZE));
 
   if (totalPages === 1) {
     return firstPage.items;

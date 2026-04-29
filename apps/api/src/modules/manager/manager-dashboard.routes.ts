@@ -26,7 +26,10 @@ export type ManagerDashboardRouteDependencies = {
     PostgresStockBalanceQueryRepository,
     "listStockBalancesByLocationId"
   >;
-  supplyRequestRepository: Pick<PostgresSupplyRequestRepository, "listByLocation">;
+  supplyRequestRepository: Pick<
+    PostgresSupplyRequestRepository,
+    "listByLocation"
+  >;
 };
 
 const managerDashboardRoute = {
@@ -53,22 +56,24 @@ export function registerManagerDashboardRoutes(
         user: { userId },
       });
 
-      const [stockResult, canViewSales, canManageTransfers] = await Promise.all([
-        listAllLocationStockBalances(
-          dependencies.stockBalanceQueryRepo,
-          query.locationId,
-        ),
-        hasPermission(dependencies.permissionService, {
-          locationId: query.locationId,
-          permission: "pos.sales.view",
-          userId,
-        }),
-        hasPermission(dependencies.permissionService, {
-          locationId: query.locationId,
-          permission: "stock.supply.manage",
-          userId,
-        }),
-      ]);
+      const [stockResult, canViewSales, canManageTransfers] = await Promise.all(
+        [
+          listAllLocationStockBalances(
+            dependencies.stockBalanceQueryRepo,
+            query.locationId,
+          ),
+          hasPermission(dependencies.permissionService, {
+            locationId: query.locationId,
+            permission: "pos.sales.view",
+            userId,
+          }),
+          hasPermission(dependencies.permissionService, {
+            locationId: query.locationId,
+            permission: "stock.supply.manage",
+            userId,
+          }),
+        ],
+      );
 
       const inventorySummary = summarizeManagerInventory(stockResult.items);
       const [salesSummary, transferSummary] = await Promise.all([
@@ -120,7 +125,8 @@ function createUnavailableDependencies(): ManagerDashboardRouteDependencies {
   const unavailable = (): never => {
     throw new AppError({
       code: "internal_error",
-      detail: "Manager dashboard services are not configured for this environment.",
+      detail:
+        "Manager dashboard services are not configured for this environment.",
       statusCode: 503,
       title: "Manager dashboard unavailable",
     });

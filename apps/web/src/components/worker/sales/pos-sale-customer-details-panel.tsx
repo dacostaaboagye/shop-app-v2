@@ -67,7 +67,9 @@ export function PosSaleCustomerDetailsPanel({ details, onChange }: Props) {
                 <div className="flex justify-end">
                   <Button
                     className="border-border/60 bg-background"
-                    onClick={() => onChange(createEmptyPosSaleCustomerDetails())}
+                    onClick={() =>
+                      onChange(createEmptyPosSaleCustomerDetails())
+                    }
                     size="sm"
                     type="button"
                     variant="outline"
@@ -77,83 +79,83 @@ export function PosSaleCustomerDetailsPanel({ details, onChange }: Props) {
                 </div>
               ) : null}
               <div className="grid gap-4 lg:grid-cols-2">
-              <AppFormField
-                description="Shown on the invoice when a named buyer is required."
-                inputId="pos-sale-customer-name"
-                label="Buyer Name"
-              >
-                <Input
-                  id="pos-sale-customer-name"
-                  onChange={(event) =>
-                    onChange({ ...details, name: event.target.value })
-                  }
-                  placeholder="Enter buyer name"
-                  value={details.name}
-                />
-              </AppFormField>
-              <AppFormField
-                description="Used for invoice contact details when provided."
-                inputId="pos-sale-customer-email"
-                label="Buyer Email"
-              >
-                <Input
-                  id="pos-sale-customer-email"
-                  onChange={(event) =>
-                    onChange({ ...details, email: event.target.value })
-                  }
-                  placeholder="buyer@example.com"
-                  type="email"
-                  value={details.email}
-                />
-              </AppFormField>
-              <AppFormField
-                description="Used for invoice contact details when provided."
-                inputId="pos-sale-customer-phone"
-                label="Buyer Phone"
-              >
-                <Input
-                  id="pos-sale-customer-phone"
-                  onChange={(event) =>
-                    onChange({ ...details, phone: event.target.value })
-                  }
-                  placeholder="+233200000000"
-                  value={details.phone}
-                />
-              </AppFormField>
-              <AppFormField
-                description="Useful when the buyer needs tax information on the invoice."
-                inputId="pos-sale-customer-tax-number"
-                label="Buyer Tax Number"
-              >
-                <Input
-                  id="pos-sale-customer-tax-number"
-                  onChange={(event) =>
-                    onChange({ ...details, taxNumber: event.target.value })
-                  }
-                  placeholder="TIN-123"
-                  value={details.taxNumber}
-                />
-              </AppFormField>
-              <div className="lg:col-span-2">
                 <AppFormField
-                  description="Enter one address line per row when the invoice needs billing details."
-                  inputId="pos-sale-customer-address"
-                  label="Billing Address"
+                  description="Shown on the invoice when a named buyer is required."
+                  inputId="pos-sale-customer-name"
+                  label="Buyer Name"
                 >
-                  <Textarea
-                    className="min-h-[96px] resize-none"
-                    id="pos-sale-customer-address"
+                  <Input
+                    id="pos-sale-customer-name"
                     onChange={(event) =>
-                      onChange({
-                        ...details,
-                        billingAddress: event.target.value,
-                      })
+                      onChange({ ...details, name: event.target.value })
                     }
-                    placeholder={"12 Market Street\nAccra"}
-                    value={details.billingAddress}
+                    placeholder="Enter buyer name"
+                    value={details.name}
                   />
                 </AppFormField>
-              </div>
+                <AppFormField
+                  description="Used for invoice contact details when provided."
+                  inputId="pos-sale-customer-email"
+                  label="Buyer Email"
+                >
+                  <Input
+                    id="pos-sale-customer-email"
+                    onChange={(event) =>
+                      onChange({ ...details, email: event.target.value })
+                    }
+                    placeholder="buyer@example.com"
+                    type="email"
+                    value={details.email}
+                  />
+                </AppFormField>
+                <AppFormField
+                  description="Used for invoice contact details when provided."
+                  inputId="pos-sale-customer-phone"
+                  label="Buyer Phone"
+                >
+                  <Input
+                    id="pos-sale-customer-phone"
+                    onChange={(event) =>
+                      onChange({ ...details, phone: event.target.value })
+                    }
+                    placeholder="+233200000000"
+                    value={details.phone}
+                  />
+                </AppFormField>
+                <AppFormField
+                  description="Useful when the buyer needs tax information on the invoice."
+                  inputId="pos-sale-customer-tax-number"
+                  label="Buyer Tax Number"
+                >
+                  <Input
+                    id="pos-sale-customer-tax-number"
+                    onChange={(event) =>
+                      onChange({ ...details, taxNumber: event.target.value })
+                    }
+                    placeholder="TIN-123"
+                    value={details.taxNumber}
+                  />
+                </AppFormField>
+                <div className="lg:col-span-2">
+                  <AppFormField
+                    description="Enter one address line per row when the invoice needs billing details."
+                    inputId="pos-sale-customer-address"
+                    label="Billing Address"
+                  >
+                    <Textarea
+                      className="min-h-[96px] resize-none"
+                      id="pos-sale-customer-address"
+                      onChange={(event) =>
+                        onChange({
+                          ...details,
+                          billingAddress: event.target.value,
+                        })
+                      }
+                      placeholder={"12 Market Street\nAccra"}
+                      value={details.billingAddress}
+                    />
+                  </AppFormField>
+                </div>
               </div>
             </div>
           </AccordionContent>

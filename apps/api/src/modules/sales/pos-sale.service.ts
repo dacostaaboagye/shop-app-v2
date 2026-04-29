@@ -2,15 +2,23 @@ import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import type { SalesAttributionService } from "../inventory-ownership/sales-attribution.service.js";
 import type { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
 import {
+  aggregateReturnQuantities,
+  buildAdjustedInvoiceLines,
+  buildReturnInvoiceLines,
+  buildSaleLineItems,
+  resolveAttributedWorkerId,
+  resolveCurrentPayableInvoice,
+  roundCurrency,
+  validateReturnQuantities,
+} from "./pos-sale.service.support.js";
+import {
   type CreateReturnTransactionInput,
   type CreateSaleTransactionInput,
   InvalidReturnError,
   InvoiceNotFoundError,
   type InvoiceWithLines,
-  MixedOwnershipSaleError,
   type PosCatalogVariantRepository,
   type SalesCurrencySnapshot,
-  SaleVariantNotFoundError,
 } from "./sales.contracts.js";
 import type { SalesEventContextRepository } from "./sales-event-context.repository.js";
 import { createSalesReturnProcessedEvent } from "./sales-return-events.js";
@@ -81,12 +89,6 @@ export class PosSaleService {
         input.lines.map((l) => l.skuId),
       );
 
-    for (const line of input.lines) {
-      if (!variantDetails.has(line.skuId)) {
-        throw new SaleVariantNotFoundError(line.skuId);
-      }
-    }
-
     const attributions = await Promise.all(
       input.lines.map((line) =>
         this.deps.salesAttributionService.attributeSale({
@@ -96,53 +98,17 @@ export class PosSaleService {
         }),
       ),
     );
-
-    const workerIds = new Set(attributions.map((a) => a.workerId));
-    if (workerIds.size > 1) {
-      throw new MixedOwnershipSaleError();
-    }
-    const attributedWorkerId = workerIds.values().next().value;
-    if (!attributedWorkerId) {
-      throw new MixedOwnershipSaleError();
-    }
+    const attributedWorkerId = resolveAttributedWorkerId(attributions);
 
     const reference = await this.deps.referenceNumberService.generateReference({
       now,
       sequenceKey: "invoice-pos",
     });
 
-    const lineItems = input.lines.map((line) => {
-      const variant = variantDetails.get(line.skuId);
-      if (!variant) {
-        throw new SaleVariantNotFoundError(line.skuId);
-      }
-      const customPrice =
-        line.unitPrice !== undefined && line.unitPrice !== ""
-          ? parseFloat(line.unitPrice)
-          : NaN;
-      const unitPrice =
-        !Number.isNaN(customPrice) && customPrice >= 0
-          ? customPrice
-          : parseFloat(variant.sellingPrice);
-      const subtotal = roundCurrency(unitPrice * line.quantity);
-      const taxAmount = 0;
-      const lineTotal = subtotal;
-
-      return {
-        lineTotal: lineTotal.toFixed(2),
-        locationId: input.locationId,
-        quantity: line.quantity,
-        skuId: line.skuId,
-        skuSnapshot: {
-          productName: variant.productName,
-          sku: variant.sku,
-          variantName: variant.name,
-        },
-        taxAmount: taxAmount.toFixed(2),
-        taxCategory: variant.taxCategory,
-        taxRate: null as string | null,
-        unitPrice: unitPrice.toFixed(2),
-      };
+    const lineItems = buildSaleLineItems({
+      lines: input.lines,
+      locationId: input.locationId,
+      variantDetails,
     });
 
     const subtotalAmount = lineItems.reduce(
@@ -189,9 +155,10 @@ export class PosSaleService {
       throw new InvoiceNotFoundError(input.parentReference);
     }
 
-    const originalInvoice = await this.resolveCurrentPayableInvoice(
-      requestedInvoice,
-    );
+    const originalInvoice = await resolveCurrentPayableInvoice({
+      findByReference: this.deps.invoiceRepository.findByReference,
+      invoice: requestedInvoice,
+    });
 
     if (originalInvoice.status === "voided") {
       throw new InvalidReturnError(
@@ -205,86 +172,27 @@ export class PosSaleService {
       );
     }
 
-    const originalLineMap = new Map(
-      originalInvoice.lines.map((l) => [l.skuId, l]),
-    );
     const requestedReturnQuantities = aggregateReturnQuantities(input.lines);
-
-    for (const [skuId, quantity] of requestedReturnQuantities) {
-      const originalLine = originalLineMap.get(skuId);
-      if (!originalLine) {
-        throw new InvalidReturnError(
-          `SKU ${skuId} was not on the original invoice ${input.parentReference}.`,
-          { skuId },
-        );
-      }
-      if (quantity > originalLine.quantity) {
-        throw new InvalidReturnError(
-          `Cannot return more than the original quantity for SKU ${skuId}.`,
-          {
-            originalQuantity: originalLine.quantity,
-            returnQuantity: quantity,
-            skuId,
-          },
-        );
-      }
-    }
+    const originalLineMap = validateReturnQuantities({
+      originalInvoice,
+      parentReference: input.parentReference,
+      requestedReturnQuantities,
+    });
 
     const creditReference =
       this.deps.referenceNumberService.generateCreditNoteReference(
         originalInvoice.reference,
       );
 
-    const lines = Array.from(requestedReturnQuantities.entries()).map(
-      ([skuId, quantity]) => {
-        const originalLine = originalLineMap.get(skuId);
-        if (!originalLine) {
-          throw new InvalidReturnError(
-            `SKU ${skuId} was not on the original invoice ${input.parentReference}.`,
-            { skuId },
-          );
-        }
-        const unitPrice = parseFloat(originalLine.unitPrice);
-        const lineTotal = roundCurrency(unitPrice * quantity);
-        const taxAmount = roundCurrency(
-          parseFloat(originalLine.taxAmount) / originalLine.quantity,
-        );
-
-        return {
-          lineTotal: lineTotal.toFixed(2),
-          quantity,
-          skuId,
-          skuSnapshot: originalLine.skuSnapshot,
-          taxAmount: roundCurrency(taxAmount * quantity).toFixed(2),
-          taxCategory: originalLine.taxCategory,
-          taxRate: originalLine.taxRate,
-          unitPrice: originalLine.unitPrice,
-        };
-      },
-    );
-
-    const adjustedLines = originalInvoice.lines
-      .map((line) => {
-        const returnQuantity = requestedReturnQuantities.get(line.skuId) ?? 0;
-        const remainingQuantity = line.quantity - returnQuantity;
-
-        if (remainingQuantity <= 0) return null;
-
-        const unitPrice = parseFloat(line.unitPrice);
-        const taxPerUnit = parseFloat(line.taxAmount) / line.quantity;
-
-        return {
-          lineTotal: roundCurrency(unitPrice * remainingQuantity).toFixed(2),
-          quantity: remainingQuantity,
-          skuId: line.skuId,
-          skuSnapshot: line.skuSnapshot,
-          taxAmount: roundCurrency(taxPerUnit * remainingQuantity).toFixed(2),
-          taxCategory: line.taxCategory,
-          taxRate: line.taxRate,
-          unitPrice: line.unitPrice,
-        };
-      })
-      .filter((line): line is NonNullable<typeof line> => line !== null);
+    const lines = buildReturnInvoiceLines({
+      originalLineMap,
+      parentReference: input.parentReference,
+      requestedReturnQuantities,
+    });
+    const adjustedLines = buildAdjustedInvoiceLines({
+      originalInvoice,
+      requestedReturnQuantities,
+    });
 
     const adjustedSubtotal = adjustedLines.reduce(
       (sum, line) => sum + parseFloat(line.lineTotal),
@@ -311,8 +219,8 @@ export class PosSaleService {
       0,
     );
 
-    const creditNote = await this.deps.invoiceRepository.createReturnTransaction(
-      {
+    const creditNote =
+      await this.deps.invoiceRepository.createReturnTransaction({
         adjustedInvoice:
           hasAdjustedInvoice && adjustedReference
             ? {
@@ -342,8 +250,7 @@ export class PosSaleService {
         taxAmount: returnTaxAmount.toFixed(2),
         totalAmount: roundCurrency(returnSubtotal + returnTaxAmount).toFixed(2),
         voidReason: input.reason,
-      },
-    );
+      });
 
     if (input.actor && this.deps.platformEventPublisher) {
       const locationName =
@@ -365,81 +272,4 @@ export class PosSaleService {
 
     return creditNote;
   }
-
-  private async resolveCurrentPayableInvoice(
-    invoice: InvoiceWithLines,
-  ): Promise<InvoiceWithLines> {
-    const currentPayableReference = invoice.currentPayableReference;
-
-    if (
-      currentPayableReference &&
-      currentPayableReference !== invoice.reference
-    ) {
-      const currentPayableInvoice =
-        await this.deps.invoiceRepository.findByReference(
-          currentPayableReference,
-        );
-
-      if (!currentPayableInvoice) {
-        throw new InvalidReturnError(
-          "The latest payable invoice revision could not be resolved.",
-          {
-            currentPayableReference,
-            reference: invoice.reference,
-          },
-        );
-      }
-
-      return currentPayableInvoice;
-    }
-
-    let currentInvoice = invoice;
-    const seenReferences = new Set<string>();
-
-    while (currentInvoice.replacementInvoiceReference) {
-      if (seenReferences.has(currentInvoice.reference)) {
-        throw new InvalidReturnError(
-          "Invoice revision chain contains a cycle and cannot be processed.",
-          { reference: currentInvoice.reference },
-        );
-      }
-
-      seenReferences.add(currentInvoice.reference);
-
-      const replacementInvoice =
-        await this.deps.invoiceRepository.findByReference(
-          currentInvoice.replacementInvoiceReference,
-        );
-
-      if (!replacementInvoice) {
-        throw new InvalidReturnError(
-          "The latest payable invoice revision could not be resolved.",
-          {
-            reference: currentInvoice.reference,
-            replacementReference: currentInvoice.replacementInvoiceReference,
-          },
-        );
-      }
-
-      currentInvoice = replacementInvoice;
-    }
-
-    return currentInvoice;
-  }
-}
-
-function roundCurrency(value: number): number {
-  return Math.round(value * 100) / 100;
-}
-
-function aggregateReturnQuantities(
-  lines: ProcessReturnInput["lines"],
-): Map<string, number> {
-  const quantities = new Map<string, number>();
-
-  for (const line of lines) {
-    quantities.set(line.skuId, (quantities.get(line.skuId) ?? 0) + line.quantity);
-  }
-
-  return quantities;
 }

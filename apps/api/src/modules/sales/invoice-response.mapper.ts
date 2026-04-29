@@ -39,13 +39,7 @@ export function toInvoiceResponse(invoice: {
   subtotalAmount: string;
   taxAmount: string;
   totalAmount: string;
-  type:
-    | "pos"
-    | "portal"
-    | "ecommerce"
-    | "manual"
-    | "credit_note"
-    | "adjusted";
+  type: "pos" | "portal" | "ecommerce" | "manual" | "credit_note" | "adjusted";
 }): InvoiceResponse {
   const role =
     invoice.role ??
@@ -56,7 +50,8 @@ export function toInvoiceResponse(invoice: {
         : "standard");
   const parentInvoiceReference = invoice.parentInvoiceReference ?? null;
   const currentPayableReference = invoice.currentPayableReference ?? null;
-  const replacementInvoiceReference = invoice.replacementInvoiceReference ?? null;
+  const replacementInvoiceReference =
+    invoice.replacementInvoiceReference ?? null;
   const revisionCreditNoteReference =
     invoice.revisionCreditNoteReference ?? null;
   const revisionRootReference = invoice.revisionRootReference ?? null;

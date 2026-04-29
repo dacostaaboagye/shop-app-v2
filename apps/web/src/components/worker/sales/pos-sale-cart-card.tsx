@@ -193,7 +193,10 @@ export function CartBody({
             />
             <CheckoutStatusTile
               label="Payment"
-              value={PAYMENT_METHODS.find((method) => method.value === paymentMethod)?.label ?? "Not set"}
+              value={
+                PAYMENT_METHODS.find((method) => method.value === paymentMethod)
+                  ?.label ?? "Not set"
+              }
             />
             <CheckoutStatusTile
               label="Buyer details"

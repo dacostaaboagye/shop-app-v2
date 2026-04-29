@@ -117,10 +117,19 @@ describe("createReturnTransaction", () => {
 
     assert.equal(secondCreditNote.parentInvoiceId, firstAdjustedInvoice.id);
     assert.equal(secondCreditNote.revisionRootInvoiceId, "invoice-1");
-    assert.equal(secondCreditNote.replacementInvoiceId, secondAdjustedInvoice.id);
+    assert.equal(
+      secondCreditNote.replacementInvoiceId,
+      secondAdjustedInvoice.id,
+    );
 
-    assert.equal(secondAdjustedInvoice.parentInvoiceId, firstAdjustedInvoice.id);
-    assert.equal(secondAdjustedInvoice.revisionCreditNoteId, secondCreditNote.id);
+    assert.equal(
+      secondAdjustedInvoice.parentInvoiceId,
+      firstAdjustedInvoice.id,
+    );
+    assert.equal(
+      secondAdjustedInvoice.revisionCreditNoteId,
+      secondCreditNote.id,
+    );
     assert.equal(secondAdjustedInvoice.revisionRootInvoiceId, "invoice-1");
     assert.equal(secondAdjustedInvoice.status, "confirmed");
 
@@ -208,7 +217,9 @@ class FakeApiDatabase {
             return [];
           }
 
-          const invoice = this.invoiceRows.find((row) => row.id === condition.value);
+          const invoice = this.invoiceRows.find(
+            (row) => row.id === condition.value,
+          );
           if (!invoice) {
             return [];
           }
@@ -294,9 +305,14 @@ class FakeApiDatabase {
             const invoiceId = extractConditionValues(condition).find((value) =>
               this.invoiceRows.some((row) => row.id === value),
             );
-            const invoice = this.invoiceRows.find((row) => row.id === invoiceId);
+            const invoice = this.invoiceRows.find(
+              (row) => row.id === invoiceId,
+            );
             if (invoice) {
-              Object.assign(invoice, normalizeInvoiceChanges(changes, this.invoiceRows));
+              Object.assign(
+                invoice,
+                normalizeInvoiceChanges(changes, this.invoiceRows),
+              );
             }
             return [];
           }
@@ -308,19 +324,17 @@ class FakeApiDatabase {
   }
 
   findInvoiceByReference(reference: string) {
-    return (
-      this.invoiceRows.find((row) => row.reference === reference) as
-        | (Record<string, unknown> & {
-            id: string;
-            parentInvoiceId: string | null;
-            reference: string;
-            replacementInvoiceId: string | null;
-            revisionCreditNoteId: string | null;
-            revisionRootInvoiceId: string | null;
-            status: string;
-          })
-        | undefined
-    );
+    return this.invoiceRows.find((row) => row.reference === reference) as
+      | (Record<string, unknown> & {
+          id: string;
+          parentInvoiceId: string | null;
+          reference: string;
+          replacementInvoiceId: string | null;
+          revisionCreditNoteId: string | null;
+          revisionRootInvoiceId: string | null;
+          status: string;
+        })
+      | undefined;
   }
 }
 

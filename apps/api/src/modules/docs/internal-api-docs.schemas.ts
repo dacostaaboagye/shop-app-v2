@@ -40,7 +40,7 @@ import {
   workerDashboardSummaryQuerySchema,
   workerDashboardSummaryResponseSchema,
 } from "@shop/contracts";
-import { z, type ZodType } from "zod";
+import { type ZodType, z } from "zod";
 
 export type InternalApiDocSchemas = {
   pathParams?: ZodType;
@@ -109,7 +109,9 @@ export const internalApiDocSchemas = {
     query: locationStockBalanceQuerySchema,
     response: adminStockBalanceListResponseSchema,
   },
-  markAllNotificationsRead: { response: markAllNotificationsReadResponseSchema },
+  markAllNotificationsRead: {
+    response: markAllNotificationsReadResponseSchema,
+  },
   markNotificationRead: {
     pathParams: notificationKeyParamsSchema,
     response: markNotificationReadResponseSchema,

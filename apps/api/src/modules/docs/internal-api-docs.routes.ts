@@ -3,7 +3,9 @@ import { getApiEnv } from "../../env.js";
 import { INTERNAL_API_DOC_ROUTES } from "./internal-api-docs.catalog.js";
 import { buildInternalOpenApiDocument } from "./internal-api-docs.support.js";
 
-const internalApiDocument = buildInternalOpenApiDocument(INTERNAL_API_DOC_ROUTES);
+const internalApiDocument = buildInternalOpenApiDocument(
+  INTERNAL_API_DOC_ROUTES,
+);
 
 const internalApiDocsAccess =
   getApiEnv().nodeEnv === "development"

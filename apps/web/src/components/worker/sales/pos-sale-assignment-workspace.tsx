@@ -5,22 +5,11 @@ import type {
   CurrentAssignment,
 } from "@shop/contracts";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AppPagination } from "@/components/data-table/app-pagination";
 import { AppEmptyState } from "@/components/system/app-empty-state";
 import { AppErrorBanner } from "@/components/system/app-error";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatCount } from "@/lib/display/format";
 import type { MoneyProfile } from "@/lib/money/format-money";
-import { PosSaleAssignmentFilters } from "./pos-sale-assignment-filters";
+import { PosSaleAssignmentCatalogCard } from "./pos-sale-assignment-workspace.sections";
 import {
   filterSaleAssignments,
   getFirstAddableSaleAssignment,
@@ -38,7 +27,6 @@ import {
   PosSaleCartCard,
 } from "./pos-sale-cart-card";
 import { PosSaleMobileCart } from "./pos-sale-mobile-cart";
-import { VariantRow } from "./pos-sale-page-sections";
 
 type Props = {
   assignments: CurrentAssignment[];
@@ -249,162 +237,37 @@ export function PosSaleAssignmentWorkspace({
       <div className="pb-24 lg:pb-0">
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.8fr)]">
           <div className="min-w-0 flex flex-col gap-3">
-            <Card className="overflow-hidden rounded-xl border border-border bg-card py-0 shadow-sm">
-              <CardHeader className="gap-2 p-5 pb-4">
-                <CardTitle className="text-base">Available variants</CardTitle>
-                <CardDescription className="leading-relaxed">
-                  {formatCount(filteredAssignments.length)} of{" "}
-                  {formatCount(assignments.length)} assigned variants ready for
-                  sale.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-4 p-5 pt-0">
-                <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
-                  <SummaryButton
-                    description="All assigned"
-                    isActive={quickFilter === "all"}
-                    onClick={() => onQuickFilterChange("all")}
-                    title="Assigned"
-                    value={assignmentSummary.totalCount}
-                  />
-                  <SummaryButton
-                    description="Ready to sell"
-                    isActive={quickFilter === "available"}
-                    onClick={() => onQuickFilterChange("available")}
-                    title="Available"
-                    value={assignmentSummary.availableCount}
-                  />
-                  <SummaryButton
-                    description="Needs attention"
-                    isActive={quickFilter === "low_stock"}
-                    onClick={() => onQuickFilterChange("low_stock")}
-                    title="Low stock"
-                    value={assignmentSummary.lowStockCount}
-                  />
-                  <SummaryButton
-                    description="Selected now"
-                    isActive={quickFilter === "in_cart"}
-                    onClick={() => onQuickFilterChange("in_cart")}
-                    title="In cart"
-                    value={assignmentSummary.inCartCount}
-                  />
-                </div>
-                <PosSaleAssignmentFilters
-                  brandOptions={brandOptions}
-                  brandSlug={brandSlug}
-                  canSubmitPrimaryResult={firstAddableAssignment !== null}
-                  categoryOptions={categoryOptions}
-                  categorySlug={categorySlug}
-                  inputRef={searchInputRef}
-                  onBrandChange={onBrandChange}
-                  onCategoryChange={onCategoryChange}
-                  onClear={onClearFilters}
-                  onQuickFilterChange={onQuickFilterChange}
-                  onSearchChange={onSearchChange}
-                  onSubmitPrimaryResult={() => {
-                    if (firstAddableAssignment) {
-                      handleAddAssignment(firstAddableAssignment);
-                    }
-                  }}
-                  onSortChange={onSortChange}
-                  quickFilter={quickFilter}
-                  search={search}
-                  sort={sort}
-                />
-                {searchMatchState ? (
-                  <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-2">
-                    <Badge className="rounded-lg border-none bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary shadow-none">
-                      {searchMatchState.kind === "exact_sku"
-                        ? "Exact SKU match"
-                        : "Closest SKU match"}
-                    </Badge>
-                    <p className="text-sm font-medium text-foreground">
-                      {searchMatchState.assignment.sku}
-                    </p>
-                    <p className="type-support">
-                      {searchMatchState.assignment.productName}
-                    </p>
-                    <Badge
-                      className={
-                        searchMatchState.assignment.availableQuantity > 0
-                          ? "rounded-lg border-none bg-success px-2 py-0.5 text-[10px] font-bold text-success-foreground shadow-none"
-                          : "rounded-lg border-none bg-destructive px-2 py-0.5 text-[10px] font-bold text-destructive-foreground shadow-none"
-                      }
-                    >
-                      {searchMatchState.assignment.availableQuantity > 0
-                        ? `${formatCount(searchMatchState.assignment.availableQuantity)} available`
-                        : "Out of stock"}
-                    </Badge>
-                    {recentlyAdded?.skuId ===
-                    searchMatchState.assignment.skuId ? (
-                      <Badge className="rounded-lg border-none bg-success px-2 py-0.5 text-[10px] font-bold text-success-foreground shadow-none">
-                        Added. {formatCount(recentlyAdded.quantity)} now in cart
-                      </Badge>
-                    ) : null}
-                  </div>
-                ) : isSkuSearch ? (
-                  <div className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-destructive/30 bg-destructive/5 px-3 py-2">
-                    <Badge className="rounded-lg border-none bg-destructive px-2 py-0.5 text-[10px] font-bold text-destructive-foreground shadow-none">
-                      No SKU match
-                    </Badge>
-                    <p className="text-sm font-medium text-foreground">
-                      {search.trim()}
-                    </p>
-                    <p className="type-support">
-                      No assigned variant matches this scan at the current location.
-                    </p>
-                  </div>
-                ) : null}
-                <div className="overflow-hidden rounded-xl border border-border bg-background">
-                  <div className="divide-y divide-border">
-                    {paginatedAssignments.length > 0 ? (
-                      paginatedAssignments.map((assignment) => (
-                        <VariantRow
-                          key={assignment.skuId}
-                          assignment={assignment}
-                          cartQuantity={
-                            cart.find(
-                              (item) =>
-                                item.assignment.skuId === assignment.skuId,
-                            )?.quantity ?? 0
-                          }
-                          isPrimarySearchMatch={
-                            searchMatchState?.assignment.skuId ===
-                            assignment.skuId
-                          }
-                          isRecentlyAdded={
-                            recentlyAdded?.skuId === assignment.skuId
-                          }
-                          inCart={cart.some(
-                            (item) =>
-                              item.assignment.skuId === assignment.skuId,
-                          )}
-                          moneyProfile={moneyProfile}
-                          onAdd={() => handleAddAssignment(assignment)}
-                        />
-                      ))
-                    ) : (
-                      <div className="p-6">
-                        <AppEmptyState
-                          description="Try changing the search, brand, or category filters."
-                          title="No assigned variants match"
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {filteredAssignments.length > 0 ? (
-                  <AppPagination
-                    onPageChange={onPageChange}
-                    onPageSizeChange={onPageSizeChange}
-                    page={page}
-                    pageSize={pageSize}
-                    pageSizeOptions={pageSizeOptions}
-                    totalCount={filteredAssignments.length}
-                  />
-                ) : null}
-              </CardContent>
-            </Card>
+            <PosSaleAssignmentCatalogCard
+              assignmentSummary={assignmentSummary}
+              brandOptions={brandOptions}
+              brandSlug={brandSlug}
+              cart={cart}
+              categoryOptions={categoryOptions}
+              categorySlug={categorySlug}
+              filteredCount={filteredAssignments.length}
+              firstAddableAssignment={firstAddableAssignment}
+              moneyProfile={moneyProfile}
+              onAddAssignment={handleAddAssignment}
+              onBrandChange={onBrandChange}
+              onCategoryChange={onCategoryChange}
+              onClearFilters={onClearFilters}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+              onQuickFilterChange={onQuickFilterChange}
+              onSearchChange={onSearchChange}
+              onSortChange={onSortChange}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={pageSizeOptions}
+              paginatedAssignments={paginatedAssignments}
+              quickFilter={quickFilter}
+              recentlyAdded={recentlyAdded}
+              search={isSkuSearch ? search : ""}
+              searchInputRef={searchInputRef}
+              searchMatchState={searchMatchState}
+              selectedLocationScope={selectedLocationScope}
+              sort={sort}
+            />
           </div>
           <div className="hidden min-w-0 xl:block">
             <div className="sticky top-20">
@@ -423,34 +286,5 @@ export function PosSaleAssignmentWorkspace({
         open={cartSheetOpen}
       />
     </>
-  );
-}
-
-function SummaryButton({
-  description,
-  isActive,
-  onClick,
-  title,
-  value,
-}: {
-  description: string;
-  isActive: boolean;
-  onClick: () => void;
-  title: string;
-  value: number;
-}) {
-  return (
-    <Button
-      className="h-auto min-h-24 flex-col items-start gap-1 rounded-xl border-border/60 px-4 py-4 text-left shadow-sm"
-      onClick={onClick}
-      type="button"
-      variant={isActive ? "secondary" : "outline"}
-    >
-      <span className="type-data-label">{title}</span>
-      <span className="type-stat-value text-foreground">
-        {formatCount(value)}
-      </span>
-      <span className="type-support">{description}</span>
-    </Button>
   );
 }
