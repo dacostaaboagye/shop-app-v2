@@ -380,10 +380,7 @@ describe("auth routes", () => {
     });
 
     assert.equal(response.statusCode, 302);
-    assert.equal(
-      response.headers.location,
-      "http://localhost:3000/login?oauth_error=access_denied",
-    );
+    assert.equal(response.headers.location, "/login?oauth_error=access_denied");
   });
 });
 

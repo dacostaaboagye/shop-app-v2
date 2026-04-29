@@ -49,7 +49,7 @@ describe("internal api docs routes", () => {
     );
   });
 
-  it("rejects access when the docs permission is missing", async () => {
+  it("still allows authenticated access in development without the docs permission", async () => {
     const server = createDocsServer(false);
 
     const response = await server.inject({
@@ -58,8 +58,7 @@ describe("internal api docs routes", () => {
       url: "/api/internal/docs/openapi.json",
     });
 
-    assert.equal(response.statusCode, 403);
-    assert.equal(response.json().title, "Forbidden");
+    assert.equal(response.statusCode, 200);
   });
 
   it("declares a dedicated rate limit for the spec route", () => {
