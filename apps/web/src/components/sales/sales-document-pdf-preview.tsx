@@ -3,7 +3,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { AppErrorBanner } from "@/components/system/app-error";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   fetchSalesDocumentDownloadFile,
@@ -51,26 +50,27 @@ export function SalesDocumentPdfPreview({ enabled = true, reference }: Props) {
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 bg-foreground px-4 py-3 text-background">
         <div>
-          <p className="text-base font-semibold">Official PDF</p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm font-semibold">Official PDF</p>
+          <p className="text-xs text-background/70">
             Previewing the same issued file used for download and sharing.
           </p>
         </div>
-      </CardHeader>
-      <CardContent>
+        <p className="font-mono text-xs text-background/80">{reference}</p>
+      </div>
+      <div className="bg-muted/45 p-4 sm:p-6">
         {fileQuery.isPending || !objectUrl ? (
-          <Skeleton className="h-[520px] w-full" />
+          <Skeleton className="h-[calc(100svh-15rem)] min-h-[720px] w-full" />
         ) : (
           <iframe
-            className="h-[520px] w-full rounded-md border border-border bg-background"
+            className="h-[calc(100svh-15rem)] min-h-[720px] w-full rounded-md border border-border bg-background"
             src={objectUrl}
             title={`Official PDF ${reference}`}
           />
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

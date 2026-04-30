@@ -58,6 +58,10 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
     description: "View the permission catalogue and role coverage.",
   },
   {
+    key: "api.docs.view",
+    description: "View protected internal backend API documentation.",
+  },
+  {
     key: "access.audit.view",
     description: "View access-control audit history.",
   },
@@ -232,6 +236,7 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
       "access.roles.view",
       "access.roles.manage",
       "access.permissions.view",
+      "api.docs.view",
       "access.audit.view",
       "access.assignments.manage",
       "access.users.view",
@@ -328,6 +333,13 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
     name: "Agent",
     description: "Delivery agent with delivery portal access.",
     permissions: ["agent.dashboard.view", "agent.routes.view"],
+  },
+  {
+    slug: "developer",
+    name: "Developer",
+    description:
+      "Technical user with protected internal API documentation access only.",
+    permissions: ["api.docs.view"],
   },
 ] as const;
 

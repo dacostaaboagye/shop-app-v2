@@ -14,32 +14,18 @@ import { usePermissionLocationScope } from "@/lib/authorization/use-permission-l
 import { DEFAULT_OFFICIAL_DOCUMENT_PROFILE } from "@/lib/documents/official-document-profile";
 import { formatMoney } from "@/lib/money/format-money";
 import {
+  fetchManagerDashboardSummary,
+  managerDashboardSummaryQueryKey,
+} from "@/lib/react-query/manager-dashboard";
+import {
   fetchOfficialDocumentProfile,
   officialDocumentProfileQueryKey,
 } from "@/lib/react-query/official-documents";
-import {
-  fetchManagerSales,
-  managerSalesQueryKey,
-} from "@/lib/react-query/pos-sales";
-import {
-  fetchManagerStockBalances,
-  managerStockBalancesQueryKey,
-} from "@/lib/react-query/stock-admin";
-import {
-  fetchManagerSupplyRequests,
-  managerSupplyRequestsQueryKey,
-} from "@/lib/react-query/stock-supply";
 import { toRoute } from "@/lib/routes";
 import {
   ManagerDashboardSalesPanel,
   ManagerDashboardTransferPanel,
 } from "./manager-dashboard-overview.sections";
-import { getManagerDashboardMetrics } from "./manager-dashboard-overview.support";
-
-const TODAY = new Date();
-const START_OF_TODAY = new Date(
-  Date.UTC(TODAY.getUTCFullYear(), TODAY.getUTCMonth(), TODAY.getUTCDate()),
-).toISOString();
 
 export function ManagerDashboardOverview() {
   const {
@@ -58,41 +44,10 @@ export function ManagerDashboardOverview() {
     locationPermissions.includes("pos.sales.manage") ||
     locationPermissions.includes("pos.sales.view");
 
-  const stockQuery = useQuery({
+  const dashboardQuery = useQuery({
     enabled: !!selectedLocationScope,
-    queryFn: () =>
-      fetchManagerStockBalances({ locationId, page: 1, pageSize: 50, q: "" }),
-    queryKey: managerStockBalancesQueryKey(
-      selectedLocationScope ? { locationId, page: 1, pageSize: 50, q: "" } : {},
-    ),
-    staleTime: 30_000,
-  });
-  const transfersQuery = useQuery({
-    enabled: !!selectedLocationScope && canManageTransfers,
-    queryFn: () =>
-      fetchManagerSupplyRequests({ locationId, page: 1, pageSize: 25 }),
-    queryKey: managerSupplyRequestsQueryKey({
-      locationId,
-      page: 1,
-      pageSize: 25,
-    }),
-    staleTime: 30_000,
-  });
-  const salesQuery = useQuery({
-    enabled: !!selectedLocationScope && canViewSales,
-    queryFn: () =>
-      fetchManagerSales({
-        dateFrom: START_OF_TODAY,
-        locationId,
-        page: 1,
-        pageSize: 10,
-      }),
-    queryKey: managerSalesQueryKey({
-      dateFrom: START_OF_TODAY,
-      locationId,
-      page: 1,
-      pageSize: 10,
-    }),
+    queryFn: () => fetchManagerDashboardSummary(locationId),
+    queryKey: managerDashboardSummaryQueryKey(locationId),
     staleTime: 30_000,
   });
   const profileQuery = useQuery({
@@ -102,23 +57,21 @@ export function ManagerDashboardOverview() {
     staleTime: 5 * 60_000,
   });
 
-  const metrics = getManagerDashboardMetrics({
-    sales: salesQuery.data?.items ?? [],
-    stock: stockQuery.data?.items ?? [],
-    transfers: transfersQuery.data?.items ?? [],
-  });
+  const metrics = {
+    averageSaleValue: dashboardQuery.data?.sales?.averageSaleValue ?? 0,
+    lowStockCount: dashboardQuery.data?.lowStockCount ?? 0,
+    openTransferCount: dashboardQuery.data?.transfers?.openTransferCount ?? 0,
+    skuCount: dashboardQuery.data?.skuCount ?? 0,
+    todaysRevenue: dashboardQuery.data?.sales?.todaysRevenue ?? 0,
+    transactionCount: dashboardQuery.data?.sales?.transactionCount ?? 0,
+  };
   const moneyProfile = profileQuery.data ?? DEFAULT_OFFICIAL_DOCUMENT_PROFILE;
   const activeTransfers = useMemo(
     () =>
-      (transfersQuery.data?.items ?? [])
-        .filter(
-          (item) =>
-            item.status === "pending" ||
-            item.status === "approved" ||
-            item.status === "dispatched",
-        )
-        .slice(0, 4),
-    [transfersQuery.data?.items],
+      canManageTransfers
+        ? (dashboardQuery.data?.transfers?.activeTransfers ?? [])
+        : [],
+    [canManageTransfers, dashboardQuery.data?.transfers?.activeTransfers],
   );
 
   return (
@@ -146,8 +99,8 @@ export function ManagerDashboardOverview() {
           label="Revenue today"
           value={renderMoneyValue(
             canViewSales,
-            salesQuery.isPending,
-            salesQuery.isError,
+            dashboardQuery.isPending,
+            dashboardQuery.isError,
             metrics.todaysRevenue,
             moneyProfile,
           )}
@@ -158,8 +111,8 @@ export function ManagerDashboardOverview() {
           icon={Receipt}
           label="Transactions"
           value={renderStatValue(
-            salesQuery.isPending,
-            salesQuery.isError,
+            dashboardQuery.isPending,
+            dashboardQuery.isError,
             metrics.transactionCount,
           )}
         />
@@ -170,8 +123,8 @@ export function ManagerDashboardOverview() {
           label="Average sale"
           value={renderMoneyValue(
             canViewSales,
-            salesQuery.isPending,
-            salesQuery.isError,
+            dashboardQuery.isPending,
+            dashboardQuery.isError,
             metrics.averageSaleValue,
             moneyProfile,
           )}
@@ -182,8 +135,8 @@ export function ManagerDashboardOverview() {
           icon={Package}
           label="SKUs"
           value={renderStatValue(
-            stockQuery.isPending,
-            stockQuery.isError,
+            dashboardQuery.isPending,
+            dashboardQuery.isError,
             metrics.skuCount,
           )}
         />
@@ -193,8 +146,8 @@ export function ManagerDashboardOverview() {
           icon={ClipboardList}
           label="Low stock"
           value={renderStatValue(
-            stockQuery.isPending,
-            stockQuery.isError,
+            dashboardQuery.isPending,
+            dashboardQuery.isError,
             metrics.lowStockCount,
           )}
         />
@@ -204,8 +157,8 @@ export function ManagerDashboardOverview() {
           icon={ArrowLeftRight}
           label="Open transfers"
           value={renderStatValue(
-            transfersQuery.isPending,
-            transfersQuery.isError,
+            dashboardQuery.isPending,
+            dashboardQuery.isError,
             metrics.openTransferCount,
           )}
         />
@@ -214,16 +167,16 @@ export function ManagerDashboardOverview() {
       <section className="grid gap-6 xl:grid-cols-2">
         <ManagerDashboardSalesPanel
           canViewSales={canViewSales}
-          isPending={salesQuery.isPending}
-          items={salesQuery.data?.items.slice(0, 5) ?? []}
+          isPending={dashboardQuery.isPending}
+          items={dashboardQuery.data?.sales?.latestSales ?? []}
           moneyProfile={moneyProfile}
         />
         <ManagerDashboardTransferPanel
-          error={transfersQuery.isError ? transfersQuery.error : null}
-          isError={transfersQuery.isError}
-          isPending={transfersQuery.isPending}
+          error={dashboardQuery.isError ? dashboardQuery.error : null}
+          isError={dashboardQuery.isError}
+          isPending={dashboardQuery.isPending}
           items={activeTransfers}
-          onRetry={() => void transfersQuery.refetch()}
+          onRetry={() => void dashboardQuery.refetch()}
         />
       </section>
     </PageShell>

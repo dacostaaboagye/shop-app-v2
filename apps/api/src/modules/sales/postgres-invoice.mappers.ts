@@ -9,9 +9,11 @@ export function mapInvoice(row: typeof invoices.$inferSelect): InvoiceRecord {
     attributedWorkerId: row.attributedWorkerId,
     attributedWorkerName: null,
     attributedWorkerEmail: null,
+    classification: row.classification,
     confirmedAt: row.confirmedAt,
     createdAt: row.createdAt,
     createdBy: row.createdBy,
+    currentPayableReference: null,
     customerBillingAddressLines: row.customerBillingAddressLines ?? null,
     currencyCode: row.currencyCode,
     currencyScale: row.currencyScale,
@@ -23,8 +25,21 @@ export function mapInvoice(row: typeof invoices.$inferSelect): InvoiceRecord {
     locationId: row.locationId,
     notes: row.notes,
     parentInvoiceId: row.parentInvoiceId,
+    parentInvoiceReference: null,
     paymentMethod: row.paymentMethod,
     reference: row.reference,
+    replacementInvoiceId: row.replacementInvoiceId,
+    replacementInvoiceReference: null,
+    revisionCreditNoteId: row.revisionCreditNoteId,
+    revisionCreditNoteReference: null,
+    revisionRootInvoiceId: row.revisionRootInvoiceId,
+    revisionRootReference: null,
+    role:
+      row.type === "credit_note"
+        ? "credit_note"
+        : row.type === "adjusted"
+          ? "adjusted"
+          : "standard",
     status: row.status,
     subtotalAmount: row.subtotalAmount,
     taxAmount: row.taxAmount,

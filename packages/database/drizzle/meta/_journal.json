@@ -253,6 +253,20 @@
       "when": 1777235261221,
       "tag": "0035_wooden_captain_midlands",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1777315200000,
+      "tag": "0036_steady_madrox",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1777420734363,
+      "tag": "0037_amusing_shotgun",
+      "breakpoints": true
     }
   ]
 }

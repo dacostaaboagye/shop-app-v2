@@ -88,6 +88,10 @@ describe("POS sale routes", () => {
 
     assert.equal(response.statusCode, 200);
     assert.equal(response.json().reference, "INV/2026/000001");
+    assert.equal(
+      response.json().revisionChain.currentPayableReference,
+      "INV/2026/000001",
+    );
     assert.equal(response.json().currencyCode, "GHS");
     assert.equal(response.json().currencyScale, 2);
     assert.ok(
@@ -97,6 +101,27 @@ describe("POS sale routes", () => {
           call.permission === "pos.sales.view",
       ),
     );
+  });
+
+  it("does not present a fully returned invoice as the latest payable record", async () => {
+    const permissionCalls: PermissionCall[] = [];
+    const server = createSalesServer({
+      invoice: invoice({
+        currentPayableReference: null,
+        status: "superseded",
+      }),
+      permissionCalls,
+    });
+
+    const response = await server.inject({
+      headers: { authorization: bearerToken() },
+      method: "GET",
+      url: "/api/worker/sales/INV%2F2026%2F000001",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().revisionChain.currentPayableReference, null);
+    assert.equal(response.json().revisionChain.isLatestPayable, false);
   });
 
   it("rejects workers reading another worker's sale", async () => {
@@ -146,14 +171,20 @@ describe("POS sale routes", () => {
   it("requires manager sales permission for the requested location", async () => {
     const permissionCalls: PermissionCall[] = [];
     let listedQuery: null | {
-      documentType?: "credit_note" | "invoice";
+      classification?: "internal" | "outgoing";
+      documentType?: "adjusted" | "credit_note" | "invoice";
       locationId: string;
+      q?: string;
     } = null;
     const server = createSalesServer({
       async listByLocation(input) {
         listedQuery = {
+          ...(input.classification
+            ? { classification: input.classification }
+            : {}),
           ...(input.documentType ? { documentType: input.documentType } : {}),
           locationId: input.locationId,
+          ...(input.q ? { q: input.q } : {}),
         };
         return { items: [invoice()], total: 1 };
       },
@@ -163,13 +194,15 @@ describe("POS sale routes", () => {
     const response = await server.inject({
       headers: { authorization: bearerToken() },
       method: "GET",
-      url: `/api/manager/sales?documentType=credit_note&locationId=${LOCATION_ID}`,
+      url: `/api/manager/sales?classification=outgoing&documentType=credit_note&locationId=${LOCATION_ID}&q=Adwoa`,
     });
 
     assert.equal(response.statusCode, 200);
     assert.deepEqual(listedQuery, {
+      classification: "outgoing",
       documentType: "credit_note",
       locationId: LOCATION_ID,
+      q: "Adwoa",
     });
     assert.equal(response.json().items[0]?.currencyCode, "GHS");
     assert.equal(response.json().items[0]?.currencyScale, 2);
@@ -180,6 +213,46 @@ describe("POS sale routes", () => {
           call.permission === "pos.sales.manage",
       ),
     );
+  });
+
+  it("passes worker sales search and pagination through the scoped list route", async () => {
+    const permissionCalls: PermissionCall[] = [];
+    let listedQuery: null | {
+      classification?: "internal" | "outgoing";
+      dateFrom?: Date;
+      dateTo?: Date;
+      documentType?: "adjusted" | "credit_note" | "invoice";
+      locationId: string;
+      page: number;
+      pageSize: number;
+      q?: string;
+      workerId: string;
+    } = null;
+    const server = createSalesServer({
+      async listByWorker(input) {
+        listedQuery = input;
+        return { items: [invoice()], total: 1 };
+      },
+      permissionCalls,
+    });
+
+    const response = await server.inject({
+      headers: { authorization: bearerToken() },
+      method: "GET",
+      url: `/api/worker/sales?dateFrom=2026-04-01&dateTo=2026-04-30&documentType=invoice&locationId=${LOCATION_ID}&page=2&pageSize=10&q=INV%2F2026`,
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(listedQuery, {
+      dateFrom: new Date("2026-04-01T00:00:00.000Z"),
+      dateTo: new Date("2026-04-30T00:00:00.000Z"),
+      documentType: "invoice",
+      locationId: LOCATION_ID,
+      page: 2,
+      pageSize: 10,
+      q: "INV/2026",
+      workerId: USER_ID,
+    });
   });
 });
 
@@ -193,11 +266,24 @@ function createSalesServer(input: {
   forbiddenPermissions?: string[];
   invoice?: InvoiceWithLines;
   listByLocation?: (input: {
-    documentType?: "credit_note" | "invoice";
+    classification?: "internal" | "outgoing";
+    documentType?: "adjusted" | "credit_note" | "invoice";
     locationId: string;
     page: number;
     pageSize: number;
+    q?: string;
     workerId?: string;
+  }) => Promise<{ items: InvoiceWithLines[]; total: number }>;
+  listByWorker?: (input: {
+    classification?: "internal" | "outgoing";
+    dateFrom?: Date;
+    dateTo?: Date;
+    documentType?: "adjusted" | "credit_note" | "invoice";
+    locationId: string;
+    page: number;
+    pageSize: number;
+    q?: string;
+    workerId: string;
   }) => Promise<{ items: InvoiceWithLines[]; total: number }>;
   processSale?: (input: Record<string, unknown>) => Promise<InvoiceWithLines>;
   permissionCalls: PermissionCall[];
@@ -261,8 +347,10 @@ function createSalesServer(input: {
             ? input.listByLocation(args)
             : { items: [], total: 0 };
         },
-        async listByWorker() {
-          return { items: [], total: 0 };
+        async listByWorker(args) {
+          return input.listByWorker
+            ? input.listByWorker(args)
+            : { items: [], total: 0 };
         },
       },
       permissionService,
@@ -286,9 +374,11 @@ function invoice(overrides: Partial<InvoiceWithLines> = {}): InvoiceWithLines {
     attributedWorkerEmail: "worker@example.com",
     attributedWorkerId: USER_ID,
     attributedWorkerName: "Store Worker",
+    classification: "outgoing",
     confirmedAt: NOW,
     createdAt: NOW,
     createdBy: USER_ID,
+    currentPayableReference: "INV/2026/000001",
     customerBillingAddressLines: null,
     currencyCode: "GHS",
     currencyScale: 2,
@@ -301,8 +391,16 @@ function invoice(overrides: Partial<InvoiceWithLines> = {}): InvoiceWithLines {
     locationId: LOCATION_ID,
     notes: null,
     parentInvoiceId: null,
+    parentInvoiceReference: null,
     paymentMethod: "cash",
     reference: "INV/2026/000001",
+    replacementInvoiceId: null,
+    replacementInvoiceReference: null,
+    revisionCreditNoteId: null,
+    revisionCreditNoteReference: null,
+    revisionRootInvoiceId: null,
+    revisionRootReference: null,
+    role: "standard",
     status: "confirmed",
     subtotalAmount: "0.00",
     taxAmount: "0.00",

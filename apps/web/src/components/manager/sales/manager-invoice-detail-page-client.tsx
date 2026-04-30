@@ -45,6 +45,7 @@ export function ManagerInvoiceDetailPageClient({
         />
       ) : invoiceQuery.data ? (
         <SalesDocumentWorkspace
+          detailBasePath="/manager/sales"
           invoice={invoiceQuery.data}
           showWorkerAttribution
         />

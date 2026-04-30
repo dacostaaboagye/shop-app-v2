@@ -35,6 +35,16 @@ export function registerOAuthRoutes(
     method: googleOAuthCallbackRoute.method,
     url: googleOAuthCallbackRoute.url,
     async handler(request, reply) {
+      const env = (await import("../../env.js")).getApiEnv();
+      const oauthError = readOAuthError(request);
+
+      if (oauthError) {
+        return reply.redirect(
+          `${env.webBaseUrl ?? ""}/login?oauth_error=${encodeURIComponent(oauthError)}`,
+          302,
+        );
+      }
+
       const session = await dependencies.googleOAuthService.handleCallback(
         request,
         reply,
@@ -46,8 +56,14 @@ export function registerOAuthRoutes(
         session.refreshTokenExpiresAt,
       );
       // Redirect web app to a callback page that bootstraps the session
-      const env = (await import("../../env.js")).getApiEnv();
       return reply.redirect(`${env.webBaseUrl ?? ""}/auth/callback`, 302);
     },
   });
+}
+
+function readOAuthError(request: { query: unknown }) {
+  const query = request.query as Record<string, unknown>;
+  return typeof query.error === "string" && query.error.length > 0
+    ? query.error
+    : null;
 }

@@ -7,6 +7,7 @@ import type {
 import {
   formatMoney,
   getDocumentTitle,
+  getDocumentTraceabilityRows,
 } from "../src/modules/official-documents/sales-issued-document-pdf.support.js";
 
 const PROFILE: OfficialDocumentProfileResponse = {
@@ -55,11 +56,48 @@ test("keeps sales receipt as the issued document title for confirmed POS invoice
   assert.equal(getDocumentTitle(invoice()), "Sales Receipt");
 });
 
+test("uses adjusted invoice as the issued document title for adjusted revisions", () => {
+  assert.equal(
+    getDocumentTitle({
+      ...invoice(),
+      role: "adjusted",
+      type: "adjusted",
+    }),
+    "Adjusted Invoice",
+  );
+});
+
+test("builds traceability rows from revision-linked documents", () => {
+  assert.deepEqual(
+    getDocumentTraceabilityRows({
+      ...invoice(),
+      parentInvoiceReference: "INV/2026/000001",
+      reference: "INV/2026/000003",
+      replacementInvoiceReference: null,
+      revisionChain: {
+        currentPayableReference: "INV/2026/000003",
+        isLatestPayable: true,
+        replacementInvoiceReference: null,
+        revisionCreditNoteReference: "CN/2026/000001",
+        revisionRootReference: "INV/2026/000001",
+        sourceInvoiceReference: "INV/2026/000001",
+      },
+      role: "adjusted",
+      type: "adjusted",
+    }),
+    [
+      ["Source Invoice", "INV/2026/000001"],
+      ["Credit Note", "CN/2026/000001"],
+    ],
+  );
+});
+
 function invoice(): InvoiceResponse {
   return {
     attributedWorkerEmail: null,
     attributedWorkerId: null,
     attributedWorkerName: null,
+    classification: "outgoing",
     confirmedAt: "2026-04-20T10:00:00.000Z",
     createdAt: "2026-04-20T09:59:00.000Z",
     customerBillingAddressLines: null,
@@ -72,8 +110,19 @@ function invoice(): InvoiceResponse {
     lines: [],
     locationId: "22222222-2222-4222-8222-222222222222",
     notes: null,
+    parentInvoiceReference: null,
     paymentMethod: "cash",
     reference: "INV/2026/000001",
+    replacementInvoiceReference: null,
+    revisionChain: {
+      currentPayableReference: "INV/2026/000001",
+      isLatestPayable: true,
+      replacementInvoiceReference: null,
+      revisionCreditNoteReference: null,
+      revisionRootReference: null,
+      sourceInvoiceReference: null,
+    },
+    role: "standard",
     status: "confirmed",
     subtotalAmount: "24.00",
     taxAmount: "0.00",

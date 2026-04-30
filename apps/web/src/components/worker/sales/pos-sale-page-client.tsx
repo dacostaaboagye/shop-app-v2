@@ -6,7 +6,8 @@ import type {
   PosPaymentMethod,
 } from "@shop/contracts";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
@@ -20,19 +21,63 @@ import {
   fetchWorkerAssignments,
   workerAssignmentsQueryKey,
 } from "@/lib/react-query/worker-assignments";
+import {
+  readEnumParam,
+  readPositiveIntParam,
+  readStringParam,
+} from "@/lib/url-state";
 import { PosSaleAssignmentWorkspace } from "./pos-sale-assignment-workspace";
+import {
+  POS_SALE_PAGE_SIZE_OPTIONS,
+  POS_SALE_QUICK_FILTERS,
+  POS_SALE_SORT_OPTIONS,
+} from "./pos-sale-assignment-workspace.support";
 import type { CartItem } from "./pos-sale-cart-card";
 import {
   createEmptyPosSaleCustomerDetails,
   normalizePosSaleCustomerDetails,
 } from "./pos-sale-customer-details.support";
+import {
+  addCartAssignment,
+  removeCartAssignment,
+  updateCartAssignmentPrice,
+  updateCartAssignmentQuantity,
+} from "./pos-sale-page-client.support";
+import { replacePosSaleQuery } from "./pos-sale-page-query.support";
 import { SaleSuccessPanel } from "./pos-sale-success-panel";
 
 type SaleSuccess = {
   invoice: InvoiceResponse;
 };
-
 export function PosSalePageClient() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [draftSearch, setDraftSearch] = useState(
+    readStringParam(searchParams, "q"),
+  );
+  const brandSlug = readStringParam(searchParams, "brand");
+  const categorySlug = readStringParam(searchParams, "category");
+  const quickFilter = readEnumParam(
+    searchParams,
+    "view",
+    POS_SALE_QUICK_FILTERS,
+    "all",
+  );
+  const sort = readEnumParam(
+    searchParams,
+    "sort",
+    POS_SALE_SORT_OPTIONS,
+    "name",
+  );
+  const querySearch = readStringParam(searchParams, "q");
+  const rawPageSize = readPositiveIntParam(searchParams, "pageSize", 24);
+  const pageSize = POS_SALE_PAGE_SIZE_OPTIONS.includes(
+    rawPageSize as (typeof POS_SALE_PAGE_SIZE_OPTIONS)[number],
+  )
+    ? rawPageSize
+    : 24;
+  const page = readPositiveIntParam(searchParams, "page", 1);
   const {
     accessibleLocationScopes,
     isLoading,
@@ -49,7 +94,23 @@ export function PosSalePageClient() {
   );
   const [success, setSuccess] = useState<SaleSuccess | null>(null);
   const [cartSheetOpen, setCartSheetOpen] = useState(false);
+  useEffect(() => {
+    setDraftSearch(querySearch);
+  }, [querySearch]);
+  useEffect(() => {
+    if (draftSearch === querySearch) {
+      return;
+    }
 
+    const timeoutId = window.setTimeout(() => {
+      replacePosSaleQuery(router, pathname, searchParams, {
+        page: null,
+        q: draftSearch || null,
+      });
+    }, 350);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [draftSearch, pathname, querySearch, router, searchParams]);
   const assignmentsQuery = useQuery({
     enabled: !!selectedLocationScope,
     queryFn: async () => {
@@ -86,61 +147,19 @@ export function PosSalePageClient() {
   });
 
   function addToCart(assignment: CurrentAssignment) {
-    setCart((prev) => {
-      const existing = prev.find(
-        (item) => item.assignment.skuId === assignment.skuId,
-      );
-      if (existing) {
-        return prev.map((item) =>
-          item.assignment.skuId === assignment.skuId
-            ? {
-                ...item,
-                quantity: Math.min(
-                  item.quantity + 1,
-                  item.assignment.availableQuantity,
-                ),
-              }
-            : item,
-        );
-      }
-      return [
-        ...prev,
-        { assignment, quantity: 1, unitPrice: assignment.sellingPrice },
-      ];
-    });
+    setCart((prev) => addCartAssignment(prev, assignment));
   }
 
   function updateQty(skuId: string, delta: number) {
-    setCart((prev) =>
-      prev
-        .map((item) =>
-          item.assignment.skuId === skuId
-            ? {
-                ...item,
-                quantity: Math.max(
-                  0,
-                  Math.min(
-                    item.quantity + delta,
-                    item.assignment.availableQuantity,
-                  ),
-                ),
-              }
-            : item,
-        )
-        .filter((item) => item.quantity > 0),
-    );
+    setCart((prev) => updateCartAssignmentQuantity(prev, skuId, delta));
   }
 
   function updatePrice(skuId: string, unitPrice: string) {
-    setCart((prev) =>
-      prev.map((item) =>
-        item.assignment.skuId === skuId ? { ...item, unitPrice } : item,
-      ),
-    );
+    setCart((prev) => updateCartAssignmentPrice(prev, skuId, unitPrice));
   }
 
   function removeFromCart(skuId: string) {
-    setCart((prev) => prev.filter((item) => item.assignment.skuId !== skuId));
+    setCart((prev) => removeCartAssignment(prev, skuId));
   }
 
   function handleConfirm() {
@@ -178,7 +197,7 @@ export function PosSalePageClient() {
   return (
     <PageShell>
       <PageHeader
-        description="Select assigned variants, set quantities, and process a sale."
+        description="Select assigned variants, adjust quantities or pricing where needed, and complete the sale."
         title="New sale"
       />
 
@@ -205,6 +224,8 @@ export function PosSalePageClient() {
           />
           <PosSaleAssignmentWorkspace
             assignments={assignmentsQuery.data?.items ?? []}
+            brandSlug={brandSlug}
+            categorySlug={categorySlug}
             cart={cart}
             cartProps={cartProps}
             cartSheetOpen={cartSheetOpen}
@@ -213,9 +234,62 @@ export function PosSalePageClient() {
             isPending={assignmentsQuery.isPending}
             moneyProfile={moneyProfile}
             onAddToCart={addToCart}
+            onBrandChange={(value) =>
+              replacePosSaleQuery(router, pathname, searchParams, {
+                brand: value || null,
+                page: null,
+              })
+            }
+            onCategoryChange={(value) =>
+              replacePosSaleQuery(router, pathname, searchParams, {
+                category: value || null,
+                page: null,
+              })
+            }
+            onClearFilters={() =>
+              replacePosSaleQuery(router, pathname, searchParams, {
+                brand: null,
+                category: null,
+                page: null,
+                pageSize: null,
+                q: null,
+                sort: null,
+                view: null,
+              })
+            }
+            onPageChange={(nextPage) =>
+              replacePosSaleQuery(router, pathname, searchParams, {
+                page: nextPage === 1 ? null : nextPage,
+              })
+            }
+            onPageSizeChange={(nextPageSize) =>
+              replacePosSaleQuery(router, pathname, searchParams, {
+                page: null,
+                pageSize: nextPageSize === 24 ? null : nextPageSize,
+              })
+            }
+            onQuickFilterChange={(value) =>
+              replacePosSaleQuery(router, pathname, searchParams, {
+                page: null,
+                view: value === "all" ? null : value,
+              })
+            }
             onRetry={() => void assignmentsQuery.refetch()}
+            onSearchChange={setDraftSearch}
+            onSortChange={(value) =>
+              replacePosSaleQuery(router, pathname, searchParams, {
+                page: null,
+                sort: value === "name" ? null : value,
+              })
+            }
+            page={page}
+            pageSize={pageSize}
+            pageSizeOptions={POS_SALE_PAGE_SIZE_OPTIONS}
+            quickFilter={quickFilter}
+            search={draftSearch}
             selectedLocationScope={selectedLocationScope}
             setCartSheetOpen={setCartSheetOpen}
+            sort={sort}
           />
         </>
       )}

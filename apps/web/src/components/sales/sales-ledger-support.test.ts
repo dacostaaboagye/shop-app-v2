@@ -13,6 +13,7 @@ const RECORDS: SalesLedgerRecord[] = [
     attributedWorkerEmail: "worker@example.com",
     attributedWorkerId: null,
     attributedWorkerName: "Ama Doe",
+    classification: "outgoing",
     confirmedAt: "2026-04-27T09:30:00.000Z",
     createdAt: "2026-04-27T09:30:00.000Z",
     currencyCode: "GHS",
@@ -26,9 +27,20 @@ const RECORDS: SalesLedgerRecord[] = [
     locationName: "Airport Shop",
     locationSlug: "airport-shop",
     notes: null,
+    parentInvoiceReference: null,
     paymentMethod: "cash",
     reference: "INV-POS-00001",
-    status: "confirmed",
+    replacementInvoiceReference: "INV-POS-00003",
+    revisionChain: {
+      currentPayableReference: "INV-POS-00003",
+      isLatestPayable: false,
+      replacementInvoiceReference: "INV-POS-00003",
+      revisionCreditNoteReference: "CRN-POS-00001",
+      revisionRootReference: null,
+      sourceInvoiceReference: null,
+    },
+    role: "standard",
+    status: "superseded",
     subtotalAmount: "120.00",
     taxAmount: "0.00",
     totalAmount: "120.00",
@@ -38,6 +50,7 @@ const RECORDS: SalesLedgerRecord[] = [
     attributedWorkerEmail: "worker@example.com",
     attributedWorkerId: null,
     attributedWorkerName: "Ama Doe",
+    classification: "outgoing",
     confirmedAt: "2026-04-27T11:45:00.000Z",
     createdAt: "2026-04-27T11:45:00.000Z",
     currencyCode: "GHS",
@@ -51,8 +64,19 @@ const RECORDS: SalesLedgerRecord[] = [
     locationName: "Airport Shop",
     locationSlug: "airport-shop",
     notes: null,
+    parentInvoiceReference: "INV-POS-00001",
     paymentMethod: null,
     reference: "CRN-POS-00001",
+    replacementInvoiceReference: "INV-POS-00003",
+    revisionChain: {
+      currentPayableReference: "INV-POS-00003",
+      isLatestPayable: false,
+      replacementInvoiceReference: "INV-POS-00003",
+      revisionCreditNoteReference: null,
+      revisionRootReference: "INV-POS-00001",
+      sourceInvoiceReference: "INV-POS-00001",
+    },
+    role: "credit_note",
     status: "confirmed",
     subtotalAmount: "20.00",
     taxAmount: "0.00",
@@ -60,9 +84,47 @@ const RECORDS: SalesLedgerRecord[] = [
     type: "credit_note",
   },
   {
+    attributedWorkerEmail: "worker@example.com",
+    attributedWorkerId: null,
+    attributedWorkerName: "Ama Doe",
+    classification: "outgoing",
+    confirmedAt: "2026-04-27T12:00:00.000Z",
+    createdAt: "2026-04-27T12:00:00.000Z",
+    currencyCode: "GHS",
+    currencyScale: 2,
+    customerBillingAddressLines: null,
+    customerEmail: "buyer@example.com",
+    customerName: "Kojo",
+    customerPhone: null,
+    customerTaxNumber: null,
+    locationId: "10b57c84-8fe3-46ab-9f52-fd73c3bf25b7",
+    locationName: "Airport Shop",
+    locationSlug: "airport-shop",
+    notes: null,
+    parentInvoiceReference: "INV-POS-00001",
+    paymentMethod: "cash",
+    reference: "INV-POS-00003",
+    replacementInvoiceReference: null,
+    revisionChain: {
+      currentPayableReference: "INV-POS-00003",
+      isLatestPayable: true,
+      replacementInvoiceReference: null,
+      revisionCreditNoteReference: "CRN-POS-00001",
+      revisionRootReference: "INV-POS-00001",
+      sourceInvoiceReference: "INV-POS-00001",
+    },
+    role: "adjusted",
+    status: "confirmed",
+    subtotalAmount: "100.00",
+    taxAmount: "0.00",
+    totalAmount: "100.00",
+    type: "adjusted",
+  },
+  {
     attributedWorkerEmail: "worker2@example.com",
     attributedWorkerId: null,
     attributedWorkerName: "Yaw Mensah",
+    classification: "outgoing",
     confirmedAt: "2026-04-26T15:10:00.000Z",
     createdAt: "2026-04-26T15:10:00.000Z",
     currencyCode: "GHS",
@@ -76,8 +138,19 @@ const RECORDS: SalesLedgerRecord[] = [
     locationName: "Osu Shop",
     locationSlug: "osu-shop",
     notes: null,
+    parentInvoiceReference: null,
     paymentMethod: "mobile_money",
     reference: "INV-POS-00002",
+    replacementInvoiceReference: null,
+    revisionChain: {
+      currentPayableReference: "INV-POS-00002",
+      isLatestPayable: true,
+      replacementInvoiceReference: null,
+      revisionCreditNoteReference: null,
+      revisionRootReference: null,
+      sourceInvoiceReference: null,
+    },
+    role: "standard",
     status: "confirmed",
     subtotalAmount: "250.00",
     taxAmount: "0.00",
@@ -114,7 +187,9 @@ describe("sales ledger support", () => {
   it("summarizes daily sales, returns, and net revenue", () => {
     const summary = summarizeSalesLedger(RECORDS);
 
-    assert.equal(summary.transactionCount, 3);
+    assert.equal(summary.transactionCount, 4);
+    assert.equal(summary.adjustedInvoiceCount, 1);
+    assert.equal(summary.adjustedInvoiceAmount, 100);
     assert.equal(summary.receiptCount, 2);
     assert.equal(summary.creditNoteCount, 1);
     assert.equal(summary.grossSalesAmount, 370);
@@ -122,6 +197,7 @@ describe("sales ledger support", () => {
     assert.equal(summary.netRevenueAmount, 350);
     assert.equal(summary.averageReceiptAmount, 185);
     assert.equal(summary.timelineDays.length, 2);
-    assert.equal(summary.timelineDays[1]?.netRevenueAmount, 100);
+    assert.equal(summary.timelineDays[1]?.adjustedInvoiceAmount, 100);
+    assert.equal(summary.timelineDays[1]?.netRevenueAmount, 80);
   });
 });

@@ -7,10 +7,12 @@ import type {
 import { fetchJson } from "@/lib/react-query/fetch-json";
 
 export type InvoiceListQuery = {
+  classification?: "all" | "internal" | "outgoing";
   dateFrom?: string;
   dateTo?: string;
-  documentType?: "all" | "credit_note" | "invoice";
+  documentType?: "adjusted" | "all" | "credit_note" | "invoice";
   locationId: string;
+  q?: string;
   page?: number;
   pageSize?: number;
   workerId?: string;
@@ -35,9 +37,13 @@ export async function fetchWorkerSales(
   });
   if (query.dateFrom) params.set("dateFrom", query.dateFrom);
   if (query.dateTo) params.set("dateTo", query.dateTo);
+  if (query.classification && query.classification !== "all") {
+    params.set("classification", query.classification);
+  }
   if (query.documentType && query.documentType !== "all") {
     params.set("documentType", query.documentType);
   }
+  if (query.q) params.set("q", query.q);
 
   return fetchJson<InvoiceListResponse>(
     `/api/worker/sales?${params.toString()}`,
@@ -56,9 +62,13 @@ export async function fetchManagerSales(
   });
   if (query.dateFrom) params.set("dateFrom", query.dateFrom);
   if (query.dateTo) params.set("dateTo", query.dateTo);
+  if (query.classification && query.classification !== "all") {
+    params.set("classification", query.classification);
+  }
   if (query.documentType && query.documentType !== "all") {
     params.set("documentType", query.documentType);
   }
+  if (query.q) params.set("q", query.q);
   if (query.workerId) params.set("workerId", query.workerId);
 
   return fetchJson<InvoiceListResponse>(
@@ -89,6 +99,40 @@ export async function fetchAllManagerSales(
   const remainingPages = await Promise.all(
     Array.from({ length: totalPages - 1 }, (_, index) =>
       fetchManagerSales({
+        ...query,
+        page: index + 2,
+        pageSize: firstPage.pageSize,
+      }),
+    ),
+  );
+
+  return [
+    ...firstPage.items,
+    ...remainingPages.flatMap((response) => response.items),
+  ];
+}
+
+export async function fetchAllWorkerSales(
+  query: InvoiceListQuery,
+): Promise<InvoiceListResponse["items"]> {
+  const firstPage = await fetchWorkerSales({
+    ...query,
+    page: 1,
+    pageSize: Math.min(query.pageSize ?? 100, 100),
+  });
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(firstPage.total / Math.max(firstPage.pageSize, 1)),
+  );
+
+  if (totalPages === 1) {
+    return firstPage.items;
+  }
+
+  const remainingPages = await Promise.all(
+    Array.from({ length: totalPages - 1 }, (_, index) =>
+      fetchWorkerSales({
         ...query,
         page: index + 2,
         pageSize: firstPage.pageSize,

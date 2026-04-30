@@ -11,6 +11,21 @@ export const invoiceDocumentTypeFilterSchema = z.enum([
   "all",
   "invoice",
   "credit_note",
+  "adjusted",
+]);
+
+export const invoiceClassificationSchema = z.enum(["outgoing", "internal"]);
+
+export const invoiceClassificationFilterSchema = z.enum([
+  "all",
+  "outgoing",
+  "internal",
+]);
+
+export const invoiceDocumentRoleSchema = z.enum([
+  "standard",
+  "credit_note",
+  "adjusted",
 ]);
 
 export const posLineItemRequestSchema = z.object({
@@ -51,6 +66,7 @@ export const invoiceResponseSchema = z.object({
   attributedWorkerId: z.string().uuid().nullable(),
   attributedWorkerName: z.string().nullable(),
   attributedWorkerEmail: z.string().nullable(),
+  classification: invoiceClassificationSchema.default("outgoing"),
   confirmedAt: z.iso.datetime().nullable(),
   createdAt: z.iso.datetime(),
   customerBillingAddressLines: z.array(z.string()).nullable().default(null),
@@ -63,13 +79,40 @@ export const invoiceResponseSchema = z.object({
   lines: z.array(invoiceLineItemResponseSchema),
   locationId: z.string().uuid(),
   notes: z.string().nullable(),
+  parentInvoiceReference: z.string().nullable().default(null),
   paymentMethod: posPaymentMethodSchema.nullable(),
   reference: z.string(),
-  status: z.enum(["confirmed", "voided"]),
+  replacementInvoiceReference: z.string().nullable().default(null),
+  revisionChain: z
+    .object({
+      currentPayableReference: z.string().nullable().default(null),
+      isLatestPayable: z.boolean().default(false),
+      replacementInvoiceReference: z.string().nullable().default(null),
+      revisionCreditNoteReference: z.string().nullable().default(null),
+      revisionRootReference: z.string().nullable().default(null),
+      sourceInvoiceReference: z.string().nullable().default(null),
+    })
+    .default({
+      currentPayableReference: null,
+      isLatestPayable: false,
+      replacementInvoiceReference: null,
+      revisionCreditNoteReference: null,
+      revisionRootReference: null,
+      sourceInvoiceReference: null,
+    }),
+  role: invoiceDocumentRoleSchema.default("standard"),
+  status: z.enum(["confirmed", "superseded", "voided"]),
   subtotalAmount: z.string(),
   taxAmount: z.string(),
   totalAmount: z.string(),
-  type: z.enum(["pos", "portal", "ecommerce", "manual", "credit_note"]),
+  type: z.enum([
+    "pos",
+    "portal",
+    "ecommerce",
+    "manual",
+    "credit_note",
+    "adjusted",
+  ]),
 });
 
 export const posReturnLineItemSchema = z.object({
@@ -83,10 +126,12 @@ export const processPosReturnRequestSchema = z.object({
 });
 
 export const invoiceListQuerySchema = z.object({
+  classification: invoiceClassificationFilterSchema.default("all"),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
   documentType: invoiceDocumentTypeFilterSchema.default("all"),
   locationId: z.string().uuid().optional(),
+  q: z.string().trim().max(160).optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(25),
   workerId: z.string().uuid().optional(),
@@ -103,6 +148,11 @@ export type PosPaymentMethod = z.infer<typeof posPaymentMethodSchema>;
 export type InvoiceDocumentTypeFilter = z.infer<
   typeof invoiceDocumentTypeFilterSchema
 >;
+export type InvoiceClassification = z.infer<typeof invoiceClassificationSchema>;
+export type InvoiceClassificationFilter = z.infer<
+  typeof invoiceClassificationFilterSchema
+>;
+export type InvoiceDocumentRole = z.infer<typeof invoiceDocumentRoleSchema>;
 export type PosLineItemRequest = z.infer<typeof posLineItemRequestSchema>;
 export type ProcessPosPaymentRequest = z.infer<
   typeof processPosPaymentRequestSchema
