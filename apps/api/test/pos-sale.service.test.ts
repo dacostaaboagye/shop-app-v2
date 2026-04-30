@@ -348,11 +348,302 @@ describe("PosSaleService currency snapshots", () => {
     const roundedReturn = createdReturnInput as CreateReturnTransactionInput;
     assert.equal(roundedReturn.lines[0]?.unitPrice, "10.24");
     assert.equal(roundedReturn.lines[0]?.lineTotal, "20.48");
+    assert.equal(roundedReturn.lines[0]?.taxAmount, "0.00");
     assert.equal(roundedReturn.subtotalAmount, "20.48");
     assert.equal(roundedReturn.taxAmount, "0.00");
     assert.equal(roundedReturn.totalAmount, "20.48");
     assert.equal(creditNote.subtotalAmount, "20.48");
     assert.equal(creditNote.totalAmount, "20.48");
+  });
+
+  it("creates an adjusted invoice payload for partial returns", async () => {
+    let createdReturnInput: CreateReturnTransactionInput | null = null;
+    const service = createService({
+      async createReturnTransaction(input) {
+        createdReturnInput = input;
+        return invoice({
+          currencyCode: input.currencyCode,
+          currencyScale: input.currencyScale,
+          lines: [],
+          parentInvoiceId: input.parentInvoiceId,
+          parentInvoiceReference: "INV/2026/000001",
+          reference: input.reference,
+          replacementInvoiceReference: input.adjustedInvoice?.reference ?? null,
+          revisionRootInvoiceId: input.revisionRootInvoiceId,
+          revisionRootReference: "INV/2026/000001",
+          subtotalAmount: input.subtotalAmount,
+          taxAmount: input.taxAmount,
+          totalAmount: input.totalAmount,
+          type: "credit_note",
+        });
+      },
+      findByReference: async () =>
+        invoice({
+          attributedWorkerId: "worker-1",
+          createdBy: "worker-1",
+          currencyCode: "GHS",
+          currencyScale: 2,
+          lines: [
+            {
+              createdAt: NOW,
+              id: "line-1",
+              invoiceId: "invoice-1",
+              lineTotal: "30.72",
+              quantity: 3,
+              skuId: "sku-1",
+              skuSnapshot: {
+                productName: "Bottled Water",
+                sku: "BW-L",
+                variantName: "Large",
+              },
+              stockMovementId: null,
+              taxAmount: "0.00",
+              taxCategory: null,
+              taxRate: null,
+              unitPrice: "10.24",
+              updatedAt: NOW,
+            },
+          ],
+          locationId: "location-1",
+          reference: "INV/2026/000001",
+        }),
+    });
+
+    await service.processReturn({
+      createdBy: "user-1",
+      lines: [{ quantity: 1, skuId: "sku-1" }],
+      now: NOW,
+      parentReference: "INV/2026/000001",
+      reason: "Customer return",
+    });
+
+    assert.ok(createdReturnInput);
+    const persistedReturn = createdReturnInput as CreateReturnTransactionInput;
+    assert.equal(persistedReturn.parentInvoiceId, "invoice-1");
+    assert.equal(persistedReturn.revisionRootInvoiceId, "invoice-1");
+    assert.equal(persistedReturn.adjustedInvoice?.reference, "INV/2026/000001");
+    assert.equal(persistedReturn.adjustedInvoice?.lines[0]?.quantity, 2);
+    assert.equal(persistedReturn.adjustedInvoice?.lines[0]?.lineTotal, "20.48");
+    assert.equal(persistedReturn.adjustedInvoice?.subtotalAmount, "20.48");
+    assert.equal(persistedReturn.adjustedInvoice?.totalAmount, "20.48");
+  });
+
+  it("resolves returns against the latest payable invoice revision", async () => {
+    let createdReturnInput: CreateReturnTransactionInput | null = null;
+    const service = createService({
+      async createReturnTransaction(input) {
+        createdReturnInput = input;
+        return invoice({
+          currencyCode: input.currencyCode,
+          currencyScale: input.currencyScale,
+          lines: [],
+          parentInvoiceId: input.parentInvoiceId,
+          parentInvoiceReference: "INV-POS-00002",
+          reference: input.reference,
+          revisionRootInvoiceId: input.revisionRootInvoiceId,
+          revisionRootReference: "INV-POS-00001",
+          subtotalAmount: input.subtotalAmount,
+          taxAmount: input.taxAmount,
+          totalAmount: input.totalAmount,
+          type: "credit_note",
+        });
+      },
+      findByReference: async (reference) => {
+        if (reference === "INV-POS-00001") {
+          return invoice({
+            id: "invoice-1",
+            lines: [
+              {
+                createdAt: NOW,
+                id: "line-1",
+                invoiceId: "invoice-1",
+                lineTotal: "30.00",
+                quantity: 3,
+                skuId: "sku-1",
+                skuSnapshot: {
+                  productName: "Bottled Water",
+                  sku: "BW-L",
+                  variantName: "Large",
+                },
+                stockMovementId: null,
+                taxAmount: "0.00",
+                taxCategory: null,
+                taxRate: null,
+                unitPrice: "10.00",
+                updatedAt: NOW,
+              },
+            ],
+            reference,
+            replacementInvoiceId: "invoice-2",
+            replacementInvoiceReference: "INV-POS-00002",
+          });
+        }
+
+        if (reference === "INV-POS-00002") {
+          return invoice({
+            id: "invoice-2",
+            lines: [
+              {
+                createdAt: NOW,
+                id: "line-2",
+                invoiceId: "invoice-2",
+                lineTotal: "20.00",
+                quantity: 2,
+                skuId: "sku-1",
+                skuSnapshot: {
+                  productName: "Bottled Water",
+                  sku: "BW-L",
+                  variantName: "Large",
+                },
+                stockMovementId: null,
+                taxAmount: "0.00",
+                taxCategory: null,
+                taxRate: null,
+                unitPrice: "10.00",
+                updatedAt: NOW,
+              },
+            ],
+            parentInvoiceId: "invoice-1",
+            parentInvoiceReference: "INV-POS-00001",
+            reference,
+            revisionRootInvoiceId: "invoice-1",
+            revisionRootReference: "INV-POS-00001",
+            role: "adjusted",
+            type: "adjusted",
+          });
+        }
+
+        return null;
+      },
+      generateReference: async () => "INV-POS-00003",
+    });
+
+    await service.processReturn({
+      createdBy: "user-1",
+      lines: [{ quantity: 1, skuId: "sku-1" }],
+      now: NOW,
+      parentReference: "INV-POS-00001",
+      reason: "Customer return",
+    });
+
+    assert.ok(createdReturnInput);
+    const persistedReturn = createdReturnInput as CreateReturnTransactionInput;
+    assert.equal(persistedReturn.parentInvoiceId, "invoice-2");
+    assert.equal(persistedReturn.revisionRootInvoiceId, "invoice-1");
+    assert.equal(persistedReturn.adjustedInvoice?.reference, "INV-POS-00003");
+    assert.equal(persistedReturn.adjustedInvoice?.lines[0]?.quantity, 1);
+  });
+
+  it("uses the canonical current payable reference for multi-step revision chains", async () => {
+    let createdReturnInput: CreateReturnTransactionInput | null = null;
+    const requestedReferences: string[] = [];
+    const service = createService({
+      async createReturnTransaction(input) {
+        createdReturnInput = input;
+        return invoice({
+          currencyCode: input.currencyCode,
+          currencyScale: input.currencyScale,
+          lines: [],
+          parentInvoiceId: input.parentInvoiceId,
+          parentInvoiceReference: "INV-POS-00003",
+          reference: input.reference,
+          revisionRootInvoiceId: input.revisionRootInvoiceId,
+          revisionRootReference: "INV-POS-00001",
+          subtotalAmount: input.subtotalAmount,
+          taxAmount: input.taxAmount,
+          totalAmount: input.totalAmount,
+          type: "credit_note",
+        });
+      },
+      findByReference: async (reference) => {
+        requestedReferences.push(reference);
+
+        if (reference === "INV-POS-00001") {
+          return invoice({
+            currentPayableReference: "INV-POS-00003",
+            id: "invoice-1",
+            lines: [
+              {
+                createdAt: NOW,
+                id: "line-1",
+                invoiceId: "invoice-1",
+                lineTotal: "30.00",
+                quantity: 3,
+                skuId: "sku-1",
+                skuSnapshot: {
+                  productName: "Bottled Water",
+                  sku: "BW-L",
+                  variantName: "Large",
+                },
+                stockMovementId: null,
+                taxAmount: "0.00",
+                taxCategory: null,
+                taxRate: null,
+                unitPrice: "10.00",
+                updatedAt: NOW,
+              },
+            ],
+            reference,
+            replacementInvoiceId: "invoice-2",
+            replacementInvoiceReference: "INV-POS-00002",
+            status: "superseded",
+          });
+        }
+
+        if (reference === "INV-POS-00003") {
+          return invoice({
+            currentPayableReference: "INV-POS-00003",
+            id: "invoice-3",
+            lines: [
+              {
+                createdAt: NOW,
+                id: "line-3",
+                invoiceId: "invoice-3",
+                lineTotal: "10.00",
+                quantity: 1,
+                skuId: "sku-1",
+                skuSnapshot: {
+                  productName: "Bottled Water",
+                  sku: "BW-L",
+                  variantName: "Large",
+                },
+                stockMovementId: null,
+                taxAmount: "0.00",
+                taxCategory: null,
+                taxRate: null,
+                unitPrice: "10.00",
+                updatedAt: NOW,
+              },
+            ],
+            parentInvoiceId: "invoice-2",
+            parentInvoiceReference: "INV-POS-00002",
+            reference,
+            revisionRootInvoiceId: "invoice-1",
+            revisionRootReference: "INV-POS-00001",
+            role: "adjusted",
+            type: "adjusted",
+          });
+        }
+
+        return null;
+      },
+      generateReference: async () => "INV-POS-00004",
+    });
+
+    await service.processReturn({
+      createdBy: "user-1",
+      lines: [{ quantity: 1, skuId: "sku-1" }],
+      now: NOW,
+      parentReference: "INV-POS-00001",
+      reason: "Customer return",
+    });
+
+    assert.ok(createdReturnInput);
+    const persistedReturn = createdReturnInput as CreateReturnTransactionInput;
+    assert.deepEqual(requestedReferences, ["INV-POS-00001", "INV-POS-00003"]);
+    assert.equal(persistedReturn.parentInvoiceId, "invoice-3");
+    assert.equal(persistedReturn.revisionRootInvoiceId, "invoice-1");
+    assert.equal(persistedReturn.adjustedInvoice, null);
   });
 
   it("publishes a durable event after processing a return", async () => {
@@ -387,13 +678,15 @@ describe("PosSaleService currency snapshots", () => {
 });
 
 function invoice(overrides: Partial<InvoiceWithLines> = {}): InvoiceWithLines {
-  return {
+  const record: InvoiceWithLines = {
     attributedWorkerEmail: "worker@example.com",
     attributedWorkerId: "worker-1",
     attributedWorkerName: "Store Worker",
+    classification: "outgoing",
     confirmedAt: NOW,
     createdAt: NOW,
     createdBy: "user-1",
+    currentPayableReference: "INV/2026/000001",
     customerBillingAddressLines: null,
     currencyCode: "GHS",
     currencyScale: 2,
@@ -406,8 +699,16 @@ function invoice(overrides: Partial<InvoiceWithLines> = {}): InvoiceWithLines {
     locationId: "location-1",
     notes: null,
     parentInvoiceId: null,
+    parentInvoiceReference: null,
     paymentMethod: "cash",
     reference: "INV/2026/000001",
+    replacementInvoiceId: null,
+    replacementInvoiceReference: null,
+    revisionCreditNoteId: null,
+    revisionCreditNoteReference: null,
+    revisionRootInvoiceId: null,
+    revisionRootReference: null,
+    role: "standard",
     status: "confirmed",
     subtotalAmount: "25.00",
     taxAmount: "0.00",
@@ -417,6 +718,12 @@ function invoice(overrides: Partial<InvoiceWithLines> = {}): InvoiceWithLines {
     voidedAt: null,
     voidReason: null,
     ...overrides,
+  };
+
+  return {
+    ...record,
+    currentPayableReference:
+      overrides.currentPayableReference ?? record.reference,
   };
 }
 
@@ -429,6 +736,7 @@ function createService(
       input: CreateSaleTransactionInput,
     ) => Promise<InvoiceWithLines>;
     findByReference: (reference: string) => Promise<InvoiceWithLines | null>;
+    generateReference: () => Promise<string>;
     getLocationName: (locationId: string) => Promise<string>;
     platformEventPublisher: {
       publish: (event: PlatformEventRecord) => Promise<void>;
@@ -537,6 +845,9 @@ function createService(
         return "CN/2026/000001";
       },
       async generateReference() {
+        if (overrides.generateReference) {
+          return overrides.generateReference();
+        }
         return "INV/2026/000001";
       },
     },

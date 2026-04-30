@@ -13,6 +13,8 @@ export type SalesLedgerFilters = {
 };
 
 export type SalesLedgerDay = {
+  adjustedInvoiceAmount: number;
+  adjustedInvoiceCount: number;
   averageReceiptAmount: number;
   creditNoteAmount: number;
   creditNoteCount: number;
@@ -25,6 +27,8 @@ export type SalesLedgerDay = {
 };
 
 export type SalesLedgerSummary = {
+  adjustedInvoiceAmount: number;
+  adjustedInvoiceCount: number;
   averageReceiptAmount: number;
   creditNoteAmount: number;
   creditNoteCount: number;
@@ -100,6 +104,8 @@ export function summarizeSalesLedger(
   for (const record of records) {
     const dayKey = toDayKey(record.createdAt);
     const day = dayMap.get(dayKey) ?? {
+      adjustedInvoiceAmount: 0,
+      adjustedInvoiceCount: 0,
       averageReceiptAmount: 0,
       creditNoteAmount: 0,
       creditNoteCount: 0,
@@ -112,6 +118,7 @@ export function summarizeSalesLedger(
     };
     const totalAmount = toNumericAmount(record.totalAmount) ?? 0;
     const isCreditNote = record.type === "credit_note";
+    const isAdjustedInvoice = record.type === "adjusted";
 
     day.transactionCount += 1;
 
@@ -119,9 +126,17 @@ export function summarizeSalesLedger(
       day.creditNoteAmount += totalAmount;
       day.creditNoteCount += 1;
       day.netRevenueAmount -= totalAmount;
+    } else if (isAdjustedInvoice) {
+      day.adjustedInvoiceAmount += totalAmount;
+      day.adjustedInvoiceCount += 1;
+      if (record.status !== "superseded") {
+        day.netRevenueAmount += totalAmount;
+      }
     } else {
       day.grossSalesAmount += totalAmount;
-      day.netRevenueAmount += totalAmount;
+      if (record.status !== "superseded") {
+        day.netRevenueAmount += totalAmount;
+      }
       day.receiptCount += 1;
     }
 
@@ -139,6 +154,10 @@ export function summarizeSalesLedger(
     (sum, day) => sum + day.grossSalesAmount,
     0,
   );
+  const adjustedInvoiceAmount = timelineDays.reduce(
+    (sum, day) => sum + day.adjustedInvoiceAmount,
+    0,
+  );
   const creditNoteAmount = timelineDays.reduce(
     (sum, day) => sum + day.creditNoteAmount,
     0,
@@ -153,6 +172,11 @@ export function summarizeSalesLedger(
   );
 
   return {
+    adjustedInvoiceAmount,
+    adjustedInvoiceCount: timelineDays.reduce(
+      (sum, day) => sum + day.adjustedInvoiceCount,
+      0,
+    ),
     averageReceiptAmount:
       receiptCount > 0 ? grossSalesAmount / receiptCount : 0,
     creditNoteAmount,
@@ -188,8 +212,15 @@ export function summarizeSalesLedgerByLocation(
     const totalAmount = toNumericAmount(record.totalAmount) ?? 0;
 
     current.transactionCount += 1;
-    current.netRevenueAmount +=
-      record.type === "credit_note" ? -totalAmount : totalAmount;
+    if (record.type === "credit_note") {
+      current.netRevenueAmount -= totalAmount;
+    } else if (record.type === "adjusted") {
+      if (record.status !== "superseded") {
+        current.netRevenueAmount += totalAmount;
+      }
+    } else if (record.status !== "superseded") {
+      current.netRevenueAmount += totalAmount;
+    }
 
     locationMap.set(key, current);
   }

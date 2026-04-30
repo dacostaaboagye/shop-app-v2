@@ -9,11 +9,13 @@ import {
 describe("sales contracts", () => {
   it("accepts invoice document type filters", () => {
     const parsed = invoiceListQuerySchema.parse({
+      classification: "outgoing",
       documentType: "credit_note",
       locationId: "4181707d-c61e-4c22-995d-335295748060",
       page: "2",
     });
 
+    assert.equal(parsed.classification, "outgoing");
     assert.equal(parsed.documentType, "credit_note");
     assert.equal(parsed.page, 2);
   });
@@ -24,6 +26,7 @@ describe("sales contracts", () => {
     });
 
     assert.equal(parsed.documentType, "all");
+    assert.equal(parsed.classification, "all");
   });
 
   it("accepts customer billing details on invoices", () => {
@@ -31,6 +34,7 @@ describe("sales contracts", () => {
       attributedWorkerEmail: null,
       attributedWorkerId: null,
       attributedWorkerName: null,
+      classification: "outgoing",
       confirmedAt: "2026-04-21T10:00:00.000Z",
       createdAt: "2026-04-21T09:55:00.000Z",
       customerBillingAddressLines: ["12 Market Street", "Accra"],
@@ -43,8 +47,19 @@ describe("sales contracts", () => {
       lines: [],
       locationId: "4181707d-c61e-4c22-995d-335295748060",
       notes: null,
+      parentInvoiceReference: null,
       paymentMethod: "transfer",
       reference: "INV-000042",
+      replacementInvoiceReference: null,
+      revisionChain: {
+        currentPayableReference: "INV-000042",
+        isLatestPayable: true,
+        replacementInvoiceReference: null,
+        revisionCreditNoteReference: null,
+        revisionRootReference: null,
+        sourceInvoiceReference: null,
+      },
+      role: "standard",
       status: "confirmed",
       subtotalAmount: "1200.00",
       taxAmount: "180.00",
@@ -53,11 +68,13 @@ describe("sales contracts", () => {
     });
 
     assert.equal(parsed.customerName, "Adwoa Mensah");
+    assert.equal(parsed.classification, "outgoing");
     assert.equal(parsed.currencyCode, "GHS");
     assert.deepEqual(parsed.customerBillingAddressLines, [
       "12 Market Street",
       "Accra",
     ]);
+    assert.equal(parsed.revisionChain.isLatestPayable, true);
   });
 
   it("defaults customer billing details for existing POS snapshots", () => {
@@ -84,7 +101,13 @@ describe("sales contracts", () => {
     assert.equal(parsed.customerName, null);
     assert.equal(parsed.customerEmail, null);
     assert.equal(parsed.customerBillingAddressLines, null);
+    assert.equal(parsed.classification, "outgoing");
     assert.equal(parsed.currencyScale, 2);
+    assert.equal(parsed.parentInvoiceReference, null);
+    assert.equal(parsed.replacementInvoiceReference, null);
+    assert.equal(parsed.revisionChain.currentPayableReference, null);
+    assert.equal(parsed.revisionChain.isLatestPayable, false);
+    assert.equal(parsed.role, "standard");
   });
 
   it("accepts optional buyer details on POS payment requests", () => {

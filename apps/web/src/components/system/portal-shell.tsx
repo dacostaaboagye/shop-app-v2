@@ -53,7 +53,7 @@ export function AppShell({ children }: AppShellProps) {
         </SheetContent>
       </Sheet>
 
-      <div className="relative min-h-svh lg:pl-72">
+      <div className="relative flex min-h-svh flex-col lg:pl-72">
         {/* Clean, Non-Theatrical Header Background */}
         <div className="absolute inset-x-0 top-0 h-64 lg:pl-72 border-b border-border/40 bg-background" />
 
@@ -63,7 +63,7 @@ export function AppShell({ children }: AppShellProps) {
           onNotificationsOpen={() => setNotificationsOpen(true)}
         />
 
-        <main className="relative z-10 px-6 sm:px-10 lg:px-12">
+        <main className="relative z-10 flex-1 px-6 sm:px-10 lg:px-12">
           <EmailVerificationGate />
           <div className="mx-auto max-w-screen-2xl pb-20">{children}</div>
         </main>

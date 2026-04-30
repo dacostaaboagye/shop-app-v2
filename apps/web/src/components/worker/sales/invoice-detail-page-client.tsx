@@ -61,6 +61,7 @@ export function WorkerInvoiceDetailPageClient({
         />
       ) : invoiceQuery.data ? (
         <SalesDocumentWorkspace
+          detailBasePath="/worker/sales"
           invoice={invoiceQuery.data}
           secondaryAction={
             <>

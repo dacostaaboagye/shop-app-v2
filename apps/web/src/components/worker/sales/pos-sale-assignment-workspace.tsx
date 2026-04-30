@@ -4,16 +4,22 @@ import type {
   AuthLocationPermissionScope,
   CurrentAssignment,
 } from "@shop/contracts";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppEmptyState } from "@/components/system/app-empty-state";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatCount } from "@/lib/display/format";
 import type { MoneyProfile } from "@/lib/money/format-money";
-import { PosSaleAssignmentFilters } from "./pos-sale-assignment-filters";
+import { PosSaleAssignmentCatalogCard } from "./pos-sale-assignment-workspace.sections";
 import {
   filterSaleAssignments,
+  getFirstAddableSaleAssignment,
   getSaleAssignmentFilterOptions,
+  getSaleAssignmentSearchMatchState,
+  isLikelySkuSearch,
+  type PosSaleQuickFilter,
+  type PosSaleSortOption,
+  paginateSaleAssignments,
+  summarizeSaleAssignments,
 } from "./pos-sale-assignment-workspace.support";
 import {
   type CartBodyProps,
@@ -21,7 +27,6 @@ import {
   PosSaleCartCard,
 } from "./pos-sale-cart-card";
 import { PosSaleMobileCart } from "./pos-sale-mobile-cart";
-import { VariantRow } from "./pos-sale-page-sections";
 
 type Props = {
   assignments: CurrentAssignment[];
@@ -33,9 +38,25 @@ type Props = {
   isPending: boolean;
   moneyProfile: MoneyProfile;
   onAddToCart: (assignment: CurrentAssignment) => void;
+  onBrandChange: (value: string) => void;
+  onCategoryChange: (value: string) => void;
+  onClearFilters: () => void;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+  onQuickFilterChange: (value: PosSaleQuickFilter) => void;
   onRetry: () => void;
+  onSearchChange: (value: string) => void;
+  onSortChange: (value: PosSaleSortOption) => void;
+  page: number;
+  pageSize: number;
+  pageSizeOptions: readonly number[];
+  quickFilter: PosSaleQuickFilter;
+  search: string;
   selectedLocationScope: AuthLocationPermissionScope | null;
   setCartSheetOpen: (open: boolean) => void;
+  sort: PosSaleSortOption;
+  brandSlug: string;
+  categorySlug: string;
 };
 
 export function PosSaleAssignmentWorkspace({
@@ -48,13 +69,31 @@ export function PosSaleAssignmentWorkspace({
   isPending,
   moneyProfile,
   onAddToCart,
+  onBrandChange,
+  onCategoryChange,
+  onClearFilters,
+  onPageChange,
+  onPageSizeChange,
+  onQuickFilterChange,
   onRetry,
+  onSearchChange,
+  onSortChange,
+  page,
+  pageSize,
+  pageSizeOptions,
+  quickFilter,
+  search,
   selectedLocationScope,
   setCartSheetOpen,
+  sort,
+  brandSlug,
+  categorySlug,
 }: Props) {
-  const [search, setSearch] = useState("");
-  const [brandSlug, setBrandSlug] = useState("");
-  const [categorySlug, setCategorySlug] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [recentlyAdded, setRecentlyAdded] = useState<{
+    quantity: number;
+    skuId: string;
+  } | null>(null);
   const brandOptions = useMemo(
     () => getSaleAssignmentFilterOptions(assignments, "brandSlug", "brandName"),
     [assignments],
@@ -70,13 +109,96 @@ export function PosSaleAssignmentWorkspace({
   );
   const filteredAssignments = useMemo(
     () =>
-      filterSaleAssignments(assignments, {
-        brandSlug,
-        categorySlug,
-        search,
-      }),
-    [assignments, brandSlug, categorySlug, search],
+      filterSaleAssignments(
+        assignments,
+        {
+          brandSlug,
+          categorySlug,
+          quickFilter,
+          search,
+          sort,
+        },
+        cart.map((item) => item.assignment.skuId),
+      ),
+    [assignments, brandSlug, cart, categorySlug, quickFilter, search, sort],
   );
+  const assignmentSummary = useMemo(
+    () =>
+      summarizeSaleAssignments(
+        assignments,
+        cart.map((item) => item.assignment.skuId),
+      ),
+    [assignments, cart],
+  );
+  const paginatedAssignments = useMemo(
+    () => paginateSaleAssignments(filteredAssignments, page, pageSize),
+    [filteredAssignments, page, pageSize],
+  );
+  const firstAddableAssignment = useMemo(
+    () => getFirstAddableSaleAssignment(paginatedAssignments),
+    [paginatedAssignments],
+  );
+  const searchMatchState = useMemo(
+    () => getSaleAssignmentSearchMatchState(filteredAssignments, search),
+    [filteredAssignments, search],
+  );
+  const isSkuSearch = useMemo(() => isLikelySkuSearch(search), [search]);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredAssignments.length / pageSize),
+  );
+
+  useEffect(() => {
+    if (page > totalPages) {
+      onPageChange(totalPages);
+    }
+  }, [onPageChange, page, totalPages]);
+
+  useEffect(() => {
+    if (!recentlyAdded) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setRecentlyAdded((current) =>
+        current?.skuId === recentlyAdded.skuId ? null : current,
+      );
+    }, 1800);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [recentlyAdded]);
+
+  function focusSearchInput() {
+    const input = searchInputRef.current;
+
+    if (!input) {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      input.focus();
+      input.select();
+    });
+  }
+
+  function handleAddAssignment(assignment: CurrentAssignment) {
+    const currentQuantity =
+      cart.find((item) => item.assignment.skuId === assignment.skuId)
+        ?.quantity ?? 0;
+    const nextQuantity = Math.min(
+      currentQuantity + 1,
+      assignment.availableQuantity,
+    );
+
+    onAddToCart(assignment);
+    setRecentlyAdded({ quantity: nextQuantity, skuId: assignment.skuId });
+
+    if (isSkuSearch) {
+      onSearchChange("");
+    }
+
+    focusSearchInput();
+  }
 
   if (isPending && selectedLocationScope) {
     return (
@@ -113,56 +235,46 @@ export function PosSaleAssignmentWorkspace({
   return (
     <>
       <div className="pb-24 lg:pb-0">
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.8fr)]">
           <div className="min-w-0 flex flex-col gap-3">
-            <p className="type-support">
-              {formatCount(filteredAssignments.length)} of{" "}
-              {formatCount(assignments.length)} assigned variants
-            </p>
-            <PosSaleAssignmentFilters
+            <PosSaleAssignmentCatalogCard
+              assignmentSummary={assignmentSummary}
               brandOptions={brandOptions}
               brandSlug={brandSlug}
+              cart={cart}
               categoryOptions={categoryOptions}
               categorySlug={categorySlug}
-              onBrandChange={setBrandSlug}
-              onCategoryChange={setCategorySlug}
-              onClear={() => {
-                setSearch("");
-                setBrandSlug("");
-                setCategorySlug("");
-              }}
-              onSearchChange={setSearch}
-              search={search}
+              filteredCount={filteredAssignments.length}
+              firstAddableAssignment={firstAddableAssignment}
+              moneyProfile={moneyProfile}
+              onAddAssignment={handleAddAssignment}
+              onBrandChange={onBrandChange}
+              onCategoryChange={onCategoryChange}
+              onClearFilters={onClearFilters}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+              onQuickFilterChange={onQuickFilterChange}
+              onSearchChange={onSearchChange}
+              onSortChange={onSortChange}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={pageSizeOptions}
+              paginatedAssignments={paginatedAssignments}
+              quickFilter={quickFilter}
+              recentlyAdded={recentlyAdded}
+              search={isSkuSearch ? search : ""}
+              searchInputRef={searchInputRef}
+              searchMatchState={searchMatchState}
+              selectedLocationScope={selectedLocationScope}
+              sort={sort}
             />
-            <div className="divide-y divide-border rounded-xl border border-border bg-card">
-              {filteredAssignments.length > 0 ? (
-                filteredAssignments.map((assignment) => (
-                  <VariantRow
-                    key={assignment.skuId}
-                    assignment={assignment}
-                    cartQuantity={
-                      cart.find(
-                        (item) => item.assignment.skuId === assignment.skuId,
-                      )?.quantity ?? 0
-                    }
-                    inCart={cart.some(
-                      (item) => item.assignment.skuId === assignment.skuId,
-                    )}
-                    moneyProfile={moneyProfile}
-                    onAdd={() => onAddToCart(assignment)}
-                  />
-                ))
-              ) : (
-                <div className="p-6">
-                  <AppEmptyState
-                    description="Try changing the search, brand, or category filters."
-                    title="No assigned variants match"
-                  />
-                </div>
-              )}
+          </div>
+          <div className="hidden min-w-0 xl:block">
+            <div className="sticky top-20">
+              <PosSaleCartCard {...cartProps} />
             </div>
           </div>
-          <div className="hidden min-w-0 lg:block">
+          <div className="hidden min-w-0 lg:block xl:hidden">
             <PosSaleCartCard {...cartProps} />
           </div>
         </div>

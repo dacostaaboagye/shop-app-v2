@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useEffect } from "react";
 import { useAuthorization } from "@/components/providers/authorization-provider";
 import { AppErrorState } from "@/components/system/app-error";
+import { buildLoginRedirectHref } from "@/lib/auth/auth-redirect";
 import { toRoute } from "@/lib/routes";
 import {
   isAuthSessionPending,
@@ -37,7 +38,10 @@ export function AuthGuard({ children }: AuthGuardProps) {
     if (isAuthSessionPending(status)) return;
 
     if (status === "anonymous") {
-      router.replace(toRoute("/login"));
+      const query =
+        typeof window === "undefined" ? "" : window.location.search.slice(1);
+      const nextPath = query ? `${pathname}?${query}` : pathname;
+      router.replace(buildLoginRedirectHref(nextPath));
       return;
     }
 
@@ -57,6 +61,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
     router,
     status,
     user,
+    pathname,
   ]);
 
   if (authorization.isError) {

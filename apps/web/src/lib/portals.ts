@@ -1,7 +1,8 @@
-import type { AuthUser, PortalKey } from "@shop/contracts";
+import type { AuthPermissionSet, AuthUser, PortalKey } from "@shop/contracts";
 import { Building2, Package, ShieldCheck, Truck, Users } from "lucide-react";
 import type { Route } from "next";
 import type { ComponentType } from "react";
+import { toRoute } from "@/lib/routes";
 
 export type { PortalKey };
 
@@ -62,6 +63,31 @@ export function getPortalHref(portal: PortalKey): Route {
   return PORTALS[portal].href;
 }
 
+export function getPortalLandingHref(
+  user: Pick<
+    AuthUser,
+    "availablePortals" | "permissionSet" | "preferredPortal"
+  >,
+): Route {
+  const portal = getPrimaryPortal(user);
+
+  if (!portal) {
+    return toRoute("/");
+  }
+
+  const locationSlug = resolvePortalLandingLocationSlug(
+    portal,
+    user.permissionSet,
+  );
+
+  if (!locationSlug) {
+    return getPortalHref(portal);
+  }
+
+  const searchParams = new URLSearchParams({ location: locationSlug });
+  return toRoute(`${getPortalHref(portal)}?${searchParams.toString()}`);
+}
+
 export function getAvailablePortals(
   user: Pick<AuthUser, "availablePortals"> | null | undefined,
 ): PortalKey[] {
@@ -103,4 +129,32 @@ export function getPrimaryPortal(
   }
 
   return availablePortals[0] ?? null;
+}
+
+function resolvePortalLandingLocationSlug(
+  portal: PortalKey,
+  permissionSet: AuthPermissionSet | undefined,
+): string | null {
+  const locationScopes = permissionSet?.locationScopes ?? [];
+  const permission = getPortalLandingLocationPermission(portal);
+
+  if (!permission) {
+    return null;
+  }
+
+  return (
+    locationScopes.find((scope) => scope.permissions.includes(permission))
+      ?.locationSlug ?? null
+  );
+}
+
+function getPortalLandingLocationPermission(portal: PortalKey): string | null {
+  switch (portal) {
+    case "manager":
+      return "stock.view";
+    case "worker":
+      return "stock.assignments.own.view";
+    default:
+      return null;
+  }
 }

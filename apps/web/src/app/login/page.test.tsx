@@ -9,15 +9,22 @@ import LoginPage from "./page";
 Object.assign(globalThis, { React });
 
 describe("LoginPage", () => {
-  it("renders the dedicated sign-in route", () => {
-    const markup = renderToStaticMarkup(
-      <AppProviders>
-        <LoginPage />
-      </AppProviders>,
-    );
+  it("renders the dedicated sign-in route", async () => {
+    const page = await LoginPage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(<AppProviders>{page}</AppProviders>);
 
     assert.match(markup, /Sign In/);
     assert.match(markup, /No account\?/i);
     assert.match(markup, /Create Account/);
+  });
+
+  it("renders the OAuth denial notice when Google sign-in is cancelled", async () => {
+    const page = await LoginPage({
+      searchParams: Promise.resolve({ oauth_error: "access_denied" }),
+    });
+    const markup = renderToStaticMarkup(<AppProviders>{page}</AppProviders>);
+
+    assert.match(markup, /Google sign-in cancelled/);
+    assert.match(markup, /cancelled or denied/i);
   });
 });

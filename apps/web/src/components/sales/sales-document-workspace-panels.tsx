@@ -1,6 +1,7 @@
 "use client";
 import type { ReactNode } from "react";
 import { SalesDocumentActions } from "@/components/sales/sales-document-actions";
+import { DocumentChainSummary } from "@/components/sales/sales-document-workspace-chain";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -14,20 +15,22 @@ import { formatMoney } from "@/lib/money/format-money";
 import { fetchSalesDocumentDownloadFile } from "@/lib/react-query/official-documents";
 
 export function OfficialDocumentPanel({
+  detailBasePath,
   actionsDisabled,
   invoice,
   onPrint,
   profile,
   secondaryAction,
 }: {
+  detailBasePath: string;
   actionsDisabled: boolean;
   invoice: PrintableInvoiceData;
   onPrint: () => void;
   profile: OfficialDocumentProfile;
   secondaryAction?: ReactNode;
 }) {
-  const isReturn = invoice.type === "credit_note";
   const statusLabel = formatDocumentStatus(invoice.status);
+  const documentTypeLabel = getDocumentTypeLabel(invoice);
 
   return (
     <Card className="hero-panel border-border/80">
@@ -47,18 +50,23 @@ export function OfficialDocumentPanel({
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Badge variant={isReturn ? "destructive" : "secondary"}>
-              {isReturn ? "Credit note" : "Sales receipt"}
+            <Badge variant={getDocumentBadgeVariant(invoice)}>
+              {documentTypeLabel}
             </Badge>
-            <Badge
-              variant={invoice.status === "voided" ? "destructive" : "outline"}
-            >
+            <Badge variant={getStatusBadgeVariant(invoice.status)}>
               {statusLabel}
             </Badge>
+            {invoice.revisionChain?.isLatestPayable ? (
+              <Badge variant="outline">Latest payable</Badge>
+            ) : null}
           </div>
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        <DocumentChainSummary
+          detailBasePath={detailBasePath}
+          invoice={invoice}
+        />
         <div className="flex flex-wrap gap-2">
           <SalesDocumentActions
             disabled={actionsDisabled}
@@ -85,6 +93,9 @@ export function SalesSummary({
   profile: OfficialDocumentProfile;
   showWorkerAttribution: boolean;
 }) {
+  const documentTypeLabel = getDocumentTypeLabel(invoice);
+  const statusLabel = formatDocumentStatus(invoice.status);
+
   return (
     <Card>
       <CardHeader className="pb-0">
@@ -93,6 +104,8 @@ export function SalesSummary({
         </p>
       </CardHeader>
       <CardContent className="grid grid-cols-2 gap-3 pt-4 text-sm sm:grid-cols-3">
+        <SummaryItem label="Document type" value={documentTypeLabel} />
+        <SummaryItem label="Status" value={statusLabel} />
         <SummaryItem
           label="Payment"
           value={formatPaymentMethod(invoice.paymentMethod)}
@@ -227,4 +240,21 @@ function formatPaymentMethod(value: string | null): string {
 
 function formatDocumentStatus(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1).replace(/_/g, " ");
+}
+
+function getDocumentTypeLabel(invoice: PrintableInvoiceData): string {
+  if (invoice.type === "credit_note") return "Credit note";
+  if (invoice.type === "adjusted") return "Adjusted invoice";
+  return "Sales receipt";
+}
+
+function getDocumentBadgeVariant(invoice: PrintableInvoiceData) {
+  if (invoice.type === "credit_note") return "destructive" as const;
+  if (invoice.type === "adjusted") return "outline" as const;
+  return "secondary" as const;
+}
+
+function getStatusBadgeVariant(status: string) {
+  if (status === "voided") return "destructive" as const;
+  return "outline" as const;
 }

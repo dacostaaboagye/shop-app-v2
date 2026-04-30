@@ -106,6 +106,7 @@ jobs:
           flyctl scale count \
             api=1 \
             worker=1 \
+            --yes \
             --app "$STAGING_FLY_APP_NAME"
 
   deploy_web:

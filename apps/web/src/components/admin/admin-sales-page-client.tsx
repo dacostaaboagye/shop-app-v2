@@ -21,10 +21,13 @@ import { fetchAllManagerSales } from "@/lib/react-query/pos-sales";
 const DEFAULT_DATE_RANGE = createDefaultSalesLedgerDateRange();
 
 export function AdminSalesPageClient() {
+  const [classification, setClassification] = useState<
+    "all" | "internal" | "outgoing"
+  >("all");
   const [dateFrom, setDateFrom] = useState(DEFAULT_DATE_RANGE.dateFrom);
   const [dateTo, setDateTo] = useState(DEFAULT_DATE_RANGE.dateTo);
   const [documentType, setDocumentType] = useState<
-    "all" | "credit_note" | "invoice"
+    "adjusted" | "all" | "credit_note" | "invoice"
   >("all");
   const { can } = useAuthorization();
   const salesScopePermission = can("pos.sales.manage")
@@ -51,6 +54,7 @@ export function AdminSalesPageClient() {
       const results = await Promise.all(
         selectedScopes.map(async (scope) => {
           const items = await fetchAllManagerSales({
+            classification,
             dateFrom,
             dateTo,
             documentType,
@@ -72,6 +76,7 @@ export function AdminSalesPageClient() {
       "sales",
       "admin-ledger",
       selectedScopes.map((scope) => scope.locationId),
+      classification,
       dateFrom,
       dateTo,
       documentType,
@@ -122,14 +127,23 @@ export function AdminSalesPageClient() {
         />
       ) : salesQuery.data ? (
         <SalesLedgerWorkspace
+          classification={classification}
           dateFrom={dateFrom}
           dateTo={dateTo}
           documentType={documentType}
           moneyProfile={profileQuery.data ?? DEFAULT_OFFICIAL_DOCUMENT_PROFILE}
+          page={1}
+          pageSize={Math.max(salesQuery.data.length, 1)}
           records={salesQuery.data}
+          search=""
+          totalCount={salesQuery.data.length}
+          onClassificationChange={setClassification}
           onDateFromChange={setDateFrom}
           onDateToChange={setDateTo}
           onDocumentTypeChange={setDocumentType}
+          onPageChange={() => {}}
+          onPageSizeChange={() => {}}
+          onSearchChange={() => {}}
         />
       ) : null}
     </PageShell>

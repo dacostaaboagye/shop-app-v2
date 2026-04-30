@@ -70,6 +70,7 @@ export class PostgresInvoiceRepository {
         .insert(invoices)
         .values({
           attributedWorkerId: input.attributedWorkerId,
+          classification: input.classification,
           confirmedAt: input.confirmedAt,
           createdBy: input.createdBy,
           customerBillingAddressLines:

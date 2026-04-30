@@ -120,6 +120,13 @@ export function AccessOverviewClient() {
                 label="Permissions"
               />
             </PermissionGate>
+            <PermissionGate permission="api.docs.view">
+              <AccessLinkCard
+                description="Open the protected internal backend route reference for authenticated developers."
+                href="/docs/api"
+                label="API docs"
+              />
+            </PermissionGate>
             <PermissionGate permission="access.audit.view">
               <AccessLinkCard
                 description="Review append-only access changes with actor, target, and reason."

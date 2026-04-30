@@ -2,15 +2,23 @@ import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import type { SalesAttributionService } from "../inventory-ownership/sales-attribution.service.js";
 import type { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
 import {
+  aggregateReturnQuantities,
+  buildAdjustedInvoiceLines,
+  buildReturnInvoiceLines,
+  buildSaleLineItems,
+  resolveAttributedWorkerId,
+  resolveCurrentPayableInvoice,
+  roundCurrency,
+  validateReturnQuantities,
+} from "./pos-sale.service.support.js";
+import {
   type CreateReturnTransactionInput,
   type CreateSaleTransactionInput,
   InvalidReturnError,
   InvoiceNotFoundError,
   type InvoiceWithLines,
-  MixedOwnershipSaleError,
   type PosCatalogVariantRepository,
   type SalesCurrencySnapshot,
-  SaleVariantNotFoundError,
 } from "./sales.contracts.js";
 import type { SalesEventContextRepository } from "./sales-event-context.repository.js";
 import { createSalesReturnProcessedEvent } from "./sales-return-events.js";
@@ -81,12 +89,6 @@ export class PosSaleService {
         input.lines.map((l) => l.skuId),
       );
 
-    for (const line of input.lines) {
-      if (!variantDetails.has(line.skuId)) {
-        throw new SaleVariantNotFoundError(line.skuId);
-      }
-    }
-
     const attributions = await Promise.all(
       input.lines.map((line) =>
         this.deps.salesAttributionService.attributeSale({
@@ -96,53 +98,17 @@ export class PosSaleService {
         }),
       ),
     );
-
-    const workerIds = new Set(attributions.map((a) => a.workerId));
-    if (workerIds.size > 1) {
-      throw new MixedOwnershipSaleError();
-    }
-    const attributedWorkerId = workerIds.values().next().value;
-    if (!attributedWorkerId) {
-      throw new MixedOwnershipSaleError();
-    }
+    const attributedWorkerId = resolveAttributedWorkerId(attributions);
 
     const reference = await this.deps.referenceNumberService.generateReference({
       now,
       sequenceKey: "invoice-pos",
     });
 
-    const lineItems = input.lines.map((line) => {
-      const variant = variantDetails.get(line.skuId);
-      if (!variant) {
-        throw new SaleVariantNotFoundError(line.skuId);
-      }
-      const customPrice =
-        line.unitPrice !== undefined && line.unitPrice !== ""
-          ? parseFloat(line.unitPrice)
-          : NaN;
-      const unitPrice =
-        !Number.isNaN(customPrice) && customPrice >= 0
-          ? customPrice
-          : parseFloat(variant.sellingPrice);
-      const subtotal = roundCurrency(unitPrice * line.quantity);
-      const taxAmount = 0;
-      const lineTotal = subtotal;
-
-      return {
-        lineTotal: lineTotal.toFixed(2),
-        locationId: input.locationId,
-        quantity: line.quantity,
-        skuId: line.skuId,
-        skuSnapshot: {
-          productName: variant.productName,
-          sku: variant.sku,
-          variantName: variant.name,
-        },
-        taxAmount: taxAmount.toFixed(2),
-        taxCategory: variant.taxCategory,
-        taxRate: null as string | null,
-        unitPrice: unitPrice.toFixed(2),
-      };
+    const lineItems = buildSaleLineItems({
+      lines: input.lines,
+      locationId: input.locationId,
+      variantDetails,
     });
 
     const subtotalAmount = lineItems.reduce(
@@ -154,6 +120,7 @@ export class PosSaleService {
 
     const transactionInput: CreateSaleTransactionInput = {
       attributedWorkerId,
+      classification: "outgoing",
       confirmedAt: now,
       createdBy: input.createdBy,
       customerBillingAddressLines: input.customerBillingAddressLines ?? null,
@@ -180,13 +147,18 @@ export class PosSaleService {
   async processReturn(input: ProcessReturnInput): Promise<InvoiceWithLines> {
     const now = input.now ?? new Date();
 
-    const originalInvoice = await this.deps.invoiceRepository.findByReference(
+    const requestedInvoice = await this.deps.invoiceRepository.findByReference(
       input.parentReference,
     );
 
-    if (!originalInvoice || originalInvoice.type !== "pos") {
+    if (!requestedInvoice || requestedInvoice.type === "credit_note") {
       throw new InvoiceNotFoundError(input.parentReference);
     }
+
+    const originalInvoice = await resolveCurrentPayableInvoice({
+      findByReference: this.deps.invoiceRepository.findByReference,
+      invoice: requestedInvoice,
+    });
 
     if (originalInvoice.status === "voided") {
       throw new InvalidReturnError(
@@ -194,66 +166,75 @@ export class PosSaleService {
       );
     }
 
-    const originalLineMap = new Map(
-      originalInvoice.lines.map((l) => [l.skuId, l]),
-    );
-
-    for (const line of input.lines) {
-      const originalLine = originalLineMap.get(line.skuId);
-      if (!originalLine) {
-        throw new InvalidReturnError(
-          `SKU ${line.skuId} was not on the original invoice ${input.parentReference}.`,
-          { skuId: line.skuId },
-        );
-      }
-      if (line.quantity > originalLine.quantity) {
-        throw new InvalidReturnError(
-          `Cannot return more than the original quantity for SKU ${line.skuId}.`,
-          {
-            originalQuantity: originalLine.quantity,
-            returnQuantity: line.quantity,
-            skuId: line.skuId,
-          },
-        );
-      }
+    if (originalInvoice.status === "superseded") {
+      throw new InvalidReturnError(
+        "Cannot return items from a superseded invoice revision.",
+      );
     }
+
+    const requestedReturnQuantities = aggregateReturnQuantities(input.lines);
+    const originalLineMap = validateReturnQuantities({
+      originalInvoice,
+      parentReference: input.parentReference,
+      requestedReturnQuantities,
+    });
 
     const creditReference =
       this.deps.referenceNumberService.generateCreditNoteReference(
         originalInvoice.reference,
       );
 
-    const lines = input.lines.map((line) => {
-      const originalLine = originalLineMap.get(line.skuId);
-      if (!originalLine) {
-        throw new InvalidReturnError(
-          `SKU ${line.skuId} was not on the original invoice ${input.parentReference}.`,
-          { skuId: line.skuId },
-        );
-      }
-      const unitPrice = parseFloat(originalLine.unitPrice);
-      const lineTotal = roundCurrency(unitPrice * line.quantity);
-
-      return {
-        lineTotal: lineTotal.toFixed(2),
-        quantity: line.quantity,
-        skuId: line.skuId,
-        skuSnapshot: originalLine.skuSnapshot,
-        taxAmount: "0.00",
-        taxCategory: originalLine.taxCategory,
-        taxRate: originalLine.taxRate,
-        unitPrice: originalLine.unitPrice,
-      };
+    const lines = buildReturnInvoiceLines({
+      originalLineMap,
+      parentReference: input.parentReference,
+      requestedReturnQuantities,
     });
+    const adjustedLines = buildAdjustedInvoiceLines({
+      originalInvoice,
+      requestedReturnQuantities,
+    });
+
+    const adjustedSubtotal = adjustedLines.reduce(
+      (sum, line) => sum + parseFloat(line.lineTotal),
+      0,
+    );
+    const adjustedTaxAmount = adjustedLines.reduce(
+      (sum, line) => sum + parseFloat(line.taxAmount),
+      0,
+    );
+    const hasAdjustedInvoice = adjustedLines.length > 0;
+    const adjustedReference = hasAdjustedInvoice
+      ? await this.deps.referenceNumberService.generateReference({
+          now,
+          sequenceKey: "invoice-pos",
+        })
+      : null;
 
     const returnSubtotal = lines.reduce(
       (sum, l) => sum + parseFloat(l.lineTotal),
       0,
     );
+    const returnTaxAmount = lines.reduce(
+      (sum, l) => sum + parseFloat(l.taxAmount),
+      0,
+    );
 
     const creditNote =
       await this.deps.invoiceRepository.createReturnTransaction({
+        adjustedInvoice:
+          hasAdjustedInvoice && adjustedReference
+            ? {
+                lines: adjustedLines,
+                reference: adjustedReference,
+                subtotalAmount: adjustedSubtotal.toFixed(2),
+                taxAmount: adjustedTaxAmount.toFixed(2),
+                totalAmount: roundCurrency(
+                  adjustedSubtotal + adjustedTaxAmount,
+                ).toFixed(2),
+              }
+            : null,
         attributedWorkerId: originalInvoice.attributedWorkerId,
+        classification: originalInvoice.classification,
         confirmedAt: now,
         createdBy: input.createdBy,
         currencyCode: originalInvoice.currencyCode,
@@ -263,9 +244,11 @@ export class PosSaleService {
         now,
         parentInvoiceId: originalInvoice.id,
         reference: creditReference,
+        revisionRootInvoiceId:
+          originalInvoice.revisionRootInvoiceId ?? originalInvoice.id,
         subtotalAmount: returnSubtotal.toFixed(2),
-        taxAmount: "0.00",
-        totalAmount: returnSubtotal.toFixed(2),
+        taxAmount: returnTaxAmount.toFixed(2),
+        totalAmount: roundCurrency(returnSubtotal + returnTaxAmount).toFixed(2),
         voidReason: input.reason,
       });
 
@@ -289,8 +272,4 @@ export class PosSaleService {
 
     return creditNote;
   }
-}
-
-function roundCurrency(value: number): number {
-  return Math.round(value * 100) / 100;
 }
