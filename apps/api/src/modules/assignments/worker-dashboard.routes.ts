@@ -29,6 +29,7 @@ export type WorkerDashboardRouteDependencies = {
   >;
   invoiceRepository: Pick<PostgresInvoiceQueryRepository, "listByWorker">;
   notificationQueryService: Pick<NotificationQueryService, "listNotifications">;
+  now?: () => Date;
   permissionService: Pick<PermissionResolutionService, "assertHasPermission">;
 };
 
@@ -85,16 +86,17 @@ export function registerWorkerDashboardRoutes(
         });
       }
 
+      const now = dependencies.now?.() ?? new Date();
       const [recentSales, todaySales] = await Promise.all([
         listAllWorkerSales(dependencies.invoiceRepository, {
           classification: "outgoing",
-          dateFrom: toRecentWindowStart(7),
+          dateFrom: toRecentWindowStart(7, now),
           locationId: query.locationId,
           workerId: userId,
         }),
         listAllWorkerSales(dependencies.invoiceRepository, {
           classification: "outgoing",
-          dateFrom: toTodayStart(),
+          dateFrom: toTodayStart(now),
           locationId: query.locationId,
           workerId: userId,
         }),
@@ -159,6 +161,9 @@ function createUnavailableDependencies(): WorkerDashboardRouteDependencies {
       async listByWorker() {
         return unavailable();
       },
+    },
+    now() {
+      return new Date();
     },
     notificationQueryService: {
       async listNotifications() {

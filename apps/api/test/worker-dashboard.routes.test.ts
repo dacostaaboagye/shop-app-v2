@@ -191,6 +191,7 @@ function createWorkerDashboardServer(input: {
       invoiceRepository: {
         listByWorker: input.invoiceListByWorker,
       },
+      now: () => NOW,
       notificationQueryService: {
         async listNotifications() {
           return {
