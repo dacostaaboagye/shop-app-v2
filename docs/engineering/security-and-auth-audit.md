@@ -83,13 +83,13 @@ API helmet has `contentSecurityPolicy: false` (the embed reasoning is unnecessar
 
 **Fix direction:** Standardize on seconds (NumericDate). Remove the double-scale on verify.
 
-### H3. Manager staff endpoint trusts client `locationId`
+### H3. Manager staff endpoint — RETRACTED on review (2026-05-01)
 
 **File:** `apps/api/src/modules/assignments/manager-staff.routes.ts:18, 31-36`
 
-Declares `scope: "contextual"` but passes `query.locationId` straight to the repository with no check that the requesting user has access to that location. A manager of location A reads location B's staff by passing B's id.
+The original audit flagged this as a missing per-location check. On closer reading of `apps/api/src/modules/access-control/permission-resolution.service.ts:34-55` and `apps/api/src/modules/access-control/request-location-scope.ts`, the route's `scope: "contextual"` already pins the middleware-level `assertHasPermission` call to the `locationId` taken from the query (or the `x-location-id` header). `resolvePermissions({ locationId })` then filters role + override rows for that specific location, so a manager scoped to location A who passes `query.locationId=B` is correctly rejected by the middleware before the handler runs.
 
-**Fix direction:** Mirror `apps/api/src/modules/stock/stock-balance-location.routes.ts:46-51` — `assertLocationPermission(actor, locationId, permission)`.
+No code change required for H3. **The H4 finding below remains valid** — `any_active` scope resolution does not pin to the supplied `locationId`, which is the real bug. PR #42 fixes the `any_active` family. A clarifying comment was added to the manager-staff handler so future readers don't reopen this finding.
 
 ### H4. `any_active`-scoped routes accept arbitrary client `locationId`
 
