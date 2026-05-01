@@ -2,9 +2,14 @@ import {
   emailDeliveryAttempts,
   emailDeliveryStatusEvents,
 } from "@shop/database";
-import { desc, inArray } from "drizzle-orm";
+import { desc, gte, inArray, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { EmailDeliveryStatus } from "./email-service.types.js";
+
+export type EmailDeliveryHealthCounts = {
+  totalAttempts: number;
+  byStatus: Record<EmailDeliveryStatus, number>;
+};
 
 export type EmailDeliveryAttemptRow = {
   createdAt: Date;
@@ -21,6 +26,53 @@ export type EmailDeliveryAttemptRow = {
 
 export class PostgresEmailDeliveryQueryRepository {
   constructor(private readonly db: ApiDatabase) {}
+
+  /**
+   * Counts attempts within a time window grouped by their *current* status.
+   * Each attempt's status starts at the row's createdAt status and is
+   * superseded by the most recent matching delivery_status_event. The
+   * SELECT uses a lateral subquery to fold those events without joining
+   * the full event log into application memory.
+   */
+  async getHealthCounts(input: {
+    since: Date;
+  }): Promise<EmailDeliveryHealthCounts> {
+    const rows = await this.db
+      .select({
+        attemptId: emailDeliveryAttempts.id,
+        baseStatus: emailDeliveryAttempts.status,
+        latestStatus: sql<EmailDeliveryStatus | null>`(
+          SELECT ${emailDeliveryStatusEvents.status}
+          FROM ${emailDeliveryStatusEvents}
+          WHERE ${emailDeliveryStatusEvents.attemptId} = ${emailDeliveryAttempts.id}
+          ORDER BY ${emailDeliveryStatusEvents.occurredAt} DESC,
+                   ${emailDeliveryStatusEvents.receivedAt} DESC
+          LIMIT 1
+        )`,
+      })
+      .from(emailDeliveryAttempts)
+      .where(gte(emailDeliveryAttempts.createdAt, input.since));
+
+    const byStatus: Record<EmailDeliveryStatus, number> = {
+      bounced: 0,
+      complained: 0,
+      console_fallback: 0,
+      delayed: 0,
+      delivered: 0,
+      failed: 0,
+      sent: 0,
+      suppressed: 0,
+    };
+    for (const row of rows) {
+      const effective = row.latestStatus ?? row.baseStatus;
+      byStatus[effective] = (byStatus[effective] ?? 0) + 1;
+    }
+
+    return {
+      totalAttempts: rows.length,
+      byStatus,
+    };
+  }
 
   async listRecentAttempts(limit: number): Promise<EmailDeliveryAttemptRow[]> {
     const attempts = await this.db

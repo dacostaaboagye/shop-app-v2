@@ -137,6 +137,22 @@ export const emailRecipientStateResponseSchema = z.object({
   summary: z.string().min(1),
 });
 
+export const emailHealthResponseSchema = z.object({
+  generatedAt: z.iso.datetime(),
+  windowDays: z.number().int().min(1),
+  totalAttempts: z.number().int().min(0),
+  totalSent: z.number().int().min(0),
+  totalDelivered: z.number().int().min(0),
+  totalBounced: z.number().int().min(0),
+  totalComplained: z.number().int().min(0),
+  totalSuppressed: z.number().int().min(0),
+  totalFailed: z.number().int().min(0),
+  // Sent + delivered out of attempted, expressed as 0-1. Null when there
+  // are no attempts in the window (no signal yet).
+  deliveryRate: z.number().min(0).max(1).nullable(),
+  providerConfigured: z.boolean(),
+});
+
 export type EmailOperationsResponse = z.infer<
   typeof emailOperationsResponseSchema
 >;
@@ -162,3 +178,4 @@ export type BlockedEmailDeliveryStatus = z.infer<
 export type EmailRecipientStateResponse = z.infer<
   typeof emailRecipientStateResponseSchema
 >;
+export type EmailHealthResponse = z.infer<typeof emailHealthResponseSchema>;

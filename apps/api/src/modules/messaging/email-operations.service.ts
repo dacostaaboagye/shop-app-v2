@@ -1,12 +1,18 @@
 import type {
   BlockedEmailDeliveryStatus,
+  EmailHealthResponse,
   EmailOperationsResponse,
   EmailRecipientStateResponse,
 } from "@shop/contracts";
 import type { EmailService } from "./email.service.js";
 import type { EmailTemplateProvider } from "./email-service.types.js";
-import type { EmailDeliveryAttemptRow } from "./postgres-email-delivery-query.repository.js";
+import type {
+  EmailDeliveryAttemptRow,
+  EmailDeliveryHealthCounts,
+} from "./postgres-email-delivery-query.repository.js";
 import type { RecipientDeliveryLifecycleState } from "./postgres-email-recipient-delivery-state.repository.js";
+
+const DEFAULT_HEALTH_WINDOW_DAYS = 30;
 
 type EmailOperationsDependencies = {
   emailService: Pick<EmailService, "sendTestEmail">;
@@ -19,6 +25,7 @@ type EmailOperationsDependencies = {
   };
   templateProvider: EmailTemplateProvider;
   attemptsRepository: {
+    getHealthCounts(input: { since: Date }): Promise<EmailDeliveryHealthCounts>;
     listRecentAttempts(limit: number): Promise<EmailDeliveryAttemptRow[]>;
   };
 };
@@ -56,6 +63,51 @@ export class EmailOperationsService {
       })),
       replyToAddress: configuration.sender.replyToAddress,
       supportEmail: configuration.sender.supportEmail,
+    };
+  }
+
+  async getHealth(input: {
+    now: Date;
+    windowDays?: number;
+  }): Promise<EmailHealthResponse> {
+    const windowDays = input.windowDays ?? DEFAULT_HEALTH_WINDOW_DAYS;
+    const since = new Date(
+      input.now.getTime() - windowDays * 24 * 60 * 60 * 1000,
+    );
+    const counts = await this.dependencies.attemptsRepository.getHealthCounts({
+      since,
+    });
+
+    const totalSent = counts.byStatus.sent ?? 0;
+    const totalDelivered = counts.byStatus.delivered ?? 0;
+    const totalBounced = counts.byStatus.bounced ?? 0;
+    const totalComplained = counts.byStatus.complained ?? 0;
+    const totalSuppressed = counts.byStatus.suppressed ?? 0;
+    const totalFailed = counts.byStatus.failed ?? 0;
+
+    const deliverableSignals = totalSent + totalDelivered;
+    const adversarialSignals =
+      totalBounced + totalComplained + totalSuppressed + totalFailed;
+    const totalScored = deliverableSignals + adversarialSignals;
+    // deliveryRate is "did the message land or did the provider reject it":
+    // sent/delivered as a fraction of (sent + delivered + bounced +
+    // complained + suppressed + failed). Console-fallback and delayed
+    // events are excluded — they're not signals about real-world delivery.
+    const deliveryRate =
+      totalScored > 0 ? deliverableSignals / totalScored : null;
+
+    return {
+      generatedAt: input.now.toISOString(),
+      windowDays,
+      totalAttempts: counts.totalAttempts,
+      totalSent,
+      totalDelivered,
+      totalBounced,
+      totalComplained,
+      totalSuppressed,
+      totalFailed,
+      deliveryRate,
+      providerConfigured: this.dependencies.providerConfigured,
     };
   }
 
