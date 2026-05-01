@@ -103,9 +103,17 @@ export function createServer(options: CreateServerOptions = {}) {
     },
   });
   server.register(helmet, {
-    // Allow API responses to be embedded in the web app
-    contentSecurityPolicy: false,
+    // The API only serves JSON, so a maximally restrictive CSP is appropriate.
+    // The web app renders its own UI and ships its own CSP via next.config.mjs.
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+        baseUri: ["'none'"],
+      },
+    },
     crossOriginResourcePolicy: { policy: "cross-origin" },
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
   });
   server.register(rateLimit, {
     global: false, // Apply only to routes that opt-in via config
