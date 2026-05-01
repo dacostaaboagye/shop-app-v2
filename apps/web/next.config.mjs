@@ -24,6 +24,25 @@ if (isVercelDeploy && !apiBaseUrlFromEnv) {
 const configuredApiBaseUrl =
   apiBaseUrlFromEnv ?? (isDevelopment ? "http://localhost:4000" : "");
 
+// next/image uses these patterns to allow optimization of remote sources.
+// Cloudflare R2's default public hostname is pub-<token>.r2.dev; custom
+// domains map through Cloudflare DNS. Operators can extend the list via
+// NEXT_PUBLIC_IMAGE_REMOTE_HOSTS (CSV) without rebuilding the config.
+const imageRemotePatterns = [
+  { protocol: "https", hostname: "*.r2.dev" },
+  { protocol: "https", hostname: "*.r2.cloudflarestorage.com" },
+  ...readImageRemoteHosts(process.env.NEXT_PUBLIC_IMAGE_REMOTE_HOSTS),
+];
+
+function readImageRemoteHosts(raw) {
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0)
+    .map((hostname) => ({ protocol: "https", hostname }));
+}
+
 // Browser API calls go through the Next.js rewrite at the same origin, so
 // `connect-src 'self'` is sufficient. `'unsafe-inline'` covers Next.js's
 // runtime-emitted scripts/styles; tighten further with nonce middleware in a
@@ -58,6 +77,9 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  images: {
+    remotePatterns: imageRemotePatterns,
+  },
   async headers() {
     return [
       {

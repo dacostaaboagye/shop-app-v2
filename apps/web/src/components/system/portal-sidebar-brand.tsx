@@ -59,7 +59,6 @@ function BrandMark({
           className="size-full object-cover"
           height={40}
           src={logoImageUrl}
-          unoptimized
           width={40}
         />
       ) : logoText ? (

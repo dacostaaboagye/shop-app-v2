@@ -96,7 +96,6 @@ export function PreviewImage({
                 width: width ?? 40,
               })}
           src={src}
-          unoptimized
         />
       </DialogTrigger>
       <DialogContent className="max-h-[calc(100vh-2rem)] overflow-hidden p-3 sm:max-w-4xl">
@@ -112,7 +111,6 @@ export function PreviewImage({
             className="h-auto max-h-[calc(100vh-8rem)] w-auto object-contain"
             height={900}
             src={src}
-            unoptimized
             width={1200}
           />
         </div>
