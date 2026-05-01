@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type {
   AdminSentCommunicationListResponse,
+  EmailHealthResponse,
   EmailOperationsResponse,
   EmailRecipientStateResponse,
 } from "@shop/contracts";
@@ -335,6 +336,10 @@ function createMessagingServer(
       recipientEmail: string;
     }) => Promise<EmailRecipientStateResponse>;
     sendTestEmail?: (input: { targetEmail: string }) => Promise<void>;
+    getHealth?: (input: {
+      now: Date;
+      windowDays?: number;
+    }) => Promise<EmailHealthResponse>;
   } = {},
 ) {
   return createServer({
@@ -439,6 +444,24 @@ function createMessagingServer(
           if (input.sendTestEmail) {
             return input.sendTestEmail(args);
           }
+        },
+        async getHealth(args) {
+          if (input.getHealth) {
+            return input.getHealth(args);
+          }
+          return {
+            generatedAt: args.now.toISOString(),
+            windowDays: args.windowDays ?? 30,
+            totalAttempts: 0,
+            totalSent: 0,
+            totalDelivered: 0,
+            totalBounced: 0,
+            totalComplained: 0,
+            totalSuppressed: 0,
+            totalFailed: 0,
+            deliveryRate: null,
+            providerConfigured: true,
+          };
         },
       },
     },
