@@ -26,8 +26,11 @@ describe("EmailService", () => {
       verificationUrl: "http://localhost:3000/verify-email?token=test",
     });
 
-    assert.equal(logs.length, 2);
-    assert.match(logs[0] ?? "", /worker@example\.com/);
+    // One redacted summary line, no body content.
+    assert.equal(logs.length, 1);
+    assert.match(logs[0] ?? "", /w\*{3}@example\.com/);
+    assert.doesNotMatch(logs[0] ?? "", /worker@example\.com/);
+    assert.doesNotMatch(logs[0] ?? "", /verify-email\?token=test/);
     assert.deepEqual(
       attempts.map((attempt) => (attempt as { status: string }).status),
       ["console_fallback"],

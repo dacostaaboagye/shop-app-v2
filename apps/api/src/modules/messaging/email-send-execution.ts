@@ -1,4 +1,5 @@
 import { AppError } from "../_core/errors/app-error.js";
+import { byteLength, maskEmailForLog } from "../_core/log-redaction.js";
 import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import { createEmailDeliveryIssueEvent } from "./email-delivery-events.js";
 import { emailDeliveryError } from "./email-errors.js";
@@ -23,10 +24,11 @@ export class EmailSendExecution {
 
   async send(options: EmailOptions): Promise<EmailSendResult> {
     if (!this.deps.transport) {
+      // Console fallback: do NOT log the recipient address or message body.
+      // Recipient is masked; body is replaced with a size hint.
       this.deps.logger.log(
-        `[EMAIL] To: ${options.to} | Subject: ${options.subject}`,
+        `[EMAIL] To: ${maskEmailForLog(options.to)} | Subject: ${options.subject} | Body: ${byteLength(options.text)} bytes`,
       );
-      this.deps.logger.log(`[EMAIL] Text: ${options.text}`);
       const recorded = await this.recordDelivery({
         messageType: options.messageType,
         provider: "console",
@@ -63,7 +65,7 @@ export class EmailSendExecution {
         this.deps.logger.error("[email] Provider rejected message.", {
           error: error.message,
           subject: options.subject,
-          to: options.to,
+          to: maskEmailForLog(options.to),
         });
         await this.publishFailureEvent({
           attemptId: recorded.attemptId,
@@ -103,7 +105,7 @@ export class EmailSendExecution {
       this.deps.logger.error("[email] Provider request failed.", {
         error: error instanceof Error ? error.message : String(error),
         subject: options.subject,
-        to: options.to,
+        to: maskEmailForLog(options.to),
       });
       await this.publishFailureEvent({
         attemptId: recorded.attemptId,
@@ -137,7 +139,7 @@ export class EmailSendExecution {
         messageType: input.messageType,
         provider: input.provider,
         status: input.status,
-        to: input.recipientEmail,
+        to: maskEmailForLog(input.recipientEmail),
       });
       return { attemptId: null };
     }
@@ -174,7 +176,7 @@ export class EmailSendExecution {
           error: error instanceof Error ? error.message : String(error),
           messageType: input.options.messageType,
           reference,
-          to: input.options.to,
+          to: maskEmailForLog(input.options.to),
         },
       );
     }

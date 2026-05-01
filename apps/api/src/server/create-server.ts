@@ -87,6 +87,20 @@ export function createServer(options: CreateServerOptions = {}) {
   const server = Fastify({
     logger: {
       level: env.nodeEnv === "development" ? "info" : "warn",
+      // Strip auth-bearing values from auto-logged request/response headers.
+      // The redact paths are evaluated against the serialized log object;
+      // values are replaced with [Redacted] in dev/prod alike.
+      redact: {
+        paths: [
+          "req.headers.authorization",
+          "req.headers.cookie",
+          'res.headers["set-cookie"]',
+          "request.headers.authorization",
+          "request.headers.cookie",
+          'response.headers["set-cookie"]',
+        ],
+        censor: "[Redacted]",
+      },
     },
   });
 
