@@ -22,6 +22,7 @@ const resendEmailEventSchema = z.object({
 
 type ResendWebhookDependencies = {
   eventPublisher?: Pick<PlatformEventPublisher, "publish">;
+  logger?: Pick<Console, "error" | "warn">;
   now: () => Date;
   verifier?: (input: {
     headers: { id: string; signature: string; timestamp: string };
@@ -50,6 +51,11 @@ type ResendWebhookDependencies = {
   };
 };
 
+// Reject webhooks whose timestamp is outside this window, regardless of
+// signature validity. The signature alone proves the secret was used; the
+// timestamp window proves the event is recent and not a replay.
+const WEBHOOK_TIMESTAMP_WINDOW_MS = 5 * 60 * 1000;
+
 export class ResendEmailWebhookService {
   constructor(private readonly dependencies: ResendWebhookDependencies) {}
 
@@ -73,9 +79,29 @@ export class ResendEmailWebhookService {
       });
     }
 
-    const verifiedPayload = resendEmailEventSchema.parse(
-      this.verifyPayload(input.payload, input.headers, secret),
+    const verifiedJson = this.verifyPayload(
+      input.payload,
+      input.headers,
+      secret,
     );
+
+    // Dead-letter on schema mismatch: log + return so the route can send
+    // 200 OK. Resend retries 5xx responses, which would hammer the API on
+    // a persistently malformed payload (e.g. a Resend-side schema change).
+    const parseResult = resendEmailEventSchema.safeParse(verifiedJson);
+    if (!parseResult.success) {
+      this.dependencies.logger?.error(
+        "[email-webhook] Resend payload failed schema validation",
+        {
+          error: parseResult.error.issues
+            .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+            .join("; "),
+          eventId: input.headers.id,
+        },
+      );
+      return { duplicate: false, processed: false };
+    }
+    const verifiedPayload = parseResult.data;
     const mappedStatus = mapResendEventTypeToDeliveryStatus(
       verifiedPayload.type,
     );
@@ -137,6 +163,24 @@ export class ResendEmailWebhookService {
       throw new AppError({
         code: "unauthorized",
         detail: "Resend webhook signature headers are required.",
+        statusCode: 401,
+        title: "Invalid webhook signature",
+      });
+    }
+
+    // Replay guard: reject events whose timestamp is outside ±5 minutes of
+    // server time. Signature verification alone proves the secret was used
+    // at some point — without a window, an attacker who captured an old
+    // bounce event can replay it to suppress the recipient indefinitely.
+    const timestampMs = parseSvixTimestamp(timestamp);
+    if (
+      timestampMs === null ||
+      Math.abs(this.dependencies.now().getTime() - timestampMs) >
+        WEBHOOK_TIMESTAMP_WINDOW_MS
+    ) {
+      throw new AppError({
+        code: "unauthorized",
+        detail: "Webhook timestamp is outside the accepted replay window.",
         statusCode: 401,
         title: "Invalid webhook signature",
       });
@@ -214,6 +258,17 @@ function deriveStatusReason(
   return [bounce.type, bounce.subType, bounce.message]
     .filter((part) => Boolean(part && part.trim() !== ""))
     .join(" - ");
+}
+
+/**
+ * Svix timestamp headers are seconds-since-epoch as a string. Returns
+ * milliseconds for direct comparison with `Date.now()`, or null if the
+ * value is not a finite integer string.
+ */
+function parseSvixTimestamp(value: string): number | null {
+  const seconds = Number(value);
+  if (!Number.isFinite(seconds)) return null;
+  return Math.trunc(seconds * 1000);
 }
 
 function verifyResendWebhook(input: {

@@ -111,6 +111,7 @@ export function createMessagingRuntime(
       ...(options.platformEventPublisher
         ? { eventPublisher: options.platformEventPublisher }
         : {}),
+      logger: console,
       now: () => new Date(),
       statusRepository: deliveryStatusRepository,
       ...(env.resendWebhookSecret
