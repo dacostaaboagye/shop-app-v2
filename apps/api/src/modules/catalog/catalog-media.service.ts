@@ -51,6 +51,7 @@ export class CatalogMediaService {
   constructor(
     private readonly repository: CatalogMediaRepository,
     private readonly storage: R2StorageService | null,
+    private readonly logger: Pick<Console, "error"> = console,
   ) {}
 
   async presign(input: {
@@ -150,7 +151,19 @@ export class CatalogMediaService {
     const result = await this.repository.deleteMedia(id);
     if (!result) return null;
     if (result.storageKey) {
-      await this.storage.deleteObject(result.storageKey).catch(() => undefined);
+      // The DB row is already gone, so we don't fail the whole call when R2
+      // delete fails — the user's intent (remove the asset reference) is
+      // satisfied. But silent swallow leaves orphaned objects in storage
+      // with no breadcrumb; log structured so operators can sweep periodically.
+      try {
+        await this.storage.deleteObject(result.storageKey);
+      } catch (error) {
+        this.logger.error("[catalog-media] R2 delete failed; orphan retained", {
+          assetId: id,
+          error: error instanceof Error ? error.message : String(error),
+          storageKey: result.storageKey,
+        });
+      }
     }
     return id;
   }
