@@ -7,12 +7,14 @@ import { AppError } from "../_core/errors/app-error.js";
 import type { CurrentUserService } from "./current-user.service.js";
 
 // Explicit allowlist: rasterized image formats only. SVG is excluded because
-// it can carry inline scripts and execute when rendered same-origin.
+// it can carry inline scripts and execute when rendered same-origin. Set
+// must match the `accept` list in apps/web's profile-image picker.
 const ALLOWED_PROFILE_MEDIA_MIME_TYPES = new Set<string>([
   "image/jpeg",
   "image/png",
   "image/webp",
   "image/gif",
+  "image/avif",
 ]);
 
 function assertAllowedProfileMediaMimeType(mimeType: string): void {
@@ -22,7 +24,7 @@ function assertAllowedProfileMediaMimeType(mimeType: string): void {
   throw new AppError({
     code: "validation_error",
     detail:
-      "Profile images must be JPEG, PNG, WebP, or GIF. SVG and other formats are not supported.",
+      "Profile images must be JPEG, PNG, WebP, GIF, or AVIF. SVG and other formats are not supported.",
     statusCode: 422,
     title: "Unsupported profile media",
   });
