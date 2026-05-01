@@ -1,5 +1,6 @@
 "use client";
 
+import type { NotificationListResponse } from "@shop/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { openPlatformEventStream } from "@/lib/notifications/platform-event-stream";
@@ -39,6 +40,21 @@ export function NotificationLiveProvider() {
               if (shouldPlayNotificationSound({ eventName, user })) {
                 playNotificationChime();
               }
+
+              // Optimistically bump unreadCount on every cached notifications
+              // query so the bell badge reflects the new arrival immediately.
+              // The list items themselves still come from the invalidate
+              // refetch below — we don't synthesize a list entry from the
+              // stream payload because a notificationKey is the projection
+              // row id (per-user), not the platform event id.
+              queryClient.setQueriesData<NotificationListResponse>(
+                { queryKey: notificationsQueryKeyPrefix },
+                (current) =>
+                  current
+                    ? { ...current, unreadCount: current.unreadCount + 1 }
+                    : current,
+              );
+
               void queryClient.invalidateQueries({
                 queryKey: notificationsQueryKeyPrefix,
               });
