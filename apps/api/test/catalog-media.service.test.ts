@@ -24,11 +24,31 @@ const REPOSITORY: CatalogMediaRepository = {
   },
 };
 
-function createStorageStub(overrides: { exists?: boolean } = {}) {
+const PNG_BYTES = new Uint8Array([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00,
+]);
+const SVG_BYTES = new Uint8Array([
+  0x3c, 0x3f, 0x78, 0x6d, 0x6c, 0x20, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f,
+]);
+
+type StorageStubOptions = {
+  exists?: boolean;
+  bytes?: Uint8Array;
+  contentLength?: number;
+};
+
+function createStorageStub(overrides: StorageStubOptions = {}) {
   return {
     async deleteObject() {},
     async objectExists() {
       return overrides.exists ?? true;
+    },
+    async readObjectHead() {
+      if (overrides.exists === false) return null;
+      return {
+        bytes: overrides.bytes ?? PNG_BYTES,
+        contentLength: overrides.contentLength ?? 1024,
+      };
     },
     async presignUpload() {
       return {
@@ -44,14 +64,18 @@ function createStorageStub(overrides: { exists?: boolean } = {}) {
   };
 }
 
+function createService(stubOptions: StorageStubOptions = {}) {
+  return new CatalogMediaService(
+    REPOSITORY,
+    createStorageStub(stubOptions) as unknown as ConstructorParameters<
+      typeof CatalogMediaService
+    >[1],
+  );
+}
+
 describe("CatalogMediaService.confirm MIME allowlist", () => {
   it("rejects image/svg+xml even after a presign was approved", async () => {
-    const service = new CatalogMediaService(
-      REPOSITORY,
-      createStorageStub() as unknown as ConstructorParameters<
-        typeof CatalogMediaService
-      >[1],
-    );
+    const service = createService();
 
     await assert.rejects(
       () =>
@@ -73,12 +97,7 @@ describe("CatalogMediaService.confirm MIME allowlist", () => {
   });
 
   it("rejects an arbitrary text/html claim at confirm time", async () => {
-    const service = new CatalogMediaService(
-      REPOSITORY,
-      createStorageStub() as unknown as ConstructorParameters<
-        typeof CatalogMediaService
-      >[1],
-    );
+    const service = createService();
 
     await assert.rejects(
       () =>
@@ -93,6 +112,81 @@ describe("CatalogMediaService.confirm MIME allowlist", () => {
       (error: unknown) => {
         assert.ok(error instanceof AppError);
         assert.equal(error.statusCode, 422);
+        return true;
+      },
+    );
+  });
+});
+
+describe("CatalogMediaService.confirm magic-byte verification", () => {
+  it("rejects SVG bytes uploaded under a claimed image/jpeg", async () => {
+    // Hostile path: client presigns image/jpeg, uploads SVG bytes (which
+    // would render as inline SVG with script execution if served same-
+    // origin), then claims image/jpeg at confirm. Allowlist alone is not
+    // enough — the bytes themselves must match.
+    const service = createService({ bytes: SVG_BYTES });
+
+    await assert.rejects(
+      () =>
+        service.confirm("actor-1", {
+          entitySlug: "shoes",
+          entityType: "product",
+          isPrimary: false,
+          key: "catalog/product/shoes/evil.jpg",
+          mimeType: "image/jpeg",
+          position: 0,
+        }),
+      (error: unknown) => {
+        assert.ok(error instanceof AppError);
+        assert.equal(error.statusCode, 422);
+        assert.match(error.message, /does not match the declared MIME/i);
+        return true;
+      },
+    );
+  });
+
+  it("rejects when the actual size exceeds the declared fileSizeBytes", async () => {
+    const service = createService({
+      bytes: PNG_BYTES,
+      contentLength: 5_000_000,
+    });
+
+    await assert.rejects(
+      () =>
+        service.confirm("actor-1", {
+          entitySlug: "shoes",
+          entityType: "product",
+          fileSizeBytes: 1_024,
+          isPrimary: false,
+          key: "catalog/product/shoes/inflated.png",
+          mimeType: "image/png",
+          position: 0,
+        }),
+      (error: unknown) => {
+        assert.ok(error instanceof AppError);
+        assert.equal(error.statusCode, 422);
+        assert.match(error.message, /larger than the declared/i);
+        return true;
+      },
+    );
+  });
+
+  it("rejects when the object is not yet uploaded", async () => {
+    const service = createService({ exists: false });
+
+    await assert.rejects(
+      () =>
+        service.confirm("actor-1", {
+          entitySlug: "shoes",
+          entityType: "product",
+          isPrimary: false,
+          key: "catalog/product/shoes/missing.png",
+          mimeType: "image/png",
+          position: 0,
+        }),
+      (error: unknown) => {
+        assert.ok(error instanceof AppError);
+        assert.equal(error.statusCode, 404);
         return true;
       },
     );

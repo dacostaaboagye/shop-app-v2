@@ -12,6 +12,12 @@ import {
 } from "@shop/contracts";
 import type { R2StorageService } from "../../infrastructure/r2-storage.js";
 import { AppError } from "../_core/errors/app-error.js";
+import {
+  bytesMatchClaimedMime,
+  describeFileKind,
+  detectFileKind,
+  MAGIC_BYTES_HEAD_SIZE,
+} from "../_core/file-magic.js";
 
 export type CatalogMediaRepository = {
   confirmMedia(input: {
@@ -108,8 +114,15 @@ export class CatalogMediaService {
         title: "Unsupported media type",
       });
     }
-    const exists = await this.storage.objectExists(payload.key);
-    if (!exists) {
+    // Single GetObject with Range bytes=0-15 verifies existence, returns
+    // the full Content-Length, and gives us 16 bytes to sniff the format
+    // against the claimed MIME. Replaces the old objectExists() HEAD; same
+    // request count.
+    const head = await this.storage.readObjectHead(
+      payload.key,
+      MAGIC_BYTES_HEAD_SIZE,
+    );
+    if (!head) {
       throw new AppError({
         code: "not_found",
         detail:
@@ -118,6 +131,35 @@ export class CatalogMediaService {
         title: "File not in storage",
       });
     }
+
+    // Magic-byte check: if the claimed MIME is one we know how to sniff
+    // (raster images + PDF), the actual file bytes must match. Defeats
+    // "presign as JPEG, upload SVG, confirm as JPEG" attacks.
+    if (!bytesMatchClaimedMime(payload.mimeType, head.bytes)) {
+      throw new AppError({
+        code: "validation_error",
+        detail: `Uploaded file does not match the declared MIME "${payload.mimeType}" (looks like ${describeFileKind(detectFileKind(head.bytes))}).`,
+        statusCode: 422,
+        title: "File contents do not match declared type",
+      });
+    }
+
+    // Size sanity: client cannot claim 1KB on presign and ship 100MB.
+    // Presign signatures already enforce ContentLength, but verify here as
+    // belt-and-braces against any future signing-policy regression.
+    if (
+      payload.fileSizeBytes !== undefined &&
+      head.contentLength > 0 &&
+      head.contentLength > payload.fileSizeBytes
+    ) {
+      throw new AppError({
+        code: "validation_error",
+        detail: `Uploaded file is ${head.contentLength} bytes, larger than the declared ${payload.fileSizeBytes} bytes.`,
+        statusCode: 422,
+        title: "File size mismatch",
+      });
+    }
+
     const mediaType = getMediaType(payload.mimeType);
     return this.repository.confirmMedia({
       actorId,
