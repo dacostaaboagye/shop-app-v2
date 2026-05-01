@@ -76,13 +76,25 @@ export function AppTopbar({
               className="relative rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground"
               onClick={onNotificationsOpen}
             >
-              <Bell className="size-4" />
+              <Bell className="size-4" aria-hidden="true" />
               {notificationCount ? (
-                <span className="absolute -right-1 -top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.65rem] font-semibold text-primary-foreground ring-2 ring-muted">
+                <span
+                  aria-hidden="true"
+                  className="absolute -right-1 -top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.65rem] font-semibold text-primary-foreground ring-2 ring-muted"
+                >
                   {notificationCount > 9 ? "9+" : notificationCount}
                 </span>
               ) : null}
-              <span className="sr-only">Open notifications</span>
+              {/*
+                Live region so screen readers announce the unread count when
+                it changes. The visible badge stays purely decorative
+                (aria-hidden) to avoid double-announcements.
+              */}
+              <span aria-atomic="true" aria-live="polite" className="sr-only">
+                {notificationCount
+                  ? `Open notifications, ${notificationCount} unread`
+                  : "Open notifications"}
+              </span>
             </Button>
 
             <Link
