@@ -30,6 +30,9 @@ export function registerManagerStaffRoutes(
     url: managerStaffRoute.url,
     async handler(request) {
       const query = locationStaffListQuerySchema.parse(request.query);
+      // The contextual route guard already enforces that the actor holds
+      // staff.view on this specific locationId via the access-control
+      // middleware (resolvePermissions filters by the supplied locationId).
       const staff =
         await dependencies.assignmentQueryRepository.getLocationStaff(
           query.locationId,

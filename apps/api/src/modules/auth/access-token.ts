@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { AppError } from "../_core/errors/app-error.js";
 
+// JWT NumericDate per RFC 7519: seconds since the Unix epoch.
 type AccessTokenPayload = {
   expires_at: number;
   issued_at: number;
@@ -33,13 +34,11 @@ const header = {
   typ: "JWT",
 } as const;
 
-let lastIssuedAtMs = 0;
-
 export function issueAccessToken(
   input: AccessTokenIssueInput,
 ): IssuedAccessToken {
-  const issuedAt = getNextIssuedAtMs(input.now);
-  const expiresAt = issuedAt + input.expiresInSeconds * 1000;
+  const issuedAt = toEpochSeconds(input.now);
+  const expiresAt = issuedAt + input.expiresInSeconds;
   const payload: AccessTokenPayload = {
     expires_at: expiresAt,
     issued_at: issuedAt,
@@ -55,7 +54,7 @@ export function issueAccessToken(
   );
 
   return {
-    expiresAt: new Date(expiresAt),
+    expiresAt: new Date(expiresAt * 1000),
     token: `${encodedHeader}.${encodedPayload}.${signature}`,
   };
 }
@@ -89,10 +88,11 @@ export function verifyAccessToken(input: {
   }
 
   const payload = parsePayload(encodedPayload);
+  const nowSeconds = toEpochSeconds(input.now);
 
   if (
     payload.expires_at <= payload.issued_at ||
-    payload.expires_at <= input.now.getTime()
+    payload.expires_at <= nowSeconds
   ) {
     throw invalidAccessTokenError();
   }
@@ -105,12 +105,8 @@ export function verifyAccessToken(input: {
   };
 }
 
-function getNextIssuedAtMs(now: Date): number {
-  const currentTime = now.getTime();
-  lastIssuedAtMs =
-    currentTime > lastIssuedAtMs ? currentTime : lastIssuedAtMs + 1;
-
-  return lastIssuedAtMs;
+function toEpochSeconds(date: Date): number {
+  return Math.floor(date.getTime() / 1000);
 }
 
 function signaturesMatch(actual: string, expected: string): boolean {

@@ -63,6 +63,11 @@ describe("manager staff routes", () => {
             throw new Error("not used");
           },
         },
+        permissionService: {
+          async assertHasPermission() {
+            throw new Error("not used");
+          },
+        },
         stockBalanceRepository: {
           async getOnHandQuantity() {
             throw new Error("not used");

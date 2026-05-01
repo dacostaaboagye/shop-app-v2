@@ -6,6 +6,28 @@ import type {
 import { AppError } from "../_core/errors/app-error.js";
 import type { CurrentUserService } from "./current-user.service.js";
 
+// Explicit allowlist: rasterized image formats only. SVG is excluded because
+// it can carry inline scripts and execute when rendered same-origin.
+const ALLOWED_PROFILE_MEDIA_MIME_TYPES = new Set<string>([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
+
+function assertAllowedProfileMediaMimeType(mimeType: string): void {
+  if (ALLOWED_PROFILE_MEDIA_MIME_TYPES.has(mimeType)) {
+    return;
+  }
+  throw new AppError({
+    code: "validation_error",
+    detail:
+      "Profile images must be JPEG, PNG, WebP, or GIF. SVG and other formats are not supported.",
+    statusCode: 422,
+    title: "Unsupported profile media",
+  });
+}
+
 type ProfileMediaCatalogService = {
   confirm(
     actorId: string,
@@ -63,14 +85,7 @@ export class AccountProfileMediaService {
     publicUrl: string;
     uploadUrl: string;
   }> {
-    if (!input.mimeType.startsWith("image/")) {
-      throw new AppError({
-        code: "validation_error",
-        detail: "Profile image uploads must be image files.",
-        statusCode: 422,
-        title: "Unsupported profile media",
-      });
-    }
+    assertAllowedProfileMediaMimeType(input.mimeType);
 
     const user = await this.currentUserService.getCurrentUser(userId);
 
@@ -97,14 +112,7 @@ export class AccountProfileMediaService {
       widthPx?: number;
     },
   ): Promise<AdminMediaRecord> {
-    if (!input.mimeType.startsWith("image/")) {
-      throw new AppError({
-        code: "validation_error",
-        detail: "Profile image uploads must be image files.",
-        statusCode: 422,
-        title: "Unsupported profile media",
-      });
-    }
+    assertAllowedProfileMediaMimeType(input.mimeType);
 
     const user = await this.currentUserService.getCurrentUser(userId);
     const existing = await this.catalogMediaService.listMedia(

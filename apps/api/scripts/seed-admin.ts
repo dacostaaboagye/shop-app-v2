@@ -111,7 +111,7 @@ async function main() {
 
     console.log("Super admin seeded.");
     console.log(`  Email:    ${email}`);
-    console.log(`  Password: ${password}`);
+    console.log("  Password: (from SUPER_ADMIN_PASSWORD env)");
     console.log("  Portal:   admin");
     console.log("  Roles:    basic_user, admin");
   } catch (error) {
