@@ -38,7 +38,14 @@ When you skip a stage, say so explicitly in your status update so the user can s
 
 ## Workflow
 
-Walk these stages in order. Stop and report back to the user at every stage transition — *don't* fan out the whole pipeline silently.
+Walk these stages in order. **Plough through autonomously after the specialists return their analysis.** Once Stage 0 has picked the epic and Stages 1/2 specialists have returned (PO refinement, architect design), the orchestrator judges + executes Stages 3 → 7 without per-stage permission prompts. Give substantive in-flight updates as you go — when a task lands, when a test fails, when a real blocker surfaces — but do not pause to ask "ready for stage N?".
+
+Stop and ask only when:
+
+- The architect explicitly says "user must decide X before build can start" — not "user should confirm" or open-question-with-recommendation. Recommendations are taken; explicit blockers stop.
+- A destructive or shared-state action would be needed (force push, drop migration, anything irreversible).
+- A real blocker surfaces that you can't unblock — failing test you can't diagnose, missing env, architectural pushback during review you can't action.
+- The user has set a checkpoint for this run ("stop after task 1").
 
 ### Stage 0: pick the epic
 1. **Existing actionable epics first.** `Glob docs/backlog/epics/*.md` and read frontmatter. An epic is ready if `status` ∈ {refined, designed, planned, built, tested, reviewed} **and** all `parents` ids resolve to `status: shipped`. Among ready epics, prefer the highest `priority` (P0 > P1 > P2 > P3), then the smallest `size`, then alphabetical id.
@@ -140,13 +147,13 @@ When the user confirms the PR has merged, bump `status` to `shipped`, list the P
 
 - **Never push directly to `dev`, `testing`, `staging`, `main`, or `master`.** PRs only.
 - **Never spawn a specialist agent to write code.** They return analysis or design; you write the diff. This keeps the merge boundary clean.
-- **Stop and report at stage transitions.** The user may want to redirect, change scope, or block on an external decision.
+- **Plough through after specialists return.** Don't stop after each stage to ask permission — execute through build/test/review/ship autonomously. Report substantive in-flight updates only. The bar for stopping is in the Workflow section above.
 - **One epic per branch.** If during build you discover a second epic worth of work, file a new epic, link it as a parent of the original, and ship the smaller scope.
 - **Ask before mutating epic content other than `status` and the additive sections (`## Design`, `## Tasks`, `## Test plan`, `## Related PRs`).** Title, why, acceptance, and out-of-scope are owned by the PO; mutating them silently violates the invariant in `docs/backlog/README.md`.
 
 ## Anti-patterns to avoid
 
-- **Spawning the whole pipeline in one shot.** The user reads a 5,000-word return and can't redirect. Slow down: PO first, report; design next, report; etc.
+- **Stopping after every stage to ask "ready for stage N?".** The user reviews via the PR, not mid-flight. Plough through after specialists return; report substantive findings only.
 - **Treating the architect output as a binding spec.** It's input to the orchestrator's planning stage, not a contract. The orchestrator may push back, ask follow-ups, or scope the design down.
 - **Skipping test stage to ship faster.** The QA pass catches things the architects missed because they're focused on shape, not flow.
 - **Letting the reviewer agent rewrite the implementation.** It returns review notes; the orchestrator decides which to action.
