@@ -10,7 +10,9 @@ The authoritative product backlog lives at the repo root:
 Building and Refining Product Backlog(<n>).xlsx
 ```
 
-This is what the Product Owner curates. It contains every epic and user story across all phases (foundation `E-00A..E-00D`, phase-1 `E-01..E-03`, etc.), priorities, status, and the `Next Up` sheet that picks the next batch the team should work on. **Don't** restate the xlsx here in Markdown — the xlsx is the source of truth.
+This is what the Product Owner curates. It contains every epic and user story across all phases (foundation `E-00A..E-00D`, phase-1 `E-01..E-03`, future `E-04..E-16`), priorities, status, and the `Next Up` sheet that picks the next batch the team should work on. **Don't** restate the xlsx here in Markdown — the xlsx is the source of truth.
+
+For a stable Markdown synthesis of what's in the xlsx (areas, dependencies, what's left, authoring issues to flag to the PO), see [`scope-summary.md`](./scope-summary.md). It's snapshotted with a `Last derived` date — re-read the xlsx whenever priority or status decisions are at stake.
 
 When working with the backlog, read these sheets:
 
