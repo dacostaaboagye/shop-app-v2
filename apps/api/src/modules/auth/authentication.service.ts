@@ -163,7 +163,14 @@ export class PasswordAuthenticationService {
         ipAddress: input.command.ipAddress,
         occurredAt: input.occurredAt,
         userAgent: input.command.userAgent,
-        userId: input.user?.id,
+        // userId is deliberately omitted on failed_attempt rows. Including
+        // it only when the email maps to a real user lets an operator
+        // browsing auth_events distinguish "wrong password against a real
+        // account" from "unknown email" — the same enumeration channel the
+        // generic "invalid credentials" response tries to close.
+        // The login_attempts table still records `email` for support
+        // workflows that need to triangulate failed logins.
+        userId: undefined,
       }),
     );
 
