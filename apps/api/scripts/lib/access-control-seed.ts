@@ -215,6 +215,11 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
     key: "stock.supply.manage",
     description: "View, approve, and reject stock supply requests for a location.",
   },
+  {
+    key: "stock.supply.requests.force_override",
+    description:
+      "Cancel or confirm-receipt on supply requests as an override for the requester. Granted to admins; replaces an ad-hoc admin.dashboard.view check in supply-request-access-policy.",
+  },
 ] as const;
 
 export const SYSTEM_ROLES: readonly SystemRole[] = [
@@ -272,6 +277,7 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
       "stock.handovers.manage",
       "stock.supply.request",
       "stock.supply.manage",
+      "stock.supply.requests.force_override",
     ],
   },
   {

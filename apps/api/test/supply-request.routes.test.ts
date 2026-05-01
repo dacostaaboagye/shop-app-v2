@@ -384,7 +384,10 @@ describe("stock supply routes", () => {
           status: "cancelled",
         });
       },
-      globalPermissions: ["admin.dashboard.view", "stock.supply.request"],
+      globalPermissions: [
+        "stock.supply.requests.force_override",
+        "stock.supply.request",
+      ],
       requestById: makeSupplyRequestRow({
         requesterId: UUIDS.otherWorker,
         status: "pending",
@@ -433,7 +436,7 @@ describe("stock supply routes", () => {
         };
       },
       globalPermissions: [
-        "admin.dashboard.view",
+        "stock.supply.requests.force_override",
         "stock.supply.manage",
         "stock.supply.request",
       ],
@@ -472,7 +475,10 @@ describe("stock supply routes", () => {
       allowedLocationPermissions: {
         "stock.supply.request": [UUIDS.destinationA],
       },
-      globalPermissions: ["admin.dashboard.view", "stock.supply.request"],
+      globalPermissions: [
+        "stock.supply.requests.force_override",
+        "stock.supply.request",
+      ],
       requestById: makeSupplyRequestRow({
         requesterId: UUIDS.otherWorker,
         status: "pending",
@@ -498,7 +504,10 @@ describe("stock supply routes", () => {
       allowedLocationPermissions: {
         "stock.supply.request": [UUIDS.destinationA],
       },
-      globalPermissions: ["admin.dashboard.view", "stock.supply.request"],
+      globalPermissions: [
+        "stock.supply.requests.force_override",
+        "stock.supply.request",
+      ],
       requestById: makeSupplyRequestRow({
         locationId: UUIDS.destinationA,
         requesterId: UUIDS.otherWorker,
