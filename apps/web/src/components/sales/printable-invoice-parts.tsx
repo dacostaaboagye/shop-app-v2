@@ -19,7 +19,6 @@ export function PrintableBrandMark({
           objectFit: "cover",
           width: "36px",
         }}
-        unoptimized
         width={36}
       />
     );

@@ -23,7 +23,6 @@ export function DocumentBrandBlock({
           fill
           sizes="64px"
           src={logoImageUrl}
-          unoptimized
         />
       </div>
     );
