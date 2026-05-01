@@ -71,7 +71,11 @@ export class PasswordResetService {
       });
     } catch (error) {
       // Preserve forgot-password anti-enumeration behavior; operators use logs.
-      console.error("[auth] Failed to send password reset email:", error);
+      // Log only the error message — full error objects can carry recipient
+      // metadata or response bodies from the email provider.
+      console.error("[auth] Failed to send password reset email", {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
