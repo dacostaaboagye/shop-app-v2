@@ -11,36 +11,41 @@ Read [docs/process/team-orchestration.md](../../../docs/process/team-orchestrati
 
 The user invokes this skill with one of:
 
-- **An epic id** (`e-04-01`, `ops-12`, `audit-h7`). Skip to *Pick the epic* using that id.
-- **No id**. Pick the highest-priority `status: refined`-or-later, non-blocked epic from `docs/backlog/epics/`. If everything is `idea`, ask the user which to refine first.
-- **A description** ("the password reset flash bug", "rebuild media uploader"). Match against existing epic titles; if no match, propose creating a new one.
+- **An epic id from the xlsx** (`E-00C-01`, `E-02-01`, `E-03-07`) — uppercase, matches the master backlog. If `docs/backlog/epics/<id>-*.md` already exists, jump in at whatever stage that file is at. If it does not exist, the PO materialises it from the xlsx row first (Stage 1).
+- **An ops or audit id** (`ops-12`, `audit-h7`). Skip Stage 1 — the orchestrator refines these directly without the PO, since they don't come from the product backlog.
+- **No id**. Pick the next priority. The order of preference:
+  1. An existing `docs/backlog/epics/*.md` whose `status` is `refined`-or-later and whose `parents` are all `shipped` — work the highest priority among these.
+  2. Otherwise, **read the xlsx `Next Up` sheet** at the repo root (`Building and Refining Product Backlog(*).xlsx`), pick the top entry whose status is `Not Started` or `Partial`, and start at Stage 1 to materialise it into an epic file.
+- **A description** ("the password reset flash bug", "rebuild media uploader"). Match against existing epic files first, then against xlsx ticket titles. If neither matches and it's clearly product work, ask the user whether to add a row to the xlsx before proceeding.
 
 ## Workflow
 
 Walk these stages in order. Stop and report back to the user at every stage transition — *don't* fan out the whole pipeline silently.
 
 ### Stage 0: pick the epic
-- `Glob docs/backlog/epics/*.md` to enumerate candidates.
-- Read frontmatter for status and parents.
-- An epic is ready if `status` ∈ {refined, designed, planned, built, tested, reviewed} **and** all `parents` ids resolve to `status: shipped`.
-- Among ready epics, prefer the highest `priority`, then the smallest `size`, then alphabetical id.
-- Tell the user which epic you picked and why before proceeding.
+1. **Existing actionable epics first.** `Glob docs/backlog/epics/*.md` and read frontmatter. An epic is ready if `status` ∈ {refined, designed, planned, built, tested, reviewed} **and** all `parents` ids resolve to `status: shipped`. Among ready epics, prefer the highest `priority` (P0 > P1 > P2 > P3), then the smallest `size`, then alphabetical id.
+2. **Otherwise consult the xlsx.** Read `Building and Refining Product Backlog(*).xlsx` at the repo root, sheet `Next Up`. The sheet is already ordered. Pick the top row whose status is `Not Started` or `Partial`. Cross-reference its `Backlog Audit` row for code-state notes.
+3. Tell the user which epic you picked, the source (existing file vs xlsx row), and why before proceeding.
 
-### Stage 1: refine (if status is `idea`)
+### Stage 1: refine (if no epic file exists, or `status: idea`)
+This stage materialises an xlsx row into `docs/backlog/epics/<id>-<slug>.md` and refines it.
+
 Spawn the PO agent. Hand it:
-1. The epic file content.
+1. The xlsx row (id, title, user story, status, priority, notes from `Backlog Audit`).
 2. The relevant project context: `CLAUDE.md`, `AGENTS.md`, the relevant ADR if one applies, the most relevant audit doc if the epic is audit-driven.
-3. Ask for: refined acceptance criteria, edge cases, out-of-scope items, dependencies on other epics.
+3. Ask for: refined acceptance criteria, edge cases, out-of-scope items, dependencies on other epics in the xlsx (filled into `parents:`).
 
 ```
 Agent({
   description: "Refine epic <id>",
   subagent_type: "product-owner-strategist",
-  prompt: "Refine the epic at docs/backlog/epics/<id>-<slug>.md ..."
+  prompt: "Refine xlsx ticket <id> into docs/backlog/epics/<id>-<slug>.md per docs/backlog/README.md. The row data is: ..."
 })
 ```
 
-The PO returns a refined version. Update the epic file: bump `status` to `refined`, add the criteria + out-of-scope + parents fields. Commit on a branch `chore/ops-refine-<id>`.
+The PO returns a refined epic. The orchestrator writes the file using the frontmatter contract, sets `status: refined`, and commits on a branch `chore/ops-refine-<id>`.
+
+For `ops-*` and `audit-*` ids the orchestrator may skip the PO and write the refined file directly, since these don't come from the product backlog.
 
 ### Stage 2: design (architects in parallel)
 Decide which architect(s) the epic needs based on `domain`:

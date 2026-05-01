@@ -30,9 +30,9 @@ The integrating contributor is the only role that *holds the keyboard*. Speciali
 Detail per stage:
 
 ### 1. Refine (PO agent)
-Input: an epic in `docs/backlog/epics/<id>-<slug>.md` with `status: idea`.
-The orchestrator hands the epic to `product-owner-strategist` with the project context (CLAUDE.md, AGENTS.md, relevant ADRs).
-Output: the same file rewritten with `status: refined`, user stories, acceptance criteria, edge cases, UAT scenarios, and dependencies on other epics. The PO also flags scope ambiguity.
+Input: a row from the master backlog xlsx at the repo root (`Building and Refining Product Backlog(*).xlsx`, `Next Up` sheet) — or an existing `docs/backlog/epics/<id>-<slug>.md` with `status: idea`.
+The orchestrator hands the row + project context (CLAUDE.md, AGENTS.md, relevant ADRs, audit notes from the `Backlog Audit` sheet) to `product-owner-strategist`.
+Output: a `docs/backlog/epics/<id>-<slug>.md` file that did not exist before (or a rewrite of the existing one) with `status: refined`, user stories, acceptance criteria, edge cases, UAT scenarios, and dependencies on other xlsx tickets. The PO also flags scope ambiguity.
 
 ### 2. Design (architect agents in parallel)
 Input: the refined epic.
