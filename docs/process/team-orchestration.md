@@ -97,7 +97,7 @@ These remain in force from `AGENTS.md` and `CLAUDE.md`:
 
 ## How to invoke
 
-The orchestration is invoked manually for now via the `orchestrate-epic` skill (see `.agents/skills/orchestrate-epic/SKILL.md`).
+The orchestration is invoked manually for now via the `orchestrate-epic` skill (see `.claude/skills/orchestrate-epic/SKILL.md`). Claude Code discovers it automatically because it lives under `.claude/skills/`.
 
 ```
 /skill orchestrate-epic e-04-01

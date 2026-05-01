@@ -40,7 +40,7 @@ Team workflow (when running multi-stage epics):
 
 - `docs/process/team-orchestration.md` — how this session coordinates PO / backend / frontend / QA / reviewer sub-agents.
 - `docs/backlog/README.md` — epic file contract (frontmatter + body sections + status lifecycle).
-- `.agents/skills/orchestrate-epic/SKILL.md` — invoked as `/skill orchestrate-epic <id>` (or no id to pick the next ready epic).
+- `.claude/skills/orchestrate-epic/SKILL.md` — invoked as `/skill orchestrate-epic <id>` (or no id to pick the next ready epic).
 
 ## Non-negotiable rules
 
