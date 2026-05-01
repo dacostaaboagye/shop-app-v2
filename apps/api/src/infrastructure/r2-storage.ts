@@ -1,5 +1,6 @@
 import {
   DeleteObjectCommand,
+  GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -69,6 +70,52 @@ export class R2StorageService {
     }
   }
 
+  /**
+   * Fetches the first `byteCount` bytes of an object plus the full
+   * Content-Length, in a single request. Used at upload-confirm time to
+   * sniff magic bytes and verify the actual stored size matches the
+   * client's claim. Returns `null` if the object does not exist.
+   */
+  async readObjectHead(
+    key: string,
+    byteCount: number,
+  ): Promise<{ bytes: Uint8Array; contentLength: number } | null> {
+    try {
+      const response = await this.client.send(
+        new GetObjectCommand({
+          Bucket: this.config.bucket,
+          Key: key,
+          Range: `bytes=0-${byteCount - 1}`,
+        }),
+      );
+      const body = response.Body;
+      if (!body) {
+        return { bytes: new Uint8Array(), contentLength: 0 };
+      }
+      const chunks: Uint8Array[] = [];
+      for await (const chunk of body as AsyncIterable<Uint8Array>) {
+        chunks.push(chunk);
+      }
+      const total = chunks.reduce((acc, c) => acc + c.length, 0);
+      const bytes = new Uint8Array(total);
+      let offset = 0;
+      for (const c of chunks) {
+        bytes.set(c, offset);
+        offset += c.length;
+      }
+      // ContentRange looks like `bytes 0-15/12345` — the suffix after the
+      // slash is the full object size. Fall back to ContentLength of the
+      // partial response if the header isn't there for any reason.
+      const fullSize = parseTotalFromContentRange(response.ContentRange);
+      return {
+        bytes,
+        contentLength: fullSize ?? response.ContentLength ?? bytes.length,
+      };
+    } catch {
+      return null;
+    }
+  }
+
   async deleteObject(key: string): Promise<void> {
     await this.client.send(
       new DeleteObjectCommand({ Bucket: this.config.bucket, Key: key }),
@@ -78,6 +125,16 @@ export class R2StorageService {
   publicUrlForKey(key: string): string {
     return `${this.config.publicUrl}/${key}`;
   }
+}
+
+function parseTotalFromContentRange(
+  contentRange: string | undefined,
+): number | null {
+  if (!contentRange) return null;
+  const match = contentRange.match(/\/(\d+)$/);
+  if (!match) return null;
+  const total = Number(match[1]);
+  return Number.isFinite(total) ? total : null;
 }
 
 export function createR2StorageService(env: ApiEnv): R2StorageService | null {
