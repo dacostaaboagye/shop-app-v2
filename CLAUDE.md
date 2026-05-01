@@ -36,6 +36,12 @@ Operational context:
 - `docs/engineering/testing-environment-deployment.md` — testing pipeline, secret list.
 - `docs/engineering/security-and-auth-audit.md` — current outstanding security findings; consult before any auth/security-adjacent change.
 
+Team workflow (when running multi-stage epics):
+
+- `docs/process/team-orchestration.md` — how this session coordinates PO / backend / frontend / QA / reviewer sub-agents.
+- `docs/backlog/README.md` — epic file contract (frontmatter + body sections + status lifecycle).
+- `.agents/skills/orchestrate-epic/SKILL.md` — invoked as `/skill orchestrate-epic <id>` (or no id to pick the next ready epic).
+
 ## Non-negotiable rules
 
 These restate `AGENTS.md` and `README.md`. If you can't satisfy one, stop and ask.
