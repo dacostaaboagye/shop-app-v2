@@ -3,6 +3,9 @@ import { describe, it } from "node:test";
 import { AppError } from "../src/modules/_core/errors/app-error.js";
 import { ResendEmailWebhookService } from "../src/modules/messaging/resend-email-webhook.service.js";
 
+const NOW = new Date("2026-04-23T20:00:00.000Z");
+const TIMESTAMP_IN_WINDOW = String(Math.floor(NOW.getTime() / 1000));
+
 describe("ResendEmailWebhookService", () => {
   it("records a delivered lifecycle event against the provider message", async () => {
     const recorded: unknown[] = [];
@@ -30,7 +33,7 @@ describe("ResendEmailWebhookService", () => {
       headers: {
         id: "evt_1",
         signature: "sig_1",
-        timestamp: "1713880800",
+        timestamp: TIMESTAMP_IN_WINDOW,
       },
       payload: JSON.stringify({
         created_at: "2026-04-23T19:00:00.000Z",
@@ -74,7 +77,7 @@ describe("ResendEmailWebhookService", () => {
       headers: {
         id: "evt_duplicate",
         signature: "sig_1",
-        timestamp: "1713880800",
+        timestamp: TIMESTAMP_IN_WINDOW,
       },
       payload: JSON.stringify({
         created_at: "2026-04-23T19:00:00.000Z",
@@ -112,7 +115,7 @@ describe("ResendEmailWebhookService", () => {
 
   it("throws 503 when webhookSecret is not configured", async () => {
     const service = new ResendEmailWebhookService({
-      now: () => new Date("2026-04-23T20:00:00.000Z"),
+      now: () => NOW,
       statusRepository: {
         async findAttemptByProviderMessageId() {
           return null;
@@ -130,7 +133,7 @@ describe("ResendEmailWebhookService", () => {
           headers: {
             id: "evt_1",
             signature: "sig_1",
-            timestamp: "1713880800",
+            timestamp: TIMESTAMP_IN_WINDOW,
           },
           payload: JSON.stringify({
             created_at: "2026-04-23T19:00:00.000Z",
@@ -170,7 +173,7 @@ describe("ResendEmailWebhookService", () => {
       headers: {
         id: "evt_bounce",
         signature: "sig_bounce",
-        timestamp: "1713880800",
+        timestamp: TIMESTAMP_IN_WINDOW,
       },
       payload: JSON.stringify({
         created_at: "2026-04-23T19:00:00.000Z",
@@ -217,7 +220,7 @@ describe("ResendEmailWebhookService", () => {
       headers: {
         id: "evt_unknown",
         signature: "sig_1",
-        timestamp: "1713880800",
+        timestamp: TIMESTAMP_IN_WINDOW,
       },
       payload: JSON.stringify({
         created_at: "2026-04-23T19:00:00.000Z",
@@ -246,7 +249,7 @@ describe("ResendEmailWebhookService", () => {
       headers: {
         id: "evt_orphan",
         signature: "sig_1",
-        timestamp: "1713880800",
+        timestamp: TIMESTAMP_IN_WINDOW,
       },
       payload: JSON.stringify({
         created_at: "2026-04-23T19:00:00.000Z",
@@ -258,6 +261,83 @@ describe("ResendEmailWebhookService", () => {
     assert.equal((recorded[0] as { attemptId: string | null }).attemptId, null);
     assert.equal((recorded[0] as { status: string }).status, "sent");
   });
+
+  it("rejects webhook events with a timestamp older than 5 minutes", async () => {
+    const service = createService({});
+    const sixMinutesAgo = String(Math.floor(NOW.getTime() / 1000) - 6 * 60);
+
+    await assert.rejects(
+      () =>
+        service.handleWebhook({
+          headers: {
+            id: "evt_replay",
+            signature: "sig_1",
+            timestamp: sixMinutesAgo,
+          },
+          payload: JSON.stringify({
+            created_at: "2026-04-23T19:54:00.000Z",
+            data: { email_id: "msg_replay" },
+            type: "email.bounced",
+          }),
+        }),
+      (error: unknown) => {
+        assert.ok(error instanceof AppError);
+        assert.equal(error.statusCode, 401);
+        assert.match(error.message, /replay window/i);
+        return true;
+      },
+    );
+  });
+
+  it("rejects webhook events with a timestamp more than 5 minutes in the future", async () => {
+    const service = createService({});
+    const sixMinutesFuture = String(Math.floor(NOW.getTime() / 1000) + 6 * 60);
+
+    await assert.rejects(
+      () =>
+        service.handleWebhook({
+          headers: {
+            id: "evt_future",
+            signature: "sig_1",
+            timestamp: sixMinutesFuture,
+          },
+          payload: JSON.stringify({
+            created_at: "2026-04-23T20:06:00.000Z",
+            data: { email_id: "msg_future" },
+            type: "email.bounced",
+          }),
+        }),
+      (error: unknown) => {
+        assert.ok(error instanceof AppError);
+        assert.equal(error.statusCode, 401);
+        return true;
+      },
+    );
+  });
+
+  it("returns processed:false on malformed payload without throwing", async () => {
+    const errorLogs: unknown[] = [];
+    const service = createService({
+      logger: {
+        error(...args) {
+          errorLogs.push(args);
+        },
+      },
+    });
+
+    const result = await service.handleWebhook({
+      headers: {
+        id: "evt_malformed",
+        signature: "sig_1",
+        timestamp: TIMESTAMP_IN_WINDOW,
+      },
+      // Schema requires data.email_id and type; both are missing.
+      payload: JSON.stringify({ created_at: "2026-04-23T19:00:00.000Z" }),
+    });
+
+    assert.deepEqual(result, { duplicate: false, processed: false });
+    assert.equal(errorLogs.length, 1);
+  });
 });
 
 function createService(
@@ -268,6 +348,10 @@ function createService(
       recipientEmail: string;
       subject: string;
     } | null>;
+    logger: {
+      error(...args: unknown[]): void;
+      warn?(...args: unknown[]): void;
+    };
     publish(input: unknown): Promise<void>;
     recordStatusEvent(input: {
       attemptId: string | null;
@@ -298,7 +382,12 @@ function createService(
           },
         }
       : {}),
-    now: () => new Date("2026-04-23T20:00:00.000Z"),
+    ...(overrides.logger
+      ? {
+          logger: overrides.logger as Pick<Console, "error" | "warn">,
+        }
+      : {}),
+    now: () => NOW,
     statusRepository: {
       async findAttemptByProviderMessageId(providerMessageId) {
         return overrides.findAttemptByProviderMessageId
