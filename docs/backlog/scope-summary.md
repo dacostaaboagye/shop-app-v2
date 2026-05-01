@@ -5,6 +5,8 @@ A snapshot of the master xlsx so we don't have to parse it every session.
 > **Source**: `Building and Refining Product Backlog(2).xlsx` at the repo root.
 > **Last derived**: 2026-05-01 from the same audit date stamped on the `Audit Summary` sheet.
 > **Authority**: the xlsx is the source of truth. This doc reflects state at the time it was written. **Re-derive from the xlsx whenever priority or status decisions are at stake** — do not trust this doc for current status if any time has passed since the date above.
+>
+> **To refresh**: ask Claude to "refresh the scope summary" (or invoke `/refresh-backlog-summary`). The skill at `.claude/skills/refresh-backlog-summary/SKILL.md` re-reads the xlsx, updates this file, and opens a PR.
 
 ## When to read this vs the xlsx
 

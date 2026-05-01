@@ -16,6 +16,10 @@ automatically and they can be invoked directly.
   refine → design → plan → build → test → review → ship using specialist
   sub-agents. Invoked as `/orchestrate-epic <id>` or with no id to pick the
   next priority from the xlsx `Next Up` sheet.
+- `.claude/skills/refresh-backlog-summary/SKILL.md` — re-derive
+  `docs/backlog/scope-summary.md` from the master xlsx so the snapshot
+  doesn't go stale. Invoked as `/refresh-backlog-summary` or by asking
+  Claude to "refresh the backlog summary".
 
 ## Related repo guidance
 
