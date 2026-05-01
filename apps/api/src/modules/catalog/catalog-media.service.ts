@@ -93,6 +93,20 @@ export class CatalogMediaService {
 
   async confirm(actorId: string, payload: AdminMediaConfirmRequest) {
     if (!this.storage) throw storageUnavailable();
+    // Re-validate the MIME at confirm time. Presign already enforces the
+    // allowlist, but a malicious client can presign with image/jpeg, upload
+    // SVG bytes, then claim a different mimeType on confirm. Without this
+    // check the allowlist is effectively bypassed for stored XSS.
+    if (
+      !(ALLOWED_MEDIA_MIMES as readonly string[]).includes(payload.mimeType)
+    ) {
+      throw new AppError({
+        code: "validation_error",
+        detail: `MIME type "${payload.mimeType}" is not allowed.`,
+        statusCode: 422,
+        title: "Unsupported media type",
+      });
+    }
     const exists = await this.storage.objectExists(payload.key);
     if (!exists) {
       throw new AppError({
