@@ -55,6 +55,12 @@ const platformEventRuntime = createPlatformEventRuntime({
   livePublisher: eventBus,
   permissionService: authRuntime.accessControl.permissionService,
 });
+// Auth runtime is constructed before platformEventRuntime (the latter
+// depends on permissionService), so we wire the publisher into auth
+// services that need it once both exist.
+authRuntime.auth.passwordResetService.setPlatformEventPublisher(
+  platformEventRuntime.platformEventPublisher,
+);
 const messagingRuntime = createMessagingRuntime(databaseRuntime, env, {
   emailService: sharedEmailService,
   platformEventPublisher: platformEventRuntime.platformEventPublisher,
