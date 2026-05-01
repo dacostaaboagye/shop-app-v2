@@ -11,8 +11,11 @@ import {
  * that the React-only `AuthGuard` allows. The session-flag cookie carries no
  * secret material; the actual refresh token stays scoped to /api/auth and
  * permission checks remain server-side at the API boundary.
+ *
+ * Renamed from `middleware` in Next.js 16 — see
+ * https://nextjs.org/docs/app/guides/upgrading/version-16#middleware-to-proxy.
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
   if (!isProtectedPath(pathname)) {
