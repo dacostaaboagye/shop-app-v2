@@ -1,16 +1,22 @@
 const isDevelopment = process.env.NODE_ENV !== "production";
 const apiBaseUrlFromEnv = process.env.API_BASE_URL?.trim();
 
-// Hard fail at build time when API_BASE_URL is missing in production. The
-// rewrite below proxies every /api/* request to the configured API origin;
-// without it, those requests stay at the Next.js origin (which has no API
-// route handlers) and 404. The browser gets HTML, the frontend's
-// problem-details parser returns null, and every authenticated flow surfaces
-// as a misleading "Authentication failed" fallback.
-if (!isDevelopment && !apiBaseUrlFromEnv) {
+// Vercel sets VERCEL=1 automatically for *every* build that will be deployed
+// — Production, Preview, and Development environments alike. CI verify-only
+// builds (GitHub Actions running `pnpm build`) do not set it. We only need
+// to fail-fast for actual deploys; CI just compiles artifacts that never
+// ship.
+const isVercelDeploy = process.env.VERCEL === "1";
+
+// Hard fail at deploy time when API_BASE_URL is missing. Without the rewrite
+// below, every /api/* request stays at the Next.js origin (no API route
+// handlers), Next returns its 404 HTML, the frontend's problem-details
+// parser returns null, and every authenticated flow surfaces as a misleading
+// "Authentication failed" fallback.
+if (isVercelDeploy && !apiBaseUrlFromEnv) {
   throw new Error(
-    "API_BASE_URL must be configured for production builds. Set it in the " +
-      "Vercel/host environment to the public API origin (e.g. " +
+    "API_BASE_URL must be configured for Vercel deploys. Set it in the " +
+      "project's Environment Variables to the public API origin (e.g. " +
       "https://shop-app-testing.fly.dev) so /api/* requests proxy correctly.",
   );
 }
