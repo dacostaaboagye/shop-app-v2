@@ -14,6 +14,7 @@ import type { FastifyInstance } from "fastify";
 import { AppError } from "../_core/errors/app-error.js";
 import { getAuthenticatedActor } from "../auth/auth-route-support.js";
 import {
+  assertActorCanAccessLocation,
   assignmentRoutes,
   resolveOriginalWorker,
   type StockAssignmentRouteDependencies,
@@ -44,6 +45,11 @@ function registerAssignRoute(
     async handler(request) {
       const actor = getAuthenticatedActor(request);
       const body = assignVariantRequestSchema.parse(request.body);
+      await assertActorCanAccessLocation(dependencies.permissionService, {
+        actor,
+        locationId: body.locationId,
+        permission: "stock.assignments.manage",
+      });
       const result = await dependencies.assignmentCommandService.assignProduct({
         actor,
         locationId: body.locationId,
@@ -74,6 +80,11 @@ function registerBatchAssignRoute(
     async handler(request) {
       const actor = getAuthenticatedActor(request);
       const body = batchAssignVariantRequestSchema.parse(request.body);
+      await assertActorCanAccessLocation(dependencies.permissionService, {
+        actor,
+        locationId: body.locationId,
+        permission: "stock.assignments.manage",
+      });
       await assertBatchStockAvailable(dependencies, body);
       for (const item of body.items) {
         await dependencies.assignmentCommandService.assignProduct({
@@ -105,6 +116,11 @@ function registerReassignRoute(
     async handler(request) {
       const actor = getAuthenticatedActor(request);
       const body = reassignVariantRequestSchema.parse(request.body);
+      await assertActorCanAccessLocation(dependencies.permissionService, {
+        actor,
+        locationId: body.locationId,
+        permission: "stock.assignments.manage",
+      });
       const result =
         await dependencies.assignmentCommandService.reassignProduct({
           actor,
@@ -132,7 +148,13 @@ function registerListRoute(
     method: route.method,
     url: route.url,
     async handler(request) {
+      const actor = getAuthenticatedActor(request);
       const query = locationAssignmentListQuerySchema.parse(request.query);
+      await assertActorCanAccessLocation(dependencies.permissionService, {
+        actor,
+        locationId: query.locationId,
+        permission: "stock.assignments.view",
+      });
       const assignments =
         await dependencies.assignmentQueryRepository.getLocationAssignments(
           query.locationId,
@@ -177,6 +199,11 @@ function registerManagerHandoverRoutes(
           title: "Missing fromWorkerId",
         });
       }
+      await assertActorCanAccessLocation(dependencies.permissionService, {
+        actor,
+        locationId: body.locationId,
+        permission: "stock.assignments.manage",
+      });
       const result =
         await dependencies.assignmentCommandService.initiateHandover({
           actor,

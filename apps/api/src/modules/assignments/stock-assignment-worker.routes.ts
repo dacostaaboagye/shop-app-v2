@@ -12,6 +12,7 @@ import {
   getAuthenticatedUserId,
 } from "../auth/auth-route-support.js";
 import {
+  assertActorCanAccessLocation,
   assignmentRoutes,
   resolveOriginalWorker,
   type StockAssignmentRouteDependencies,
@@ -36,8 +37,14 @@ function registerWorkerListRoute(
     method: route.method,
     url: route.url,
     async handler(request) {
+      const actor = getAuthenticatedActor(request);
       const userId = getAuthenticatedUserId(request);
       const query = workerAssignmentListQuerySchema.parse(request.query);
+      await assertActorCanAccessLocation(dependencies.permissionService, {
+        actor,
+        locationId: query.locationId,
+        permission: "stock.assignments.own.view",
+      });
       const assignments =
         await dependencies.assignmentQueryRepository.getWorkerAssignments({
           locationId: query.locationId,
@@ -83,6 +90,11 @@ function registerWorkerHandoverRoutes(
     async handler(request) {
       const actor = getAuthenticatedActor(request);
       const body = initiateHandoverRequestSchema.parse(request.body);
+      await assertActorCanAccessLocation(dependencies.permissionService, {
+        actor,
+        locationId: body.locationId,
+        permission: "stock.handovers.manage",
+      });
       const result =
         await dependencies.assignmentCommandService.initiateHandover({
           actor,

@@ -167,7 +167,10 @@ const server = createServer({
     permissionService: authRuntime.accessControl.permissionService,
     reservationQueryRepo: stockRuntime.stock.reservationQueryRepo,
   },
-  stockAssignments: assignmentsRuntime.assignments,
+  stockAssignments: {
+    ...assignmentsRuntime.assignments,
+    permissionService: authRuntime.accessControl.permissionService,
+  },
   workerDashboard: {
     assignmentQueryRepository:
       assignmentsRuntime.assignments.assignmentQueryRepository,

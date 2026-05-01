@@ -1,5 +1,7 @@
 import { AppError } from "../_core/errors/app-error.js";
 import type { RouteDefinition } from "../_core/route-contract.js";
+import type { PermissionResolutionService } from "../access-control/permission-resolution.service.js";
+import type { AuthenticatedActor } from "../auth/access-token-authentication.service.js";
 import type { PostgresOwnershipHandoverRepository } from "../inventory-ownership/postgres-ownership-handover.repository.js";
 import type { AssignmentCommandService } from "./assignment-command.service.js";
 import type { PostgresWorkerAssignmentQueryRepository } from "./postgres-worker-assignment-query.repository.js";
@@ -21,8 +23,31 @@ export type StockAssignmentRouteDependencies = {
     AssignmentCommandService,
     "assignProduct" | "endHandover" | "initiateHandover" | "reassignProduct"
   >;
+  permissionService: Pick<PermissionResolutionService, "assertHasPermission">;
   stockBalanceRepository: StockBalanceRepository;
 };
+
+/**
+ * Confirms the actor holds `permission` on the specific `locationId` they
+ * just supplied in the request. The any_active route guard only checks
+ * whether the permission exists in some scope; without this follow-up
+ * check, a manager of location A could act on location B by passing B's
+ * id in the body.
+ */
+export async function assertActorCanAccessLocation(
+  permissionService: Pick<PermissionResolutionService, "assertHasPermission">,
+  input: {
+    actor: AuthenticatedActor;
+    locationId: string;
+    permission: string;
+  },
+): Promise<void> {
+  await permissionService.assertHasPermission({
+    locationId: input.locationId,
+    permission: input.permission,
+    user: input.actor,
+  });
+}
 
 export const assignmentRoutes = {
   managerAssign: assignmentRoute(
@@ -153,6 +178,11 @@ export function createUnavailableDependencies(): StockAssignmentRouteDependencie
         return unavailable();
       },
       async reassignProduct() {
+        return unavailable();
+      },
+    },
+    permissionService: {
+      async assertHasPermission() {
         return unavailable();
       },
     },
