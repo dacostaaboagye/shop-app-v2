@@ -3,6 +3,7 @@ import type { DatabaseRuntime } from "../../infrastructure/database.js";
 import { BasicUserRoleService } from "../access-control/basic-user-role.service.js";
 import { PermissionResolutionService } from "../access-control/permission-resolution.service.js";
 import { PostgresPermissionRepository } from "../access-control/postgres-permission.repository.js";
+import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import { createConfiguredEmailService } from "../messaging/create-email-runtime.js";
 import type { EmailService } from "../messaging/email.service.js";
 import { PostgresSlugRepository } from "../public-identifiers/postgres-slug.repository.js";
@@ -45,6 +46,7 @@ export function createAuthRuntime(
   env: ApiEnv,
   dependencies: {
     emailService?: EmailService;
+    platformEventPublisher?: Pick<PlatformEventPublisher, "publish">;
   } = {},
 ): AuthRuntime {
   if (!env.authAccessTokenSecret) {
@@ -91,6 +93,8 @@ export function createAuthRuntime(
     userRepository,
     emailService,
     webBaseUrl,
+    () => new Date(),
+    dependencies.platformEventPublisher ?? null,
   );
 
   const googleOAuthService =
