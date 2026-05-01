@@ -23,9 +23,11 @@ export class NotificationWriteService {
   }
 
   async markAllRead(input: { now: Date; userId: string }) {
-    return {
-      updatedCount: await this.repository.markAllRead(input),
-    };
+    const updatedCount = await this.repository.markAllRead(input);
+    // The operation just marked every currently-unread row as read. Any
+    // notifications that race in *after* the UPDATE land as unread and will
+    // surface via the SSE listener; we don't try to second-guess them here.
+    return { updatedCount, newUnreadCount: 0 };
   }
 
   async markRead(input: {
