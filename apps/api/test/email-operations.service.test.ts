@@ -9,6 +9,21 @@ describe("EmailOperationsService", () => {
   it("returns recent attempts with delayed and failed lifecycle states for operators", async () => {
     const service = new EmailOperationsService({
       attemptsRepository: {
+        async getHealthCounts() {
+          return {
+            totalAttempts: 0,
+            byStatus: {
+              bounced: 0,
+              complained: 0,
+              console_fallback: 0,
+              delayed: 0,
+              delivered: 0,
+              failed: 0,
+              sent: 0,
+              suppressed: 0,
+            },
+          };
+        },
         async listRecentAttempts(limit) {
           assert.equal(limit, 12);
           return [
@@ -125,6 +140,21 @@ describe("EmailOperationsService", () => {
   it("returns an operator-readable blocked summary for complained recipients", async () => {
     const service = new EmailOperationsService({
       attemptsRepository: {
+        async getHealthCounts() {
+          return {
+            totalAttempts: 0,
+            byStatus: {
+              bounced: 0,
+              complained: 0,
+              console_fallback: 0,
+              delayed: 0,
+              delivered: 0,
+              failed: 0,
+              sent: 0,
+              suppressed: 0,
+            },
+          };
+        },
         async listRecentAttempts() {
           return [];
         },
@@ -169,4 +199,129 @@ describe("EmailOperationsService", () => {
     );
     assert.equal(result.statusReason, "Recipient marked this message as spam");
   });
+
+  it("returns null deliveryRate when there are no scored attempts", async () => {
+    const service = createServiceWithCounts({
+      bounced: 0,
+      complained: 0,
+      console_fallback: 0,
+      delayed: 0,
+      delivered: 0,
+      failed: 0,
+      sent: 0,
+      suppressed: 0,
+    });
+
+    const result = await service.getHealth({ now: NOW });
+
+    assert.equal(result.deliveryRate, null);
+    assert.equal(result.totalAttempts, 0);
+    assert.equal(result.windowDays, 30);
+  });
+
+  it("computes deliveryRate from sent + delivered over scored attempts", async () => {
+    // 8 sent, 1 bounced, 1 failed = 8 / 10 = 0.8. Console fallback and
+    // delayed events are deliberately excluded — they're not signals
+    // about real-world delivery.
+    const service = createServiceWithCounts({
+      bounced: 1,
+      complained: 0,
+      console_fallback: 5,
+      delayed: 2,
+      delivered: 0,
+      failed: 1,
+      sent: 8,
+      suppressed: 0,
+    });
+
+    const result = await service.getHealth({ now: NOW });
+
+    assert.equal(result.totalAttempts, 17);
+    assert.equal(result.totalSent, 8);
+    assert.equal(result.totalBounced, 1);
+    assert.equal(result.totalFailed, 1);
+    assert.equal(result.deliveryRate, 0.8);
+  });
+
+  it("respects an explicit windowDays override", async () => {
+    const service = createServiceWithCounts({
+      bounced: 0,
+      complained: 0,
+      console_fallback: 0,
+      delayed: 0,
+      delivered: 0,
+      failed: 0,
+      sent: 0,
+      suppressed: 0,
+    });
+
+    const result = await service.getHealth({ now: NOW, windowDays: 7 });
+    assert.equal(result.windowDays, 7);
+  });
 });
+
+function createServiceWithCounts(byStatus: {
+  bounced: number;
+  complained: number;
+  console_fallback: number;
+  delayed: number;
+  delivered: number;
+  failed: number;
+  sent: number;
+  suppressed: number;
+}) {
+  const totalAttempts = Object.values(byStatus).reduce((a, b) => a + b, 0);
+  return new EmailOperationsService({
+    attemptsRepository: {
+      async getHealthCounts() {
+        return { totalAttempts, byStatus };
+      },
+      async listRecentAttempts() {
+        return [];
+      },
+    },
+    emailService: {
+      async sendTestEmail() {
+        return {
+          attemptId: "attempt_test",
+          providerMessageId: "msg_test",
+          status: "sent" as const,
+        };
+      },
+    },
+    providerConfigured: true,
+    recentAttemptLimit: 12,
+    recipientStateRepository: {
+      async findLatestLifecycleState() {
+        return null;
+      },
+    },
+    templateProvider: {
+      async getEmailTemplateSettings() {
+        const stubTemplate = {
+          subject: "s",
+          heading: "h",
+          intro: "i",
+          actionLabel: "a",
+          footer: "f",
+        };
+        return resolveEmailConfiguration({
+          brand: {
+            accentColor: "hsl(28 72% 48%)",
+            brandName: "Shop App",
+            logoImageUrl: null,
+            logoText: "SA",
+            primaryColor: "hsl(174 52% 23%)",
+          },
+          businessEmail: "support@example.com",
+          emailFromAddress: "noreply@example.com",
+          emailTemplates: {
+            emailVerification: stubTemplate,
+            passwordReset: stubTemplate,
+            supplierInvite: stubTemplate,
+          },
+        });
+      },
+    },
+  });
+}

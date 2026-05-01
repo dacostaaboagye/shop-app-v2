@@ -114,7 +114,7 @@ export class SupplyRequestAccessPolicy {
       return;
     }
 
-    if (await this.isAdmin(input.actor)) {
+    if (await this.hasForceOverride(input.actor)) {
       assertAdminOverrideReason(input.adminOverrideReason, "cancel");
       return;
     }
@@ -138,7 +138,7 @@ export class SupplyRequestAccessPolicy {
       return;
     }
 
-    if (await this.isAdmin(input.actor)) {
+    if (await this.hasForceOverride(input.actor)) {
       assertAdminOverrideReason(input.adminOverrideReason, "confirm receipt");
       return;
     }
@@ -177,7 +177,7 @@ export class SupplyRequestAccessPolicy {
       return;
     }
 
-    if (await this.isAdmin(input.actor)) {
+    if (await this.hasForceOverride(input.actor)) {
       return;
     }
 
@@ -211,14 +211,21 @@ export class SupplyRequestAccessPolicy {
     }
   }
 
-  private async isAdmin(actor: AuthenticatedActor): Promise<boolean> {
+  /**
+   * Returns true if the actor holds the explicit force-override permission.
+   * Replaces the prior implicit "isAdmin via admin.dashboard.view" check —
+   * if a future role grants admin.dashboard.view for unrelated reasons, it
+   * should not silently inherit the right to cancel or confirm-receipt on
+   * other people's supply requests.
+   */
+  private async hasForceOverride(actor: AuthenticatedActor): Promise<boolean> {
     const permissions =
       await this.permissionService.resolvePermissionsForAnyScope({
         userId: actor.userId,
       });
 
     return permissions.some(
-      (permission) => permission.key === "admin.dashboard.view",
+      (permission) => permission.key === "stock.supply.requests.force_override",
     );
   }
 }

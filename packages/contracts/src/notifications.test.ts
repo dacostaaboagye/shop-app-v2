@@ -58,8 +58,10 @@ describe("notifications contracts", () => {
   it("parses mark-all-read responses", () => {
     const parsed = markAllNotificationsReadResponseSchema.parse({
       updatedCount: 4,
+      newUnreadCount: 0,
     });
 
     assert.equal(parsed.updatedCount, 4);
+    assert.equal(parsed.newUnreadCount, 0);
   });
 });

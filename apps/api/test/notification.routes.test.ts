@@ -81,7 +81,7 @@ describe("notification routes", () => {
 
   it("marks all notifications as read", async () => {
     const server = createNotificationServer({
-      markAllReadImpl: async () => ({ updatedCount: 3 }),
+      markAllReadImpl: async () => ({ updatedCount: 3, newUnreadCount: 0 }),
     });
 
     const response = await server.inject({
@@ -125,7 +125,7 @@ function createNotificationServer(input?: {
   markAllReadImpl?: (args: {
     now: Date;
     userId: string;
-  }) => Promise<{ updatedCount: number }>;
+  }) => Promise<{ updatedCount: number; newUnreadCount: number }>;
   markReadImpl?: (args: {
     notificationKey: string;
     now: Date;
@@ -200,7 +200,7 @@ function createNotificationServer(input?: {
             return input.markAllReadImpl(args);
           }
 
-          return { updatedCount: 1 };
+          return { updatedCount: 1, newUnreadCount: 0 };
         },
         async markRead(args) {
           if (input?.markReadImpl) {

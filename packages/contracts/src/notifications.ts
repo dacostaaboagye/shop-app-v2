@@ -42,7 +42,14 @@ export const markNotificationReadResponseSchema = z.object({
 });
 
 export const markAllNotificationsReadResponseSchema = z.object({
+  // Number of rows the call transitioned from unread to read.
   updatedCount: z.number().int().min(0),
+  // The unread count after this call. Always 0 because the operation marks
+  // every currently-unread notification as read; the field exists so the
+  // frontend can update its badge without an additional fetch round-trip.
+  // New notifications arriving between the call and the response are not
+  // counted here — the SSE stream + invalidation handles those.
+  newUnreadCount: z.number().int().min(0),
 });
 
 export type MarkAllNotificationsReadResponse = z.infer<

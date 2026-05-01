@@ -71,11 +71,15 @@ export class PasswordRegistrationService {
             now,
             toSessionContext(command.ipAddress, command.userAgent),
           );
-          // Fire-and-forget: don't block registration on email send failure
+          // Fire-and-forget: don't block registration on email send failure.
+          // Log only the message — full error objects can carry provider
+          // response bodies or recipient metadata.
           this.emailVerificationIssuer
             ?.issueAndSend(creationResult.user.id)
             .catch((err) => {
-              console.error("[auth] Failed to send verification email:", err);
+              console.error("[auth] Failed to send verification email", {
+                error: err instanceof Error ? err.message : String(err),
+              });
             });
           return session;
         }

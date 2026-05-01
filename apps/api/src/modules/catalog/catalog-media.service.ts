@@ -12,6 +12,12 @@ import {
 } from "@shop/contracts";
 import type { R2StorageService } from "../../infrastructure/r2-storage.js";
 import { AppError } from "../_core/errors/app-error.js";
+import {
+  bytesMatchClaimedMime,
+  describeFileKind,
+  detectFileKind,
+  MAGIC_BYTES_HEAD_SIZE,
+} from "../_core/file-magic.js";
 
 export type CatalogMediaRepository = {
   confirmMedia(input: {
@@ -51,6 +57,7 @@ export class CatalogMediaService {
   constructor(
     private readonly repository: CatalogMediaRepository,
     private readonly storage: R2StorageService | null,
+    private readonly logger: Pick<Console, "error"> = console,
   ) {}
 
   async presign(input: {
@@ -93,8 +100,29 @@ export class CatalogMediaService {
 
   async confirm(actorId: string, payload: AdminMediaConfirmRequest) {
     if (!this.storage) throw storageUnavailable();
-    const exists = await this.storage.objectExists(payload.key);
-    if (!exists) {
+    // Re-validate the MIME at confirm time. Presign already enforces the
+    // allowlist, but a malicious client can presign with image/jpeg, upload
+    // SVG bytes, then claim a different mimeType on confirm. Without this
+    // check the allowlist is effectively bypassed for stored XSS.
+    if (
+      !(ALLOWED_MEDIA_MIMES as readonly string[]).includes(payload.mimeType)
+    ) {
+      throw new AppError({
+        code: "validation_error",
+        detail: `MIME type "${payload.mimeType}" is not allowed.`,
+        statusCode: 422,
+        title: "Unsupported media type",
+      });
+    }
+    // Single GetObject with Range bytes=0-15 verifies existence, returns
+    // the full Content-Length, and gives us 16 bytes to sniff the format
+    // against the claimed MIME. Replaces the old objectExists() HEAD; same
+    // request count.
+    const head = await this.storage.readObjectHead(
+      payload.key,
+      MAGIC_BYTES_HEAD_SIZE,
+    );
+    if (!head) {
       throw new AppError({
         code: "not_found",
         detail:
@@ -103,6 +131,35 @@ export class CatalogMediaService {
         title: "File not in storage",
       });
     }
+
+    // Magic-byte check: if the claimed MIME is one we know how to sniff
+    // (raster images + PDF), the actual file bytes must match. Defeats
+    // "presign as JPEG, upload SVG, confirm as JPEG" attacks.
+    if (!bytesMatchClaimedMime(payload.mimeType, head.bytes)) {
+      throw new AppError({
+        code: "validation_error",
+        detail: `Uploaded file does not match the declared MIME "${payload.mimeType}" (looks like ${describeFileKind(detectFileKind(head.bytes))}).`,
+        statusCode: 422,
+        title: "File contents do not match declared type",
+      });
+    }
+
+    // Size sanity: client cannot claim 1KB on presign and ship 100MB.
+    // Presign signatures already enforce ContentLength, but verify here as
+    // belt-and-braces against any future signing-policy regression.
+    if (
+      payload.fileSizeBytes !== undefined &&
+      head.contentLength > 0 &&
+      head.contentLength > payload.fileSizeBytes
+    ) {
+      throw new AppError({
+        code: "validation_error",
+        detail: `Uploaded file is ${head.contentLength} bytes, larger than the declared ${payload.fileSizeBytes} bytes.`,
+        statusCode: 422,
+        title: "File size mismatch",
+      });
+    }
+
     const mediaType = getMediaType(payload.mimeType);
     return this.repository.confirmMedia({
       actorId,
@@ -136,7 +193,19 @@ export class CatalogMediaService {
     const result = await this.repository.deleteMedia(id);
     if (!result) return null;
     if (result.storageKey) {
-      await this.storage.deleteObject(result.storageKey).catch(() => undefined);
+      // The DB row is already gone, so we don't fail the whole call when R2
+      // delete fails — the user's intent (remove the asset reference) is
+      // satisfied. But silent swallow leaves orphaned objects in storage
+      // with no breadcrumb; log structured so operators can sweep periodically.
+      try {
+        await this.storage.deleteObject(result.storageKey);
+      } catch (error) {
+        this.logger.error("[catalog-media] R2 delete failed; orphan retained", {
+          assetId: id,
+          error: error instanceof Error ? error.message : String(error),
+          storageKey: result.storageKey,
+        });
+      }
     }
     return id;
   }

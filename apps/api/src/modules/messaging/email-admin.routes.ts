@@ -1,6 +1,7 @@
 import {
   adminSentCommunicationListQuerySchema,
   adminSentCommunicationListResponseSchema,
+  emailHealthResponseSchema,
   emailOperationsResponseSchema,
   emailRecipientStateQuerySchema,
   emailRecipientStateResponseSchema,
@@ -25,7 +26,10 @@ type EmailAdminRouteDependencies = {
   adminCommunicationService: Pick<AdminCommunicationService, "send"> | null;
   operationsService: Pick<
     EmailOperationsService,
-    "getOperationsOverview" | "getRecipientState" | "sendTestEmail"
+    | "getHealth"
+    | "getOperationsOverview"
+    | "getRecipientState"
+    | "sendTestEmail"
   >;
 };
 
@@ -33,6 +37,12 @@ const getEmailOperationsRoute: RouteDefinition = {
   access: { kind: "permission", permission: "settings.documents.view" },
   method: "GET",
   url: "/api/admin/settings/email/operations",
+};
+
+const getEmailHealthRoute: RouteDefinition = {
+  access: { kind: "permission", permission: "settings.documents.view" },
+  method: "GET",
+  url: "/api/admin/settings/email/health",
 };
 
 const sendTestEmailRoute: RouteDefinition = {
@@ -75,6 +85,18 @@ export function registerEmailAdminRoutes(
       );
 
       return emailOperationsResponseSchema.parse(result);
+    },
+  });
+
+  server.route({
+    config: { access: getEmailHealthRoute.access },
+    method: getEmailHealthRoute.method,
+    url: getEmailHealthRoute.url,
+    async handler() {
+      const result = await dependencies.operationsService.getHealth({
+        now: new Date(),
+      });
+      return emailHealthResponseSchema.parse(result);
     },
   });
 
@@ -169,6 +191,9 @@ function createUnavailableDependencies(): EmailAdminRouteDependencies {
     adminCommunicationQueryService: null,
     adminCommunicationService: null,
     operationsService: {
+      async getHealth() {
+        throw unavailableMessagingError();
+      },
       async getOperationsOverview() {
         throw unavailableMessagingError();
       },

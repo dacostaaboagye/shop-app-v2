@@ -13,6 +13,7 @@ import {
   createConfiguredEmailService,
   createMessagingRuntime,
 } from "./modules/messaging/create-email-runtime.js";
+import { assertEmailFromAddressAllowed } from "./modules/messaging/email-from-address-policy.js";
 import { NotificationQueryService } from "./modules/notifications/notification-query.service.js";
 import { NotificationWriteService } from "./modules/notifications/notification-write.service.js";
 import { PostgresNotificationQueryRepository } from "./modules/notifications/postgres-notification-query.repository.js";
@@ -36,6 +37,11 @@ if (env.nodeEnv !== "development" && !env.webBaseUrl) {
   );
 }
 
+assertEmailFromAddressAllowed({
+  fromAddress: env.emailFromAddress,
+  allowedDomains: env.emailAllowedFromDomains,
+});
+
 const databaseRuntime = createDatabaseRuntime(env.databaseUrl);
 const storage = createR2StorageService(env);
 const eventBus = new InMemoryPlatformEventBus();
@@ -49,6 +55,12 @@ const platformEventRuntime = createPlatformEventRuntime({
   livePublisher: eventBus,
   permissionService: authRuntime.accessControl.permissionService,
 });
+// Auth runtime is constructed before platformEventRuntime (the latter
+// depends on permissionService), so we wire the publisher into auth
+// services that need it once both exist.
+authRuntime.auth.passwordResetService.setPlatformEventPublisher(
+  platformEventRuntime.platformEventPublisher,
+);
 const messagingRuntime = createMessagingRuntime(databaseRuntime, env, {
   emailService: sharedEmailService,
   platformEventPublisher: platformEventRuntime.platformEventPublisher,

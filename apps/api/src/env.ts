@@ -8,6 +8,7 @@ export type ApiEnv = {
   authCookieSecure: boolean;
   authRefreshTokenTtlSeconds: number;
   databaseUrl?: string;
+  emailAllowedFromDomains: string[];
   emailFromAddress: string;
   googleCallbackUrl?: string;
   googleClientId?: string;
@@ -52,6 +53,7 @@ export function getApiEnv(): ApiEnv {
     authRefreshTokenTtlSeconds:
       readNumberEnv("AUTH_REFRESH_TOKEN_TTL_SECONDS") ?? 604_800,
     authCookieSecure: configuredCookieSecurity ?? nodeEnv !== "development",
+    emailAllowedFromDomains: readCsvEnv("EMAIL_ALLOWED_FROM_DOMAINS"),
     emailFromAddress:
       readStringEnv("EMAIL_FROM_ADDRESS") ?? "noreply@shopapp.com",
     ...(authAccessTokenSecret ? { authAccessTokenSecret } : {}),
@@ -118,4 +120,13 @@ function readNumberEnv(name: string): number | undefined {
 function readStringEnv(name: string): string | undefined {
   const value = process.env[name]?.trim();
   return value ? value : undefined;
+}
+
+function readCsvEnv(name: string): string[] {
+  const raw = readStringEnv(name);
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((entry) => entry.trim().toLowerCase())
+    .filter((entry) => entry.length > 0);
 }

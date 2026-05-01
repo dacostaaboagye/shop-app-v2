@@ -29,7 +29,7 @@ This repository is designed for multiple agents to work safely in parallel. Foll
 ## Frontend rules
 
 - Read `docs/frontend/design-system.md` and `docs/frontend/agent-rules.md` before significant UI work.
-- Read `.agents/skills/frontend-system/SKILL.md` before substantial frontend implementation.
+- Read `.claude/skills/frontend-system/SKILL.md` for operation playbooks (route, query, form, table) and the hard don't-list.
 - Frontend work uses shadcn components as primitives and `apps/web/src/components/system` for house patterns.
 - Client-side data fetching uses React Query through the shared query client and fetch helpers.
 - Client-side UI state uses Zustand only when the state is not server-owned data.

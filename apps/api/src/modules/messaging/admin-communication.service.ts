@@ -1,6 +1,14 @@
+import { mapWithConcurrency } from "../_core/async-concurrency.js";
 import { AppError } from "../_core/errors/app-error.js";
 import { createAdminCommunicationEvent } from "./admin-communication-events.js";
 import type { EmailService } from "./email.service.js";
+
+// Bound parallel email sends per bulk admin communication. Resend's API has
+// per-second rate limits and Node's libuv pool is finite — letting an admin
+// action fan out 1000 sends in parallel would either trip 429s or starve
+// other I/O. 10 is conservative enough to stay under any reasonable provider
+// quota while still finishing 100 invites in well under a second.
+const BULK_EMAIL_CONCURRENCY = 10;
 
 type AdminCommunicationDependencies = {
   emailService: Pick<EmailService, "sendOperationalEmail">;
@@ -126,15 +134,16 @@ export class AdminCommunicationService {
     }
 
     if (input.sendEmail && emailRecipients.length > 0) {
-      await Promise.all(
-        emailRecipients.map((recipient) =>
+      await mapWithConcurrency(
+        emailRecipients,
+        BULK_EMAIL_CONCURRENCY,
+        (recipient) =>
           this.dependencies.emailService.sendOperationalEmail({
             firstName: recipient.firstName,
             messageBody: input.messageBody,
             subject: input.subject,
             to: recipient.email as string,
           }),
-        ),
       );
     }
 

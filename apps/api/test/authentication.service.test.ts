@@ -104,6 +104,47 @@ describe("PasswordAuthenticationService", () => {
 
     assert.equal(harness.state.issuedSessions.length, 0);
   });
+
+  it("does not record userId on failed_attempt events for known users", async () => {
+    // Anti-enumeration: an operator browsing auth_events must not be able
+    // to tell whether a failed login hit a real account or an unknown email.
+    const harness = createHarness({
+      user: createUserRecord(),
+    });
+
+    await assert.rejects(() =>
+      harness.service.login({
+        email: "manager@example.com",
+        password: "WrongPassword1",
+      }),
+    );
+
+    const failedAttempts = harness.state.events.filter(
+      (event) => event.eventType === "failed_attempt",
+    );
+    assert.equal(failedAttempts.length, 1);
+    assert.equal(failedAttempts[0]?.userId, undefined);
+  });
+
+  it("does not record userId on failed_attempt events for unknown emails", async () => {
+    // Symmetric counterpart of the previous test: the unknown-email path
+    // already omits userId; this pins the existing behavior so a refactor
+    // can't reintroduce the asymmetry.
+    const harness = createHarness({ user: null });
+
+    await assert.rejects(() =>
+      harness.service.login({
+        email: "ghost@example.com",
+        password: "Password123",
+      }),
+    );
+
+    const failedAttempts = harness.state.events.filter(
+      (event) => event.eventType === "failed_attempt",
+    );
+    assert.equal(failedAttempts.length, 1);
+    assert.equal(failedAttempts[0]?.userId, undefined);
+  });
 });
 
 function createHarness(input: {
