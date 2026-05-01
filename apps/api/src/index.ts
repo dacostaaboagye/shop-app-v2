@@ -13,6 +13,7 @@ import {
   createConfiguredEmailService,
   createMessagingRuntime,
 } from "./modules/messaging/create-email-runtime.js";
+import { assertEmailFromAddressAllowed } from "./modules/messaging/email-from-address-policy.js";
 import { NotificationQueryService } from "./modules/notifications/notification-query.service.js";
 import { NotificationWriteService } from "./modules/notifications/notification-write.service.js";
 import { PostgresNotificationQueryRepository } from "./modules/notifications/postgres-notification-query.repository.js";
@@ -35,6 +36,11 @@ if (env.nodeEnv !== "development" && !env.webBaseUrl) {
     "WEB_BASE_URL must be configured outside of development to enforce CORS.",
   );
 }
+
+assertEmailFromAddressAllowed({
+  fromAddress: env.emailFromAddress,
+  allowedDomains: env.emailAllowedFromDomains,
+});
 
 const databaseRuntime = createDatabaseRuntime(env.databaseUrl);
 const storage = createR2StorageService(env);
