@@ -18,6 +18,24 @@ The user invokes this skill with one of:
   2. Otherwise, **read the xlsx `Next Up` sheet** at the repo root (`Building and Refining Product Backlog(*).xlsx`), pick the top entry whose status is `Not Started` or `Partial`, and start at Stage 1 to materialise it into an epic file.
 - **A description** ("the password reset flash bug", "rebuild media uploader"). Match against existing epic files first, then against xlsx ticket titles. If neither matches and it's clearly product work, ask the user whether to add a row to the xlsx before proceeding.
 
+## Pipeline tier
+
+Spinning up the full team for every epic is overkill. Pick the tier from the epic's id prefix and `size`, and tell the user which tier you picked when you announce the epic in Stage 0. The user can override.
+
+| Tier | When | Stages run |
+|---|---|---|
+| **Full** | Product epics (`E-*`) with `size: medium` or `large`. Anything where the design space is non-trivial (new schema, new module, multi-system change). | All seven: refine (PO) → design (architect) → plan → build → test (QA) → review → ship. |
+| **Light** | Product epics (`E-*`) with `size: small`. Or a partial epic where the xlsx `Backlog Audit` notes already say what to build (E-03-02 bulk import, E-00D-07 lint guard). | Skip the **PO** when the xlsx row + audit notes are already specific. Run architect → plan → build → QA → review → ship. |
+| **Minimal** | `ops-*` and `audit-*` ids. The audit doc or ops note is the spec. | Skip PO and architect. Run plan → build → review → ship. Use QA only if the change is non-trivial or hits production paths. |
+
+Override rules:
+
+- The user can ask for a different tier ("just do the minimal pipeline on E-03-02"). Honour it.
+- A `size: small` product epic that introduces a new schema or new public API gets bumped back to **full** — the size field doesn't override the architectural reach.
+- An `audit-*` id that touches auth, payments, or data integrity gets bumped to **light** — security-adjacent work gets the architect.
+
+When you skip a stage, say so explicitly in your status update so the user can see what wasn't done. The shape of the rule is *"skip this stage because X"*, not *"skipped"*.
+
 ## Workflow
 
 Walk these stages in order. Stop and report back to the user at every stage transition — *don't* fan out the whole pipeline silently.
@@ -45,10 +63,13 @@ Agent({
 
 The PO returns a refined epic. The orchestrator writes the file using the frontmatter contract, sets `status: refined`, and commits on a branch `chore/ops-refine-<id>`.
 
-For `ops-*` and `audit-*` ids the orchestrator may skip the PO and write the refined file directly, since these don't come from the product backlog.
+PO-skip cases (per the tier table):
+
+- **Minimal tier** — `ops-*` / `audit-*` ids. The orchestrator writes the refined file directly using the audit doc or ops note as the spec.
+- **Light tier** — `E-*` epics with `size: small` whose xlsx `Backlog Audit` notes are already specific. The orchestrator copies the user story + notes verbatim and writes the file directly. Note in the status update that the PO was skipped because the xlsx row was self-describing.
 
 ### Stage 2: design (architects in parallel)
-Decide which architect(s) the epic needs based on `domain`:
+Skipped on the **minimal** tier. On **light** and **full** tiers, decide which architect(s) the epic needs based on `domain`:
 - `backend` / `infra` → only `node-backend-systems-architect`.
 - `frontend` → only `frontend-ui-architect`.
 - `full-stack` → both, in parallel.
@@ -80,6 +101,8 @@ Execute tasks in order. After each task: write the tests, run `pnpm guard` + the
 When all tasks are done and local gates pass, bump `status` to `built`.
 
 ### Stage 5: test (QA agent)
+On the **minimal** tier, skip this stage unless the change touches auth, payments, data integrity, or production-path code — in which case run it. On **light** and **full**, always run it.
+
 Spawn `qa-quality-engineer` with:
 1. The refined epic (especially acceptance criteria).
 2. The diff: `git diff dev..HEAD`.
