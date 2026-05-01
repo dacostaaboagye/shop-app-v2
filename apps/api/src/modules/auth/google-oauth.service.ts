@@ -8,6 +8,7 @@ import type {
   SessionIssuer,
 } from "./authentication.service.js";
 import type { SessionContext } from "./authentication-records.js";
+import { resolveGoogleOAuthUser } from "./google-oauth-user-resolver.js";
 
 const OAUTH_STATE_COOKIE = "shop_oauth_state";
 const OAUTH_CODE_VERIFIER_COOKIE = "shop_oauth_verifier";
@@ -169,7 +170,7 @@ export class GoogleOAuthService {
     }
 
     const now = this.now();
-    const user = await this.findOrCreateUser({
+    const user = await resolveGoogleOAuthUser(this.repository, {
       providerUserId,
       email,
       name: name ?? email,
@@ -180,55 +181,6 @@ export class GoogleOAuthService {
     await this.repository.markSuccessfulLogin(user.id, now);
 
     return this.sessionIssuer.issueSession(user, now, context);
-  }
-
-  private async findOrCreateUser(input: {
-    providerUserId: string;
-    email: string;
-    name: string;
-    avatarUrl: string | null;
-    now: Date;
-  }): Promise<AuthUserRecord> {
-    // 1. Exact OAuth identity match
-    const byIdentity = await this.repository.findUserByOAuthIdentity(
-      "google",
-      input.providerUserId,
-    );
-    if (byIdentity) return byIdentity;
-
-    // 2. Email match — link the OAuth identity to the existing account
-    const byEmail = await this.repository.findUserByEmail(
-      input.email.toLowerCase(),
-    );
-    if (byEmail) {
-      await this.repository.linkOAuthIdentity({
-        userId: byEmail.id,
-        provider: "google",
-        providerUserId: input.providerUserId,
-        providerEmail: input.email,
-        displayName: input.name,
-        avatarUrl: input.avatarUrl,
-        now: input.now,
-      });
-      return byEmail;
-    }
-
-    // 3. New user — create account with Google identity (email pre-verified)
-    const nameParts = input.name.split(" ");
-    const firstName = nameParts[0] ?? input.name;
-    const lastName = nameParts.slice(1).join(" ") || firstName;
-
-    return this.repository.createOAuthUser({
-      email: input.email.toLowerCase(),
-      firstName,
-      lastName,
-      displayName: input.name,
-      avatarUrl: input.avatarUrl,
-      provider: "google",
-      providerUserId: input.providerUserId,
-      providerEmail: input.email,
-      now: input.now,
-    });
   }
 
   private async getConfig(): Promise<oidc.Configuration> {
