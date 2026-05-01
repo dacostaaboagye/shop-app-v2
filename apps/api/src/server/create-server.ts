@@ -94,12 +94,23 @@ export function createServer(options: CreateServerOptions = {}) {
   server.register(cors, {
     credentials: true,
     origin(origin, callback) {
-      if (!origin || !env.webBaseUrl) {
+      // Non-browser callers (curl, server-to-server, healthchecks) send no
+      // Origin header and are not subject to CORS.
+      if (!origin) {
         callback(null, true);
         return;
       }
 
-      callback(null, origin === env.webBaseUrl);
+      // Outside development WEB_BASE_URL is required at boot (see index.ts);
+      // any browser origin that does not match it is rejected.
+      if (env.webBaseUrl) {
+        callback(null, origin === env.webBaseUrl);
+        return;
+      }
+
+      // Development with no WEB_BASE_URL configured: accept any origin so
+      // local ports vary freely. Production never reaches this branch.
+      callback(null, env.nodeEnv === "development");
     },
   });
   server.register(helmet, {

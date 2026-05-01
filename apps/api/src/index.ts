@@ -30,6 +30,12 @@ if (!env.databaseUrl) {
   throw new Error("DATABASE_URL must be configured.");
 }
 
+if (env.nodeEnv !== "development" && !env.webBaseUrl) {
+  throw new Error(
+    "WEB_BASE_URL must be configured outside of development to enforce CORS.",
+  );
+}
+
 const databaseRuntime = createDatabaseRuntime(env.databaseUrl);
 const storage = createR2StorageService(env);
 const eventBus = new InMemoryPlatformEventBus();
