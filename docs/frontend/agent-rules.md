@@ -8,7 +8,7 @@ Agents working on the frontend must follow these rules exactly.
 - Read `docs/engineering/typescript-javascript-rules.md`
 - Check `apps/web/components.json`
 - Reuse existing `components/ui` and `components/system` modules before creating new ones
-- Reuse the repo skill at `.agents/skills/frontend-system/SKILL.md` for frontend delivery conventions
+- Reuse the repo skill at `.claude/skills/frontend-system/SKILL.md` for the operation playbooks (route, query, form, table) and the hard don't-list
 
 ## Composition rules
 

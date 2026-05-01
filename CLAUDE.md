@@ -29,7 +29,7 @@ Read before frontend work:
 
 - `docs/frontend/design-system.md`
 - `docs/frontend/agent-rules.md`
-- `.agents/skills/frontend-system/SKILL.md` for substantial UI work.
+- `.claude/skills/frontend-system/SKILL.md` — operation playbooks + hard don't-list. Auto-invoked on `apps/web` work.
 
 Operational context:
 

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Frontend System"
-  short_description: "Apply the shared frontend system exactly"
-  default_prompt: "Implement frontend work with the repo-local frontend system, using the design system, React Query, TanStack Form, TanStack Table, and Zustand consistently."
