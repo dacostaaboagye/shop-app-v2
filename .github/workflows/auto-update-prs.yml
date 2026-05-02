@@ -1,0 +1,38 @@
+name: Auto-update open PRs after dev merge
+
+on:
+  push:
+    branches:
+      - dev
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: auto-update-prs-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update every open PR targeting dev
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -e
+          numbers=$(gh pr list --base dev --state open --json number --jq '.[].number')
+          if [ -z "$numbers" ]; then
+            echo "No open PRs targeting dev — nothing to update."
+            exit 0
+          fi
+          for number in $numbers; do
+            echo "Updating PR #$number..."
+            if gh pr update-branch "$number"; then
+              echo "  PR #$number rebased onto dev."
+            else
+              echo "  PR #$number could not be updated automatically (likely a conflict). Skipping."
+            fi
+          done
