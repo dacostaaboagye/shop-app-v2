@@ -5,6 +5,7 @@ import type {
   TransferDeliverySourcePort,
 } from "@shop/contracts";
 import type { DatabaseRuntime } from "../../infrastructure/database.js";
+import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import { PostgresReferenceNumberRepository } from "../public-identifiers/postgres-reference-number.repository.js";
 import { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
 import { DeliveryAgentEligibilityStubAdapter } from "./delivery-agent-eligibility-stub.adapter.js";
@@ -34,6 +35,7 @@ type DeliveriesRuntimeOptions = {
   onlineOrderSourcePort?: OnlineOrderDeliverySourcePort;
   transferSourcePort?: TransferDeliverySourcePort;
   agentEligibilityPort?: DeliveryAgentEligibilityPort;
+  platformEventPublisher?: Pick<PlatformEventPublisher, "publish">;
   logger?: { warn: (message: string, meta?: Record<string, unknown>) => void };
 };
 
@@ -87,6 +89,9 @@ export function createDeliveriesRuntime(
   const statusCompose = new DeliveryStatusCompose({
     repository: statusRepository,
     agentEligibilityPort,
+    ...(options.platformEventPublisher
+      ? { platformEventPublisher: options.platformEventPublisher }
+      : {}),
   });
   const deliveryStatusService = new DeliveryStatusServiceImpl(statusCompose);
 

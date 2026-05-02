@@ -40,6 +40,7 @@ export function registerDeliveryStatusRoutes(
         deliveryId: params.deliveryId,
         assignedUserId: body.assignedUserId,
         actorUserId: actor.userId,
+        actorUserSlug: actor.userSlug,
       });
       return deliveryTransitionResponseSchema.parse(
         toTransitionResponse(result),
@@ -59,6 +60,7 @@ export function registerDeliveryStatusRoutes(
         deliveryId: params.deliveryId,
         assignedUserId: body.assignedUserId,
         actorUserId: actor.userId,
+        actorUserSlug: actor.userSlug,
       });
       return deliveryTransitionResponseSchema.parse(
         toTransitionResponse(result),
@@ -77,6 +79,7 @@ export function registerDeliveryStatusRoutes(
       const result = await deps.deliveryStatusService.dispatch({
         deliveryId: params.deliveryId,
         actorUserId: actor.userId,
+        actorUserSlug: actor.userSlug,
       });
       return deliveryTransitionResponseSchema.parse(
         toTransitionResponse(result),
@@ -95,6 +98,7 @@ export function registerDeliveryStatusRoutes(
       const result = await deps.deliveryStatusService.complete({
         deliveryId: params.deliveryId,
         actorUserId: actor.userId,
+        actorUserSlug: actor.userSlug,
       });
       return deliveryTransitionResponseSchema.parse(
         toTransitionResponse(result),
@@ -114,6 +118,7 @@ export function registerDeliveryStatusRoutes(
         deliveryId: params.deliveryId,
         reason: body.reason,
         actorUserId: actor.userId,
+        actorUserSlug: actor.userSlug,
       });
       return deliveryTransitionResponseSchema.parse(
         toTransitionResponse(result),
