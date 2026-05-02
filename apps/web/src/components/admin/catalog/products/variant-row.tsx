@@ -3,18 +3,19 @@
 import type { AdminVariantSummary } from "@shop/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { History, Images, Pencil, X } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { CATALOG_STATUS_META } from "@/lib/admin-models";
 import {
   adminProductQueryKey,
   updateAdminVariant,
 } from "@/lib/react-query/admin-catalog-products";
+import { toRoute } from "@/lib/routes";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { CatalogHistoryList } from "../history";
 import { MediaPanel } from "../media/media-panel";
 import { VariantArchiveDialog } from "./variant-archive-dialog";
 import { VariantEditForm } from "./variant-edit-form";
@@ -47,7 +48,6 @@ export function VariantRow({
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showMedia, setShowMedia] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
 
   const updateMutation = useMutation({
     mutationFn: (values: VariantFormValues) =>
@@ -141,16 +141,15 @@ export function VariantRow({
           {showMedia ? "Hide media" : "Media"}
         </Button>
         {canViewHistory ? (
-          <Button
-            aria-expanded={showHistory}
-            onClick={() => setShowHistory((value) => !value)}
-            size="sm"
-            type="button"
-            variant="ghost"
+          <Link
+            className={buttonVariants({ size: "sm", variant: "ghost" })}
+            href={toRoute(
+              `/admin/products/${productSlug}/variants/${variant.slug}/history`,
+            )}
           >
             <History className="size-3.5" />
-            {showHistory ? "Hide history" : "History"}
-          </Button>
+            History
+          </Link>
         ) : null}
         {canManage ? (
           <>
@@ -214,12 +213,6 @@ export function VariantRow({
           entitySlug={variant.slug}
           entityType="variant"
         />
-      ) : null}
-
-      {showHistory && canViewHistory ? (
-        <div className="rounded-md border border-border/50 bg-card/60 p-3">
-          <CatalogHistoryList entityKind="variant" slug={variant.slug} />
-        </div>
       ) : null}
     </div>
   );
