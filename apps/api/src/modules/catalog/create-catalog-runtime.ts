@@ -2,6 +2,7 @@ import type { DatabaseRuntime } from "../../infrastructure/database.js";
 import type { R2StorageService } from "../../infrastructure/r2-storage.js";
 import { PermissionResolutionService } from "../access-control/permission-resolution.service.js";
 import { PostgresPermissionRepository } from "../access-control/postgres-permission.repository.js";
+import { createCatalogChangeLogRuntime } from "../catalog-change-log/create-catalog-change-log-runtime.js";
 import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import { PostgresSlugRepository } from "../public-identifiers/postgres-slug.repository.js";
 import { SlugService } from "../public-identifiers/slug.service.js";
@@ -60,15 +61,20 @@ export function createCatalogRuntime(
   );
   const catalogDeleteGuard = new PostgresCatalogDeleteGuard(databaseRuntime.db);
 
+  const changeLog = createCatalogChangeLogRuntime();
+  const changeLogWriter = changeLog.catalogChangeLog.writer;
+
   const productCommands = new CatalogProductCommands(
     databaseRuntime.db,
     slugService,
     productDeleteGuard,
+    changeLogWriter,
   );
   const variantCommands = new CatalogVariantCommands(
     databaseRuntime.db,
     slugService,
     productDeleteGuard,
+    changeLogWriter,
   );
 
   return {
@@ -81,6 +87,7 @@ export function createCatalogRuntime(
           databaseRuntime.db,
           slugService,
           catalogDeleteGuard,
+          changeLogWriter,
         ),
         options.platformEventPublisher ?? null,
       ),
@@ -92,6 +99,7 @@ export function createCatalogRuntime(
           databaseRuntime.db,
           slugService,
           catalogDeleteGuard,
+          changeLogWriter,
         ),
         options.platformEventPublisher ?? null,
       ),
@@ -113,6 +121,7 @@ export function createCatalogRuntime(
       permissionResolutionService,
       productOptionsRepo: new PostgresCatalogProductOptionsRepository(
         databaseRuntime.db,
+        changeLogWriter,
       ),
     },
   };

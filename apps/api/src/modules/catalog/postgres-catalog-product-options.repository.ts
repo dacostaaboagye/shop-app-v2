@@ -6,33 +6,40 @@ import type {
 import {
   catalogProductOptions,
   catalogProductOptionValues,
-  catalogProducts,
 } from "@shop/database";
 import { and, eq, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
-import { AppError } from "../_core/errors/app-error.js";
+import type { CatalogChangeLogWriter } from "../catalog-change-log/catalog-change-log-writer.js";
+import {
+  optionNotFound,
+  optionValueNotFound,
+  requireOptionById,
+  requireProductByOptionsSlug,
+} from "./catalog-options.support.js";
+import {
+  recordOptionCreated,
+  recordOptionDeleted,
+  recordOptionValueCreated,
+  recordOptionValueDeleted,
+} from "./catalog-options-change-log.js";
+
+export type ProductOptionMutationContext = {
+  actorId: string;
+  now: Date;
+};
 
 export class PostgresCatalogProductOptionsRepository {
-  constructor(private readonly db: ApiDatabase) {}
+  constructor(
+    private readonly db: ApiDatabase,
+    private readonly changeLogWriter: CatalogChangeLogWriter,
+  ) {}
 
   async createOption(
     productSlug: string,
     payload: AdminCreateProductOptionRequest,
-    now: Date,
+    ctx: ProductOptionMutationContext,
   ): Promise<AdminProductOption> {
-    const product = await this.db.query.catalogProducts.findFirst({
-      where: eq(catalogProducts.slug, productSlug),
-      columns: { id: true },
-    });
-
-    if (!product) {
-      throw new AppError({
-        code: "not_found",
-        detail: `Product "${productSlug}" does not exist.`,
-        statusCode: 404,
-        title: "Product not found",
-      });
-    }
+    const product = await requireProductByOptionsSlug(this.db, productSlug);
 
     return await this.db.transaction(async (tx) => {
       const posResult = await tx
@@ -48,12 +55,20 @@ export class PostgresCatalogProductOptionsRepository {
           productId: product.id,
           name: payload.name,
           position: nextPos,
-          createdAt: now,
-          updatedAt: now,
+          createdAt: ctx.now,
+          updatedAt: ctx.now,
         })
         .returning();
 
       if (!option) throw new Error("Unable to create option");
+
+      await recordOptionCreated(
+        tx,
+        this.changeLogWriter,
+        product.id,
+        option,
+        ctx,
+      );
 
       const values: AdminProductOption["values"] = [];
       for (const [position, value] of payload.values.entries()) {
@@ -63,12 +78,20 @@ export class PostgresCatalogProductOptionsRepository {
             optionId: option.id,
             value,
             position,
-            createdAt: now,
-            updatedAt: now,
+            createdAt: ctx.now,
+            updatedAt: ctx.now,
           })
           .returning();
 
         if (!val) throw new Error("Unable to create option value");
+
+        await recordOptionValueCreated(
+          tx,
+          this.changeLogWriter,
+          product.id,
+          val,
+          ctx,
+        );
 
         values.push({
           valueId: val.id,
@@ -86,45 +109,54 @@ export class PostgresCatalogProductOptionsRepository {
     });
   }
 
-  async deleteOption(productSlug: string, optionId: string): Promise<void> {
-    const product = await this.db.query.catalogProducts.findFirst({
-      where: eq(catalogProducts.slug, productSlug),
-      columns: { id: true },
-    });
+  async deleteOption(
+    productSlug: string,
+    optionId: string,
+    ctx: ProductOptionMutationContext,
+  ): Promise<void> {
+    const product = await requireProductByOptionsSlug(this.db, productSlug);
 
-    if (!product) {
-      throw new AppError({
-        code: "not_found",
-        detail: `Product "${productSlug}" does not exist.`,
-        statusCode: 404,
-        title: "Product not found",
-      });
-    }
+    await this.db.transaction(async (tx) => {
+      const [before] = await tx
+        .select()
+        .from(catalogProductOptions)
+        .where(
+          and(
+            eq(catalogProductOptions.id, optionId),
+            eq(catalogProductOptions.productId, product.id),
+          ),
+        );
 
-    const result = await this.db
-      .delete(catalogProductOptions)
-      .where(
-        and(
-          eq(catalogProductOptions.id, optionId),
-          eq(catalogProductOptions.productId, product.id),
-        ),
+      if (!before) throw optionNotFound(productSlug);
+
+      await recordOptionDeleted(
+        tx,
+        this.changeLogWriter,
+        product.id,
+        before,
+        ctx,
       );
 
-    if (result.rowCount === 0) {
-      throw new AppError({
-        code: "not_found",
-        detail: `Option does not exist on product "${productSlug}".`,
-        statusCode: 404,
-        title: "Option not found",
-      });
-    }
+      const result = await tx
+        .delete(catalogProductOptions)
+        .where(
+          and(
+            eq(catalogProductOptions.id, optionId),
+            eq(catalogProductOptions.productId, product.id),
+          ),
+        );
+
+      if (result.rowCount === 0) throw optionNotFound(productSlug);
+    });
   }
 
   async addOptionValue(
     optionId: string,
     payload: AdminAddOptionValueRequest,
-    now: Date,
+    ctx: ProductOptionMutationContext,
   ): Promise<{ valueId: string; position: number; value: string }> {
+    const option = await requireOptionById(this.db, optionId);
+
     return await this.db.transaction(async (tx) => {
       const posResult = await tx
         .select({
@@ -141,12 +173,20 @@ export class PostgresCatalogProductOptionsRepository {
           optionId,
           value: payload.value,
           position: nextPos,
-          createdAt: now,
-          updatedAt: now,
+          createdAt: ctx.now,
+          updatedAt: ctx.now,
         })
         .returning();
 
       if (!val) throw new Error("Unable to create option value");
+
+      await recordOptionValueCreated(
+        tx,
+        this.changeLogWriter,
+        option.productId,
+        val,
+        ctx,
+      );
 
       return {
         valueId: val.id,
@@ -156,23 +196,44 @@ export class PostgresCatalogProductOptionsRepository {
     });
   }
 
-  async deleteOptionValue(optionId: string, valueId: string): Promise<void> {
-    const result = await this.db
-      .delete(catalogProductOptionValues)
-      .where(
-        and(
-          eq(catalogProductOptionValues.id, valueId),
-          eq(catalogProductOptionValues.optionId, optionId),
-        ),
+  async deleteOptionValue(
+    optionId: string,
+    valueId: string,
+    ctx: ProductOptionMutationContext,
+  ): Promise<void> {
+    const option = await requireOptionById(this.db, optionId);
+
+    await this.db.transaction(async (tx) => {
+      const [before] = await tx
+        .select()
+        .from(catalogProductOptionValues)
+        .where(
+          and(
+            eq(catalogProductOptionValues.id, valueId),
+            eq(catalogProductOptionValues.optionId, optionId),
+          ),
+        );
+
+      if (!before) throw optionValueNotFound();
+
+      await recordOptionValueDeleted(
+        tx,
+        this.changeLogWriter,
+        option.productId,
+        before,
+        ctx,
       );
 
-    if (result.rowCount === 0) {
-      throw new AppError({
-        code: "not_found",
-        detail: "Option value not found.",
-        statusCode: 404,
-        title: "Value not found",
-      });
-    }
+      const result = await tx
+        .delete(catalogProductOptionValues)
+        .where(
+          and(
+            eq(catalogProductOptionValues.id, valueId),
+            eq(catalogProductOptionValues.optionId, optionId),
+          ),
+        );
+
+      if (result.rowCount === 0) throw optionValueNotFound();
+    });
   }
 }

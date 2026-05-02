@@ -25,7 +25,11 @@ export type CatalogBrandWriteRepository = {
     slug: string;
   }): Promise<AdminUpdateBrandResponse | null>;
   getBrand(slug: string): Promise<AdminBrandSummary | null>;
-  deleteBrand(input: { slug: string }): Promise<void>;
+  deleteBrand(input: {
+    actorId: string;
+    now: Date;
+    slug: string;
+  }): Promise<void>;
 };
 
 export class CatalogBrandWriteService {
@@ -88,7 +92,11 @@ export class CatalogBrandWriteService {
     now: Date,
   ) {
     const brand = await this.repository.getBrand(slug);
-    await this.repository.deleteBrand({ slug });
+    await this.repository.deleteBrand({
+      actorId: actor.userId,
+      now,
+      slug,
+    });
 
     if (brand) {
       await this.eventPublisher?.publish(

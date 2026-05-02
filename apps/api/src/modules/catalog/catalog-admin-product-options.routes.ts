@@ -5,6 +5,7 @@ import {
 import type { FastifyInstance } from "fastify";
 import { AppError } from "../_core/errors/app-error.js";
 import type { RouteDefinition } from "../_core/route-contract.js";
+import { getAuthenticatedActor } from "../auth/auth-route-support.js";
 import type { PostgresCatalogProductOptionsRepository } from "./postgres-catalog-product-options.repository.js";
 
 type Deps = {
@@ -74,7 +75,11 @@ export function registerCatalogProductOptionsRoutes(
     async handler(request) {
       const { slug } = request.params as { slug: string };
       const payload = adminCreateProductOptionRequestSchema.parse(request.body);
-      return deps.optionsRepo.createOption(slug, payload, new Date());
+      const actor = getAuthenticatedActor(request);
+      return deps.optionsRepo.createOption(slug, payload, {
+        actorId: actor.userId,
+        now: new Date(),
+      });
     },
   });
 
@@ -87,7 +92,11 @@ export function registerCatalogProductOptionsRoutes(
         slug: string;
         optionId: string;
       };
-      await deps.optionsRepo.deleteOption(slug, optionId);
+      const actor = getAuthenticatedActor(request);
+      await deps.optionsRepo.deleteOption(slug, optionId, {
+        actorId: actor.userId,
+        now: new Date(),
+      });
       return reply.status(204).send();
     },
   });
@@ -99,7 +108,11 @@ export function registerCatalogProductOptionsRoutes(
     async handler(request) {
       const { optionId } = request.params as { optionId: string };
       const payload = adminAddOptionValueRequestSchema.parse(request.body);
-      return deps.optionsRepo.addOptionValue(optionId, payload, new Date());
+      const actor = getAuthenticatedActor(request);
+      return deps.optionsRepo.addOptionValue(optionId, payload, {
+        actorId: actor.userId,
+        now: new Date(),
+      });
     },
   });
 
@@ -112,7 +125,11 @@ export function registerCatalogProductOptionsRoutes(
         optionId: string;
         valueId: string;
       };
-      await deps.optionsRepo.deleteOptionValue(optionId, valueId);
+      const actor = getAuthenticatedActor(request);
+      await deps.optionsRepo.deleteOptionValue(optionId, valueId, {
+        actorId: actor.userId,
+        now: new Date(),
+      });
       return reply.status(204).send();
     },
   });
