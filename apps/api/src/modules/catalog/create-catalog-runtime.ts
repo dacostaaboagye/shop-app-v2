@@ -2,6 +2,7 @@ import type { DatabaseRuntime } from "../../infrastructure/database.js";
 import type { R2StorageService } from "../../infrastructure/r2-storage.js";
 import { PermissionResolutionService } from "../access-control/permission-resolution.service.js";
 import { PostgresPermissionRepository } from "../access-control/postgres-permission.repository.js";
+import type { CatalogChangeLogReadService } from "../catalog-change-log/catalog-change-log-read.service.js";
 import { createCatalogChangeLogRuntime } from "../catalog-change-log/create-catalog-change-log-runtime.js";
 import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import { PostgresSlugRepository } from "../public-identifiers/postgres-slug.repository.js";
@@ -10,6 +11,10 @@ import { CatalogBrandQueryService } from "./catalog-brand-query.service.js";
 import { CatalogBrandWriteService } from "./catalog-brand-write.service.js";
 import { CatalogCategoryQueryService } from "./catalog-category-query.service.js";
 import { CatalogCategoryWriteService } from "./catalog-category-write.service.js";
+import {
+  type CatalogHistoryEntityLookup,
+  PostgresCatalogHistoryEntityLookup,
+} from "./catalog-history-entity-lookup.js";
 import { CatalogMediaService } from "./catalog-media.service.js";
 import { CatalogProductQueryService } from "./catalog-product-query.service.js";
 import { CatalogProductWriteService } from "./catalog-product-write.service.js";
@@ -37,6 +42,8 @@ type CatalogRuntime = {
     catalogMediaService: CatalogMediaService;
     catalogProductQueryService: CatalogProductQueryService;
     catalogProductWriteService: CatalogProductWriteService;
+    changeLogReadService: CatalogChangeLogReadService;
+    historyEntityLookup: CatalogHistoryEntityLookup;
     permissionResolutionService: PermissionResolutionService;
     productOptionsRepo: PostgresCatalogProductOptionsRepository;
   };
@@ -61,8 +68,12 @@ export function createCatalogRuntime(
   );
   const catalogDeleteGuard = new PostgresCatalogDeleteGuard(databaseRuntime.db);
 
-  const changeLog = createCatalogChangeLogRuntime();
+  const changeLog = createCatalogChangeLogRuntime(databaseRuntime.db);
   const changeLogWriter = changeLog.catalogChangeLog.writer;
+  const changeLogReadService = changeLog.catalogChangeLog.readService;
+  const historyEntityLookup = new PostgresCatalogHistoryEntityLookup(
+    databaseRuntime.db,
+  );
 
   const productCommands = new CatalogProductCommands(
     databaseRuntime.db,
@@ -118,6 +129,8 @@ export function createCatalogRuntime(
         ),
         options.platformEventPublisher ?? null,
       ),
+      changeLogReadService,
+      historyEntityLookup,
       permissionResolutionService,
       productOptionsRepo: new PostgresCatalogProductOptionsRepository(
         databaseRuntime.db,

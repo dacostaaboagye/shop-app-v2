@@ -10,4 +10,11 @@ describe("access control seeded roles", () => {
     assert.ok(managerRole.permissions.includes("stock.supply.request"));
     assert.ok(managerRole.permissions.includes("stock.supply.manage"));
   });
+
+  it("grants the admin role the catalog change-history read permission", () => {
+    const adminRole = SYSTEM_ROLES.find((role) => role.slug === "admin");
+
+    assert.ok(adminRole);
+    assert.ok(adminRole.permissions.includes("catalog.history.view"));
+  });
 });

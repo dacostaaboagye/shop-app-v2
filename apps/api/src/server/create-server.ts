@@ -17,6 +17,7 @@ import { registerStockAssignmentRoutes } from "../modules/assignments/stock-assi
 import { registerWorkerDashboardRoutes } from "../modules/assignments/worker-dashboard.routes.js";
 import { registerAccountProfileMediaRoutes } from "../modules/auth/account-profile-media.routes.js";
 import { registerAuthRoutes } from "../modules/auth/auth.routes.js";
+import { registerCatalogAdminHistoryRoutes } from "../modules/catalog/catalog-admin-history.routes.js";
 import { registerCatalogProductOptionsRoutes } from "../modules/catalog/catalog-admin-product-options.routes.js";
 import { registerCatalogAdminQueryRoutes } from "../modules/catalog/catalog-admin-query.routes.js";
 import { registerCatalogAdminWriteRoutes } from "../modules/catalog/catalog-admin-write.routes.js";
@@ -69,6 +70,7 @@ type CreateServerOptions = {
   catalogProductOptions?: Parameters<
     typeof registerCatalogProductOptionsRoutes
   >[1];
+  catalogHistory?: Parameters<typeof registerCatalogAdminHistoryRoutes>[1];
   catalogQuery?: Parameters<typeof registerCatalogAdminQueryRoutes>[1];
   catalogWrite?: Parameters<typeof registerCatalogAdminWriteRoutes>[1];
   deliveries?: Parameters<typeof registerDeliveriesRoutes>[1];
@@ -164,6 +166,7 @@ export function createServer(options: CreateServerOptions = {}) {
   registerCatalogAdminQueryRoutes(server, options.catalogQuery);
   registerCatalogAdminWriteRoutes(server, options.catalogWrite);
   registerCatalogProductOptionsRoutes(server, options.catalogProductOptions);
+  registerCatalogAdminHistoryRoutes(server, options.catalogHistory);
   registerInternalApiDocsRoutes(server);
   registerPlatformEventRoutes(server, options.events);
   registerPlatformEventAdminRoutes(server, options.eventsAdmin);

@@ -7,6 +7,7 @@ export * from "./admin-user-access.js";
 export * from "./assignments.js";
 export * from "./auth.js";
 export * from "./catalog.js";
+export * from "./catalog-history.js";
 export * from "./catalog-media.js";
 export * from "./catalog-product-options.js";
 export * from "./catalog-products.js";
