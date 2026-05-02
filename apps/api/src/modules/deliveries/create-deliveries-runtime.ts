@@ -11,11 +11,13 @@ import { DeliveryAgentEligibilityStubAdapter } from "./delivery-agent-eligibilit
 import { DeliveryCreationCompose } from "./delivery-creation.compose.js";
 import type { DeliveryCreationService } from "./delivery-creation.contracts.js";
 import { DeliveryCreationServiceImpl } from "./delivery-creation.service.js";
+import type { DeliveryQueryService } from "./delivery-query.contracts.js";
 import { DeliveryStatusCompose } from "./delivery-status.compose.js";
 import type { DeliveryStatusService } from "./delivery-status.contracts.js";
 import { DeliveryStatusServiceImpl } from "./delivery-status.service.js";
 import { OnlineOrderDeliverySourceStubAdapter } from "./online-order-delivery-source-stub.adapter.js";
 import { PosSaleDeliverySourceStubAdapter } from "./pos-sale-delivery-source-stub.adapter.js";
+import { PostgresDeliveryQueryRepository } from "./postgres-delivery-query.repository.js";
 import { PostgresDeliveryStatusWriteRepository } from "./postgres-delivery-status-write.repository.js";
 import { TransferDeliverySourceStubAdapter } from "./transfer-delivery-source-stub.adapter.js";
 
@@ -23,6 +25,7 @@ type DeliveriesRuntime = {
   deliveries: {
     deliveryCreationService: DeliveryCreationService;
     deliveryStatusService: DeliveryStatusService;
+    deliveryQueryService: DeliveryQueryService;
   };
 };
 
@@ -87,10 +90,15 @@ export function createDeliveriesRuntime(
   });
   const deliveryStatusService = new DeliveryStatusServiceImpl(statusCompose);
 
+  const deliveryQueryService = new PostgresDeliveryQueryRepository(
+    databaseRuntime.db,
+  );
+
   return {
     deliveries: {
       deliveryCreationService,
       deliveryStatusService,
+      deliveryQueryService,
     },
   };
 }
