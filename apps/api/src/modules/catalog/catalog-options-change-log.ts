@@ -25,7 +25,7 @@ export async function recordOptionCreated(
   await writer.record(tx, {
     entityType: "catalog_product_option",
     entityId: option.id,
-    entityRef: option.id,
+    entityRef: option.name,
     parentEntityType: "catalog_product",
     parentEntityId: productId,
     operation: "created",
@@ -47,7 +47,7 @@ export async function recordOptionDeleted(
   await writer.record(tx, {
     entityType: "catalog_product_option",
     entityId: option.id,
-    entityRef: option.id,
+    entityRef: option.name,
     parentEntityType: "catalog_product",
     parentEntityId: productId,
     operation: "deleted",
@@ -69,7 +69,7 @@ export async function recordOptionValueCreated(
   await writer.record(tx, {
     entityType: "catalog_product_option_value",
     entityId: value.id,
-    entityRef: value.id,
+    entityRef: value.value,
     parentEntityType: "catalog_product",
     parentEntityId: productId,
     operation: "created",
@@ -91,7 +91,7 @@ export async function recordOptionValueDeleted(
   await writer.record(tx, {
     entityType: "catalog_product_option_value",
     entityId: value.id,
-    entityRef: value.id,
+    entityRef: value.value,
     parentEntityType: "catalog_product",
     parentEntityId: productId,
     operation: "deleted",
