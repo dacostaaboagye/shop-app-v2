@@ -23,6 +23,7 @@ import { registerCatalogAdminWriteRoutes } from "../modules/catalog/catalog-admi
 import { registerCatalogBrandRoutes } from "../modules/catalog/catalog-brand.routes.js";
 import { registerCatalogManagerQueryRoutes } from "../modules/catalog/catalog-manager-query.routes.js";
 import { registerCatalogMediaRoutes } from "../modules/catalog/catalog-media.routes.js";
+import { registerDeliveriesRoutes } from "../modules/deliveries/register-deliveries-routes.js";
 import { registerInternalApiDocsRoutes } from "../modules/docs/internal-api-docs.routes.js";
 import { registerPlatformEventAdminRoutes } from "../modules/events/platform-event-admin.routes.js";
 import { registerPlatformEventRoutes } from "../modules/events/platform-events.routes.js";
@@ -70,6 +71,7 @@ type CreateServerOptions = {
   >[1];
   catalogQuery?: Parameters<typeof registerCatalogAdminQueryRoutes>[1];
   catalogWrite?: Parameters<typeof registerCatalogAdminWriteRoutes>[1];
+  deliveries?: Parameters<typeof registerDeliveriesRoutes>[1];
   posSales?: Parameters<typeof registerPosSaleRoutes>[1];
   stock?: Parameters<typeof registerStockRoutes>[1];
   stockSupply?: Parameters<typeof registerStockSupplyRoutes>[1];
@@ -180,6 +182,7 @@ export function createServer(options: CreateServerOptions = {}) {
   registerStockAssignmentRoutes(server, options.stockAssignments);
   registerWorkerDashboardRoutes(server, options.workerDashboard);
   registerPosSaleRoutes(server, options.posSales);
+  registerDeliveriesRoutes(server, options.deliveries);
   registerStockSupplyRoutes(server, options.stockSupply);
   registerHealthRoutes(server);
 
