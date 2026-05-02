@@ -31,7 +31,6 @@ import {
   CatalogDetailRow,
   CatalogDetailsCard,
 } from "../catalog-detail-surfaces";
-import { HistoryPanel } from "../history";
 import { MediaPanel } from "../media/media-panel";
 import {
   CATEGORY_PARENT_QUERY,
@@ -60,7 +59,6 @@ export function CategoryDetailPageClient({ slug }: { slug: string }) {
   });
   const canManage = can("catalog.categories.manage");
   const canManageMedia = can("catalog.media.manage");
-  const canViewHistory = can("catalog.history.view");
 
   useEffect(() => {
     if (!canManage && isEditing) {
@@ -186,10 +184,6 @@ export function CategoryDetailPageClient({ slug }: { slug: string }) {
         entitySlug={category.slug}
         entityType="category"
       />
-
-      {canViewHistory ? (
-        <HistoryPanel entityKind="category" slug={category.slug} />
-      ) : null}
 
       <CatalogDeleteDialog
         entityName={category.name}

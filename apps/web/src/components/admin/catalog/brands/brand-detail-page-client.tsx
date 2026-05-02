@@ -31,7 +31,6 @@ import {
   CatalogDetailSkeleton,
   CatalogDetailsCard,
 } from "../catalog-detail-surfaces";
-import { HistoryPanel } from "../history";
 import { MediaPanel } from "../media/media-panel";
 import { BrandEditForm } from "./brand-edit-form";
 
@@ -51,7 +50,6 @@ export function BrandDetailPageClient({ slug }: { slug: string }) {
   });
   const canManage = can("catalog.brands.manage");
   const canManageMedia = can("catalog.media.manage");
-  const canViewHistory = can("catalog.history.view");
 
   useEffect(() => {
     if (!canManage && isEditing) {
@@ -172,10 +170,6 @@ export function BrandDetailPageClient({ slug }: { slug: string }) {
         entitySlug={brand.slug}
         entityType="brand"
       />
-
-      {canViewHistory ? (
-        <HistoryPanel entityKind="brand" slug={brand.slug} />
-      ) : null}
 
       <CatalogDeleteDialog
         entityName={brand.name}

@@ -34,7 +34,6 @@ import {
   CatalogDetailRow,
   CatalogDetailsCard,
 } from "../catalog-detail-surfaces";
-import { HistoryPanel } from "../history";
 import { MediaPanel } from "../media/media-panel";
 import {
   PRODUCT_DETAIL_QUERY,
@@ -231,9 +230,6 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
         entitySlug={product.slug}
         entityType="product"
       />
-      {canViewHistory ? (
-        <HistoryPanel entityKind="product" slug={product.slug} />
-      ) : null}
       <CatalogDeleteDialog
         entityName={product.name}
         entitySlug={product.slug}
