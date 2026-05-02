@@ -47,6 +47,8 @@ Before opening a PR:
 2. Run `pnpm verify`.
 3. Fill in the PR template with backlog evidence and architecture checks.
 
+After a PR into `dev` merges, the `auto-update-prs` workflow rebases every other open PR targeting `dev` onto the new tip and re-triggers their CI. You don't have to click "Update branch" manually. PRs whose rebase fails (real conflict) are skipped and surface as a workflow log line — fix them locally, push, and CI picks up.
+
 Recommended merge policy:
 
 1. Use squash merge from feature branches into `dev`.
