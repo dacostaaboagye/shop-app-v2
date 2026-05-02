@@ -267,6 +267,13 @@
       "when": 1777420734363,
       "tag": "0037_amusing_shotgun",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1777679249792,
+      "tag": "0038_supreme_skreet",
+      "breakpoints": true
     }
   ]
 }

@@ -11,6 +11,7 @@ export * from "./catalog-media.js";
 export * from "./catalog-product-options.js";
 export * from "./catalog-products.js";
 export * from "./catalog-variants.js";
+export * from "./deliveries.js";
 export * from "./errors.js";
 export * from "./manager-dashboard.js";
 export * from "./messaging.js";
