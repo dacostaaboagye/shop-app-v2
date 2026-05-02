@@ -3,7 +3,7 @@
 A snapshot of the master xlsx so we don't have to parse it every session.
 
 > **Source**: `Building and Refining Product Backlog(2).xlsx` at the repo root.
-> **Last derived**: 2026-05-01 from the same audit date stamped on the `Audit Summary` sheet.
+> **Last derived**: 2026-05-02. The `Audit Summary` sheet itself is still stamped 2026-05-01 — Tier-A counts and statuses are unchanged since then; the only material xlsx update is that EPIC4 has now been authored (see Tier B).
 > **Authority**: the xlsx is the source of truth. This doc reflects state at the time it was written. **Re-derive from the xlsx whenever priority or status decisions are at stake** — do not trust this doc for current status if any time has passed since the date above.
 >
 > **To refresh**: ask Claude to "refresh the scope summary" (or invoke `/refresh-backlog-summary`). The skill at `.claude/skills/refresh-backlog-summary/SKILL.md` re-reads the xlsx, updates this file, and opens a PR.
@@ -64,7 +64,7 @@ These live as `EPICn` sheets in the xlsx. They have a title, story bullets, edge
 
 | Code | Title | Depends on |
 |---|---|---|
-| **E-04** | **Undefined.** Referenced as a dependency by E-05, E-06, E-07, E-08, E-10, E-11, E-12, E-13, E-14, E-15. EPIC4 sheet is a duplicate of EPIC3 — the slot was reserved but never filled. Likely "stock counts / inventory adjustments" by inference, but the PO needs to confirm. | — |
+| E-04 | Inventory tracking per location — initial counts, adjustments, stock takes, low-stock thresholds, all at the variant + location level | E-00B, E-02, E-03 |
 | E-05 | Stock movements & transfers — receipts, transfers between locations, write-offs, restock requests, full movement history | E-00B, E-02, E-03, E-04 |
 | E-06 | Stock assignment & handover (worker UX layer over E-00A) | E-00A, E-01, E-02, E-03, E-04 |
 | E-07 | In-shop POS — multi-product sales, payments, discounts, credit notes, returns, INV-POS invoices | E-00A, E-00B, E-00D, E-04, E-06, E-09 |
@@ -81,15 +81,15 @@ These live as `EPICn` sheets in the xlsx. They have a title, story bullets, edge
 ## Critical dependency facts
 
 - **E-00C deliveries module gates four phase-2 epics.** E-12, E-14, E-15, E-16 all list E-00C as a dependency. Finishing the deliveries module isn't just closing a phase-1 P0 batch — it unblocks the whole online-sales + delivery-agent portal stack.
-- **E-04 is the most-referenced undefined epic.** Ten downstream epics name it. Until the PO defines what E-04 actually is, sizing for E-05..E-15 is guesswork.
-- **E-09 (invoice management) gates E-07 + E-12 + E-14 + E-16.** Still untrickted. Will need to land before any sales channel is finished.
+- **E-04 is the most-referenced phase-2 epic.** Ten downstream epics name it as a dependency. Now that it's authored as "Inventory tracking per location" (variant + location stock counts, adjustments, stock takes, thresholds), sizing for E-05..E-15 is no longer blocked on PO definition. E-04 itself depends only on E-00B / E-02 / E-03 — all done or near done — so it can start as soon as the PO breaks it into tickets in `Backlog Audit`.
+- **E-09 (invoice management) gates E-07 + E-12 + E-14 + E-16.** Still unticketed. Will need to land before any sales channel is finished.
 - **E-13 → E-14 → E-15 → E-16** is the e-commerce ladder. Storefront → fulfilment → delivery → payments. None can start until E-00C ships.
 
 ## Authoring issues to flag to the PO
 
 These are oddities in the xlsx itself, not the work — worth noting so they get fixed in the next backlog audit.
 
-1. **E-04 has no defined scope.** No EPIC sheet, no ticket rows, no title in any sheet. EPIC4 is a copy-paste duplicate of EPIC3. The slot was reserved but never authored.
+1. **E-04 still needs ticketing.** The epic is now authored on the `EPIC4` sheet ("Inventory tracking per location") — but it has no rows in `Backlog Audit`. The PO needs to break it into tickets before the orchestrator can run it.
 2. **EPIC1, EPIC2, EPIC3 sheets are stubs** — they only contain the area headline and a paragraph of intent. The actual stories live as the `E-01-XX` / `E-02-XX` / `E-03-XX` rows in `Backlog Audit` and the right-side columns of the raw `Backlog` sheet.
 3. **EPIC11 sheet duplicates its own body.** The supplier portal stories appear twice in the same sheet — paste artifact.
 4. **EPIC13 sheet has two overlapping headers** ("E-13 E-commerce: Online storefront..." and "E-13 → E-16: E-commerce channel revised v3"). The two need to be reconciled into a single description.
@@ -105,4 +105,4 @@ Based on what's in the xlsx today, the first ~6 epics are clear:
 4. **E-03-07 → E-03-06** — immutable change-log table first, then UI view (linear dependency).
 5. **E-03-02** — catalog bulk import.
 
-After that, the PO needs to define **E-04** before the rest of phase-2 (E-05..E-15) can be sized.
+After that, the PO needs to break **E-04** into tickets in `Backlog Audit` so the rest of phase-2 (E-05..E-15) can be sized against it.
