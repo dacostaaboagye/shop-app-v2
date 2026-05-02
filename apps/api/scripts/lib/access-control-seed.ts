@@ -115,6 +115,38 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
     description: "View the admin delivery management surface.",
   },
   {
+    key: "deliveries.create_from_sale",
+    description: "Create a delivery from a confirmed POS sale.",
+  },
+  {
+    key: "deliveries.create_from_online_order",
+    description: "Create a delivery from a confirmed online order.",
+  },
+  {
+    key: "deliveries.create_from_transfer",
+    description: "Create a delivery from an approved inter-location transfer.",
+  },
+  {
+    key: "deliveries.assign",
+    description: "Assign a delivery to a delivery agent.",
+  },
+  {
+    key: "deliveries.reassign",
+    description: "Reassign a delivery to a different agent before dispatch.",
+  },
+  {
+    key: "deliveries.dispatch",
+    description: "Mark an assigned delivery as in transit.",
+  },
+  {
+    key: "deliveries.complete",
+    description: "Mark an in-transit delivery as completed.",
+  },
+  {
+    key: "deliveries.cancel",
+    description: "Cancel a non-terminal delivery with a reason.",
+  },
+  {
     key: "suppliers.view",
     description: "View the admin supplier management surface.",
   },
