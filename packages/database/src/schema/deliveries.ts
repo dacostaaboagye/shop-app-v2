@@ -46,9 +46,14 @@ export const deliveries = pgTable(
     status: deliveryStatusEnum("status").default("draft").notNull(),
     assignedUserId: uuid("assigned_user_id").references(() => users.id),
     assignedAt: timestamp("assigned_at", { withTimezone: true }),
+    assignedBy: uuid("assigned_by").references(() => users.id),
     dispatchedAt: timestamp("dispatched_at", { withTimezone: true }),
+    dispatchedBy: uuid("dispatched_by").references(() => users.id),
     completedAt: timestamp("completed_at", { withTimezone: true }),
+    completedBy: uuid("completed_by").references(() => users.id),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    cancelledBy: uuid("cancelled_by").references(() => users.id),
+    cancellationReason: varchar("cancellation_reason", { length: 240 }),
     createdBy: uuid("created_by")
       .notNull()
       .references(() => users.id),
@@ -76,6 +81,10 @@ export const deliveries = pgTable(
     check(
       "deliveries_origin_destination_distinct",
       sql`${table.destinationLocationId} IS NULL OR ${table.destinationLocationId} <> ${table.originLocationId}`,
+    ),
+    check(
+      "deliveries_cancellation_reason_consistent",
+      sql`(${table.status} = 'cancelled') = (${table.cancellationReason} IS NOT NULL)`,
     ),
   ],
 );

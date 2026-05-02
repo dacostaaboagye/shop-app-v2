@@ -21,6 +21,11 @@ assert.equal(deliveries.destinationKind.name, "destination_kind");
 assert.equal(deliveries.destinationSnapshot.name, "destination_snapshot");
 assert.equal(deliveries.status.name, "status");
 assert.equal(deliveries.createdBy.name, "created_by");
+assert.equal(deliveries.assignedBy.name, "assigned_by");
+assert.equal(deliveries.dispatchedBy.name, "dispatched_by");
+assert.equal(deliveries.completedBy.name, "completed_by");
+assert.equal(deliveries.cancelledBy.name, "cancelled_by");
+assert.equal(deliveries.cancellationReason.name, "cancellation_reason");
 
 assert.equal(deliveryItems.deliveryId.name, "delivery_id");
 assert.equal(deliveryItems.skuId.name, "sku_id");
@@ -66,6 +71,16 @@ assert.match(
   allMigrationSql,
   /ALTER TABLE "delivery_items" ALTER COLUMN "item_reference" SET NOT NULL/,
   "expected item_reference tightened to NOT NULL",
+);
+assert.match(
+  allMigrationSql,
+  /"deliveries_cancellation_reason_consistent"/,
+  "expected cancellation-reason consistency check constraint",
+);
+assert.match(
+  allMigrationSql,
+  /ADD COLUMN "cancellation_reason" varchar\(240\)/,
+  "expected cancellation_reason column",
 );
 
 console.log("deliveries schema assertions passed");

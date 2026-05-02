@@ -9,13 +9,18 @@ import { ReferenceNumberService } from "../public-identifiers/reference-number.s
 import { DeliveryCreationCompose } from "./delivery-creation.compose.js";
 import type { DeliveryCreationService } from "./delivery-creation.contracts.js";
 import { DeliveryCreationServiceImpl } from "./delivery-creation.service.js";
+import { DeliveryStatusCompose } from "./delivery-status.compose.js";
+import type { DeliveryStatusService } from "./delivery-status.contracts.js";
+import { DeliveryStatusServiceImpl } from "./delivery-status.service.js";
 import { OnlineOrderDeliverySourceStubAdapter } from "./online-order-delivery-source-stub.adapter.js";
 import { PosSaleDeliverySourceStubAdapter } from "./pos-sale-delivery-source-stub.adapter.js";
+import { PostgresDeliveryStatusWriteRepository } from "./postgres-delivery-status-write.repository.js";
 import { TransferDeliverySourceStubAdapter } from "./transfer-delivery-source-stub.adapter.js";
 
 type DeliveriesRuntime = {
   deliveries: {
     deliveryCreationService: DeliveryCreationService;
+    deliveryStatusService: DeliveryStatusService;
   };
 };
 
@@ -68,9 +73,18 @@ export function createDeliveriesRuntime(
 
   const deliveryCreationService = new DeliveryCreationServiceImpl(compose);
 
+  const statusRepository = new PostgresDeliveryStatusWriteRepository(
+    databaseRuntime.db,
+  );
+  const statusCompose = new DeliveryStatusCompose({
+    repository: statusRepository,
+  });
+  const deliveryStatusService = new DeliveryStatusServiceImpl(statusCompose);
+
   return {
     deliveries: {
       deliveryCreationService,
+      deliveryStatusService,
     },
   };
 }

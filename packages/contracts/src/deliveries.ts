@@ -67,9 +67,48 @@ export const deliveryResponseSchema = z.object({
   originLocationId: z.string().uuid(),
   destination: deliveryDestinationResponseSchema,
   items: z.array(deliveryItemResponseSchema).min(1),
+  assignedUserId: z.string().uuid().nullable(),
+  assignedAt: z.string().datetime().nullable(),
+  dispatchedAt: z.string().datetime().nullable(),
+  completedAt: z.string().datetime().nullable(),
+  cancelledAt: z.string().datetime().nullable(),
+  cancellationReason: z.string().nullable(),
   createdAt: z.string().datetime(),
   createdBy: z.string().uuid(),
 });
+
+export const assignDeliveryRequestSchema = z.object({
+  assignedUserId: z.string().uuid(),
+});
+
+export const dispatchDeliveryRequestSchema = z.object({}).strict();
+
+export const completeDeliveryRequestSchema = z.object({}).strict();
+
+export const cancelDeliveryRequestSchema = z.object({
+  reason: z.string().trim().min(1).max(240),
+});
+
+export const deliveryTransitionResponseSchema = z.object({
+  delivery: deliveryResponseSchema,
+  status: z.enum(["transitioned", "noop"]),
+  fromStatus: deliveryStatusSchema,
+  toStatus: deliveryStatusSchema,
+});
+
+export type AssignDeliveryRequest = z.infer<typeof assignDeliveryRequestSchema>;
+export type DispatchDeliveryRequest = z.infer<
+  typeof dispatchDeliveryRequestSchema
+>;
+export type CompleteDeliveryRequest = z.infer<
+  typeof completeDeliveryRequestSchema
+>;
+export type CancelDeliveryRequest = z.infer<typeof cancelDeliveryRequestSchema>;
+export type DeliveryTransitionResponse = z.infer<
+  typeof deliveryTransitionResponseSchema
+>;
+
+export const DELIVERY_STATUS_CHANGED_EVENT_TYPE = "delivery.status_changed";
 
 export type DeliverySourceType = z.infer<typeof deliverySourceTypeSchema>;
 export type DeliveryStatus = z.infer<typeof deliveryStatusSchema>;
@@ -98,6 +137,10 @@ export const DELIVERY_ERROR_CODES = {
   insufficientOriginStock: "delivery_insufficient_origin_stock",
   invalidDestination: "delivery_invalid_destination",
   partialUnsupported: "delivery_partial_unsupported",
+  illegalTransition: "delivery_illegal_status_transition",
+  terminalStatus: "delivery_terminal_status",
+  statusConflict: "delivery_status_conflict",
+  assignmentRequired: "delivery_assignment_required",
 } as const;
 
 export type DeliveryErrorCode =
