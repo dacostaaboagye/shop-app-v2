@@ -18,7 +18,11 @@ export type CatalogProductRepository = {
     slug: string;
   }): Promise<AdminProductDetail | null>;
   getProductForDeleteEvent(slug: string): Promise<AdminProductDetail | null>;
-  deleteProduct(input: { slug: string }): Promise<void>;
+  deleteProduct(input: {
+    actorId: string;
+    now: Date;
+    slug: string;
+  }): Promise<void>;
 };
 
 export class PostgresCatalogProductWriteRepository
@@ -49,7 +53,11 @@ export class PostgresCatalogProductWriteRepository
     return this.commands.getProductForDeleteEvent(slug);
   }
 
-  async deleteProduct(input: { slug: string }): Promise<void> {
+  async deleteProduct(input: {
+    actorId: string;
+    now: Date;
+    slug: string;
+  }): Promise<void> {
     return this.commands.delete(input);
   }
 }
