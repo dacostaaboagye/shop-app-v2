@@ -105,6 +105,22 @@ describe("ChangeLogEntry", () => {
     );
   });
 
+  it("never renders a raw UUID even when entityRef is a legacy UUID value", () => {
+    const uuid = "eab51b7f-09ce-4af4-ba9a-b65b7d2638bd";
+    const markup = renderToStaticMarkup(
+      <ChangeLogEntry
+        entry={makeEntry({
+          entityName: "green",
+          entityRef: uuid,
+          entityType: "catalog_product_option_value",
+        })}
+      />,
+    );
+
+    assert.match(markup, /green/);
+    assert.doesNotMatch(markup, new RegExp(uuid));
+  });
+
   it("anchors child entries with the parent entity name", () => {
     const markup = renderToStaticMarkup(
       <ChangeLogEntry

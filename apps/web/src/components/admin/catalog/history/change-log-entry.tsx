@@ -11,7 +11,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toRoute } from "@/lib/routes";
 import { cn } from "@/lib/utils";
-import { CHANGE_ENTITY_LABEL, CHANGE_OPERATION_META } from "./change-log-meta";
+import {
+  CHANGE_ENTITY_LABEL,
+  CHANGE_OPERATION_META,
+  looksLikeUuid,
+} from "./change-log-meta";
 import { FieldDiff } from "./field-diff";
 
 type ChangeLogEntryProps = {
@@ -31,11 +35,21 @@ export function ChangeLogEntry({
     ? toRoute(`/admin/users/${encodeURIComponent(entry.actorSlug)}` as Route)
     : null;
 
-  // Display name primary, slug/SKU secondary. When the entity has been
-  // hard-deleted the backend returns entityName=null; fall back to the ref.
-  const primarySubject = entry.entityName ?? entry.entityRef;
-  const showSecondaryRef =
-    entry.entityName !== null && entry.entityName !== entry.entityRef;
+  // Display name is the headline subject. Fall back to the ref only if the
+  // backend can't resolve a name (entity hard-deleted) AND the ref is
+  // human-readable — never expose raw UUIDs to operators.
+  const refIsHumanReadable = !looksLikeUuid(entry.entityRef);
+  const primarySubject =
+    entry.entityName ?? (refIsHumanReadable ? entry.entityRef : null);
+  // Show the public ref as supporting metadata only when it carries useful
+  // information beyond the headline: not a UUID, and meaningfully different
+  // from the display name (case-insensitive).
+  const showSupportingRef =
+    refIsHumanReadable &&
+    entry.entityName !== null &&
+    entry.entityName.toLowerCase() !== entry.entityRef.toLowerCase();
+  const hasSupportingLine =
+    showSupportingRef || entry.parentEntityName !== null;
 
   // The diff body is only meaningful for updates. created/restored/archived/
   // deleted are summarised by the operation badge alone.
@@ -53,54 +67,60 @@ export function ChangeLogEntry({
               {operation.label}
             </Badge>
             <span className="text-base font-semibold text-foreground">
-              {primarySubject}
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <PersonAvatar
-                imageUrl={entry.actorAvatarUrl}
-                interactive={false}
-                name={entry.actorName}
-                size="sm"
-              />
-              {actorProfileHref ? (
-                <Link
-                  className="type-data-label text-foreground underline-offset-4 hover:underline"
-                  href={actorProfileHref}
-                >
-                  {entry.actorName}
-                </Link>
-              ) : (
-                <span className="type-data-label text-foreground">
-                  {entry.actorName}
-                </span>
-              )}
+              {entityLabel}
+              {primarySubject ? (
+                <>
+                  {" · "}
+                  <span className="text-foreground">{primarySubject}</span>
+                </>
+              ) : null}
             </span>
           </div>
-          <p className="text-xs text-muted-foreground">
-            {entityLabel}
-            {showSecondaryRef ? (
-              <>
-                {" · "}
+          {hasSupportingLine ? (
+            <p className="text-xs text-muted-foreground">
+              {showSupportingRef ? (
                 <span className="font-mono">{entry.entityRef}</span>
-              </>
-            ) : null}
-            {entry.parentEntityName ? (
-              <>
-                {" · in "}
-                <span className="text-foreground">
-                  {entry.parentEntityName}
-                </span>
-              </>
-            ) : null}
-          </p>
+              ) : null}
+              {showSupportingRef && entry.parentEntityName ? " · " : null}
+              {entry.parentEntityName ? (
+                <>
+                  in{" "}
+                  <span className="text-foreground">
+                    {entry.parentEntityName}
+                  </span>
+                </>
+              ) : null}
+            </p>
+          ) : null}
+          <div className="flex flex-wrap items-center gap-2">
+            <PersonAvatar
+              imageUrl={entry.actorAvatarUrl}
+              interactive={false}
+              name={entry.actorName}
+              size="sm"
+            />
+            {actorProfileHref ? (
+              <Link
+                className="type-data-label text-foreground underline-offset-4 hover:underline"
+                href={actorProfileHref}
+              >
+                {entry.actorName}
+              </Link>
+            ) : (
+              <span className="type-data-label text-foreground">
+                {entry.actorName}
+              </span>
+            )}
+            <span className="text-sm text-muted-foreground">·</span>
+            <time
+              className="text-sm text-muted-foreground"
+              dateTime={entry.occurredAt}
+              title={occurredAt.toLocaleString()}
+            >
+              {formatDistanceToNow(occurredAt, { addSuffix: true })}
+            </time>
+          </div>
         </div>
-        <time
-          className="text-sm text-muted-foreground"
-          dateTime={entry.occurredAt}
-          title={occurredAt.toLocaleString()}
-        >
-          {formatDistanceToNow(occurredAt, { addSuffix: true })}
-        </time>
       </header>
 
       {hasDiff ? (

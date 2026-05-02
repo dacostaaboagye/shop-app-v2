@@ -72,6 +72,17 @@ const FIELD_LABEL_OVERRIDES: Record<string, string> = {
   countryOfOrigin: "Country of origin",
 };
 
+// Defensive check for legacy rows whose entity_ref still holds a raw UUID
+// (catalog_change_log entries written before the option/option-value
+// entityRef fix). UUIDs are internal identifiers and must never surface to
+// operators — when this returns true the caller suppresses the ref.
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function looksLikeUuid(value: string): boolean {
+  return UUID_PATTERN.test(value);
+}
+
 export function formatFieldLabel(field: string): string {
   if (Object.hasOwn(FIELD_LABEL_OVERRIDES, field)) {
     return FIELD_LABEL_OVERRIDES[field] as string;
