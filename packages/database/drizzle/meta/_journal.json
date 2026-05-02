@@ -274,6 +274,13 @@
       "when": 1777679249792,
       "tag": "0038_supreme_skreet",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1777707532514,
+      "tag": "0039_noisy_excalibur",
+      "breakpoints": true
     }
   ]
 }

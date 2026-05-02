@@ -7,6 +7,7 @@ import type {
   DeliveryItemRecord,
   DeliveryRecord,
 } from "./delivery.types.js";
+import { mapDeliveryItemRow, mapDeliveryRow } from "./delivery-row-mapper.js";
 
 export type InsertDeliveryInput = {
   sourceType: DeliverySourceType;
@@ -137,53 +138,4 @@ class PostgresDeliveryWriteTransaction implements DeliveryWriteTransaction {
     }
     return mapDeliveryItemRow(row);
   }
-}
-
-type DeliveryRow = typeof deliveries.$inferSelect;
-type DeliveryItemRow = typeof deliveryItems.$inferSelect;
-
-function mapDeliveryRow(
-  row: DeliveryRow,
-  items: DeliveryItemRecord[],
-): DeliveryRecord {
-  return {
-    deliveryId: row.id,
-    sourceType: row.sourceType,
-    sourceReference: row.sourceReference,
-    status: row.status,
-    originLocationId: row.originLocationId,
-    destination: mapDestination(row),
-    items,
-    createdAt: row.createdAt,
-    createdBy: row.createdBy,
-  };
-}
-
-function mapDeliveryItemRow(row: DeliveryItemRow): DeliveryItemRecord {
-  return {
-    deliveryItemId: row.id,
-    itemReference: row.itemReference,
-    skuId: row.skuId,
-    quantity: row.quantity,
-  };
-}
-
-function mapDestination(row: DeliveryRow): DeliveryDestinationRecord {
-  if (row.destinationKind === "location" && row.destinationLocationId) {
-    return { kind: "location", locationId: row.destinationLocationId };
-  }
-  if (row.destinationKind === "external" && row.destinationSnapshot) {
-    return {
-      kind: "external",
-      snapshot: row.destinationSnapshot as DeliveryDestinationRecord extends {
-        kind: "external";
-        snapshot: infer S;
-      }
-        ? S
-        : never,
-    };
-  }
-  throw new Error(
-    `Delivery row ${row.id} has inconsistent destination state (kind=${row.destinationKind}).`,
-  );
 }

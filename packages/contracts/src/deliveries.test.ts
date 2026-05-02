@@ -117,6 +117,12 @@ describe("delivery response shape", () => {
           quantity: 2,
         },
       ],
+      assignedUserId: null,
+      assignedAt: null,
+      dispatchedAt: null,
+      completedAt: null,
+      cancelledAt: null,
+      cancellationReason: null,
       createdAt: "2026-05-01T10:00:00.000Z",
       createdBy: "00000000-0000-4000-8000-000000000005",
     });
@@ -143,6 +149,12 @@ describe("delivery response shape", () => {
             quantity: 0,
           },
         ],
+        assignedUserId: null,
+        assignedAt: null,
+        dispatchedAt: null,
+        completedAt: null,
+        cancelledAt: null,
+        cancellationReason: null,
         createdAt: "2026-05-01T10:00:00.000Z",
         createdBy: "00000000-0000-4000-8000-000000000005",
       }),
@@ -151,14 +163,18 @@ describe("delivery response shape", () => {
 });
 
 describe("delivery error codes", () => {
-  it("exposes the six error codes", () => {
+  it("exposes the ten error codes", () => {
     assert.deepEqual(Object.values(DELIVERY_ERROR_CODES).sort(), [
+      "delivery_assignment_required",
+      "delivery_illegal_status_transition",
       "delivery_insufficient_origin_stock",
       "delivery_invalid_destination",
       "delivery_partial_unsupported",
       "delivery_source_conflict",
       "delivery_source_not_found",
       "delivery_source_state_invalid",
+      "delivery_status_conflict",
+      "delivery_terminal_status",
     ]);
     assert.equal(
       DELIVERY_ERROR_CODES.invalidSourceState,

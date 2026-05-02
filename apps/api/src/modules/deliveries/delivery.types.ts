@@ -23,6 +23,16 @@ export type DeliveryRecord = {
   originLocationId: string;
   destination: DeliveryDestinationRecord;
   items: DeliveryItemRecord[];
+  assignedUserId: string | null;
+  assignedAt: Date | null;
+  assignedBy: string | null;
+  dispatchedAt: Date | null;
+  dispatchedBy: string | null;
+  completedAt: Date | null;
+  completedBy: string | null;
+  cancelledAt: Date | null;
+  cancelledBy: string | null;
+  cancellationReason: string | null;
   createdAt: Date;
   createdBy: string;
 };
