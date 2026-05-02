@@ -31,6 +31,12 @@ export function ChangeLogEntry({
     ? toRoute(`/admin/users/${encodeURIComponent(entry.actorSlug)}` as Route)
     : null;
 
+  // Display name primary, slug/SKU secondary. When the entity has been
+  // hard-deleted the backend returns entityName=null; fall back to the ref.
+  const primarySubject = entry.entityName ?? entry.entityRef;
+  const showSecondaryRef =
+    entry.entityName !== null && entry.entityName !== entry.entityRef;
+
   // The diff body is only meaningful for updates. created/restored/archived/
   // deleted are summarised by the operation badge alone.
   const hasDiff = entry.changedFields.length > 0;
@@ -38,36 +44,55 @@ export function ChangeLogEntry({
   return (
     <article className="flex flex-col gap-3 rounded-lg border border-border/60 bg-card p-4">
       <header className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge className={cn("w-fit", operation.className)} variant="outline">
-            {operation.label}
-          </Badge>
-          <span className="type-data-label text-foreground">
-            {entityLabel}{" "}
-            <span className="font-mono text-sm text-muted-foreground">
-              {entry.entityRef}
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge
+              className={cn("w-fit", operation.className)}
+              variant="outline"
+            >
+              {operation.label}
+            </Badge>
+            <span className="text-base font-semibold text-foreground">
+              {primarySubject}
             </span>
-          </span>
-          <span className="inline-flex items-center gap-2">
-            <PersonAvatar
-              imageUrl={entry.actorAvatarUrl}
-              interactive={false}
-              name={entry.actorName}
-              size="sm"
-            />
-            {actorProfileHref ? (
-              <Link
-                className="type-data-label text-foreground underline-offset-4 hover:underline"
-                href={actorProfileHref}
-              >
-                {entry.actorName}
-              </Link>
-            ) : (
-              <span className="type-data-label text-foreground">
-                {entry.actorName}
-              </span>
-            )}
-          </span>
+            <span className="inline-flex items-center gap-2">
+              <PersonAvatar
+                imageUrl={entry.actorAvatarUrl}
+                interactive={false}
+                name={entry.actorName}
+                size="sm"
+              />
+              {actorProfileHref ? (
+                <Link
+                  className="type-data-label text-foreground underline-offset-4 hover:underline"
+                  href={actorProfileHref}
+                >
+                  {entry.actorName}
+                </Link>
+              ) : (
+                <span className="type-data-label text-foreground">
+                  {entry.actorName}
+                </span>
+              )}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {entityLabel}
+            {showSecondaryRef ? (
+              <>
+                {" · "}
+                <span className="font-mono">{entry.entityRef}</span>
+              </>
+            ) : null}
+            {entry.parentEntityName ? (
+              <>
+                {" · in "}
+                <span className="text-foreground">
+                  {entry.parentEntityName}
+                </span>
+              </>
+            ) : null}
+          </p>
         </div>
         <time
           className="text-sm text-muted-foreground"

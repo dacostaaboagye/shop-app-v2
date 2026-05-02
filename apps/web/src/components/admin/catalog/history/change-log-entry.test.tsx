@@ -54,32 +54,73 @@ describe("ChangeLogEntry", () => {
     assert.doesNotMatch(markup, /Before/);
   });
 
-  it("labels the subject of the change with the entity type and ref", () => {
+  it("renders the entity display name as the primary subject", () => {
     const markup = renderToStaticMarkup(
       <ChangeLogEntry
         entry={makeEntry({
+          entityName: "Stone / Standard",
           entityRef: "BAG-CTC-002",
           entityType: "product_variant",
         })}
       />,
     );
 
+    assert.match(markup, /Stone \/ Standard/);
     assert.match(markup, /Variant/);
     assert.match(markup, /BAG-CTC-002/);
   });
 
-  it("uses the human-readable label for option-value entries", () => {
+  it("falls back to entityRef when entityName is null", () => {
     const markup = renderToStaticMarkup(
       <ChangeLogEntry
         entry={makeEntry({
+          entityName: null,
+          entityRef: "deleted-product",
+          entityType: "catalog_product",
+        })}
+      />,
+    );
+
+    assert.match(markup, /deleted-product/);
+  });
+
+  it("collapses the secondary ref when entityName equals entityRef", () => {
+    const markup = renderToStaticMarkup(
+      <ChangeLogEntry
+        entry={makeEntry({
+          entityName: "Red",
           entityRef: "Red",
           entityType: "catalog_product_option_value",
         })}
       />,
     );
 
+    // The label "Option value" appears, but the ref shouldn't repeat the name.
     assert.match(markup, /Option value/);
-    assert.match(markup, /Red/);
+    const redMatches = markup.match(/Red/g) ?? [];
+    assert.equal(
+      redMatches.length,
+      1,
+      "expected entityName to appear only once when it matches entityRef",
+    );
+  });
+
+  it("anchors child entries with the parent entity name", () => {
+    const markup = renderToStaticMarkup(
+      <ChangeLogEntry
+        entry={makeEntry({
+          entityName: "Color",
+          entityRef: "Color",
+          entityType: "catalog_product_option",
+          parentEntityName: "Cedar Thread City Crossbody",
+          parentEntityRef: "cedar-thread-city-crossbody",
+          parentEntityType: "catalog_product",
+        })}
+      />,
+    );
+
+    assert.match(markup, /in/);
+    assert.match(markup, /Cedar Thread City Crossbody/);
   });
 
   it("omits the diff toggle for entries with no changed fields", () => {
@@ -155,10 +196,12 @@ function makeEntry(
     after: null,
     before: null,
     changedFields: [],
+    entityName: "Blue Mug",
     entityRef: "blue-mug",
     entityType: "catalog_product",
     occurredAt: "2026-04-29T10:00:00.000Z",
     operation: "created",
+    parentEntityName: null,
     parentEntityRef: null,
     parentEntityType: null,
     ...overrides,

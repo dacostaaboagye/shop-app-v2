@@ -50,7 +50,32 @@ export const CHANGE_OPERATION_META: Record<
   },
 };
 
+// Stakeholder-friendly overrides for fields whose default formatting would
+// read awkwardly. Keep this list short — the formatter handles the
+// common case; explicit entries are for the remaining 5%.
+const FIELD_LABEL_OVERRIDES: Record<string, string> = {
+  categoryId: "Category",
+  brandId: "Brand",
+  parentCategoryId: "Parent category",
+  isTaxable: "Taxable",
+  isDefault: "Default variant",
+  priceIncludesTax: "Price includes tax",
+  unitOfMeasure: "Unit",
+  costPrice: "Cost price",
+  sellingPrice: "Selling price",
+  weightGrams: "Weight (g)",
+  dimensionsCm: "Dimensions (cm)",
+  packagingType: "Packaging",
+  manufacturerPartNumber: "Manufacturer part number",
+  customsCode: "Customs code",
+  taxCategory: "Tax category",
+  countryOfOrigin: "Country of origin",
+};
+
 export function formatFieldLabel(field: string): string {
+  if (Object.hasOwn(FIELD_LABEL_OVERRIDES, field)) {
+    return FIELD_LABEL_OVERRIDES[field] as string;
+  }
   return field
     .replaceAll("_", " ")
     .replace(/([a-z])([A-Z])/g, "$1 $2")
