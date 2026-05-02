@@ -2,6 +2,7 @@ import type {
   DeliveryAgentEligibilityPort,
   DeliveryStatus,
 } from "@shop/contracts";
+import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import type { DeliveryRecord } from "./delivery.types.js";
 import { DeliverySourceNotFoundError } from "./delivery-errors.js";
 import type {
@@ -20,12 +21,14 @@ import {
   DeliveryStatusConflictError,
   DeliveryTerminalStatusError,
 } from "./delivery-status.errors.js";
+import { createDeliveryStatusChangedEvent } from "./delivery-status-events.js";
 import { canTransition } from "./delivery-status-transition.policy.js";
 import type { DeliveryStatusWriteRepository } from "./postgres-delivery-status-write.repository.js";
 
 export type DeliveryStatusComposeDeps = {
   repository: DeliveryStatusWriteRepository;
   agentEligibilityPort: DeliveryAgentEligibilityPort;
+  platformEventPublisher?: Pick<PlatformEventPublisher, "publish">;
 };
 
 export class DeliveryStatusCompose {
@@ -41,6 +44,7 @@ export class DeliveryStatusCompose {
       deliveryId: input.deliveryId,
       nextStatus: "assigned",
       actorUserId: input.actorUserId,
+      actorUserSlug: input.actorUserSlug,
       now: input.now,
       assignedUserId: input.assignedUserId,
       isIdempotent: (current) =>
@@ -69,7 +73,7 @@ export class DeliveryStatusCompose {
         deliveryId: input.deliveryId,
       });
     }
-    return this.deps.repository.withTransaction(async (tx) => {
+    const result = await this.deps.repository.withTransaction(async (tx) => {
       const current = await tx.findById(input.deliveryId);
       if (!current) {
         throw new DeliverySourceNotFoundError({
@@ -121,10 +125,26 @@ export class DeliveryStatusCompose {
       return {
         delivery: updated,
         status: "transitioned" as const,
-        fromStatus: "assigned",
-        toStatus: "assigned",
+        fromStatus: "assigned" as const,
+        toStatus: "assigned" as const,
       };
     });
+
+    if (result.status === "transitioned" && this.deps.platformEventPublisher) {
+      await this.deps.platformEventPublisher.publish(
+        createDeliveryStatusChangedEvent({
+          deliveryId: input.deliveryId,
+          fromStatus: "assigned",
+          toStatus: "assigned",
+          originLocationId: result.delivery.originLocationId,
+          actorUserId: input.actorUserId,
+          actorUserSlug: input.actorUserSlug,
+          occurredAt: input.now ?? new Date(),
+          assignedUserId: input.assignedUserId,
+        }),
+      );
+    }
+    return result;
   }
 
   async dispatch(
@@ -134,6 +154,7 @@ export class DeliveryStatusCompose {
       deliveryId: input.deliveryId,
       nextStatus: "in_transit",
       actorUserId: input.actorUserId,
+      actorUserSlug: input.actorUserSlug,
       now: input.now,
       isIdempotent: (current) => current.status === "in_transit",
     });
@@ -146,6 +167,7 @@ export class DeliveryStatusCompose {
       deliveryId: input.deliveryId,
       nextStatus: "completed",
       actorUserId: input.actorUserId,
+      actorUserSlug: input.actorUserSlug,
       now: input.now,
       isIdempotent: (current) => current.status === "completed",
     });
@@ -156,6 +178,7 @@ export class DeliveryStatusCompose {
       deliveryId: input.deliveryId,
       nextStatus: "cancelled",
       actorUserId: input.actorUserId,
+      actorUserSlug: input.actorUserSlug,
       now: input.now,
       cancellationReason: input.reason,
       isIdempotent: (current) =>
@@ -168,6 +191,7 @@ export class DeliveryStatusCompose {
     deliveryId: string;
     nextStatus: DeliveryStatus;
     actorUserId: string;
+    actorUserSlug: string;
     now: Date | undefined;
     assignedUserId?: string;
     cancellationReason?: string;
@@ -175,7 +199,7 @@ export class DeliveryStatusCompose {
     eligibilityCheck?: (current: DeliveryRecord) => Promise<void>;
   }): Promise<DeliveryTransitionResult> {
     const now = input.now ?? new Date();
-    return this.deps.repository.withTransaction(async (tx) => {
+    const result = await this.deps.repository.withTransaction(async (tx) => {
       const current = await tx.findById(input.deliveryId);
       if (!current) {
         throw new DeliverySourceNotFoundError({
@@ -237,5 +261,22 @@ export class DeliveryStatusCompose {
         toStatus: input.nextStatus,
       };
     });
+
+    if (result.status === "transitioned" && this.deps.platformEventPublisher) {
+      await this.deps.platformEventPublisher.publish(
+        createDeliveryStatusChangedEvent({
+          deliveryId: input.deliveryId,
+          fromStatus: result.fromStatus,
+          toStatus: result.toStatus,
+          originLocationId: result.delivery.originLocationId,
+          actorUserId: input.actorUserId,
+          actorUserSlug: input.actorUserSlug,
+          occurredAt: now,
+          cancellationReason: input.cancellationReason ?? null,
+          assignedUserId: input.assignedUserId ?? null,
+        }),
+      );
+    }
+    return result;
   }
 }

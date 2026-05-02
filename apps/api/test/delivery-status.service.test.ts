@@ -109,6 +109,7 @@ describe("DeliveryStatusService.assign", () => {
           deliveryId: DELIVERY_ID,
           assignedUserId: "",
           actorUserId: ACTOR,
+          actorUserSlug: "actor-slug",
         }),
       DeliveryAssignmentRequiredError,
     );
@@ -122,6 +123,7 @@ describe("DeliveryStatusService.assign", () => {
           deliveryId: DELIVERY_ID,
           assignedUserId: ASSIGNEE,
           actorUserId: ACTOR,
+          actorUserSlug: "actor-slug",
         }),
       DeliverySourceNotFoundError,
     );
@@ -136,6 +138,7 @@ describe("DeliveryStatusService.assign", () => {
       deliveryId: DELIVERY_ID,
       assignedUserId: ASSIGNEE,
       actorUserId: ACTOR,
+      actorUserSlug: "actor-slug",
     });
     assert.equal(result.status, "noop");
     assert.equal(tx.transitionCalls.length, 0);
@@ -151,6 +154,7 @@ describe("DeliveryStatusService.assign", () => {
           deliveryId: DELIVERY_ID,
           assignedUserId: ASSIGNEE,
           actorUserId: ACTOR,
+          actorUserSlug: "actor-slug",
         }),
       DeliveryTerminalStatusError,
     );
@@ -170,6 +174,7 @@ describe("DeliveryStatusService.assign", () => {
       deliveryId: DELIVERY_ID,
       assignedUserId: ASSIGNEE,
       actorUserId: ACTOR,
+      actorUserSlug: "actor-slug",
     });
     assert.equal(result.status, "transitioned");
     assert.equal(result.fromStatus, "draft");
@@ -187,6 +192,7 @@ describe("DeliveryStatusService.assign", () => {
           deliveryId: DELIVERY_ID,
           assignedUserId: ASSIGNEE,
           actorUserId: ACTOR,
+          actorUserSlug: "actor-slug",
         }),
       DeliveryStatusConflictError,
     );
@@ -197,7 +203,12 @@ describe("DeliveryStatusService.dispatch", () => {
   it("rejects dispatch from draft as illegal_transition", async () => {
     const service = buildService(new FakeTransaction(buildDelivery()));
     await assert.rejects(
-      () => service.dispatch({ deliveryId: DELIVERY_ID, actorUserId: ACTOR }),
+      () =>
+        service.dispatch({
+          deliveryId: DELIVERY_ID,
+          actorUserId: ACTOR,
+          actorUserSlug: "actor-slug",
+        }),
       DeliveryIllegalStatusTransitionError,
     );
   });
@@ -215,6 +226,7 @@ describe("DeliveryStatusService.dispatch", () => {
     const result = await service.dispatch({
       deliveryId: DELIVERY_ID,
       actorUserId: ACTOR,
+      actorUserSlug: "actor-slug",
     });
     assert.equal(result.status, "transitioned");
     assert.equal(result.toStatus, "in_transit");
@@ -237,6 +249,7 @@ describe("DeliveryStatusService.cancel", () => {
       deliveryId: DELIVERY_ID,
       reason: "Address invalid",
       actorUserId: ACTOR,
+      actorUserSlug: "actor-slug",
     });
     assert.equal(result.status, "transitioned");
     assert.equal(result.toStatus, "cancelled");
@@ -255,6 +268,7 @@ describe("DeliveryStatusService.cancel", () => {
       deliveryId: DELIVERY_ID,
       reason: "Customer changed mind",
       actorUserId: ACTOR,
+      actorUserSlug: "actor-slug",
     });
     assert.equal(result.status, "noop");
   });

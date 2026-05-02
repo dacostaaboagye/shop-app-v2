@@ -8,36 +8,36 @@ export type DeliveryTransitionResult = {
   toStatus: DeliveryStatus;
 };
 
-export type AssignDeliveryInput = {
+type ActorIdentity = {
+  actorUserId: string;
+  actorUserSlug: string;
+};
+
+export type AssignDeliveryInput = ActorIdentity & {
   deliveryId: string;
   assignedUserId: string;
-  actorUserId: string;
   now?: Date;
 };
 
-export type DispatchDeliveryInput = {
+export type DispatchDeliveryInput = ActorIdentity & {
   deliveryId: string;
-  actorUserId: string;
   now?: Date;
 };
 
-export type CompleteDeliveryInput = {
+export type CompleteDeliveryInput = ActorIdentity & {
   deliveryId: string;
-  actorUserId: string;
   now?: Date;
 };
 
-export type CancelDeliveryInput = {
+export type CancelDeliveryInput = ActorIdentity & {
   deliveryId: string;
   reason: string;
-  actorUserId: string;
   now?: Date;
 };
 
-export type ReassignDeliveryInput = {
+export type ReassignDeliveryInput = ActorIdentity & {
   deliveryId: string;
   assignedUserId: string;
-  actorUserId: string;
   now?: Date;
 };
 

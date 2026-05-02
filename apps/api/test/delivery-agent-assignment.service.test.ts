@@ -117,6 +117,7 @@ describe("DeliveryStatusService.reassign", () => {
       deliveryId: DELIVERY_ID,
       assignedUserId: BOB,
       actorUserId: ACTOR,
+      actorUserSlug: "actor-slug",
     });
     assert.equal(result.status, "transitioned");
     assert.equal(result.toStatus, "assigned");
@@ -130,6 +131,7 @@ describe("DeliveryStatusService.reassign", () => {
       deliveryId: DELIVERY_ID,
       assignedUserId: ALICE,
       actorUserId: ACTOR,
+      actorUserSlug: "actor-slug",
     });
     assert.equal(result.status, "noop");
     assert.equal(tx.transitionCalls.length, 0);
@@ -146,6 +148,7 @@ describe("DeliveryStatusService.reassign", () => {
           deliveryId: DELIVERY_ID,
           assignedUserId: BOB,
           actorUserId: ACTOR,
+          actorUserSlug: "actor-slug",
         }),
       DeliveryReassignmentNotAllowedError,
     );
@@ -160,6 +163,7 @@ describe("DeliveryStatusService.reassign", () => {
           deliveryId: DELIVERY_ID,
           assignedUserId: BOB,
           actorUserId: ACTOR,
+          actorUserSlug: "actor-slug",
         }),
       DeliveryAgentNotEligibleError,
     );
@@ -176,6 +180,7 @@ describe("DeliveryStatusService.assign with eligibility port", () => {
           deliveryId: DELIVERY_ID,
           assignedUserId: ALICE,
           actorUserId: ACTOR,
+          actorUserSlug: "actor-slug",
         }),
       DeliveryAgentNotEligibleError,
     );
