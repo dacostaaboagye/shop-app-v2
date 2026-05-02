@@ -163,13 +163,15 @@ describe("delivery response shape", () => {
 });
 
 describe("delivery error codes", () => {
-  it("exposes the ten error codes", () => {
+  it("exposes the twelve error codes", () => {
     assert.deepEqual(Object.values(DELIVERY_ERROR_CODES).sort(), [
+      "delivery_agent_not_eligible",
       "delivery_assignment_required",
       "delivery_illegal_status_transition",
       "delivery_insufficient_origin_stock",
       "delivery_invalid_destination",
       "delivery_partial_unsupported",
+      "delivery_reassignment_not_allowed",
       "delivery_source_conflict",
       "delivery_source_not_found",
       "delivery_source_state_invalid",
