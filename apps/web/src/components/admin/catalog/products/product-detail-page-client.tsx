@@ -34,6 +34,7 @@ import {
   CatalogDetailRow,
   CatalogDetailsCard,
 } from "../catalog-detail-surfaces";
+import { HistoryPanel } from "../history";
 import { MediaPanel } from "../media/media-panel";
 import {
   PRODUCT_DETAIL_QUERY,
@@ -56,6 +57,7 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
   const canManage = can("catalog.products.manage");
   const canSeeCostPrice = can("catalog.cost_price.view");
   const canManageMedia = can("catalog.media.manage");
+  const canViewHistory = can("catalog.history.view");
 
   useEffect(() => {
     if (searchParams.get("edit") === "true" && canManage) {
@@ -228,6 +230,9 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
         entitySlug={product.slug}
         entityType="product"
       />
+      {canViewHistory ? (
+        <HistoryPanel entityKind="product" slug={product.slug} />
+      ) : null}
       <CatalogDeleteDialog
         entityName={product.name}
         entitySlug={product.slug}
