@@ -61,7 +61,7 @@ export function createCatalogRuntime(
   );
   const catalogDeleteGuard = new PostgresCatalogDeleteGuard(databaseRuntime.db);
 
-  const changeLog = createCatalogChangeLogRuntime();
+  const changeLog = createCatalogChangeLogRuntime(databaseRuntime.db);
   const changeLogWriter = changeLog.catalogChangeLog.writer;
 
   const productCommands = new CatalogProductCommands(
