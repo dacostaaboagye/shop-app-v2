@@ -221,6 +221,7 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
       <VariantsPanel
         canManage={canManage}
         canSeeCostPrice={canSeeCostPrice}
+        canViewHistory={canViewHistory}
         options={product.options}
         productSlug={product.slug}
         variants={product.variants}
