@@ -61,9 +61,13 @@ export function LocationDetailSummaryCard({
       />
       <CatalogDetailRow label="Slug" tone="identifier" value={location.slug} />
       <CatalogDetailRow
-        label="Manager"
-        tone={location.managerName ? "default" : "support"}
-        value={location.managerName ?? "Unassigned"}
+        label={location.managers.length === 1 ? "Manager" : "Managers"}
+        tone={location.managers.length > 0 ? "default" : "support"}
+        value={
+          location.managers.length > 0
+            ? location.managers.map((manager) => manager.name).join(", ")
+            : "Unassigned"
+        }
       />
       {location.address ? (
         <CatalogDetailRow

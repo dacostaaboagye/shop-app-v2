@@ -71,13 +71,18 @@ export const adminLocationListQuerySchema = z.object({
   type: z.enum(["all", "store", "warehouse"]).default("all"),
 });
 
+export const adminLocationManagerSummarySchema = z.object({
+  userSlug: z.string().min(1).max(120),
+  name: z.string().min(1).max(241),
+});
+
 export const adminLocationSummarySchema = z.object({
   address: z.string().nullable().optional(),
   createdAt: z.iso.datetime(),
   isFulfilmentEnabled: z.boolean(),
   latitude: z.number().nullable().optional(),
   longitude: z.number().nullable().optional(),
-  managerName: z.string().min(1).max(241).nullable(),
+  managers: z.array(adminLocationManagerSummarySchema),
   name: z.string().min(1).max(160),
   primaryImageUrl: z.string().nullable().optional(),
   slug: z.string().min(1).max(120),
@@ -86,6 +91,10 @@ export const adminLocationSummarySchema = z.object({
   type: adminLocationTypeSchema,
   zoneCount: z.number().int().min(0),
 });
+
+export type AdminLocationManagerSummary = z.infer<
+  typeof adminLocationManagerSummarySchema
+>;
 
 export const adminLocationListResponseSchema = z.object({
   items: z.array(adminLocationSummarySchema),
