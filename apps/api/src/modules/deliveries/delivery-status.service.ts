@@ -6,6 +6,7 @@ import type {
   DeliveryStatusService,
   DeliveryTransitionResult,
   DispatchDeliveryInput,
+  ReassignDeliveryInput,
 } from "./delivery-status.contracts.js";
 
 export class DeliveryStatusServiceImpl implements DeliveryStatusService {
@@ -13,6 +14,12 @@ export class DeliveryStatusServiceImpl implements DeliveryStatusService {
 
   async assign(input: AssignDeliveryInput): Promise<DeliveryTransitionResult> {
     return this.compose.assign(input);
+  }
+
+  async reassign(
+    input: ReassignDeliveryInput,
+  ): Promise<DeliveryTransitionResult> {
+    return this.compose.reassign(input);
   }
 
   async dispatch(

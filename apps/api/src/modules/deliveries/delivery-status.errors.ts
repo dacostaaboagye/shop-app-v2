@@ -77,3 +77,37 @@ export class DeliveryAssignmentRequiredError extends AppError {
     this.name = "DeliveryAssignmentRequiredError";
   }
 }
+
+export class DeliveryAgentNotEligibleError extends AppError {
+  constructor(input: { deliveryId: string; userId: string }) {
+    super({
+      code: "validation_error",
+      statusCode: 400,
+      title: "User is not an eligible delivery agent",
+      detail: `User ${input.userId} cannot be assigned to delivery ${input.deliveryId}; missing agent role at the origin location.`,
+      details: {
+        deliveryErrorCode: DELIVERY_ERROR_CODES.agentNotEligible,
+        deliveryId: input.deliveryId,
+        userId: input.userId,
+      },
+    });
+    this.name = "DeliveryAgentNotEligibleError";
+  }
+}
+
+export class DeliveryReassignmentNotAllowedError extends AppError {
+  constructor(input: { deliveryId: string; currentStatus: string }) {
+    super({
+      code: "conflict",
+      statusCode: 409,
+      title: "Delivery cannot be reassigned in this state",
+      detail: `Delivery ${input.deliveryId} is "${input.currentStatus}" and can only be reassigned while in "assigned".`,
+      details: {
+        deliveryErrorCode: DELIVERY_ERROR_CODES.reassignmentNotAllowed,
+        deliveryId: input.deliveryId,
+        currentStatus: input.currentStatus,
+      },
+    });
+    this.name = "DeliveryReassignmentNotAllowedError";
+  }
+}

@@ -85,9 +85,18 @@ class FakeRepository implements DeliveryStatusWriteRepository {
   }
 }
 
+class AlwaysEligiblePort {
+  async isEligibleAgent(): Promise<boolean> {
+    return true;
+  }
+}
+
 function buildService(tx: FakeTransaction) {
   const repo = new FakeRepository(tx);
-  const compose = new DeliveryStatusCompose({ repository: repo });
+  const compose = new DeliveryStatusCompose({
+    repository: repo,
+    agentEligibilityPort: new AlwaysEligiblePort(),
+  });
   return new DeliveryStatusServiceImpl(compose);
 }
 

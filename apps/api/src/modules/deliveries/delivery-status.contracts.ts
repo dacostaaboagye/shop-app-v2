@@ -34,8 +34,16 @@ export type CancelDeliveryInput = {
   now?: Date;
 };
 
+export type ReassignDeliveryInput = {
+  deliveryId: string;
+  assignedUserId: string;
+  actorUserId: string;
+  now?: Date;
+};
+
 export interface DeliveryStatusService {
   assign(input: AssignDeliveryInput): Promise<DeliveryTransitionResult>;
+  reassign(input: ReassignDeliveryInput): Promise<DeliveryTransitionResult>;
   dispatch(input: DispatchDeliveryInput): Promise<DeliveryTransitionResult>;
   complete(input: CompleteDeliveryInput): Promise<DeliveryTransitionResult>;
   cancel(input: CancelDeliveryInput): Promise<DeliveryTransitionResult>;

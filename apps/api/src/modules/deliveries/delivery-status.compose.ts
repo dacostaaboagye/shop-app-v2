@@ -1,4 +1,7 @@
-import type { DeliveryStatus } from "@shop/contracts";
+import type {
+  DeliveryAgentEligibilityPort,
+  DeliveryStatus,
+} from "@shop/contracts";
 import type { DeliveryRecord } from "./delivery.types.js";
 import { DeliverySourceNotFoundError } from "./delivery-errors.js";
 import type {
@@ -7,10 +10,13 @@ import type {
   CompleteDeliveryInput,
   DeliveryTransitionResult,
   DispatchDeliveryInput,
+  ReassignDeliveryInput,
 } from "./delivery-status.contracts.js";
 import {
+  DeliveryAgentNotEligibleError,
   DeliveryAssignmentRequiredError,
   DeliveryIllegalStatusTransitionError,
+  DeliveryReassignmentNotAllowedError,
   DeliveryStatusConflictError,
   DeliveryTerminalStatusError,
 } from "./delivery-status.errors.js";
@@ -19,6 +25,7 @@ import type { DeliveryStatusWriteRepository } from "./postgres-delivery-status-w
 
 export type DeliveryStatusComposeDeps = {
   repository: DeliveryStatusWriteRepository;
+  agentEligibilityPort: DeliveryAgentEligibilityPort;
 };
 
 export class DeliveryStatusCompose {
@@ -39,6 +46,84 @@ export class DeliveryStatusCompose {
       isIdempotent: (current) =>
         current.status === "assigned" &&
         current.assignedUserId === input.assignedUserId,
+      eligibilityCheck: async (current) => {
+        const eligible = await this.deps.agentEligibilityPort.isEligibleAgent({
+          userId: input.assignedUserId,
+          locationId: current.originLocationId,
+        });
+        if (!eligible) {
+          throw new DeliveryAgentNotEligibleError({
+            deliveryId: input.deliveryId,
+            userId: input.assignedUserId,
+          });
+        }
+      },
+    });
+  }
+
+  async reassign(
+    input: ReassignDeliveryInput,
+  ): Promise<DeliveryTransitionResult> {
+    if (!input.assignedUserId) {
+      throw new DeliveryAssignmentRequiredError({
+        deliveryId: input.deliveryId,
+      });
+    }
+    return this.deps.repository.withTransaction(async (tx) => {
+      const current = await tx.findById(input.deliveryId);
+      if (!current) {
+        throw new DeliverySourceNotFoundError({
+          sourceType: "delivery",
+          sourceReference: input.deliveryId,
+        });
+      }
+      if (current.status !== "assigned") {
+        throw new DeliveryReassignmentNotAllowedError({
+          deliveryId: input.deliveryId,
+          currentStatus: current.status,
+        });
+      }
+      if (current.assignedUserId === input.assignedUserId) {
+        return {
+          delivery: current,
+          status: "noop" as const,
+          fromStatus: current.status,
+          toStatus: current.status,
+        };
+      }
+      const eligible = await this.deps.agentEligibilityPort.isEligibleAgent({
+        userId: input.assignedUserId,
+        locationId: current.originLocationId,
+      });
+      if (!eligible) {
+        throw new DeliveryAgentNotEligibleError({
+          deliveryId: input.deliveryId,
+          userId: input.assignedUserId,
+        });
+      }
+      const now = input.now ?? new Date();
+      const updated = await tx.transitionStatus({
+        deliveryId: input.deliveryId,
+        expectedStatus: "assigned",
+        nextStatus: "assigned",
+        assignedUserId: input.assignedUserId,
+        actorUserId: input.actorUserId,
+        now,
+      });
+      if (!updated) {
+        const fresh = await tx.findById(input.deliveryId);
+        throw new DeliveryStatusConflictError({
+          deliveryId: input.deliveryId,
+          expectedStatus: "assigned",
+          observedStatus: fresh?.status ?? null,
+        });
+      }
+      return {
+        delivery: updated,
+        status: "transitioned" as const,
+        fromStatus: "assigned",
+        toStatus: "assigned",
+      };
     });
   }
 
@@ -87,6 +172,7 @@ export class DeliveryStatusCompose {
     assignedUserId?: string;
     cancellationReason?: string;
     isIdempotent: (current: DeliveryRecord) => boolean;
+    eligibilityCheck?: (current: DeliveryRecord) => Promise<void>;
   }): Promise<DeliveryTransitionResult> {
     const now = input.now ?? new Date();
     return this.deps.repository.withTransaction(async (tx) => {
@@ -104,6 +190,9 @@ export class DeliveryStatusCompose {
           fromStatus: current.status,
           toStatus: current.status,
         };
+      }
+      if (input.eligibilityCheck) {
+        await input.eligibilityCheck(current);
       }
       const verdict = canTransition(current.status, input.nextStatus);
       if (!verdict.allowed) {

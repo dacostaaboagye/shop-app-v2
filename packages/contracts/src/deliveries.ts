@@ -89,6 +89,14 @@ export const cancelDeliveryRequestSchema = z.object({
   reason: z.string().trim().min(1).max(240),
 });
 
+export const reassignDeliveryRequestSchema = z.object({
+  assignedUserId: z.string().uuid(),
+});
+
+export type ReassignDeliveryRequest = z.infer<
+  typeof reassignDeliveryRequestSchema
+>;
+
 export const deliveryTransitionResponseSchema = z.object({
   delivery: deliveryResponseSchema,
   status: z.enum(["transitioned", "noop"]),
@@ -141,6 +149,8 @@ export const DELIVERY_ERROR_CODES = {
   terminalStatus: "delivery_terminal_status",
   statusConflict: "delivery_status_conflict",
   assignmentRequired: "delivery_assignment_required",
+  agentNotEligible: "delivery_agent_not_eligible",
+  reassignmentNotAllowed: "delivery_reassignment_not_allowed",
 } as const;
 
 export type DeliveryErrorCode =
@@ -194,4 +204,11 @@ export interface TransferDeliverySourcePort {
   findByTransferReference(
     reference: string,
   ): Promise<DeliveryEligibleTransfer | null>;
+}
+
+export interface DeliveryAgentEligibilityPort {
+  isEligibleAgent(input: {
+    userId: string;
+    locationId: string;
+  }): Promise<boolean>;
 }
