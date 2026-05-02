@@ -110,6 +110,7 @@ export function makeRow(input: {
   parentEntityRef?: string | null;
   operation: ChangeLogEntry["operation"];
   occurredAt: Date;
+  actorAvatarUrl?: string | null;
 }): ChangeLogEntry {
   ROW_ENTITY_IDS.set(input.id, input.entityId);
   ROW_PARENT_ENTITY_IDS.set(input.id, input.parentEntityId ?? null);
@@ -125,6 +126,7 @@ export function makeRow(input: {
     after: { name: "After" },
     actorSlug: ACTOR_SLUG,
     actorName: "Test Admin",
+    actorAvatarUrl: input.actorAvatarUrl ?? null,
     occurredAt: input.occurredAt.toISOString(),
   };
 }

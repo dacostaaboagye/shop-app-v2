@@ -31,6 +31,7 @@ function makeEntry(overrides: Partial<ChangeLogEntry> = {}): ChangeLogEntry {
     after: { name: "New" },
     actorSlug: "alice",
     actorName: "Alice Test",
+    actorAvatarUrl: null,
     occurredAt: BASE_TIME.toISOString(),
     ...overrides,
   };
