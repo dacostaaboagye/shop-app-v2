@@ -17,7 +17,6 @@ export async function listAdminLocationStaff(
     .select({
       createdAt: locations.createdAt,
       id: locations.id,
-      managerId: locations.managerId,
       name: locations.name,
       slug: locations.slug,
     })
@@ -59,15 +58,13 @@ export async function listAdminLocationStaff(
     )
     .orderBy(asc(roles.slug), asc(users.firstName), asc(users.lastName));
 
-  const locationManager = location.managerId
-    ? await findLocationManager(db, location.managerId)
-    : null;
-  const primaryImageUrls = await listPrimaryImageUrls(db, "user", [
-    ...rows.map((row) => row.userSlug),
-    ...(locationManager ? [locationManager.userSlug] : []),
-  ]);
+  const primaryImageUrls = await listPrimaryImageUrls(
+    db,
+    "user",
+    rows.map((row) => row.userSlug),
+  );
 
-  const assignedItems = rows.map((row) => ({
+  const items: AdminLocationStaffSummary[] = rows.map((row) => ({
     activeAssignmentCount: Number(row.activeAssignmentCount ?? 0),
     assignedAt: toIsoTimestamp(row.assignedAt),
     email: row.email,
@@ -79,18 +76,6 @@ export async function listAdminLocationStaff(
     status: row.status,
     userSlug: row.userSlug,
   }));
-
-  const items = mergeLocationManagerStaff({
-    assignedAt: toIsoTimestamp(location.createdAt),
-    items: assignedItems,
-    manager: locationManager
-      ? {
-          ...locationManager,
-          primaryImageUrl:
-            primaryImageUrls.get(locationManager.userSlug) ?? null,
-        }
-      : null,
-  });
 
   return {
     items,
@@ -105,57 +90,4 @@ function toIsoTimestamp(value: Date | string): string {
   return value instanceof Date
     ? value.toISOString()
     : new Date(value).toISOString();
-}
-
-async function findLocationManager(db: ApiDatabase, managerId: string) {
-  const [manager] = await db
-    .select({
-      email: users.email,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      status: users.status,
-      userSlug: users.slug,
-    })
-    .from(users)
-    .where(eq(users.id, managerId))
-    .limit(1);
-
-  return manager ?? null;
-}
-
-export function mergeLocationManagerStaff(input: {
-  assignedAt: string;
-  items: AdminLocationStaffSummary[];
-  manager: {
-    email: string;
-    firstName: string;
-    lastName: string;
-    primaryImageUrl: string | null;
-    status: AdminLocationStaffSummary["status"];
-    userSlug: string;
-  } | null;
-}): AdminLocationStaffSummary[] {
-  if (!input.manager) return input.items;
-
-  const hasManagerRoleAssignment = input.items.some(
-    (item) => item.roleSlug === "manager",
-  );
-
-  if (hasManagerRoleAssignment) return input.items;
-
-  return [
-    {
-      activeAssignmentCount: 0,
-      assignedAt: input.assignedAt,
-      email: input.manager.email,
-      firstName: input.manager.firstName,
-      lastName: input.manager.lastName,
-      primaryImageUrl: input.manager.primaryImageUrl,
-      roleName: "Manager",
-      roleSlug: "manager",
-      status: input.manager.status,
-      userSlug: input.manager.userSlug,
-    },
-    ...input.items,
-  ];
 }

@@ -35,7 +35,6 @@ export const locations = pgTable(
     isFulfilmentEnabled: boolean("is_fulfilment_enabled")
       .default(false)
       .notNull(),
-    managerId: uuid("manager_id").references(() => users.id),
     createdBy: uuid("created_by").references(() => users.id),
     ...auditColumns,
   },
@@ -45,11 +44,7 @@ export const locations = pgTable(
   ],
 );
 
-export const locationsRelations = relations(locations, ({ one, many }) => ({
-  manager: one(users, {
-    fields: [locations.managerId],
-    references: [users.id],
-  }),
+export const locationsRelations = relations(locations, ({ many }) => ({
   zones: many(locationZones),
 }));
 

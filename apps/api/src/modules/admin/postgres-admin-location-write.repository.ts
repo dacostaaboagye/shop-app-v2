@@ -63,7 +63,7 @@ export class PostgresAdminLocationWriteRepository
 
     return {
       ...row,
-      managerName: null,
+      managers: [],
       zoneCount: 0,
       staffCount: 0,
       createdAt: row.createdAt.toISOString(),
@@ -118,7 +118,7 @@ export class PostgresAdminLocationWriteRepository
       latitude: location.latitude ? parseFloat(location.latitude) : null,
       longitude: location.longitude ? parseFloat(location.longitude) : null,
       address: location.geoAddress,
-      managerName: null,
+      managers: [],
       zoneCount: 0,
       staffCount: 0,
       createdAt: location.createdAt.toISOString(),
