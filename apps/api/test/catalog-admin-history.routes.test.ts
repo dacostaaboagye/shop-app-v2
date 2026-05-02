@@ -226,6 +226,55 @@ describe("catalog admin history routes", () => {
     assert.equal(response.statusCode, 404);
   });
 
+  it("round-trips actorAvatarUrl on each response entry (string and null)", async () => {
+    const t = (offsetSeconds: number) =>
+      new Date(NOW.getTime() - offsetSeconds * 1000);
+    const avatarUrl = "https://cdn.example.com/avatars/test-admin.jpg";
+    const rows: ChangeLogEntry[] = [
+      makeRow({
+        id: "row-with-avatar",
+        entityType: "catalog_product",
+        entityId: PRODUCT_ID,
+        entityRef: PRODUCT_SLUG,
+        operation: "created",
+        occurredAt: t(20),
+        actorAvatarUrl: avatarUrl,
+      }),
+      makeRow({
+        id: "row-without-avatar",
+        entityType: "catalog_product",
+        entityId: PRODUCT_ID,
+        entityRef: PRODUCT_SLUG,
+        operation: "updated",
+        occurredAt: t(10),
+      }),
+    ];
+
+    const server = buildServer({ rows, hasPermission: true });
+    const response = await server.inject({
+      headers: authHeaders(),
+      method: "GET",
+      url: `/api/admin/catalog/products/${PRODUCT_SLUG}/changes`,
+    });
+
+    assert.equal(response.statusCode, 200);
+    const body = response.json();
+    assert.equal(body.entries.length, 2);
+    // Newest first by occurredAt DESC: the avatar-less "updated" leads,
+    // then the avatar-bearing "created". Use `operation` as the row key
+    // because the schema strips the internal `id` from the response.
+    const updatedEntry = body.entries.find(
+      (e: ChangeLogEntry) => e.operation === "updated",
+    );
+    const createdEntry = body.entries.find(
+      (e: ChangeLogEntry) => e.operation === "created",
+    );
+    assert.ok(updatedEntry, "expected an updated entry");
+    assert.ok(createdEntry, "expected a created entry");
+    assert.equal(updatedEntry.actorAvatarUrl, null);
+    assert.equal(createdEntry.actorAvatarUrl, avatarUrl);
+  });
+
   it("returns 400 for an invalid pagination cursor", async () => {
     const server = buildServer({ rows: [], hasPermission: true });
     const response = await server.inject({

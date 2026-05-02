@@ -1,6 +1,7 @@
 import { catalogChangeLog, users } from "@shop/database";
 import { and, desc, eq, lt, or } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
+import { listPrimaryImageUrls } from "../catalog/catalog-primary-image.loader.js";
 import type { CatalogChangeEntityType } from "./catalog-change-log.types.js";
 import type { CatalogChangeLogReadRepository } from "./catalog-change-log-read.service.js";
 import type {
@@ -22,6 +23,7 @@ type RowSelection = {
   actorSlug: string | null;
   actorFirstName: string | null;
   actorLastName: string | null;
+  actorAvatarUrl: string | null;
 };
 
 export class PostgresCatalogChangeLogReadRepository
@@ -108,7 +110,7 @@ export class PostgresCatalogChangeLogReadRepository
         )
       : undefined;
 
-    return this.db
+    const rows = await this.db
       .select({
         id: catalogChangeLog.id,
         entityType: catalogChangeLog.entityType,
@@ -129,6 +131,27 @@ export class PostgresCatalogChangeLogReadRepository
       .where(cursorPredicate ? and(args.filter, cursorPredicate) : args.filter)
       .orderBy(desc(catalogChangeLog.occurredAt), desc(catalogChangeLog.id))
       .limit(args.limit);
+
+    // Single batched lookup so a page of N rows costs one extra query, not N.
+    // Orphan rows (actorSlug === null) are excluded from the lookup; the
+    // helper also omits any user without a primary image, so missing entries
+    // collapse to actorAvatarUrl: null below.
+    const actorSlugs = rows.flatMap((row) =>
+      row.actorSlug ? [row.actorSlug] : [],
+    );
+    const avatarBySlug = await listPrimaryImageUrls(
+      this.db,
+      "user",
+      actorSlugs,
+    );
+
+    return rows.map((row) => ({
+      ...row,
+      actorAvatarUrl:
+        row.actorSlug !== null
+          ? (avatarBySlug.get(row.actorSlug) ?? null)
+          : null,
+    }));
   }
 }
 
@@ -148,6 +171,7 @@ function toEntry(
     after: row.after,
     actorSlug: row.actorSlug ?? "",
     actorName: formatActorName(row.actorFirstName, row.actorLastName),
+    actorAvatarUrl: row.actorAvatarUrl,
     occurredAt: row.occurredAt.toISOString(),
   };
 }

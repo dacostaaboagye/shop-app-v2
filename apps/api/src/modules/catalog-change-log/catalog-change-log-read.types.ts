@@ -21,6 +21,7 @@ export type ChangeLogEntry = {
   after: CatalogChangeSnapshot;
   actorSlug: string;
   actorName: string;
+  actorAvatarUrl: string | null;
   occurredAt: string;
 };
 
