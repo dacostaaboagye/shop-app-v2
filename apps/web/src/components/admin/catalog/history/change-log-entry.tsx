@@ -3,9 +3,13 @@
 import type { ChangeLogEntry as ChangeLogEntryType } from "@shop/contracts";
 import { formatDistanceToNow } from "date-fns";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import type { Route } from "next";
+import Link from "next/link";
 import { useState } from "react";
+import { PersonAvatar } from "@/components/system/person-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { toRoute } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import { CHANGE_OPERATION_META } from "./change-log-meta";
 import { FieldDiff } from "./field-diff";
@@ -23,6 +27,9 @@ export function ChangeLogEntry({
   const operation = CHANGE_OPERATION_META[entry.operation];
   const occurredAt = new Date(entry.occurredAt);
   const isViaProduct = entry.parentEntityType === "catalog_product";
+  const actorProfileHref = entry.actorSlug
+    ? toRoute(`/admin/users/${encodeURIComponent(entry.actorSlug)}` as Route)
+    : null;
 
   // The diff body is only meaningful for updates. created/restored/archived/
   // deleted are summarised by the operation badge alone.
@@ -43,8 +50,25 @@ export function ChangeLogEntry({
               via product
             </Badge>
           ) : null}
-          <span className="type-data-label text-foreground">
-            {entry.actorName}
+          <span className="inline-flex items-center gap-2">
+            <PersonAvatar
+              imageUrl={entry.actorAvatarUrl}
+              interactive={false}
+              name={entry.actorName}
+              size="sm"
+            />
+            {actorProfileHref ? (
+              <Link
+                className="type-data-label text-foreground underline-offset-4 hover:underline"
+                href={actorProfileHref}
+              >
+                {entry.actorName}
+              </Link>
+            ) : (
+              <span className="type-data-label text-foreground">
+                {entry.actorName}
+              </span>
+            )}
           </span>
         </div>
         <time

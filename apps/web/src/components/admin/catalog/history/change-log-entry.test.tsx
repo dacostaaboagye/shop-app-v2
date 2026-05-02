@@ -83,12 +83,65 @@ describe("ChangeLogEntry", () => {
 
     assert.doesNotMatch(markup, /Show changes/);
   });
+
+  it("renders the actor avatar image when actorAvatarUrl is provided", () => {
+    const markup = renderToStaticMarkup(
+      <ChangeLogEntry
+        entry={makeEntry({
+          actorAvatarUrl: "https://cdn.example.com/avatars/akosua.jpg",
+        })}
+      />,
+    );
+
+    assert.match(markup, /data-slot="avatar-image"/);
+    assert.match(
+      markup,
+      /src="https:\/\/cdn\.example\.com\/avatars\/akosua\.jpg"/,
+    );
+  });
+
+  it("falls back to actor initials when actorAvatarUrl is null", () => {
+    const markup = renderToStaticMarkup(
+      <ChangeLogEntry
+        entry={makeEntry({
+          actorAvatarUrl: null,
+          actorName: "Akosua Boateng",
+        })}
+      />,
+    );
+
+    assert.match(markup, /data-slot="avatar-fallback"/);
+    assert.match(markup, />AB</);
+    assert.doesNotMatch(markup, /data-slot="avatar-image"/);
+  });
+
+  it("wraps the actor name in a link to the user profile", () => {
+    const markup = renderToStaticMarkup(
+      <ChangeLogEntry entry={makeEntry({ actorSlug: "akosua-boateng" })} />,
+    );
+
+    assert.match(markup, /href="\/admin\/users\/akosua-boateng"/);
+    assert.match(
+      markup,
+      /<a [^>]*href="\/admin\/users\/akosua-boateng"[^>]*>Akosua Boateng<\/a>/,
+    );
+  });
+
+  it("renders the actor name as plain text when actorSlug is empty", () => {
+    const markup = renderToStaticMarkup(
+      <ChangeLogEntry entry={makeEntry({ actorSlug: "" })} />,
+    );
+
+    assert.match(markup, /Akosua Boateng/);
+    assert.doesNotMatch(markup, /href="\/admin\/users\//);
+  });
 });
 
 function makeEntry(
   overrides: Partial<ChangeLogEntryType> = {},
 ): ChangeLogEntryType {
   return {
+    actorAvatarUrl: null,
     actorName: "Akosua Boateng",
     actorSlug: "akosua-boateng",
     after: null,
