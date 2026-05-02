@@ -99,6 +99,11 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
     description: "Upload, reorder, and delete media for catalog entities.",
   },
   {
+    key: "catalog.history.view",
+    description:
+      "View the change history of catalog products, variants, brands, and categories.",
+  },
+  {
     key: "inventory.read",
     description: "Read inventory and reservation administrative data.",
   },
@@ -283,6 +288,7 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
       "catalog.cost_price.view",
       "catalog.products.manage",
       "catalog.media.manage",
+      "catalog.history.view",
       "inventory.read",
       "inventory.write",
       "orders.view",
