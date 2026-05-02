@@ -126,6 +126,7 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
       <PageHeader
         actions={
           <ProductHeaderActions
+            historyHref={toRoute(`/admin/products/${product.slug}/history`)}
             isEditing={isEditing}
             isPending={updateMutation.isPending}
             onCancel={() => setIsEditing(false)}
