@@ -174,6 +174,10 @@ const server = createServer({
   catalogProductOptions: {
     optionsRepo: catalogRuntime.catalog.productOptionsRepo,
   },
+  catalogHistory: {
+    changeLogReadService: catalogRuntime.catalog.changeLogReadService,
+    entityLookup: catalogRuntime.catalog.historyEntityLookup,
+  },
   catalogQuery: catalogRuntime.catalog,
   catalogWrite: catalogRuntime.catalog,
   posSales: {
