@@ -1,4 +1,8 @@
-import type { DeliveryAddressSnapshot, DeliverySourceType, DeliveryStatus } from "@shop/contracts";
+import type {
+  DeliveryAddressSnapshot,
+  DeliverySourceType,
+  DeliveryStatus,
+} from "@shop/contracts";
 
 export type DeliveryItemRecord = {
   deliveryItemId: string;

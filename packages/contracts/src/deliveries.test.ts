@@ -61,10 +61,16 @@ describe("delivery address snapshot", () => {
 
   it("rejects a lowercase or non-2-letter country code", () => {
     assert.throws(() =>
-      deliveryAddressSnapshotSchema.parse({ ...validSnapshot, countryCode: "gh" }),
+      deliveryAddressSnapshotSchema.parse({
+        ...validSnapshot,
+        countryCode: "gh",
+      }),
     );
     assert.throws(() =>
-      deliveryAddressSnapshotSchema.parse({ ...validSnapshot, countryCode: "GHA" }),
+      deliveryAddressSnapshotSchema.parse({
+        ...validSnapshot,
+        countryCode: "GHA",
+      }),
     );
   });
 });
