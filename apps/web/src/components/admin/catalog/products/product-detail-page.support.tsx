@@ -2,6 +2,7 @@ import type {
   AdminProductDetail,
   AdminUpdateProductRequest,
 } from "@shop/contracts";
+import type { Route } from "next";
 import {
   CatalogDetailHeaderActions,
   CatalogDetailSkeleton,
@@ -18,6 +19,7 @@ export const PRODUCT_DETAIL_QUERY = {
 };
 
 type ProductHeaderActionsProps = {
+  historyHref?: Route;
   isEditing: boolean;
   isPending: boolean;
   onCancel: () => void;
@@ -26,6 +28,7 @@ type ProductHeaderActionsProps = {
 };
 
 export function ProductHeaderActions({
+  historyHref,
   isEditing,
   isPending,
   onCancel,
@@ -40,6 +43,7 @@ export function ProductHeaderActions({
       onDelete={onDelete}
       onEdit={onEdit}
       permission="catalog.products.manage"
+      {...(historyHref ? { historyHref } : {})}
     />
   );
 }

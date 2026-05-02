@@ -1,15 +1,18 @@
 "use client";
 
-import { Pencil, Trash2, X } from "lucide-react";
+import { History, Pencil, Trash2, X } from "lucide-react";
+import type { Route } from "next";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { PageShell } from "@/components/system/page-shell";
 import { PermissionGate } from "@/components/system/permission-gate";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function CatalogDetailHeaderActions({
+  historyHref,
   isEditing,
   isPending,
   onCancel,
@@ -17,6 +20,7 @@ export function CatalogDetailHeaderActions({
   onEdit,
   permission,
 }: {
+  historyHref?: Route;
   isEditing: boolean;
   isPending: boolean;
   onCancel: () => void;
@@ -28,7 +32,18 @@ export function CatalogDetailHeaderActions({
     | "catalog.products.manage";
 }) {
   return !isEditing ? (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
+      {historyHref ? (
+        <PermissionGate permission="catalog.history.view">
+          <Link
+            className={buttonVariants({ size: "sm", variant: "outline" })}
+            href={historyHref}
+          >
+            <History className="size-3.5" />
+            History
+          </Link>
+        </PermissionGate>
+      ) : null}
       <PermissionGate permission={permission}>
         <Button
           disabled={isPending}

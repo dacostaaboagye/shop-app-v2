@@ -56,6 +56,7 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
   const canManage = can("catalog.products.manage");
   const canSeeCostPrice = can("catalog.cost_price.view");
   const canManageMedia = can("catalog.media.manage");
+  const canViewHistory = can("catalog.history.view");
 
   useEffect(() => {
     if (searchParams.get("edit") === "true" && canManage) {
@@ -125,6 +126,7 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
       <PageHeader
         actions={
           <ProductHeaderActions
+            historyHref={toRoute(`/admin/products/${product.slug}/history`)}
             isEditing={isEditing}
             isPending={updateMutation.isPending}
             onCancel={() => setIsEditing(false)}
@@ -219,6 +221,7 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
       <VariantsPanel
         canManage={canManage}
         canSeeCostPrice={canSeeCostPrice}
+        canViewHistory={canViewHistory}
         options={product.options}
         productSlug={product.slug}
         variants={product.variants}
