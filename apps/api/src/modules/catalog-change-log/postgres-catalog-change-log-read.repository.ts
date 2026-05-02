@@ -8,13 +8,17 @@ import type {
   ChangeLogCursor,
   ChangeLogEntry,
 } from "./catalog-change-log-read.types.js";
+import { loadEntityNames } from "./catalog-entity-name.loader.js";
 
 type RowSelection = {
   id: string;
   entityType: CatalogChangeEntityType;
+  entityId: string;
   entityRef: string;
+  entityName: string | null;
   parentEntityType: CatalogChangeEntityType | null;
   parentEntityId: string | null;
+  parentEntityName: string | null;
   operation: ChangeLogEntry["operation"];
   changedFields: string[];
   before: ChangeLogEntry["before"];
@@ -114,6 +118,7 @@ export class PostgresCatalogChangeLogReadRepository
       .select({
         id: catalogChangeLog.id,
         entityType: catalogChangeLog.entityType,
+        entityId: catalogChangeLog.entityId,
         entityRef: catalogChangeLog.entityRef,
         parentEntityType: catalogChangeLog.parentEntityType,
         parentEntityId: catalogChangeLog.parentEntityId,
@@ -132,6 +137,23 @@ export class PostgresCatalogChangeLogReadRepository
       .orderBy(desc(catalogChangeLog.occurredAt), desc(catalogChangeLog.id))
       .limit(args.limit);
 
+    // One batched IN-lookup per entity type present on the page. With the
+    // page cap at 50 rows this is at most 6 small queries (one per type)
+    // plus one for parents — cheaper and clearer than a six-way LEFT JOIN
+    // with CASE. Mirrors the listPrimaryImageUrls batching pattern.
+    const entityNames = await this.loadEntityNamesByType(
+      groupIdsByType(rows.map((row) => [row.entityType, row.entityId])),
+    );
+    const parentEntityNames = await this.loadEntityNamesByType(
+      groupIdsByType(
+        rows.flatMap((row) =>
+          row.parentEntityType !== null && row.parentEntityId !== null
+            ? [[row.parentEntityType, row.parentEntityId]]
+            : [],
+        ),
+      ),
+    );
+
     // Single batched lookup so a page of N rows costs one extra query, not N.
     // Orphan rows (actorSlug === null) are excluded from the lookup; the
     // helper also omits any user without a primary image, so missing entries
@@ -147,12 +169,46 @@ export class PostgresCatalogChangeLogReadRepository
 
     return rows.map((row) => ({
       ...row,
+      entityName: entityNames.get(row.entityType)?.get(row.entityId) ?? null,
+      parentEntityName:
+        row.parentEntityType !== null && row.parentEntityId !== null
+          ? (parentEntityNames
+              .get(row.parentEntityType)
+              ?.get(row.parentEntityId) ?? null)
+          : null,
       actorAvatarUrl:
         row.actorSlug !== null
           ? (avatarBySlug.get(row.actorSlug) ?? null)
           : null,
     }));
   }
+
+  private async loadEntityNamesByType(
+    idsByType: Map<CatalogChangeEntityType, string[]>,
+  ): Promise<Map<CatalogChangeEntityType, Map<string, string>>> {
+    const entries = await Promise.all(
+      [...idsByType.entries()].map(async ([type, ids]) => {
+        const names = await loadEntityNames(this.db, type, ids);
+        return [type, names] as const;
+      }),
+    );
+    return new Map(entries);
+  }
+}
+
+function groupIdsByType(
+  pairs: ReadonlyArray<readonly [CatalogChangeEntityType, string]>,
+): Map<CatalogChangeEntityType, string[]> {
+  const grouped = new Map<CatalogChangeEntityType, string[]>();
+  for (const [type, id] of pairs) {
+    const existing = grouped.get(type);
+    if (existing) {
+      existing.push(id);
+    } else {
+      grouped.set(type, [id]);
+    }
+  }
+  return grouped;
 }
 
 function toEntry(
@@ -163,8 +219,10 @@ function toEntry(
     id: row.id,
     entityType: row.entityType,
     entityRef: row.entityRef,
+    entityName: row.entityName,
     parentEntityType: row.parentEntityType,
     parentEntityRef: row.parentEntityType ? parentEntityRef : null,
+    parentEntityName: row.parentEntityType ? row.parentEntityName : null,
     operation: row.operation,
     changedFields: row.changedFields,
     before: row.before,
