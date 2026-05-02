@@ -23,8 +23,10 @@ function makeEntry(overrides: Partial<ChangeLogEntry> = {}): ChangeLogEntry {
     id: "row-id-default",
     entityType: "catalog_product",
     entityRef: "widget",
+    entityName: "Widget",
     parentEntityType: null,
     parentEntityRef: null,
+    parentEntityName: null,
     operation: "updated",
     changedFields: ["name"],
     before: { name: "Old" },
@@ -226,6 +228,43 @@ describe("CatalogChangeLogReadService", () => {
       });
 
       assert.equal(repo.lastEntityCall?.limit, MAX_CHANGE_LOG_PAGE_SIZE + 1);
+    });
+  });
+
+  describe("entity name pass-through", () => {
+    it("propagates entityName and parentEntityName from the repo unchanged", async () => {
+      const rows: ChangeLogEntry[] = [
+        makeEntry({
+          id: "p-1",
+          entityType: "catalog_product",
+          entityRef: "widget",
+          entityName: "Widget Pro",
+        }),
+        makeEntry({
+          id: "v-1",
+          entityType: "product_variant",
+          entityRef: "widget-v1",
+          entityName: "Widget Pro / Stone",
+          parentEntityType: "catalog_product",
+          parentEntityRef: "widget",
+          parentEntityName: "Widget Pro",
+          occurredAt: new Date(BASE_TIME.getTime() - 1000).toISOString(),
+        }),
+      ];
+      const repo = new StubRepo(rows, []);
+      const service = new CatalogChangeLogReadService(repo);
+
+      const page = await service.readByEntity({
+        entityType: "catalog_product",
+        entityId: ENTITY_ID,
+        limit: 10,
+      });
+
+      assert.equal(page.entries.length, 2);
+      assert.equal(page.entries[0]?.entityName, "Widget Pro");
+      assert.equal(page.entries[0]?.parentEntityName, null);
+      assert.equal(page.entries[1]?.entityName, "Widget Pro / Stone");
+      assert.equal(page.entries[1]?.parentEntityName, "Widget Pro");
     });
   });
 

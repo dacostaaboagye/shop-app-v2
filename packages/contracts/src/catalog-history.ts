@@ -23,8 +23,15 @@ export const changeLogEntrySchema = z.object({
   operation: catalogChangeOperationSchema,
   entityType: catalogChangeEntityTypeSchema,
   entityRef: z.string().min(1).max(120),
+  // Display name of the entity (e.g. "Cedar Thread City Crossbody"). Null
+  // only when the entity has been hard-deleted and is no longer resolvable.
+  // Independent of `entityRef`; the frontend renders both lines.
+  entityName: z.string().min(1).max(240).nullable(),
   parentEntityType: catalogChangeEntityTypeSchema.nullable(),
   parentEntityRef: z.string().min(1).max(120).nullable(),
+  // Display name of the parent entity. Null when there is no parent or
+  // when the parent has been hard-deleted.
+  parentEntityName: z.string().min(1).max(240).nullable(),
   actorSlug: z.string().max(120),
   actorName: z.string().min(1).max(241),
   actorAvatarUrl: z.url().nullable(),

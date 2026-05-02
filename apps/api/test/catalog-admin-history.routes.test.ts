@@ -275,6 +275,52 @@ describe("catalog admin history routes", () => {
     assert.equal(createdEntry.actorAvatarUrl, avatarUrl);
   });
 
+  it("round-trips entityName and parentEntityName (including a null orphan)", async () => {
+    const t = (s: number) => new Date(NOW.getTime() - s * 1000);
+    const rows: ChangeLogEntry[] = [
+      makeRow({
+        id: "row-variant-create",
+        entityType: "product_variant",
+        entityId: VARIANT_1_ID,
+        entityRef: VARIANT_1_SLUG,
+        entityName: "Stone / Standard",
+        parentEntityType: "catalog_product",
+        parentEntityId: PRODUCT_ID,
+        parentEntityRef: PRODUCT_SLUG,
+        parentEntityName: "Cedar Thread City Crossbody",
+        operation: "created",
+        occurredAt: t(20),
+      }),
+      // Hard-deleted entity — display name unresolvable.
+      makeRow({
+        id: "row-orphan-update",
+        entityType: "catalog_product",
+        entityId: PRODUCT_ID,
+        entityRef: PRODUCT_SLUG,
+        entityName: null,
+        operation: "updated",
+        occurredAt: t(10),
+      }),
+    ];
+
+    const server = buildServer({ rows, hasPermission: true });
+    const response = await server.inject({
+      headers: authHeaders(),
+      method: "GET",
+      url: `/api/admin/catalog/products/${PRODUCT_SLUG}/changes`,
+    });
+
+    assert.equal(response.statusCode, 200);
+    const body = response.json();
+    const [orphan, variant] = body.entries as ChangeLogEntry[];
+    assert.ok(orphan && variant);
+    assert.equal(orphan.operation, "updated");
+    assert.equal(orphan.entityName, null);
+    assert.equal(orphan.parentEntityName, null);
+    assert.equal(variant.entityName, "Stone / Standard");
+    assert.equal(variant.parentEntityName, "Cedar Thread City Crossbody");
+  });
+
   it("returns 400 for an invalid pagination cursor", async () => {
     const server = buildServer({ rows: [], hasPermission: true });
     const response = await server.inject({
