@@ -13,8 +13,10 @@ export type ChangeLogEntry = {
   id: string;
   entityType: CatalogChangeEntityType;
   entityRef: string;
+  entityName: string | null;
   parentEntityType: CatalogChangeEntityType | null;
   parentEntityRef: string | null;
+  parentEntityName: string | null;
   operation: CatalogChangeOperation;
   changedFields: string[];
   before: CatalogChangeSnapshot;

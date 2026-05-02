@@ -105,21 +105,34 @@ export function makeRow(input: {
   entityType: ChangeLogEntry["entityType"];
   entityId: string;
   entityRef: string;
+  entityName?: string | null;
   parentEntityType?: ChangeLogEntry["parentEntityType"];
   parentEntityId?: string | null;
   parentEntityRef?: string | null;
+  parentEntityName?: string | null;
   operation: ChangeLogEntry["operation"];
   occurredAt: Date;
   actorAvatarUrl?: string | null;
 }): ChangeLogEntry {
   ROW_ENTITY_IDS.set(input.id, input.entityId);
   ROW_PARENT_ENTITY_IDS.set(input.id, input.parentEntityId ?? null);
+  const parentEntityRef = input.parentEntityRef ?? null;
   return {
     id: input.id,
     entityType: input.entityType,
     entityRef: input.entityRef,
+    entityName:
+      input.entityName === undefined
+        ? `Display ${input.entityRef}`
+        : input.entityName,
     parentEntityType: input.parentEntityType ?? null,
-    parentEntityRef: input.parentEntityRef ?? null,
+    parentEntityRef,
+    parentEntityName:
+      input.parentEntityName === undefined
+        ? parentEntityRef === null
+          ? null
+          : `Display ${parentEntityRef}`
+        : input.parentEntityName,
     operation: input.operation,
     changedFields: [],
     before: null,
