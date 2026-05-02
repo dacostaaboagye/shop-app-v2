@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toRoute } from "@/lib/routes";
 import { cn } from "@/lib/utils";
-import { CHANGE_OPERATION_META } from "./change-log-meta";
+import { CHANGE_ENTITY_LABEL, CHANGE_OPERATION_META } from "./change-log-meta";
 import { FieldDiff } from "./field-diff";
 
 type ChangeLogEntryProps = {
@@ -25,8 +25,8 @@ export function ChangeLogEntry({
 }: ChangeLogEntryProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const operation = CHANGE_OPERATION_META[entry.operation];
+  const entityLabel = CHANGE_ENTITY_LABEL[entry.entityType];
   const occurredAt = new Date(entry.occurredAt);
-  const isViaProduct = entry.parentEntityType === "catalog_product";
   const actorProfileHref = entry.actorSlug
     ? toRoute(`/admin/users/${encodeURIComponent(entry.actorSlug)}` as Route)
     : null;
@@ -42,14 +42,12 @@ export function ChangeLogEntry({
           <Badge className={cn("w-fit", operation.className)} variant="outline">
             {operation.label}
           </Badge>
-          {isViaProduct ? (
-            <Badge
-              className="w-fit bg-secondary/60 text-secondary-foreground border-0"
-              variant="outline"
-            >
-              via product
-            </Badge>
-          ) : null}
+          <span className="type-data-label text-foreground">
+            {entityLabel}{" "}
+            <span className="font-mono text-sm text-muted-foreground">
+              {entry.entityRef}
+            </span>
+          </span>
           <span className="inline-flex items-center gap-2">
             <PersonAvatar
               imageUrl={entry.actorAvatarUrl}

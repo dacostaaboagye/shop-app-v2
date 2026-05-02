@@ -54,24 +54,32 @@ describe("ChangeLogEntry", () => {
     assert.doesNotMatch(markup, /Before/);
   });
 
-  it("shows the via-product hint when a parent product event is surfaced through this row", () => {
+  it("labels the subject of the change with the entity type and ref", () => {
     const markup = renderToStaticMarkup(
       <ChangeLogEntry
         entry={makeEntry({
+          entityRef: "BAG-CTC-002",
           entityType: "product_variant",
-          parentEntityRef: "blue-mug",
-          parentEntityType: "catalog_product",
         })}
       />,
     );
 
-    assert.match(markup, /via product/);
+    assert.match(markup, /Variant/);
+    assert.match(markup, /BAG-CTC-002/);
   });
 
-  it("omits the via-product hint when no parent is set", () => {
-    const markup = renderToStaticMarkup(<ChangeLogEntry entry={makeEntry()} />);
+  it("uses the human-readable label for option-value entries", () => {
+    const markup = renderToStaticMarkup(
+      <ChangeLogEntry
+        entry={makeEntry({
+          entityRef: "Red",
+          entityType: "catalog_product_option_value",
+        })}
+      />,
+    );
 
-    assert.doesNotMatch(markup, /via product/);
+    assert.match(markup, /Option value/);
+    assert.match(markup, /Red/);
   });
 
   it("omits the diff toggle for entries with no changed fields", () => {

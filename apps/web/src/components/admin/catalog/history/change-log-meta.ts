@@ -1,8 +1,23 @@
-import type { CatalogChangeOperation } from "@shop/contracts";
+import type {
+  CatalogChangeEntityType,
+  CatalogChangeOperation,
+} from "@shop/contracts";
 
 type OperationMeta = {
   className: string;
   label: string;
+};
+
+// Human-readable label for the entity that the change happened to. Used as
+// the subject of each entry header so "Created" reads as "Created Variant
+// BAG-CTC-002" instead of an unanchored verb.
+export const CHANGE_ENTITY_LABEL: Record<CatalogChangeEntityType, string> = {
+  catalog_brand: "Brand",
+  catalog_category: "Category",
+  catalog_product: "Product",
+  catalog_product_option: "Option",
+  catalog_product_option_value: "Option value",
+  product_variant: "Variant",
 };
 
 // Token-driven, semantic only — no raw palette. Each maps to an operation
