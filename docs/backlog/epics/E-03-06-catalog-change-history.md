@@ -105,3 +105,7 @@ Mobile-first: card stacks vertically by default. Desktop @ ≥768 expands the di
 - **Cascade visibility** — archive a product and confirm the history shows the product `archived` row PLUS one row per affected variant, all with the same `occurredAt`.
 - **Empty state** — newly created product with no further edits shows just the `created` row, no spinner stuck.
 - **Long history** — synthetic 500-entry history; cursor pagination works through to the end; final page returns `nextCursor: null`.
+
+## Known follow-ups (post-ship refinements)
+
+- **[ops-history-diff-readability](./ops-history-diff-readability.md)** — Phase 2: resolve FK referent names inside snapshots so diff bodies show "Category: Crossbody Bags → Travel Bags" instead of raw UUIDs. Discovered during live UI review; the headline UUID surface is closed by this epic, but the diff body still leaks UUIDs for `categoryId` / `brandId` / `parentCategoryId`. Tracked separately so it doesn't gate this epic's ship.
