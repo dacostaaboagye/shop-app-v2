@@ -27,6 +27,7 @@ export const changeLogEntrySchema = z.object({
   parentEntityRef: z.string().min(1).max(120).nullable(),
   actorSlug: z.string().max(120),
   actorName: z.string().min(1).max(241),
+  actorAvatarUrl: z.url().nullable(),
   occurredAt: z.iso.datetime(),
   changedFields: z.array(z.string().min(1).max(120)),
   before: snapshotSchema,
