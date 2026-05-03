@@ -1,7 +1,7 @@
 ---
 id: E-03-07
 title: Maintain an immutable change log for every product/variant edit
-status: planned
+status: shipped
 priority: P1
 domain: backend
 owner: claude
@@ -112,3 +112,15 @@ Five logical chunks; **PR 1 ships chunks (a) + (b)** for one cohesive foundation
 ## Why split PR 1 from the wire-up
 
 PR 1 ships the writer infrastructure as a single coherent module. PR 2 immediately consumes it across every catalog write path. The wire-up touches multiple files near the 250-line soft cap (e.g. `postgres-catalog-product-write.commands.ts` is at 273 lines today); putting the wire-up + foundation in one PR would force a code-split refactor inside the same PR. Splitting cleanly is the lower-risk play. PR 2 will land within the same session as PR 1 — this isn't "five surface-only PRs in a row," it's "foundation + wire-up as two atomic units."
+
+## Related PRs
+
+- [PR #81](https://github.com/dacostaaboagye/shop-app-v2/pull/81) - `feat(e-03-07): catalog change-log table + writer module (PR 1 of 2)`
+- [PR #84](https://github.com/dacostaaboagye/shop-app-v2/pull/84) - `feat(e-03-07): wire every catalog write to the change log`
+- [PR #88](https://github.com/dacostaaboagye/shop-app-v2/pull/88) - `fix(e-03-07): use option name and value as change-log entityRef`
+- [PR #92](https://github.com/dacostaaboagye/shop-app-v2/pull/92) - final public-read hardening for referent IDs in change-log history diffs.
+
+## Shipped evidence
+
+- Merged to `dev` across PR #81, PR #84, PR #88, and final E-03-06 follow-up PR #92.
+- Acceptance closed: dedicated append-only `catalog_change_log` schema exists, catalog writes emit rows transactionally, no-op updates are guarded, cascaded writes record per-entity rows, and read-history exposure is handled by E-03-06.
