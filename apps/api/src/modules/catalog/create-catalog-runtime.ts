@@ -4,6 +4,7 @@ import { PermissionResolutionService } from "../access-control/permission-resolu
 import { PostgresPermissionRepository } from "../access-control/postgres-permission.repository.js";
 import type { CatalogChangeLogReadService } from "../catalog-change-log/catalog-change-log-read.service.js";
 import { createCatalogChangeLogRuntime } from "../catalog-change-log/create-catalog-change-log-runtime.js";
+import type { DeliverySkuHistoryService } from "../deliveries/delivery-query.contracts.js";
 import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import { PostgresSlugRepository } from "../public-identifiers/postgres-slug.repository.js";
 import { SlugService } from "../public-identifiers/slug.service.js";
@@ -51,10 +52,11 @@ type CatalogRuntime = {
 
 export function createCatalogRuntime(
   databaseRuntime: DatabaseRuntime,
-  storage: R2StorageService | null = null,
+  storage: R2StorageService | null,
   options: {
+    deliverySkuHistoryService: DeliverySkuHistoryService;
     platformEventPublisher?: PlatformEventPublisher;
-  } = {},
+  },
 ): CatalogRuntime {
   const slugService = new SlugService(
     new PostgresSlugRepository(databaseRuntime.db),
@@ -65,6 +67,7 @@ export function createCatalogRuntime(
 
   const productDeleteGuard = new PostgresCatalogProductDeleteGuard(
     databaseRuntime.db,
+    options.deliverySkuHistoryService,
   );
   const catalogDeleteGuard = new PostgresCatalogDeleteGuard(databaseRuntime.db);
 

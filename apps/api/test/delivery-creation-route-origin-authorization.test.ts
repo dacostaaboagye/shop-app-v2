@@ -255,6 +255,9 @@ function createDeliveryRouteServer(input: {
           input.events.push(`query:${deliveryId}`);
           return input.deliveryRecord ?? null;
         },
+        async hasSkuHistory() {
+          throw unused();
+        },
         async listByAgent() {
           throw unused();
         },

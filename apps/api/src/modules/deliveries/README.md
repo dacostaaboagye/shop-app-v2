@@ -34,10 +34,19 @@ Stock-module side effects run inside the same Drizzle transaction as delivery cr
 - Online order deliveries reserve stock at the origin once E-14 provides a real source.
 - Transfer deliveries call the stock-owned delivery stock side-effect participant, which reserves and confirms origin stock, records a `transfer_out` stock movement, and creates dispatched GTN evidence so stock reads surface the quantity as in-transit.
 
+## E-00C-04 query surface
+
+Delivery read access is provided through `DeliveryQueryService` and `PostgresDeliveryQueryRepository`:
+
+- `findById` returns a full delivery record with items or `null`.
+- `listByAgent` returns active assigned workload only (`assigned`, `in_transit`), newest-first, with optional status intersection and capped limits.
+- `listByLocation` returns origin-location deliveries, newest-first, with optional status filters and capped limits.
+- Cross-domain SKU delivery-history checks use the delivery-owned `DeliveryQueryService` surface via the narrow `DeliverySkuHistoryService` port instead of direct table reads.
+- Exposed query routes perform contextual `deliveries.view` checks for delivery origin locations. Agent list routes are self-service only until a location-scoped manager query is explicitly designed.
+
 ## Future work
 
 - E-00C-02: status lifecycle (draft → assigned → in_transit → completed/cancelled)
 - E-00C-03: agent assignment service
-- E-00C-04: query service (listByAgent, listByLocation)
 - E-00C-05: REST routes with `config.access` permission gating per source type
 - E-15: delivery agent portal subscribes to `delivery.created` platform events

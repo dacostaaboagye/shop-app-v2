@@ -387,7 +387,11 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
     slug: "agent",
     name: "Agent",
     description: "Delivery agent with delivery portal access.",
-    permissions: ["agent.dashboard.view", "agent.routes.view"],
+    permissions: [
+      "agent.dashboard.view",
+      "agent.routes.view",
+      "deliveries.view",
+    ],
   },
   {
     slug: "developer",

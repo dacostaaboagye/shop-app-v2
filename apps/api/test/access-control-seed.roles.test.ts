@@ -44,4 +44,12 @@ describe("access control seeded roles", () => {
     assert.ok(managerRole.permissions.includes("deliveries.assign"));
     assert.ok(managerRole.permissions.includes("deliveries.reassign"));
   });
+
+  it("grants delivery agents read access for their assigned routes", () => {
+    const agentRole = SYSTEM_ROLES.find((role) => role.slug === "agent");
+
+    assert.ok(agentRole);
+    assert.ok(agentRole.permissions.includes("agent.routes.view"));
+    assert.ok(agentRole.permissions.includes("deliveries.view"));
+  });
 });
