@@ -139,6 +139,21 @@ describe("delivery query routes", () => {
     assert.equal(typeof response.json().requestId, "string");
     assert.deepEqual(calls, [{ deliveryId: DELIVERY_ID, method: "findById" }]);
   });
+
+  it("rejects invalid delivery ids before query service invocation", async () => {
+    const calls: QueryCall[] = [];
+    const server = createDeliveryQueryServer({ calls });
+
+    const response = await server.inject({
+      headers: AUTH_HEADERS,
+      method: "GET",
+      url: "/api/deliveries/not-a-delivery-id",
+    });
+
+    assertValidationProblem(response);
+    assert.match(response.json().detail, /deliveryId/);
+    assert.deepEqual(calls, []);
+  });
 });
 
 type QueryCall =
@@ -283,7 +298,13 @@ function deliveryRecord(
 }
 
 function assertValidationProblem(response: {
-  json(): { code: string; requestId: string; status: number; title: string };
+  json(): {
+    code: string;
+    detail: string;
+    requestId: string;
+    status: number;
+    title: string;
+  };
   statusCode: number;
 }) {
   assert.equal(response.statusCode, 400);
