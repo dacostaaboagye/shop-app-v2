@@ -37,7 +37,7 @@ export const assignDeliveryRoute: RouteDefinition = {
     scope: "any_active",
   },
   method: "POST",
-  url: "/api/deliveries/:deliveryId/assign",
+  url: "/api/deliveries/:deliveryReference/assign",
 };
 
 export const reassignDeliveryRoute: RouteDefinition = {
@@ -47,7 +47,7 @@ export const reassignDeliveryRoute: RouteDefinition = {
     scope: "any_active",
   },
   method: "POST",
-  url: "/api/deliveries/:deliveryId/reassign",
+  url: "/api/deliveries/:deliveryReference/reassign",
 };
 
 export const dispatchDeliveryRoute: RouteDefinition = {
@@ -57,7 +57,7 @@ export const dispatchDeliveryRoute: RouteDefinition = {
     scope: "any_active",
   },
   method: "POST",
-  url: "/api/deliveries/:deliveryId/dispatch",
+  url: "/api/deliveries/:deliveryReference/dispatch",
 };
 
 export const completeDeliveryRoute: RouteDefinition = {
@@ -67,7 +67,7 @@ export const completeDeliveryRoute: RouteDefinition = {
     scope: "any_active",
   },
   method: "POST",
-  url: "/api/deliveries/:deliveryId/complete",
+  url: "/api/deliveries/:deliveryReference/complete",
 };
 
 export const cancelDeliveryRoute: RouteDefinition = {
@@ -77,7 +77,7 @@ export const cancelDeliveryRoute: RouteDefinition = {
     scope: "any_active",
   },
   method: "POST",
-  url: "/api/deliveries/:deliveryId/cancel",
+  url: "/api/deliveries/:deliveryReference/cancel",
 };
 
 export const findDeliveryRoute: RouteDefinition = {
@@ -87,7 +87,7 @@ export const findDeliveryRoute: RouteDefinition = {
     scope: "any_active",
   },
   method: "GET",
-  url: "/api/deliveries/:deliveryId",
+  url: "/api/deliveries/:deliveryReference",
 };
 
 export const listDeliveriesRoute: RouteDefinition = {

@@ -6,6 +6,8 @@ import {
 } from "../src/modules/public-identifiers/reference-number.service.js";
 import type { ReferenceSequenceKey } from "../src/modules/public-identifiers/reference-number-formats.js";
 
+const deliverySequenceKey = "delivery" as ReferenceSequenceKey;
+
 describe("ReferenceNumberService", () => {
   it("generates padded invoice references from channel counters", async () => {
     const harness = createHarness();
@@ -31,19 +33,37 @@ describe("ReferenceNumberService", () => {
     assert.deepEqual(harness.state.sequenceKeys, ["supply-request-group"]);
   });
 
+  it("generates padded delivery header public references", async () => {
+    const harness = createHarness();
+
+    const reference = await harness.service.generateReference({
+      now: new Date("2026-04-08T10:00:00.000Z"),
+      sequenceKey: deliverySequenceKey,
+    });
+
+    assert.equal(reference, "DLV-00001");
+    assert.deepEqual(harness.state.sequenceKeys, ["delivery"]);
+  });
+
   it("supports configurable starting numbers per channel", async () => {
     const harness = createHarness({
       startsAt: {
         "invoice-pos": 421,
+        [deliverySequenceKey]: 42,
       },
     });
 
-    const reference = await harness.service.generateReference({
+    const invoiceReference = await harness.service.generateReference({
       now: new Date("2026-04-08T10:00:00.000Z"),
       sequenceKey: "invoice-pos",
     });
+    const deliveryReference = await harness.service.generateReference({
+      now: new Date("2026-04-08T10:00:00.000Z"),
+      sequenceKey: deliverySequenceKey,
+    });
 
-    assert.equal(reference, "INV-POS-00421");
+    assert.equal(invoiceReference, "INV-POS-00421");
+    assert.equal(deliveryReference, "DLV-00042");
   });
 
   it("uses UTC date-scoped counters for portal order references", async () => {

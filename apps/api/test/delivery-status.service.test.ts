@@ -19,6 +19,7 @@ import type {
 
 const ACTOR = "00000000-0000-4000-8000-000000000099";
 const DELIVERY_ID = "00000000-0000-4000-8000-000000000001";
+const DELIVERY_REFERENCE = "DLV-00001";
 const ASSIGNEE = "00000000-0000-4000-8000-000000000010";
 
 function buildDelivery(
@@ -26,10 +27,12 @@ function buildDelivery(
 ): DeliveryRecord {
   return {
     deliveryId: DELIVERY_ID,
+    deliveryReference: DELIVERY_REFERENCE,
     sourceType: "transfer",
     sourceReference: "TRF-0001",
     status: "draft",
     originLocationId: "00000000-0000-4000-8000-000000000020",
+    originLocationSlug: "main-store",
     destination: {
       kind: "location",
       locationId: "00000000-0000-4000-8000-000000000021",
@@ -43,6 +46,7 @@ function buildDelivery(
       },
     ],
     assignedUserId: null,
+    assignedUserSlug: null,
     assignedAt: null,
     assignedBy: null,
     dispatchedAt: null,
@@ -54,6 +58,7 @@ function buildDelivery(
     cancellationReason: null,
     createdAt: new Date("2026-05-01T10:00:00Z"),
     createdBy: ACTOR,
+    createdBySlug: "actor-slug",
     ...overrides,
   };
 }

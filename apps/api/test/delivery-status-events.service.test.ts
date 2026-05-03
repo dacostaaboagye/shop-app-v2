@@ -12,7 +12,9 @@ import type { PlatformEventRecord } from "../src/modules/events/platform-event.t
 
 const ACTOR = "00000000-0000-4000-8000-000000000099";
 const DELIVERY_ID = "00000000-0000-4000-8000-000000000001";
+const DELIVERY_REFERENCE = "DLV-00001";
 const ASSIGNEE = "00000000-0000-4000-8000-000000000010";
+const ASSIGNEE_SLUG = "delivery-agent";
 
 class FakeTransaction implements DeliveryStatusWriteTransaction {
   public events: PlatformEventRecord[] = [];
@@ -66,7 +68,11 @@ describe("DeliveryStatusService status events", () => {
   it("appends a status-changed event inside the transition transaction", async () => {
     const tx = new FakeTransaction(
       buildDelivery(),
-      buildDelivery({ status: "assigned", assignedUserId: ASSIGNEE }),
+      buildDelivery({
+        status: "assigned",
+        assignedUserId: ASSIGNEE,
+        assignedUserSlug: ASSIGNEE_SLUG,
+      }),
     );
     const service = buildService(tx);
     const result = await service.assign({
@@ -81,13 +87,14 @@ describe("DeliveryStatusService status events", () => {
     assert.equal(tx.events.length, 1);
     assert.equal(tx.events[0]?.type, "delivery.status_changed");
     assert.deepEqual(tx.events[0]?.payload, {
-      deliveryId: DELIVERY_ID,
+      deliveryReference: DELIVERY_REFERENCE,
       fromStatus: "draft",
       toStatus: "assigned",
-      actorUserId: ACTOR,
-      assignedUserId: ASSIGNEE,
+      actorUserSlug: "actor-slug",
+      assignedUserSlug: ASSIGNEE_SLUG,
       cancellationReason: null,
     });
+    assert.equal(tx.events[0]?.resource.reference, DELIVERY_REFERENCE);
   });
 
   it("does not append a duplicate event for a noop transition", async () => {
@@ -112,10 +119,12 @@ function buildDelivery(
 ): DeliveryRecord {
   return {
     deliveryId: DELIVERY_ID,
+    deliveryReference: DELIVERY_REFERENCE,
     sourceType: "transfer",
     sourceReference: "TRF-0001",
     status: "draft",
     originLocationId: "00000000-0000-4000-8000-000000000020",
+    originLocationSlug: "main-store",
     destination: {
       kind: "location",
       locationId: "00000000-0000-4000-8000-000000000021",
@@ -129,6 +138,7 @@ function buildDelivery(
       },
     ],
     assignedUserId: null,
+    assignedUserSlug: null,
     assignedAt: null,
     assignedBy: null,
     dispatchedAt: null,
@@ -140,6 +150,7 @@ function buildDelivery(
     cancellationReason: null,
     createdAt: new Date("2026-05-01T10:00:00Z"),
     createdBy: ACTOR,
+    createdBySlug: "actor-slug",
     ...overrides,
   };
 }

@@ -7,9 +7,11 @@ import type {
   DeliveryItemRecord,
   DeliveryRecord,
 } from "./delivery.types.js";
-import { mapDeliveryItemRow, mapDeliveryRow } from "./delivery-row-mapper.js";
+import { loadDeliveryRecordById } from "./delivery-record-hydration.js";
+import { mapDeliveryItemRow } from "./delivery-row-mapper.js";
 
 export type InsertDeliveryInput = {
+  reference: string;
   sourceType: DeliverySourceType;
   sourceReference: string;
   originLocationId: string;
@@ -83,18 +85,14 @@ class PostgresDeliveryWriteTransaction implements DeliveryWriteTransaction {
       return null;
     }
 
-    const itemRows = await this.tx
-      .select()
-      .from(deliveryItems)
-      .where(eq(deliveryItems.deliveryId, deliveryRow.id));
-
-    return mapDeliveryRow(deliveryRow, itemRows.map(mapDeliveryItemRow));
+    return loadDeliveryRecordById(this.tx, deliveryRow.id);
   }
 
   async insertDelivery(input: InsertDeliveryInput): Promise<DeliveryRecord> {
     const [row] = await this.tx
       .insert(deliveries)
       .values({
+        reference: input.reference,
         sourceType: input.sourceType,
         sourceReference: input.sourceReference,
         originLocationId: input.originLocationId,
@@ -116,7 +114,11 @@ class PostgresDeliveryWriteTransaction implements DeliveryWriteTransaction {
     if (!row) {
       throw new Error("Failed to insert delivery row.");
     }
-    return mapDeliveryRow(row, []);
+    const delivery = await loadDeliveryRecordById(this.tx, row.id);
+    if (!delivery) {
+      throw new Error("Failed to reload inserted delivery row.");
+    }
+    return delivery;
   }
 
   async insertDeliveryItem(

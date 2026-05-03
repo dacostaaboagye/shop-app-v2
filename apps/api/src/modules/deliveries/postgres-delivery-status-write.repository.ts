@@ -1,16 +1,10 @@
 import type { DeliveryStatus } from "@shop/contracts";
-import {
-  deliveries,
-  deliveryItems,
-  roles,
-  userRoles,
-  users,
-} from "@shop/database";
+import { deliveries, roles, userRoles, users } from "@shop/database";
 import { and, eq, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { PlatformEventRecord } from "../events/platform-event.types.js";
 import type { DeliveryRecord } from "./delivery.types.js";
-import { mapDeliveryItemRow, mapDeliveryRow } from "./delivery-row-mapper.js";
+import { loadDeliveryRecordById } from "./delivery-record-hydration.js";
 import type { DeliveryStatusEventPublisher } from "./delivery-status-event-publisher.js";
 import { appendDeliveryStatusChangedEvent } from "./delivery-status-event-publisher.js";
 
@@ -68,18 +62,7 @@ class PostgresDeliveryStatusWriteTransaction
   constructor(private readonly tx: ApiDatabase) {}
 
   async findById(deliveryId: string): Promise<DeliveryRecord | null> {
-    const [deliveryRow] = await this.tx
-      .select()
-      .from(deliveries)
-      .where(eq(deliveries.id, deliveryId));
-    if (!deliveryRow) {
-      return null;
-    }
-    const itemRows = await this.tx
-      .select()
-      .from(deliveryItems)
-      .where(eq(deliveryItems.deliveryId, deliveryRow.id));
-    return mapDeliveryRow(deliveryRow, itemRows.map(mapDeliveryItemRow));
+    return loadDeliveryRecordById(this.tx, deliveryId);
   }
 
   async appendPlatformEvent(
@@ -105,11 +88,7 @@ class PostgresDeliveryStatusWriteTransaction
     if (!row) {
       return null;
     }
-    const itemRows = await this.tx
-      .select()
-      .from(deliveryItems)
-      .where(eq(deliveryItems.deliveryId, row.id));
-    return mapDeliveryRow(row, itemRows.map(mapDeliveryItemRow));
+    return loadDeliveryRecordById(this.tx, row.id);
   }
 }
 

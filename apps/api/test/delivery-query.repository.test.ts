@@ -7,6 +7,7 @@ import {
 } from "../src/modules/deliveries/postgres-delivery-query.repository.js";
 
 const DELIVERY_ID = "66666666-6666-4666-8666-666666666666";
+const DELIVERY_REFERENCE = "DLV-00001";
 const LOCATION_ID = "22222222-2222-4222-8222-222222222222";
 const AGENT_USER_ID = "77777777-7777-4777-8777-777777777777";
 const SKU_ID = "44444444-4444-4444-8444-444444444444";
@@ -22,7 +23,7 @@ describe("PostgresDeliveryQueryRepository", () => {
     assert.equal(result, null);
     assert.deepEqual(
       db.calls.map((call) => call.table),
-      ["deliveries"],
+      ["deliveries", "deliveries"],
     );
   });
 
@@ -39,7 +40,7 @@ describe("PostgresDeliveryQueryRepository", () => {
     assert.equal(result?.items[0]?.skuId, SKU_ID);
     assert.deepEqual(
       db.calls.map((call) => call.table),
-      ["deliveries", "delivery_items"],
+      ["deliveries", "deliveries", "delivery_items", "delivery_items"],
     );
   });
 
@@ -55,7 +56,7 @@ describe("PostgresDeliveryQueryRepository", () => {
 
     assert.deepEqual(
       db.calls
-        .filter((call) => call.table === "deliveries")
+        .filter((call) => call.table === "deliveries" && call.limit)
         .map((call) => call.limit),
       [50, 200],
     );
@@ -201,6 +202,7 @@ function deliveryRow(overrides: Record<string, unknown> = {}) {
     dispatchedBy: null,
     id: DELIVERY_ID,
     originLocationId: LOCATION_ID,
+    reference: DELIVERY_REFERENCE,
     sourceReference: "TRF-2026-000001",
     sourceType: "transfer",
     status: "assigned",

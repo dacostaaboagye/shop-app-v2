@@ -100,7 +100,7 @@ export class DeliveryStatusTransitionRunner {
         publisher: this.deps.platformEventPublisher,
         logger: this.deps.logger,
         event: {
-          deliveryId: input.deliveryId,
+          deliveryReference: result.delivery.deliveryReference,
           fromStatus: result.fromStatus,
           toStatus: result.toStatus,
         },
@@ -113,7 +113,6 @@ export class DeliveryStatusTransitionRunner {
     tx: DeliveryStatusWriteTransaction,
     input: {
       deliveryId: string;
-      actorUserId: string;
       actorUserSlug: string;
       assignedUserId?: string;
       cancellationReason?: string;
@@ -125,15 +124,14 @@ export class DeliveryStatusTransitionRunner {
       tx,
       publisher: this.deps.platformEventPublisher,
       event: {
-        deliveryId: input.deliveryId,
+        deliveryReference: result.delivery.deliveryReference,
         fromStatus: result.fromStatus,
         toStatus: result.toStatus,
         originLocationId: result.delivery.originLocationId,
-        actorUserId: input.actorUserId,
         actorUserSlug: input.actorUserSlug,
         occurredAt,
         cancellationReason: input.cancellationReason ?? null,
-        assignedUserId: input.assignedUserId ?? null,
+        assignedUserSlug: result.delivery.assignedUserSlug,
       },
     });
   }

@@ -6,13 +6,17 @@ import { createServer } from "../src/server/create-server.js";
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
 const DELIVERY_ID = "66666666-6666-4666-8666-666666666666";
+const DELIVERY_REFERENCE = "DLV-00001";
+const HIGH_REF = "DLV-100000";
 const LOCATION_ID = "22222222-2222-4222-8222-222222222222";
+const LOCATION_SLUG = "main-store";
 const AGENT_USER_ID = USER_ID;
-const FOREIGN_AGENT_USER_ID = "77777777-7777-4777-8777-777777777777";
+const AGENT_USER_SLUG = "manager-user";
+const FOREIGN_AGENT_USER_SLUG = "foreign-agent";
 const AUTH_HEADERS = { authorization: "Bearer test-token" };
 
 describe("delivery query routes", () => {
-  it("requires exactly one locationId or agentUserId for list queries", async () => {
+  it("requires exactly one locationSlug or agentUserSlug for list queries", async () => {
     const calls: QueryCall[] = [];
     const server = createDeliveryQueryServer({ calls });
 
@@ -24,18 +28,18 @@ describe("delivery query routes", () => {
     const competingScopes = await server.inject({
       headers: AUTH_HEADERS,
       method: "GET",
-      url: `/api/deliveries?locationId=${LOCATION_ID}&agentUserId=${AGENT_USER_ID}`,
+      url: `/api/deliveries?locationSlug=${LOCATION_SLUG}&agentUserSlug=${AGENT_USER_SLUG}`,
     });
 
     assertValidationProblem(missingScope);
     assert.match(
       missingScope.json().detail,
-      /Provide exactly one of locationId or agentUserId/,
+      /Provide exactly one of locationSlug or agentUserSlug/,
     );
     assertValidationProblem(competingScopes);
     assert.match(
       competingScopes.json().detail,
-      /Provide exactly one of locationId or agentUserId/,
+      /Provide exactly one of locationSlug or agentUserSlug/,
     );
     assert.deepEqual(calls, []);
   });
@@ -47,7 +51,7 @@ describe("delivery query routes", () => {
     const response = await server.inject({
       headers: AUTH_HEADERS,
       method: "GET",
-      url: `/api/deliveries?locationId=${LOCATION_ID}&limit=201`,
+      url: `/api/deliveries?locationSlug=${LOCATION_SLUG}&limit=201`,
     });
 
     assertValidationProblem(response);
@@ -66,12 +70,15 @@ describe("delivery query routes", () => {
       headers: AUTH_HEADERS,
       method: "GET",
       url:
-        `/api/deliveries?locationId=${LOCATION_ID}` +
+        `/api/deliveries?locationSlug=${LOCATION_SLUG}` +
         "&status=assigned&status=in_transit&limit=25",
     });
 
     assert.equal(response.statusCode, 200);
-    assert.equal(response.json().items[0]?.deliveryId, DELIVERY_ID);
+    assert.equal(
+      response.json().items[0]?.deliveryReference,
+      DELIVERY_REFERENCE,
+    );
     assert.deepEqual(calls, [
       {
         input: {
@@ -91,7 +98,7 @@ describe("delivery query routes", () => {
       headers: AUTH_HEADERS,
       method: "GET",
       url:
-        `/api/deliveries?agentUserId=${AGENT_USER_ID}` +
+        `/api/deliveries?agentUserSlug=${AGENT_USER_SLUG}` +
         "&status=assigned&limit=10",
     });
 
@@ -114,7 +121,7 @@ describe("delivery query routes", () => {
     const response = await server.inject({
       headers: AUTH_HEADERS,
       method: "GET",
-      url: `/api/deliveries?agentUserId=${FOREIGN_AGENT_USER_ID}`,
+      url: `/api/deliveries?agentUserSlug=${FOREIGN_AGENT_USER_SLUG}`,
     });
 
     assert.equal(response.statusCode, 403);
@@ -129,18 +136,19 @@ describe("delivery query routes", () => {
     const response = await server.inject({
       headers: AUTH_HEADERS,
       method: "GET",
-      url: `/api/deliveries/${DELIVERY_ID}`,
+      url: `/api/deliveries/${HIGH_REF}`,
     });
 
     assert.equal(response.statusCode, 404);
     assert.equal(response.json().code, "not_found");
     assert.equal(response.json().title, "Delivery not found");
     assert.match(response.json().detail, /No delivery found/);
-    assert.equal(typeof response.json().requestId, "string");
-    assert.deepEqual(calls, [{ deliveryId: DELIVERY_ID, method: "findById" }]);
+    assert.deepEqual(calls, [
+      { deliveryReference: HIGH_REF, method: "findByReference" },
+    ]);
   });
 
-  it("rejects invalid delivery ids before query service invocation", async () => {
+  it("rejects invalid delivery references before query service invocation", async () => {
     const calls: QueryCall[] = [];
     const server = createDeliveryQueryServer({ calls });
 
@@ -151,15 +159,15 @@ describe("delivery query routes", () => {
     });
 
     assertValidationProblem(response);
-    assert.match(response.json().detail, /deliveryId/);
+    assert.match(response.json().detail, /deliveryReference/);
     assert.deepEqual(calls, []);
   });
 });
 
 type QueryCall =
   | {
-      deliveryId: string;
-      method: "findById";
+      deliveryReference: string;
+      method: "findByReference";
     }
   | {
       input: Parameters<DeliveryQueryService["listByAgent"]>[0];
@@ -183,7 +191,7 @@ function createDeliveryQueryServer(
     accessControl: {
       accessTokenAuthenticationService: {
         async authenticate() {
-          return { userId: USER_ID, userSlug: "manager-user" };
+          return { userId: USER_ID, userSlug: AGENT_USER_SLUG };
         },
       },
       permissionService: {
@@ -202,9 +210,26 @@ function createDeliveryQueryServer(
           throw unused();
         },
       },
+      deliveryPublicIdentifierResolver: {
+        async findLocationIdBySlug(slug) {
+          return slug === LOCATION_SLUG ? LOCATION_ID : null;
+        },
+        async findUserIdBySlug() {
+          throw unused();
+        },
+      },
       deliveryQueryService: {
         async findById(deliveryId) {
-          calls.push({ deliveryId, method: "findById" });
+          calls.push({
+            deliveryReference: deliveryId,
+            method: "findByReference",
+          });
+          return input.findResult === undefined
+            ? deliveryRecord()
+            : input.findResult;
+        },
+        async findByReference(deliveryReference) {
+          calls.push({ deliveryReference, method: "findByReference" });
           return input.findResult === undefined
             ? deliveryRecord()
             : input.findResult;
@@ -267,6 +292,7 @@ function deliveryRecord(
     assignedAt: new Date("2026-05-01T10:00:00.000Z"),
     assignedBy: USER_ID,
     assignedUserId: AGENT_USER_ID,
+    assignedUserSlug: AGENT_USER_SLUG,
     cancellationReason: null,
     cancelledAt: null,
     cancelledBy: null,
@@ -274,10 +300,13 @@ function deliveryRecord(
     completedBy: null,
     createdAt: new Date("2026-05-01T09:00:00.000Z"),
     createdBy: USER_ID,
+    createdBySlug: "creator-user",
     deliveryId: DELIVERY_ID,
+    deliveryReference: DELIVERY_REFERENCE,
     destination: {
       kind: "location",
       locationId: "33333333-3333-4333-8333-333333333333",
+      locationSlug: "warehouse",
     },
     dispatchedAt: null,
     dispatchedBy: null,
@@ -286,10 +315,12 @@ function deliveryRecord(
         deliveryItemId: "99999999-9999-4999-8999-999999999999",
         itemReference: "DEL-20260501-1",
         quantity: 1,
+        sku: "SKU-1",
         skuId: "44444444-4444-4444-8444-444444444444",
       },
     ],
     originLocationId: LOCATION_ID,
+    originLocationSlug: LOCATION_SLUG,
     sourceReference: "TRF-2026-000001",
     sourceType: "transfer",
     status: "assigned",

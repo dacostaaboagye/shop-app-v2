@@ -23,15 +23,14 @@ export type DeliveryStatusEventPublisher = Pick<
 
 type DeliveryStatusEventInput = {
   logger?: DeliveryStatusEventLogger;
-  deliveryId: string;
+  deliveryReference: string;
   fromStatus: DeliveryStatus;
   toStatus: DeliveryStatus;
   originLocationId: string;
-  actorUserId: string;
   actorUserSlug: string;
   occurredAt: Date;
   cancellationReason?: string | null;
-  assignedUserId?: string | null;
+  assignedUserSlug?: string | null;
 };
 
 type DeliveryStatusEventTransaction = {
@@ -69,7 +68,7 @@ export async function notifyDeliveryStatusEventCommitted(input: {
   publisher?: DeliveryStatusEventPublisher | undefined;
   event: Pick<
     DeliveryStatusEventInput,
-    "deliveryId" | "fromStatus" | "toStatus"
+    "deliveryReference" | "fromStatus" | "toStatus"
   >;
 }): Promise<void> {
   if (!input.publisher?.notifyAppendCommitted) {
@@ -79,7 +78,7 @@ export async function notifyDeliveryStatusEventCommitted(input: {
     await input.publisher.notifyAppendCommitted();
   } catch (error) {
     input.logger?.error("[deliveries] Failed to publish status-change event", {
-      deliveryId: input.event.deliveryId,
+      deliveryReference: input.event.deliveryReference,
       error: error instanceof Error ? error.message : String(error),
       fromStatus: input.event.fromStatus,
       toStatus: input.event.toStatus,

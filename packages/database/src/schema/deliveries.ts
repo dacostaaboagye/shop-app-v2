@@ -33,6 +33,7 @@ export const deliveries = pgTable(
   "deliveries",
   {
     id: publicUuidColumn(),
+    reference: varchar("reference", { length: 40 }).notNull(),
     sourceType: deliverySourceTypeEnum("source_type").notNull(),
     sourceReference: varchar("source_reference", { length: 64 }).notNull(),
     originLocationId: uuid("origin_location_id")
@@ -64,6 +65,7 @@ export const deliveries = pgTable(
       table.sourceType,
       table.sourceReference,
     ),
+    uniqueIndex("deliveries_reference_unique").on(table.reference),
     index("deliveries_origin_location_idx").on(table.originLocationId),
     index("deliveries_destination_location_idx").on(
       table.destinationLocationId,

@@ -1,10 +1,16 @@
-import { deliveryResponseSchema, deliveryStatusSchema } from "@shop/contracts";
+import {
+  deliveryResponseSchema,
+  deliveryStatusSchema,
+  referenceSchema,
+  slugSchema,
+} from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { AppError } from "../_core/errors/app-error.js";
 import type { PermissionResolutionScope } from "../access-control/permission-resolution.service.js";
 import type { AuthenticatedActor } from "../auth/access-token-authentication.service.js";
 import { getAuthenticatedActor } from "../auth/auth-route-support.js";
+import type { DeliveryPublicIdentifierResolver } from "./delivery-public-identifier.repository.js";
 import type { DeliveryQueryService } from "./delivery-query.contracts.js";
 import { toDeliveryResponse } from "./delivery-response.mapper.js";
 import {
@@ -13,6 +19,7 @@ import {
 } from "./delivery-route-access.js";
 
 type Deps = {
+  deliveryPublicIdentifierResolver: DeliveryPublicIdentifierResolver;
   deliveryQueryService: DeliveryQueryService;
   permissionService: {
     assertHasPermission(input: {
@@ -24,22 +31,25 @@ type Deps = {
   };
 };
 
-const deliveryIdParamsSchema = z.object({
-  deliveryId: z.string().uuid(),
+const deliveryReferenceParamsSchema = z.object({
+  deliveryReference: referenceSchema.regex(/^DLV-[0-9]{5,}$/),
 });
 
 const listDeliveriesQuerySchema = z
   .object({
-    locationId: z.string().uuid().optional(),
-    agentUserId: z.string().uuid().optional(),
+    locationSlug: slugSchema.optional(),
+    agentUserSlug: slugSchema.optional(),
     status: z
       .union([deliveryStatusSchema, z.array(deliveryStatusSchema)])
       .optional(),
     limit: z.coerce.number().int().min(1).max(200).optional(),
   })
-  .refine((value) => Boolean(value.locationId) !== Boolean(value.agentUserId), {
-    message: "Provide exactly one of locationId or agentUserId.",
-  });
+  .refine(
+    (value) => Boolean(value.locationSlug) !== Boolean(value.agentUserSlug),
+    {
+      message: "Provide exactly one of locationSlug or agentUserSlug.",
+    },
+  );
 
 const listDeliveriesResponseSchema = z.object({
   items: z.array(deliveryResponseSchema),
@@ -55,16 +65,16 @@ export function registerDeliveryQueryRoutes(
     url: findDeliveryRoute.url,
     async handler(request) {
       const actor = getAuthenticatedActor(request);
-      const params = deliveryIdParamsSchema.parse(request.params);
-      const record = await deps.deliveryQueryService.findById(
-        params.deliveryId,
+      const params = deliveryReferenceParamsSchema.parse(request.params);
+      const record = await deps.deliveryQueryService.findByReference(
+        params.deliveryReference,
       );
       if (!record) {
         throw new AppError({
           code: "not_found",
           statusCode: 404,
           title: "Delivery not found",
-          detail: `No delivery found for id ${params.deliveryId}.`,
+          detail: `No delivery found for reference ${params.deliveryReference}.`,
         });
       }
       await assertDeliveryViewPermission({
@@ -93,14 +103,33 @@ export function registerDeliveryQueryRoutes(
       if (query.limit !== undefined) {
         filters.limit = query.limit;
       }
-      if (query.locationId) {
+      if (query.locationSlug) {
+        const locationId =
+          await deps.deliveryPublicIdentifierResolver.findLocationIdBySlug(
+            query.locationSlug,
+          );
+        if (!locationId) {
+          throw new AppError({
+            code: "not_found",
+            detail: `Location "${query.locationSlug}" was not found.`,
+            statusCode: 404,
+            title: "Location not found",
+          });
+        }
         await assertDeliveryViewPermission({
           actor,
           deps,
-          locationId: query.locationId,
+          locationId,
+        });
+        const records = await deps.deliveryQueryService.listByLocation({
+          locationId,
+          ...(Object.keys(filters).length > 0 ? { filters } : {}),
+        });
+        return listDeliveriesResponseSchema.parse({
+          items: records.map(toDeliveryResponse),
         });
       }
-      if (query.agentUserId && query.agentUserId !== actor.userId) {
+      if (query.agentUserSlug !== actor.userSlug) {
         throw new AppError({
           code: "forbidden",
           detail: "Agent delivery lists can only be requested by that agent.",
@@ -108,23 +137,15 @@ export function registerDeliveryQueryRoutes(
           title: "Forbidden",
         });
       }
-      const records = await (query.agentUserId
-        ? deps.deliveryQueryService.listByAgent({
-            agentUserId: query.agentUserId,
-            ...(Object.keys(filters).length > 0 ? { filters } : {}),
-          })
-        : deps.deliveryQueryService.listByLocation({
-            // biome-ignore lint/style/noNonNullAssertion: refine guarantees one of the two is set
-            locationId: query.locationId!,
-            ...(Object.keys(filters).length > 0 ? { filters } : {}),
-          }));
-      if (query.agentUserId) {
-        await assertDeliveryViewPermissionsForRecords({
-          actor,
-          deps,
-          locationIds: records.map((record) => record.originLocationId),
-        });
-      }
+      const records = await deps.deliveryQueryService.listByAgent({
+        agentUserId: actor.userId,
+        ...(Object.keys(filters).length > 0 ? { filters } : {}),
+      });
+      await assertDeliveryViewPermissionsForRecords({
+        actor,
+        deps,
+        locationIds: records.map((record) => record.originLocationId),
+      });
       return listDeliveriesResponseSchema.parse({
         items: records.map(toDeliveryResponse),
       });

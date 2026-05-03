@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { extname, resolve } from "node:path";
 import { getTableName } from "drizzle-orm";
+import { getTableConfig } from "drizzle-orm/pg-core";
 import {
   deliveries,
   deliveryItems,
@@ -13,6 +14,8 @@ assert.equal(getTableName(deliveries), "deliveries");
 assert.equal(getTableName(deliveryItems), "delivery_items");
 
 assert.equal(deliveries.id.name, "id");
+assert.equal(deliveries.reference.name, "reference");
+assert.equal(deliveries.reference.notNull, true);
 assert.equal(deliveries.sourceType.name, "source_type");
 assert.equal(deliveries.sourceReference.name, "source_reference");
 assert.equal(deliveries.originLocationId.name, "origin_location_id");
@@ -31,6 +34,20 @@ assert.equal(deliveryItems.deliveryId.name, "delivery_id");
 assert.equal(deliveryItems.skuId.name, "sku_id");
 assert.equal(deliveryItems.quantity.name, "quantity");
 assert.equal(deliveryItems.itemReference.name, "item_reference");
+
+const deliveryTableConfig = getTableConfig(deliveries);
+const deliveryReferenceIndex = deliveryTableConfig.indexes.find(
+  (index) => index.config.name === "deliveries_reference_unique",
+);
+
+assert.ok(deliveryReferenceIndex, "expected deliveries.reference unique index");
+assert.equal(deliveryReferenceIndex.config.unique, true);
+assert.deepEqual(
+  deliveryReferenceIndex.config.columns.map((column) =>
+    "name" in column ? column.name : null,
+  ),
+  ["reference"],
+);
 
 assert.deepEqual(deliveryStatusEnum.enumValues, [
   "draft",
@@ -101,6 +118,31 @@ assert.match(
   allMigrationSql,
   /ADD COLUMN "cancellation_reason" varchar\(240\)/,
   "expected cancellation_reason column",
+);
+assert.match(
+  allMigrationSql,
+  /ADD COLUMN "reference" varchar\(40\)/,
+  "expected delivery reference column",
+);
+assert.match(
+  allMigrationSql,
+  /SET "reference" = 'DLV-'/,
+  "expected delivery reference backfill",
+);
+assert.match(
+  allMigrationSql,
+  /"sequence_key", "current_value", "description"\)\s*SELECT\s*'delivery'/,
+  "expected delivery sequence counter backfill",
+);
+assert.match(
+  allMigrationSql,
+  /ALTER TABLE "deliveries" ALTER COLUMN "reference" SET NOT NULL/,
+  "expected delivery reference not-null enforcement after backfill",
+);
+assert.match(
+  allMigrationSql,
+  /CREATE UNIQUE INDEX "deliveries_reference_unique" ON "deliveries"/,
+  "expected unique index on delivery reference",
 );
 
 console.log("deliveries schema assertions passed");

@@ -6,30 +6,34 @@ import { createServer } from "../src/server/create-server.js";
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
 const DELIVERY_ID = "66666666-6666-4666-8666-666666666666";
+const DELIVERY_REFERENCE = "DLV-00001";
 const LOCATION_ID = "22222222-2222-4222-8222-222222222222";
+const LOCATION_SLUG = "main-store";
 const SECOND_LOCATION_ID = "33333333-3333-4333-8333-333333333333";
+const SECOND_LOCATION_SLUG = "warehouse";
 const AGENT_USER_ID = USER_ID;
+const AGENT_USER_SLUG = "manager-user";
 const AUTH_HEADERS = { authorization: "Bearer test-token" };
 
 describe("delivery query route authorization", () => {
-  it("checks contextual location permission before listing by location", async () => {
+  it("checks contextual location permission before listing by location slug", async () => {
     const events: string[] = [];
     const server = createDeliveryQueryAuthServer({ events });
 
     const response = await server.inject({
       headers: AUTH_HEADERS,
       method: "GET",
-      url: `/api/deliveries?locationId=${LOCATION_ID}`,
+      url: `/api/deliveries?locationSlug=${LOCATION_SLUG}`,
     });
 
     assert.equal(response.statusCode, 403);
     assert.deepEqual(events, [
-      `middleware:deliveries.view:any_active:${LOCATION_ID}`,
+      "middleware:deliveries.view:any_active:none",
       `route:deliveries.view:contextual:${LOCATION_ID}`,
     ]);
   });
 
-  it("checks origin permission before returning a delivery by id", async () => {
+  it("checks origin permission before returning a delivery by reference", async () => {
     const events: string[] = [];
     const server = createDeliveryQueryAuthServer({
       allowRoutePermission: true,
@@ -39,13 +43,13 @@ describe("delivery query route authorization", () => {
     const response = await server.inject({
       headers: AUTH_HEADERS,
       method: "GET",
-      url: `/api/deliveries/${DELIVERY_ID}`,
+      url: `/api/deliveries/${DELIVERY_REFERENCE}`,
     });
 
     assert.equal(response.statusCode, 200);
     assert.deepEqual(events, [
       "middleware:deliveries.view:any_active:none",
-      `query:${DELIVERY_ID}`,
+      `query:${DELIVERY_REFERENCE}`,
       `route:deliveries.view:contextual:${LOCATION_ID}`,
     ]);
   });
@@ -59,7 +63,9 @@ describe("delivery query route authorization", () => {
         deliveryRecord({ deliveryId: DELIVERY_ID }),
         deliveryRecord({
           deliveryId: "88888888-8888-4888-8888-888888888888",
+          deliveryReference: "DLV-00002",
           originLocationId: SECOND_LOCATION_ID,
+          originLocationSlug: SECOND_LOCATION_SLUG,
         }),
       ],
     });
@@ -67,7 +73,7 @@ describe("delivery query route authorization", () => {
     const response = await server.inject({
       headers: AUTH_HEADERS,
       method: "GET",
-      url: `/api/deliveries?agentUserId=${AGENT_USER_ID}`,
+      url: `/api/deliveries?agentUserSlug=${AGENT_USER_SLUG}`,
     });
 
     assert.equal(response.statusCode, 200);
@@ -112,9 +118,21 @@ function createDeliveryQueryAuthServer(input: {
           throw unused();
         },
       },
+      deliveryPublicIdentifierResolver: {
+        async findLocationIdBySlug(slug) {
+          return slug === LOCATION_SLUG ? LOCATION_ID : null;
+        },
+        async findUserIdBySlug() {
+          throw unused();
+        },
+      },
       deliveryQueryService: {
         async findById(deliveryId) {
           input.events.push(`query:${deliveryId}`);
+          return deliveryRecord();
+        },
+        async findByReference(deliveryReference) {
+          input.events.push(`query:${deliveryReference}`);
           return deliveryRecord();
         },
         async hasSkuHistory() {
@@ -181,6 +199,7 @@ function deliveryRecord(
     assignedAt: new Date("2026-05-01T10:00:00.000Z"),
     assignedBy: USER_ID,
     assignedUserId: AGENT_USER_ID,
+    assignedUserSlug: AGENT_USER_SLUG,
     cancellationReason: null,
     cancelledAt: null,
     cancelledBy: null,
@@ -188,8 +207,14 @@ function deliveryRecord(
     completedBy: null,
     createdAt: new Date("2026-05-01T09:00:00.000Z"),
     createdBy: USER_ID,
+    createdBySlug: "creator-user",
     deliveryId: DELIVERY_ID,
-    destination: { kind: "location", locationId: SECOND_LOCATION_ID },
+    deliveryReference: DELIVERY_REFERENCE,
+    destination: {
+      kind: "location",
+      locationId: SECOND_LOCATION_ID,
+      locationSlug: SECOND_LOCATION_SLUG,
+    },
     dispatchedAt: null,
     dispatchedBy: null,
     items: [
@@ -197,10 +222,12 @@ function deliveryRecord(
         deliveryItemId: "99999999-9999-4999-8999-999999999999",
         itemReference: "DEL-20260501-1",
         quantity: 1,
+        sku: "SKU-1",
         skuId: "44444444-4444-4444-8444-444444444444",
       },
     ],
     originLocationId: LOCATION_ID,
+    originLocationSlug: LOCATION_SLUG,
     sourceReference: "TRF-2026-000001",
     sourceType: "transfer",
     status: "assigned",

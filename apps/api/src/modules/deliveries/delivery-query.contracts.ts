@@ -25,6 +25,7 @@ export type ListByLocationInput = {
 
 export interface DeliveryQueryService {
   findById(deliveryId: string): Promise<DeliveryRecord | null>;
+  findByReference(reference: string): Promise<DeliveryRecord | null>;
   hasSkuHistory(skuId: string): Promise<boolean>;
   listByAgent(input: ListByAgentInput): Promise<DeliveryRecord[]>;
   listByLocation(input: ListByLocationInput): Promise<DeliveryRecord[]>;

@@ -147,14 +147,13 @@ export class DeliveryStatusCompose {
         tx,
         publisher: this.deps.platformEventPublisher,
         event: {
-          deliveryId: input.deliveryId,
+          deliveryReference: result.delivery.deliveryReference,
           fromStatus: result.fromStatus,
           toStatus: result.toStatus,
           originLocationId: result.delivery.originLocationId,
-          actorUserId: input.actorUserId,
           actorUserSlug: input.actorUserSlug,
           occurredAt: now,
-          assignedUserId: input.assignedUserId,
+          assignedUserSlug: result.delivery.assignedUserSlug,
         },
       });
       return result;
@@ -165,7 +164,7 @@ export class DeliveryStatusCompose {
         publisher: this.deps.platformEventPublisher,
         logger: this.deps.logger,
         event: {
-          deliveryId: input.deliveryId,
+          deliveryReference: result.delivery.deliveryReference,
           fromStatus: result.fromStatus,
           toStatus: result.toStatus,
         },

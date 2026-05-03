@@ -13,6 +13,8 @@ import type {
   DeliveryCreationStockSideEffectsPort,
 } from "./delivery-creation.contracts.js";
 import { DeliveryCreationServiceImpl } from "./delivery-creation.service.js";
+import type { DeliveryPublicIdentifierResolver } from "./delivery-public-identifier.repository.js";
+import { PostgresDeliveryPublicIdentifierRepository } from "./delivery-public-identifier.repository.js";
 import type { DeliveryQueryService } from "./delivery-query.contracts.js";
 import { DeliveryStatusCompose } from "./delivery-status.compose.js";
 import type { DeliveryStatusService } from "./delivery-status.contracts.js";
@@ -28,6 +30,7 @@ type DeliveriesRuntime = {
     deliveryCreationService: DeliveryCreationService;
     deliveryStatusService: DeliveryStatusService;
     deliveryQueryService: DeliveryQueryService;
+    deliveryPublicIdentifierResolver: DeliveryPublicIdentifierResolver;
     onlineOrderSourcePort: OnlineOrderDeliverySourcePort;
     posSaleSourcePort: PosSaleDeliverySourcePort;
     transferSourcePort: TransferDeliverySourcePort;
@@ -105,12 +108,15 @@ export function createDeliveriesRuntime(
   const deliveryQueryService = new PostgresDeliveryQueryRepository(
     databaseRuntime.db,
   );
+  const deliveryPublicIdentifierResolver =
+    new PostgresDeliveryPublicIdentifierRepository(databaseRuntime.db);
 
   return {
     deliveries: {
       deliveryCreationService,
       deliveryStatusService,
       deliveryQueryService,
+      deliveryPublicIdentifierResolver,
       onlineOrderSourcePort,
       posSaleSourcePort,
       transferSourcePort,
