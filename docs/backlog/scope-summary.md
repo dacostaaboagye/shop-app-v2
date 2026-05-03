@@ -20,7 +20,7 @@ A snapshot of the master xlsx so we don't have to parse it every session.
 
 ## Tier A — phase-1 + foundation tickets
 
-47 tickets broken into stories on the `Backlog Audit` sheet. **42 done · 3 partial · 2 not started — 89% done**. All P0 or P1.
+47 tickets broken into stories on the `Backlog Audit` sheet. **43 done · 4 partial / needs audit · 0 not started — 91% done**. All P0 or P1.
 
 ### By area
 
@@ -28,22 +28,21 @@ A snapshot of the master xlsx so we don't have to parse it every session.
 |---|---|---|---|
 | **E-00A-01..06** | Stock ownership foundation (append-only event ledger, ownership resolution, assignment, handover, sales attribution, history view) | 6/6 ✓ | — |
 | **E-00B-01..07** | Stock balance + reservation foundation (real-time balance, reservation lifecycle, expiry release, movement sync, manager release, movement events, admin reservations endpoint) | 7/7 ✓ | — |
-| **E-00C-01..05** | **Deliveries foundation** | 3/5 | C-04 ready for review; C-05 built but needs DoD audit/hardening (all P0) |
+| **E-00C-01..05** | **Deliveries foundation** | 4/5 | C-05 built but needs DoD audit/hardening (P0) |
 | **E-00D-01..07** | Access control + identifiers + portal routing foundation | 6/7 | D-07 lint+CI route-access guard partial |
 | **E-01-01..10** | Auth + navigation + notifications | 10/10 ✓ | — |
 | **E-02-01..05** | Locations | 4/5 | E-02-01 CRUD + zones + deactivation guard partial |
 | **E-03-01..07** | Catalog | 6/7 | E-03-02 bulk import remains partial; E-03-07 immutable change-log and E-03-06 history UI are shipped |
 
-### The 5 unfinished tickets (everything left in tier A)
+### The 4 unfinished tickets (everything left in tier A)
 
 #### P0 — deliveries module (E-00C, all 5 tickets, must ship in order)
 
 | Code | Status | Gap |
 |---|---|---|
-| E-00C-04 | Ready for Review | Delivery query service, active agent/location reads, contextual query authorization, and cross-domain read boundary evidence are in PR prep. |
 | E-00C-05 | Needs DoD Audit | REST endpoints exist, but acceptance evidence, authorization review, and test coverage need a Codex DoD pass before completion. |
 
-E-00C-01, E-00C-02, and E-00C-03 are complete in the Markdown working surface. E-00C-04 is ready for review in the Codex working branch. After it merges, the next unblocked delivery item is an E-00C-05 DoD audit/hardening pass because delivery REST endpoints already exist but need completion evidence.
+E-00C-01 through E-00C-04 are complete in the Markdown working surface. The next unblocked delivery item is an E-00C-05 DoD audit/hardening pass because delivery REST endpoints already exist but need completion evidence.
 
 #### P1 — scattered
 
@@ -94,7 +93,9 @@ These are oddities in the xlsx itself, not the work — worth noting so they get
 
 Based on what's in the xlsx today, the remaining near-term runway is clear:
 
-1. **E-00C-04..05** — continue the deliveries module. Two remaining P0s, mostly backend, sequential. Unblocks E-12/E-14/E-15/E-16 downstream.
+Current Markdown working-surface update after PR #104: E-00C-05 is now the next delivery item; run its REST API DoD audit/hardening pass before moving to E-00D-07.
+
+1. **E-00C-05** - run the delivery REST API DoD audit/hardening pass. This is the last E-00C P0 and unblocks E-12/E-14/E-15/E-16 downstream once complete.
 2. **E-00D-07** — close the route-access lint + CI audit. Small effort, large safety per `Next Up` sheet rationale.
 3. **E-02-01** — finish location lifecycle (CRUD + zones + deactivation guard).
 4. **E-03-02** — catalog bulk import.

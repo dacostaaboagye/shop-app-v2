@@ -116,9 +116,8 @@ from event ordering.
 - verified complete in the Markdown working surface, but not re-audited in this
   foundation snapshot: `E-00A-06`
 - built but still requiring DoD audit/hardening: `E-00C-05`
-- ready for review in the Markdown working surface: `E-00C-04`
+- shipped in the Markdown working surface: `E-00C-04` (PR #104)
 - still open auth and portal work: `E-01-02`, `E-01-07`, `E-01-08`,
   `E-01-09`, `E-01-10`
-- current implementation priority remains on delivery foundation; after
-  `E-00C-04` merges, an E-00C-05 DoD audit/hardening pass is the next
-  delivery-runtime item
+- current implementation priority remains on delivery foundation; an E-00C-05
+  DoD audit/hardening pass is the next delivery-runtime item
