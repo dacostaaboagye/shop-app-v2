@@ -118,6 +118,7 @@ jobs:
       VERCEL_PROJECT_ID: ${{ secrets.STAGING_VERCEL_PROJECT_ID }}
       STAGING_VERCEL_TOKEN: ${{ secrets.STAGING_VERCEL_TOKEN }}
       STAGING_API_BASE_URL: ${{ secrets.STAGING_API_BASE_URL }}
+      STAGING_R2_ACCOUNT_ID: ${{ secrets.STAGING_R2_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -134,6 +135,7 @@ jobs:
           [ -z "$VERCEL_ORG_ID" ] && missing="$missing STAGING_VERCEL_ORG_ID"
           [ -z "$VERCEL_PROJECT_ID" ] && missing="$missing STAGING_VERCEL_PROJECT_ID"
           [ -z "$STAGING_API_BASE_URL" ] && missing="$missing STAGING_API_BASE_URL"
+          [ -z "$STAGING_R2_ACCOUNT_ID" ] && missing="$missing STAGING_R2_ACCOUNT_ID"
           if [ -n "$missing" ]; then
             echo "::error::Missing required secrets:$missing"
             exit 1
@@ -151,4 +153,6 @@ jobs:
             --token "$STAGING_VERCEL_TOKEN" \
             --archive=tgz \
             --build-env API_BASE_URL="$STAGING_API_BASE_URL" \
-            --env API_BASE_URL="$STAGING_API_BASE_URL"
+            --build-env R2_ACCOUNT_ID="$STAGING_R2_ACCOUNT_ID" \
+            --env API_BASE_URL="$STAGING_API_BASE_URL" \
+            --env R2_ACCOUNT_ID="$STAGING_R2_ACCOUNT_ID"

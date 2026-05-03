@@ -19,7 +19,7 @@ import {
 } from "@/lib/react-query/official-documents";
 import { toRoute } from "@/lib/routes";
 
-type Portal = "manager" | "worker";
+type Portal = "admin" | "manager" | "worker";
 type Action = "download" | "share";
 
 type Props = {
@@ -98,7 +98,7 @@ export function GtnDocumentPageClient({ portal, reference }: Props) {
           />
         }
         backHref={getBackHref(portal)}
-        backLabel="Supply requests"
+        backLabel={portal === "admin" ? "Transfers" : "Supply requests"}
         description="Issued goods transfer note for the stock request transaction."
         eyebrow="Goods transfer note"
         title={reference}
@@ -175,5 +175,6 @@ function DocumentActions({
 }
 
 function getBackHref(portal: Portal): Route {
+  if (portal === "admin") return toRoute("/admin/transfers");
   return toRoute(`/${portal}/stock/supply-requests`);
 }

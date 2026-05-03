@@ -115,6 +115,17 @@ The workflow writes these to Fly on every testing deployment:
 - `R2_BUCKET`
 - `R2_PUBLIC_URL`
 
+### R2 browser-upload CORS
+
+Direct media uploads use presigned `PUT` requests from the browser to the R2
+S3-compatible endpoint. Configure the bucket CORS policy for the deployed web
+origin before validating uploads:
+
+- Allowed origins: the exact `WEB_BASE_URL` value for the environment
+- Allowed methods: `PUT`, `GET`, `HEAD`
+- Allowed headers: `content-type`
+- Exposed headers: `ETag`
+
 The process-level event-delivery flag is handled by the Fly process commands:
 
 - `api` runs with `PLATFORM_EVENT_DELIVERY_ENABLED=false`
@@ -145,14 +156,16 @@ The workflow deploys to that Vercel project using:
 ### Web API routing
 
 The web app proxies browser `/api/*` traffic through the same public web
-origin. The workflow injects the Fly API public base URL into the Vercel build
-as:
+origin. The workflow injects these values into the Vercel build:
 
 - `API_BASE_URL`
+- `R2_ACCOUNT_ID` (not secret; used only to scope the web CSP for direct
+  browser uploads to the environment's R2 account endpoint)
 
-Set the public testing API URL in:
+Set the public testing API URL and R2 account ID in:
 
 - `TEST_API_BASE_URL`
+- `TEST_R2_ACCOUNT_ID`
 
 Example:
 

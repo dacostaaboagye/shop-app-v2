@@ -23,6 +23,12 @@ if (isVercelDeploy && !apiBaseUrlFromEnv) {
 
 const configuredApiBaseUrl =
   apiBaseUrlFromEnv ?? (isDevelopment ? "http://localhost:4000" : "");
+const r2AccountIdFromEnv =
+  process.env.R2_ACCOUNT_ID?.trim() ??
+  process.env.NEXT_PUBLIC_R2_ACCOUNT_ID?.trim();
+const r2UploadConnectSource = r2AccountIdFromEnv
+  ? `https://*.${r2AccountIdFromEnv}.r2.cloudflarestorage.com`
+  : null;
 
 // next/image uses these patterns to allow optimization of remote sources.
 // Cloudflare R2's default public hostname is pub-<token>.r2.dev; custom
@@ -43,20 +49,20 @@ function readImageRemoteHosts(raw) {
     .map((hostname) => ({ protocol: "https", hostname }));
 }
 
-// Browser API calls go through the Next.js rewrite at the same origin, so
-// `connect-src 'self'` is sufficient. `'unsafe-inline'` covers Next.js's
-// runtime-emitted scripts/styles; tighten further with nonce middleware in a
-// follow-up. `'unsafe-eval'` is needed in development for HMR/Turbopack only.
+// Browser API calls go through the Next.js rewrite at the same origin. Direct
+// media uploads still PUT to Cloudflare R2 presigned URLs, and PDF previews
+// render locally-created Blob URLs in iframes.
 const scriptSrc = ["'self'", "'unsafe-inline'"];
 if (isDevelopment) scriptSrc.push("'unsafe-eval'");
 
-const contentSecurityPolicy = [
+export const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src ${scriptSrc.join(" ")}`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob: https:",
-  "connect-src 'self'",
+  `connect-src ${["'self'", r2UploadConnectSource].filter(Boolean).join(" ")}`,
+  "frame-src 'self' blob:",
   "frame-ancestors 'none'",
   "form-action 'self' https://accounts.google.com",
   "base-uri 'self'",

@@ -117,6 +117,7 @@ jobs:
       VERCEL_PROJECT_ID: ${{ secrets.PROD_VERCEL_PROJECT_ID }}
       PROD_VERCEL_TOKEN: ${{ secrets.PROD_VERCEL_TOKEN }}
       PROD_API_BASE_URL: ${{ secrets.PROD_API_BASE_URL }}
+      PROD_R2_ACCOUNT_ID: ${{ secrets.PROD_R2_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -133,6 +134,7 @@ jobs:
           [ -z "$VERCEL_ORG_ID" ] && missing="$missing PROD_VERCEL_ORG_ID"
           [ -z "$VERCEL_PROJECT_ID" ] && missing="$missing PROD_VERCEL_PROJECT_ID"
           [ -z "$PROD_API_BASE_URL" ] && missing="$missing PROD_API_BASE_URL"
+          [ -z "$PROD_R2_ACCOUNT_ID" ] && missing="$missing PROD_R2_ACCOUNT_ID"
           if [ -n "$missing" ]; then
             echo "::error::Missing required secrets:$missing"
             exit 1
@@ -150,4 +152,6 @@ jobs:
             --token "$PROD_VERCEL_TOKEN" \
             --archive=tgz \
             --build-env API_BASE_URL="$PROD_API_BASE_URL" \
-            --env API_BASE_URL="$PROD_API_BASE_URL"
+            --build-env R2_ACCOUNT_ID="$PROD_R2_ACCOUNT_ID" \
+            --env API_BASE_URL="$PROD_API_BASE_URL" \
+            --env R2_ACCOUNT_ID="$PROD_R2_ACCOUNT_ID"

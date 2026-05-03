@@ -45,6 +45,10 @@ describe("CORS policy", () => {
       response.headers["access-control-allow-origin"],
       "https://web.example.com",
     );
+    assert.equal(
+      response.headers["access-control-expose-headers"],
+      "Content-Disposition",
+    );
   });
 
   it("rejects a foreign origin when WEB_BASE_URL is configured", async () => {
