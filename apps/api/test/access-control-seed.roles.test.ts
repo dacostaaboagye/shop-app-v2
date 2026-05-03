@@ -35,4 +35,13 @@ describe("access control seeded roles", () => {
       assert.ok(adminRole.permissions.includes(permission), permission);
     }
   });
+
+  it("grants managers delivery assignment permissions for their location", () => {
+    const managerRole = SYSTEM_ROLES.find((role) => role.slug === "manager");
+
+    assert.ok(managerRole);
+    assert.ok(managerRole.permissions.includes("deliveries.view"));
+    assert.ok(managerRole.permissions.includes("deliveries.assign"));
+    assert.ok(managerRole.permissions.includes("deliveries.reassign"));
+  });
 });

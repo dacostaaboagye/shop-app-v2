@@ -1,6 +1,12 @@
 import type { DeliveryStatus } from "@shop/contracts";
-import { deliveries, deliveryItems } from "@shop/database";
-import { and, eq } from "drizzle-orm";
+import {
+  deliveries,
+  deliveryItems,
+  roles,
+  userRoles,
+  users,
+} from "@shop/database";
+import { and, eq, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { PlatformEventRecord } from "../events/platform-event.types.js";
 import type { DeliveryRecord } from "./delivery.types.js";
@@ -13,6 +19,7 @@ export type TransitionStatusInput = {
   expectedStatus: DeliveryStatus;
   nextStatus: DeliveryStatus;
   assignedUserId?: string;
+  eligibleAgentLocationId?: string;
   cancellationReason?: string;
   actorUserId: string;
   now: Date;
@@ -93,12 +100,7 @@ class PostgresDeliveryStatusWriteTransaction
     const [row] = await this.tx
       .update(deliveries)
       .set(setClause)
-      .where(
-        and(
-          eq(deliveries.id, input.deliveryId),
-          eq(deliveries.status, input.expectedStatus),
-        ),
-      )
+      .where(buildTransitionWhere(input))
       .returning();
     if (!row) {
       return null;
@@ -109,6 +111,32 @@ class PostgresDeliveryStatusWriteTransaction
       .where(eq(deliveryItems.deliveryId, row.id));
     return mapDeliveryRow(row, itemRows.map(mapDeliveryItemRow));
   }
+}
+
+function buildTransitionWhere(input: TransitionStatusInput) {
+  const conditions = [
+    eq(deliveries.id, input.deliveryId),
+    eq(deliveries.status, input.expectedStatus),
+  ];
+
+  if (input.assignedUserId && input.eligibleAgentLocationId) {
+    conditions.push(
+      sql`exists (
+        select 1
+        from ${userRoles}
+        inner join ${roles} on ${roles.id} = ${userRoles.roleId}
+        inner join ${users} on ${users.id} = ${userRoles.userId}
+        where ${userRoles.userId} = ${input.assignedUserId}
+          and ${userRoles.locationId} = ${input.eligibleAgentLocationId}
+          and ${roles.slug} = 'agent'
+          and ${users.status} = 'active'
+          and ${userRoles.revokedAt} is null
+        for share of ${userRoles}, ${users}
+      )`,
+    );
+  }
+
+  return and(...conditions);
 }
 
 function buildSetClause(

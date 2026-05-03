@@ -116,11 +116,21 @@ export class DeliveryStatusCompose {
         expectedStatus: "assigned",
         nextStatus: "assigned",
         assignedUserId: input.assignedUserId,
+        eligibleAgentLocationId: current.originLocationId,
         actorUserId: input.actorUserId,
         now,
       });
       if (!updated) {
         const fresh = await tx.findById(input.deliveryId);
+        if (
+          fresh?.status === current.status &&
+          fresh.originLocationId === current.originLocationId
+        ) {
+          throw new DeliveryAgentNotEligibleError({
+            deliveryId: input.deliveryId,
+            userId: input.assignedUserId,
+          });
+        }
         throw new DeliveryStatusConflictError({
           deliveryId: input.deliveryId,
           expectedStatus: "assigned",
