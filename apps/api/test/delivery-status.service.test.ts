@@ -5,6 +5,7 @@ import { DeliverySourceNotFoundError } from "../src/modules/deliveries/delivery-
 import { DeliveryStatusCompose } from "../src/modules/deliveries/delivery-status.compose.js";
 import {
   DeliveryAssignmentRequiredError,
+  DeliveryCancellationReasonRequiredError,
   DeliveryIllegalStatusTransitionError,
   DeliveryStatusConflictError,
   DeliveryTerminalStatusError,
@@ -66,6 +67,7 @@ class FakeTransaction implements DeliveryStatusWriteTransaction {
   async findById(): Promise<DeliveryRecord | null> {
     return this.initial;
   }
+  async appendPlatformEvent(): Promise<void> {}
   async transitionStatus(
     input: TransitionStatusInput,
   ): Promise<DeliveryRecord | null> {
@@ -233,7 +235,49 @@ describe("DeliveryStatusService.dispatch", () => {
   });
 });
 
+describe("DeliveryStatusService.complete", () => {
+  it("transitions in_transit to completed", async () => {
+    const tx = new FakeTransaction(
+      buildDelivery({
+        status: "in_transit",
+        assignedUserId: ASSIGNEE,
+        assignedAt: new Date("2026-05-03T09:00:00Z"),
+        dispatchedAt: new Date("2026-05-03T10:00:00Z"),
+      }),
+      buildDelivery({
+        status: "completed",
+        assignedUserId: ASSIGNEE,
+        completedAt: new Date("2026-05-03T11:00:00Z"),
+      }),
+    );
+    const service = buildService(tx);
+    const result = await service.complete({
+      deliveryId: DELIVERY_ID,
+      actorUserId: ACTOR,
+      actorUserSlug: "actor-slug",
+    });
+
+    assert.equal(result.status, "transitioned");
+    assert.equal(result.toStatus, "completed");
+    assert.equal(tx.transitionCalls[0]?.nextStatus, "completed");
+  });
+});
+
 describe("DeliveryStatusService.cancel", () => {
+  it("rejects cancel without a non-empty reason", async () => {
+    const service = buildService(new FakeTransaction(buildDelivery()));
+    await assert.rejects(
+      () =>
+        service.cancel({
+          deliveryId: DELIVERY_ID,
+          reason: "   ",
+          actorUserId: ACTOR,
+          actorUserSlug: "actor-slug",
+        }),
+      DeliveryCancellationReasonRequiredError,
+    );
+  });
+
   it("transitions any non-terminal state to cancelled with reason persisted", async () => {
     const tx = new FakeTransaction(
       buildDelivery({ status: "assigned", assignedUserId: ASSIGNEE }),

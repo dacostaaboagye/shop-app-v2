@@ -13,6 +13,7 @@ import type {
   DeliveryStatusWriteTransaction,
   TransitionStatusInput,
 } from "../src/modules/deliveries/postgres-delivery-status-write.repository.js";
+import type { PlatformEventRecord } from "../src/modules/events/platform-event.types.js";
 
 const ACTOR = "00000000-0000-4000-8000-000000000099";
 const DELIVERY_ID = "00000000-0000-4000-8000-000000000001";
@@ -65,6 +66,7 @@ class FakeTransaction implements DeliveryStatusWriteTransaction {
   async findById(): Promise<DeliveryRecord | null> {
     return this.initial;
   }
+  async appendPlatformEvent(_event: PlatformEventRecord): Promise<void> {}
   async transitionStatus(
     input: TransitionStatusInput,
   ): Promise<DeliveryRecord | null> {

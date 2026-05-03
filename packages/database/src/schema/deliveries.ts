@@ -86,6 +86,22 @@ export const deliveries = pgTable(
       "deliveries_cancellation_reason_consistent",
       sql`(${table.status} = 'cancelled') = (${table.cancellationReason} IS NOT NULL)`,
     ),
+    check(
+      "deliveries_assigned_state_consistent",
+      sql`${table.status} NOT IN ('assigned', 'in_transit', 'completed') OR (${table.assignedUserId} IS NOT NULL AND ${table.assignedAt} IS NOT NULL AND ${table.assignedBy} IS NOT NULL)`,
+    ),
+    check(
+      "deliveries_in_transit_state_consistent",
+      sql`${table.status} NOT IN ('in_transit', 'completed') OR (${table.dispatchedAt} IS NOT NULL AND ${table.dispatchedBy} IS NOT NULL)`,
+    ),
+    check(
+      "deliveries_completed_state_consistent",
+      sql`${table.status} <> 'completed' OR (${table.completedAt} IS NOT NULL AND ${table.completedBy} IS NOT NULL)`,
+    ),
+    check(
+      "deliveries_cancelled_state_consistent",
+      sql`${table.status} <> 'cancelled' OR (${table.cancelledAt} IS NOT NULL AND ${table.cancelledBy} IS NOT NULL)`,
+    ),
   ],
 );
 
