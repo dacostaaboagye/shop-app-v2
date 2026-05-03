@@ -108,6 +108,7 @@ When a ticket reaches DoD and is shipped or ready for merge, do not wait for the
 Default closure flow:
 
 - Confirm DoD evidence, merged PR state, CI status, and any residual risks.
+- Do not promote `dev` to `testing` after every merge. Testing deployments are batched to control cost and operational noise. Only run a `dev` -> `testing` promotion when the project owner explicitly requests it or when a planned release batch is being prepared.
 - Update the relevant backlog epic file status and append shipped PR evidence.
 - Update the master backlog workbook when the changed item is represented there; if the xlsx cannot be safely edited, state the blocker and update the Markdown working surface.
 - Re-read the authoritative `Next Up` queue and current dependencies.

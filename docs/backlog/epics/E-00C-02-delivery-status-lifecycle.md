@@ -1,10 +1,10 @@
 ---
 id: E-00C-02
 title: Manage delivery status through its full lifecycle
-status: planned
+status: done
 priority: P0
 domain: backend
-owner: claude
+owner: codex
 parents: []
 acceptance:
   - A delivery is created in status "draft" (already enforced at the schema level by E-00C-01).
@@ -45,7 +45,7 @@ This epic adds that seam: a `DeliveryStatusService` with one transition method p
 - **Transition to "assigned" without an assignedUserId** — reject with `DeliveryAssignmentRequiredError`. Don't allow a "phantom assigned" state.
 - **Transition to "cancelled" without a reason** — reject with validation error. Reason captured in the audit trail / event payload.
 - **Delivery row missing** — reject with `DeliverySourceNotFoundError` (re-using the existing error class from E-00C-01).
-- **Event publish fails after commit** — the status change still landed (the tx already committed); the platform-event outbox loop will retry.
+- **Event append fails inside the transition transaction** - the status transition rolls back with the event append, so there is no committed status change without retryable event evidence.
 
 ## Open questions for design
 
@@ -71,7 +71,7 @@ Author: `node-backend-systems-architect`. Aligns with ADRs 0001 (modular monolit
 - **Atomic transition**: single guarded `UPDATE … WHERE id = $deliveryId AND status = $expectedStatus` with optimistic locking. Zero rows updated → re-read row, surface as `DeliverySourceNotFoundError` (gone) or `DeliveryStatusConflictError` (raced).
 - **Actor identity**: input parameter `actorUserId: string`. Matches `createdBy` from E-00C-01.
 - **Permission keys**: per-transition — `deliveries.assign`, `deliveries.dispatch`, `deliveries.complete`, `deliveries.cancel`.
-- **Event publishing**: `delivery.status_changed` via `PlatformEventPublisher.publish` after commit. Mirrors `password-reset.service.ts`. Carries `from`, `to`, `actorUserId`, `assignedUserId` (if applicable), `cancellationReason` (if applicable).
+- **Event publishing**: `delivery.status_changed` is appended to the platform-event outbox in the same transaction as the status update, then the delivery loop is notified after commit. Carries `from`, `to`, `actorUserId`, `assignedUserId` (if applicable), `cancellationReason` (if applicable).
 - **Re-assignment**: out of scope. Only `draft → assigned` is allowed. Re-assignment becomes a separate epic with its own method.
 - **Cancellation reason**: free-text varchar(240). No enum / vocabulary in this epic; product can revisit later.
 
@@ -107,3 +107,18 @@ Eight commit-sized tasks, sequential.
 
 Real-DB integration tests for happy-path transitions, idempotent re-call, concurrent CAS race, and after-commit event publish ordering land alongside E-00C-01's integration test follow-up.
 
+## Shipped
+
+- PR: [#100](https://github.com/dacostaaboagye/shop-app-v2/pull/100)
+- Merged: 2026-05-03
+- Evidence:
+  - Delivery lifecycle service owns `draft -> assigned -> in_transit -> completed` and non-terminal cancellation.
+  - Status routes enforce delivery-origin scoped authorization before service invocation.
+  - `delivery.status_changed` events are appended transactionally with the status update; noop transitions do not emit duplicates.
+  - Cancellation reason is validated at the service boundary and persisted for cancelled rows.
+  - Database lifecycle constraints protect required timestamp/actor fields for assigned, in-transit, completed, and cancelled states.
+  - CI `validate` passed on PR #100.
+
+## Follow-up
+
+- E-00C-03 remains next: delivery agent assignment service should build on this lifecycle seam instead of mutating delivery status directly.
