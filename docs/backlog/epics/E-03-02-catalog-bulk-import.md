@@ -1,7 +1,7 @@
 ---
 id: E-03-02
 title: Import products and variants in bulk via file upload
-status: in_progress
+status: shipped
 priority: P1
 domain: full-stack
 owner: codex
@@ -102,3 +102,15 @@ Optional:
 - Brand and category imports have contract, parser, service, API, and frontend coverage for success and row-level failure paths.
 - Product/variant imports provide durable job status and failed-row report recovery; brand/category imports return immediate row-level results and a downloadable failed-row CSV from the dialog result.
 - `pnpm guard` passes; `pnpm verify` runs when practical.
+
+## Related PRs
+
+- Product/variant bulk import workflow: https://github.com/dacostaaboagye/shop-app-v2/pull/110
+- Bulk category and brand imports: https://github.com/dacostaaboagye/shop-app-v2/pull/111
+
+## Shipped Evidence
+
+- Shipped to `dev` on 2026-05-03.
+- PR #110 delivered product/variant CSV import templates, queued upload jobs, parser validation, row-level failures, job status, failed-row reports, and admin UI.
+- PR #111 delivered dedicated brand/category CSV imports with templates, row-level validation, permissioned API routes, admin UI entry points, and failed-row CSV export.
+- Local verification before PR #111: `pnpm guard`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` passed. Build emitted a non-fatal local disk-space warning after successful tasks.
