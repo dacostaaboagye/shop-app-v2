@@ -115,10 +115,13 @@ from event ordering.
   public-ID, frontend-style, and file-length guards plus CI and PR checklist
 - verified complete in the Markdown working surface, but not re-audited in this
   foundation snapshot: `E-00A-06`
-- built but still requiring DoD audit/hardening: `E-00C-05`
+- blocked after Codex DoD audit/hardening: `E-00C-05` until delivery REST
+  contracts use public references/slugs instead of raw internal identifiers
+- planned delivery unblocker: `E-00C-06` public delivery references and REST
+  identifier contract cleanup
 - ready for review in the Markdown working surface: `E-00C-04`
 - still open auth and portal work: `E-01-02`, `E-01-07`, `E-01-08`,
   `E-01-09`, `E-01-10`
 - current implementation priority remains on delivery foundation; after
-  `E-00C-04` merges, an E-00C-05 DoD audit/hardening pass is the next
-  delivery-runtime item
+  `E-00C-04` merges, `E-00C-06` is the next delivery-runtime item because it
+  unblocks E-00C-05 DoD and downstream E-12/E-14/E-15/E-16 work

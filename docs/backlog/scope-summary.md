@@ -28,7 +28,7 @@ A snapshot of the master xlsx so we don't have to parse it every session.
 |---|---|---|---|
 | **E-00A-01..06** | Stock ownership foundation (append-only event ledger, ownership resolution, assignment, handover, sales attribution, history view) | 6/6 ✓ | — |
 | **E-00B-01..07** | Stock balance + reservation foundation (real-time balance, reservation lifecycle, expiry release, movement sync, manager release, movement events, admin reservations endpoint) | 7/7 ✓ | — |
-| **E-00C-01..05** | **Deliveries foundation** | 3/5 | C-04 ready for review; C-05 built but needs DoD audit/hardening (all P0) |
+| **E-00C-01..06** | **Deliveries foundation** | 3/6 | C-04 ready for review; C-05 blocked by public-ID contract; C-06 planned to fix delivery public identifiers (all P0) |
 | **E-00D-01..07** | Access control + identifiers + portal routing foundation | 6/7 | D-07 lint+CI route-access guard partial |
 | **E-01-01..10** | Auth + navigation + notifications | 10/10 ✓ | — |
 | **E-02-01..05** | Locations | 4/5 | E-02-01 CRUD + zones + deactivation guard partial |
@@ -41,9 +41,10 @@ A snapshot of the master xlsx so we don't have to parse it every session.
 | Code | Status | Gap |
 |---|---|---|
 | E-00C-04 | Ready for Review | Delivery query service, active agent/location reads, contextual query authorization, and cross-domain read boundary evidence are in PR prep. |
-| E-00C-05 | Needs DoD Audit | REST endpoints exist, but acceptance evidence, authorization review, and test coverage need a Codex DoD pass before completion. |
+| E-00C-05 | Blocked | REST endpoints exist and route/fallback evidence was hardened, but the public contract still exposes raw internal UUID/user identifiers. |
+| E-00C-06 | Planned | Add delivery header public references and replace delivery REST UUID DTOs/routes with references, slugs, and SKU/variant public identifiers. |
 
-E-00C-01, E-00C-02, and E-00C-03 are complete in the Markdown working surface. E-00C-04 is ready for review in the Codex working branch. After it merges, the next unblocked delivery item is an E-00C-05 DoD audit/hardening pass because delivery REST endpoints already exist but need completion evidence.
+E-00C-01, E-00C-02, and E-00C-03 are complete in the Markdown working surface. E-00C-04 is ready for review in the Codex working branch. E-00C-05 now has stronger HTTP-edge evidence, but cannot meet DoD until E-00C-06 supplies a delivery-owned public identifier contract.
 
 #### P1 — scattered
 
@@ -94,7 +95,7 @@ These are oddities in the xlsx itself, not the work — worth noting so they get
 
 Based on what's in the xlsx today, the remaining near-term runway is clear:
 
-1. **E-00C-04..05** — continue the deliveries module. Two remaining P0s, mostly backend, sequential. Unblocks E-12/E-14/E-15/E-16 downstream.
+1. **E-00C-04..06** — continue the deliveries module. E-00C-05 is blocked on E-00C-06 public identifiers before the REST API can satisfy DoD. Unblocks E-12/E-14/E-15/E-16 downstream.
 2. **E-00D-07** — close the route-access lint + CI audit. Small effort, large safety per `Next Up` sheet rationale.
 3. **E-02-01** — finish location lifecycle (CRUD + zones + deactivation guard).
 4. **E-03-02** — catalog bulk import.

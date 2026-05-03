@@ -24,7 +24,9 @@ type Deps = {
   };
 };
 
-type DeliveryIdParams = { deliveryId: string };
+const deliveryIdParamsSchema = z.object({
+  deliveryId: z.string().uuid(),
+});
 
 const listDeliveriesQuerySchema = z
   .object({
@@ -53,7 +55,7 @@ export function registerDeliveryQueryRoutes(
     url: findDeliveryRoute.url,
     async handler(request) {
       const actor = getAuthenticatedActor(request);
-      const params = request.params as DeliveryIdParams;
+      const params = deliveryIdParamsSchema.parse(request.params);
       const record = await deps.deliveryQueryService.findById(
         params.deliveryId,
       );

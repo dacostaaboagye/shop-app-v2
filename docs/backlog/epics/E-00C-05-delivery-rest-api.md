@@ -1,7 +1,7 @@
 ---
 id: E-00C-05
 title: Expose REST API for delivery creation, assignment, status, and queries
-status: built
+status: blocked
 priority: P0
 domain: backend
 owner: claude
@@ -15,7 +15,21 @@ acceptance:
 size: medium
 ---
 
-> Current status note: delivery REST routes exist in the codebase, but the Markdown backlog has not yet completed a Codex DoD audit for E-00C-05. Treat `built` here as built/unverified until acceptance evidence, security review, and test coverage are reconciled.
+> Current status note: Codex DoD audit on 2026-05-03 found the HTTP edge mostly implemented and added missing route/fallback evidence, but E-00C-05 is not DoD-ready until delivery REST DTOs stop exposing internal UUID/user identifiers or the product/architecture backlog explicitly approves a public delivery identifier strategy.
+
+## Codex DoD audit - 2026-05-03
+
+Outcome: **No ship**.
+
+Evidence added during audit:
+
+- Dispatch, complete, and cancel route tests now prove origin-scoped permission checks happen before status service invocation.
+- Delivery route params now use Zod UUID parsing before query/status services run.
+- Default unwired delivery runtime now has structured 503 route tests for representative creation, status, detail, and list endpoints.
+
+Remaining blocker:
+
+- Delivery responses and route contracts still expose UUID fields such as `deliveryId`, `deliveryItemId`, `skuId`, `originLocationId`, `assignedUserId`, and `createdBy`. ADR 0002 requires public APIs to use slugs, codes, or references instead of raw internal IDs. Delivery persistence currently has item-level `itemReference` but no delivery-level public reference, so this needs an explicit identifier design before the ticket can be marked complete.
 
 ## Why
 
