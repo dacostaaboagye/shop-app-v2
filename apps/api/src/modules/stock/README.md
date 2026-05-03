@@ -7,6 +7,8 @@ Owns:
 - stock reservations
 - availability calculation
 - reservation confirmation and release
+- delivery stock side-effect participants for delivery creation transaction
+  boundaries
 - expiry jobs and balance synchronization
 
 This module is concurrency-sensitive. Stock mutations must be transactional.
@@ -61,6 +63,11 @@ Usage examples:
   `syncMovement({ skuId, locationId, movementType, sourceType, sourceKey, quantityDelta, occurredAt })`
 - active reservation admin path:
   `GET /api/admin/stock/reservations/active?locationId=...`
+- delivery creation transaction participant:
+  `applyDeliveryStockSideEffectsInStockTransaction(...)` reserves origin stock
+  for delivery sources and confirms transfer reservations with a matching
+  `transfer_out` stock movement plus dispatched GTN evidence for in-transit
+  stock reads
 
 Workbook-to-repo interpretation for `E-00B-03`:
 

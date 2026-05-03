@@ -104,6 +104,30 @@ export class DeliveryInvalidDestinationError extends AppError {
   }
 }
 
+export class DeliveryInvalidSourceQuantityError extends AppError {
+  constructor(input: {
+    quantity: number;
+    sourceReference: string;
+    sourceType: string;
+    skuId: string;
+  }) {
+    super({
+      code: "validation_error",
+      statusCode: 400,
+      title: "Invalid delivery source quantity",
+      detail: `${input.sourceType} ${input.sourceReference} has an invalid quantity for SKU ${input.skuId}. Delivery source quantities must be positive integers.`,
+      details: {
+        deliveryErrorCode: DELIVERY_ERROR_CODES.invalidSourceQuantity,
+        sourceType: input.sourceType,
+        sourceReference: input.sourceReference,
+        skuId: input.skuId,
+        quantity: input.quantity,
+      },
+    });
+    this.name = "DeliveryInvalidSourceQuantityError";
+  }
+}
+
 export class DeliveryPartialFulfillmentUnsupportedError extends AppError {
   constructor(input: { sourceType: string; sourceReference: string }) {
     super({
