@@ -1,7 +1,7 @@
 ---
 id: E-00C-03
 title: Assign and reassign deliveries to agents
-status: ready_for_review
+status: done
 priority: P0
 domain: backend
 owner: codex
@@ -57,3 +57,17 @@ Light tier: extends E-00C-02's compose helper. No new schema. No architect call.
   - `pnpm --filter @shop/api build`
   - `pnpm --filter @shop/api test`
   - `pnpm --filter @shop/api exec tsx --test test/delivery-status.service.test.ts test/delivery-agent-assignment.service.test.ts test/delivery-agent-eligibility.adapter.test.ts`
+
+## Shipped
+
+- PR: [#102](https://github.com/dacostaaboagye/shop-app-v2/pull/102)
+- Merged: 2026-05-03
+- Merge commit: `327a50776d2405223176f1fb3eff87dfdb376919`
+- Evidence:
+  - CI `validate` passed on PR #102.
+  - `pnpm verify` passed locally before PR creation.
+  - Manager assignment permissions, active origin-location agent eligibility, route-level reassign authorization, structured errors, and reassign CAS/write behavior are covered by tests.
+
+## Follow-up
+
+- E-00C-04 is next: delivery query service for listing deliveries by agent and location.
