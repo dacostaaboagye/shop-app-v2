@@ -3,7 +3,7 @@
 A snapshot of the master xlsx so we don't have to parse it every session.
 
 > **Source**: `Building and Refining Product Backlog(2).xlsx` at the repo root.
-> **Last derived**: 2026-05-03. Markdown closure updates were appended after PR #79, PR #107, and PR #108 merged; re-run the xlsx refresh flow to make the workbook-backed snapshot authoritative again.
+> **Last derived**: 2026-05-03. Markdown closure updates were appended after PR #79, PR #107, PR #108, PR #110, and PR #111 merged; re-run the xlsx refresh flow to make the workbook-backed snapshot authoritative again.
 > **Authority**: the xlsx is the source of truth. This doc reflects state at the time it was written. **Re-derive from the xlsx whenever priority or status decisions are at stake** — do not trust this doc for current status if any time has passed since the date above.
 >
 > **To refresh**: ask Claude to "refresh the scope summary" (or invoke `/refresh-backlog-summary`). The skill at `.claude/skills/refresh-backlog-summary/SKILL.md` re-reads the xlsx, updates this file, and opens a PR.
@@ -20,7 +20,7 @@ A snapshot of the master xlsx so we don't have to parse it every session.
 
 ## Tier A — phase-1 + foundation tickets
 
-48 tickets broken into stories on the `Backlog Audit` sheet. **47 done - 1 partial / needs audit - 98% done**. All P0 or P1.
+48 tickets broken into stories on the `Backlog Audit` sheet. **48 done - 0 partial / needs audit - 100% done**. All P0 or P1.
 
 ### By area
 
@@ -32,19 +32,17 @@ A snapshot of the master xlsx so we don't have to parse it every session.
 | **E-00D-01..07** | Access control + identifiers + portal routing foundation | 7/7 | - |
 | **E-01-01..10** | Auth + navigation + notifications | 10/10 ✓ | — |
 | **E-02-01..05** | Locations | 5/5 | - |
-| **E-03-01..07** | Catalog | 6/7 | E-03-02 bulk import remains partial; E-03-07 immutable change-log and E-03-06 history UI are shipped |
+| **E-03-01..07** | Catalog | 7/7 | E-03-02 bulk import, E-03-07 immutable change-log, and E-03-06 history UI are shipped |
 
-### The 1 unfinished ticket (everything left in tier A)
+### Tier A completion
 
 #### Closed P0 - deliveries module (E-00C)
 
 E-00C-01 through E-00C-06 are complete in the Markdown working surface. PR #107 closed the public delivery identifier blocker, which also lets E-00C-05 meet REST API DoD.
 
-#### P1 — scattered
+#### Closed P1 - locations, catalog, and route-access safety
 
-| Code | Status | Gap |
-|---|---|---|
-| E-03-02 | Partial | Schema + contracts ready; **upload handler / parser / dry-run preview** still to ship. |
+E-02-01, E-00D-07, and E-03-02 are complete in the Markdown working surface. PR #110 shipped product/variant bulk import; PR #111 shipped dedicated brand/category bulk imports.
 
 ## Tier B — phase-2+ epics defined but **not yet ticketed**
 
@@ -87,6 +85,6 @@ These are oddities in the xlsx itself, not the work — worth noting so they get
 
 Based on what's in the xlsx today, the remaining near-term runway is clear:
 
-1. **E-03-02** - catalog bulk import upload handler, parser, and dry-run preview.
+1. **E-04** - refine Inventory tracking per location into implementable tickets, then start the highest-value stock-count/opening-balance slice.
 
-After that, the PO needs to break **E-04** into tickets in `Backlog Audit` so the rest of phase-2 (E-05..E-15) can be sized against it.
+The PO needs to break **E-04** into tickets in `Backlog Audit` so the rest of phase-2 (E-05..E-15) can be sized against it.
