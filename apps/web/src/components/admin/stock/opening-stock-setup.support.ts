@@ -10,6 +10,80 @@ export type OpeningStockParsedRow = {
   sku: string;
 };
 
+export type OpeningStockFormValues = {
+  note: string;
+  quantityEntry: string;
+  rawRows: string;
+  skuEntry: string;
+  sourceReference: string;
+  sourceType: AdminOpeningStockRequest["sourceType"];
+};
+
+export function appendOpeningStockRow(input: {
+  currentRows: string;
+  quantity: string;
+  sku: string;
+}) {
+  const sku = input.sku.trim();
+  const quantity = input.quantity.trim();
+  if (!canAppendOpeningStockRow({ quantity, sku })) return input.currentRows;
+
+  return [...formatOpeningStockRows(input.currentRows), `${sku},${quantity}`]
+    .filter(Boolean)
+    .join("\n");
+}
+
+export function upsertOpeningStockRow(input: {
+  currentRows: string;
+  quantity: string;
+  sku: string;
+}) {
+  const sku = input.sku.trim();
+  const quantity = input.quantity.trim();
+  if (!canAppendOpeningStockRow({ quantity, sku })) return input.currentRows;
+
+  const rows = parseOpeningStockRows(input.currentRows);
+  const targetKey = sku.toUpperCase();
+  const nextRows = rows.some((row) => row.sku.toUpperCase() === targetKey)
+    ? rows.map((row) =>
+        row.sku.toUpperCase() === targetKey
+          ? `${row.sku},${quantity}`
+          : `${row.sku},${row.onHandQuantity ?? ""}`,
+      )
+    : [...formatOpeningStockRows(input.currentRows), `${sku},${quantity}`];
+
+  return nextRows.filter(Boolean).join("\n");
+}
+
+export function canAppendOpeningStockRow(input: {
+  quantity: string;
+  sku: string;
+}) {
+  return input.sku.trim().length > 0 && /^\d+$/.test(input.quantity.trim());
+}
+
+export function isOpeningStockSkuInRows(input: {
+  rows: ReadonlyArray<OpeningStockParsedRow>;
+  sku: string;
+}) {
+  const sku = input.sku.trim().toUpperCase();
+  return input.rows.some((row) => row.sku.toUpperCase() === sku);
+}
+
+export function hasOpeningStockDraft(input: { quantity: string; sku: string }) {
+  return input.sku.trim().length > 0 || input.quantity.trim().length > 0;
+}
+
+export function removeOpeningStockRow(input: {
+  index: number;
+  rows: ReadonlyArray<OpeningStockParsedRow>;
+}) {
+  return input.rows
+    .filter((_, index) => index !== input.index)
+    .map((row) => `${row.sku},${row.onHandQuantity ?? ""}`)
+    .join("\n");
+}
+
 export function parseOpeningStockRows(input: string): OpeningStockParsedRow[] {
   const duplicateTracker = new Map<string, OpeningStockParsedRow[]>();
   const rows = input
@@ -101,6 +175,22 @@ export function getOpeningStockServerRowErrors(error: unknown) {
   });
 }
 
+export type OpeningStockServerRowError = ReturnType<
+  typeof getOpeningStockServerRowErrors
+>[number];
+
+export function isOpeningStockServerErrorForRow(input: {
+  error: OpeningStockServerRowError;
+  index: number;
+  row: OpeningStockParsedRow;
+}) {
+  if (input.error.sku) {
+    return input.error.sku.toUpperCase() === input.row.sku.toUpperCase();
+  }
+
+  return input.error.index === input.index;
+}
+
 export function getOpeningStockVisibleReviewRows(input: {
   rows: ReadonlyArray<OpeningStockParsedRow>;
   serverErrors: ReturnType<typeof getOpeningStockServerRowErrors>;
@@ -109,12 +199,21 @@ export function getOpeningStockVisibleReviewRows(input: {
     .map((row, index) => ({ index, row }))
     .filter(({ index, row }) => {
       if (index < 100) return true;
-      return input.serverErrors.some(
-        (error) =>
-          error.index === index ||
-          error.sku?.toUpperCase() === row.sku.toUpperCase(),
+      return input.serverErrors.some((error) =>
+        isOpeningStockServerErrorForRow({ error, index, row }),
       );
     });
+}
+
+export function getOpeningStockServerBlockedRowCount(input: {
+  rows: ReadonlyArray<OpeningStockParsedRow>;
+  serverErrors: ReturnType<typeof getOpeningStockServerRowErrors>;
+}) {
+  return input.rows.filter((row, index) =>
+    input.serverErrors.some((error) =>
+      isOpeningStockServerErrorForRow({ error, index, row }),
+    ),
+  ).length;
 }
 
 function splitOpeningStockLine(line: string): [string, string] {
@@ -126,6 +225,13 @@ function splitOpeningStockLine(line: string): [string, string] {
   const [sku = "", quantity = ""] =
     delimiter === null ? line.split(/\s+/) : line.split(delimiter);
   return [sku, quantity];
+}
+
+function formatOpeningStockRows(input: string) {
+  return input
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
 function parseOpeningQuantity(value: string): number | null {

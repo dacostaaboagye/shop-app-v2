@@ -1,16 +1,25 @@
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import type {
   getOpeningStockServerRowErrors,
   parseOpeningStockRows,
 } from "./opening-stock-setup.support";
-import { getOpeningStockVisibleReviewRows } from "./opening-stock-setup.support";
+import {
+  getOpeningStockVisibleReviewRows,
+  isOpeningStockServerErrorForRow,
+} from "./opening-stock-setup.support";
 
 type Props = {
+  onRemoveRow: (index: number) => void;
   rows: ReturnType<typeof parseOpeningStockRows>;
   serverErrors: ReturnType<typeof getOpeningStockServerRowErrors>;
 };
 
-export function OpeningStockRowReview({ rows, serverErrors }: Props) {
+export function OpeningStockRowReview({
+  onRemoveRow,
+  rows,
+  serverErrors,
+}: Props) {
   const visibleRows = getOpeningStockVisibleReviewRows({ rows, serverErrors });
 
   return (
@@ -24,14 +33,13 @@ export function OpeningStockRowReview({ rows, serverErrors }: Props) {
       <div className="mt-3 flex max-h-96 flex-col gap-2 overflow-auto">
         {rows.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
-            Paste SKU rows to preview what will be initialized before submit.
+            Add products to review. The list will appear here before it is
+            saved.
           </div>
         ) : (
           visibleRows.map(({ row, index }) => {
-            const rowServerErrors = serverErrors.filter(
-              (error) =>
-                error.index === index ||
-                error.sku?.toUpperCase() === row.sku.toUpperCase(),
+            const rowServerErrors = serverErrors.filter((error) =>
+              isOpeningStockServerErrorForRow({ error, index, row }),
             );
             const errors = [
               ...row.errors,
@@ -44,22 +52,38 @@ export function OpeningStockRowReview({ rows, serverErrors }: Props) {
                 key={`${row.lineNumber}:${row.sku}`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-mono text-sm">{row.sku}</span>
+                  <div className="min-w-0">
+                    <span className="font-mono text-sm">{row.sku}</span>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Opening quantity:{" "}
+                      {row.onHandQuantity === null
+                        ? "invalid"
+                        : row.onHandQuantity}
+                    </p>
+                  </div>
                   <Badge
                     variant={errors.length > 0 ? "destructive" : "outline"}
                   >
                     {errors.length > 0 ? "Blocked" : "Ready"}
                   </Badge>
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Line {row.lineNumber}, quantity{" "}
-                  {row.onHandQuantity === null ? "invalid" : row.onHandQuantity}
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Row {row.lineNumber}
                 </p>
                 {errors.length > 0 ? (
                   <p className="mt-2 text-sm text-destructive">
                     {errors.join(" ")}
                   </p>
                 ) : null}
+                <Button
+                  className="mt-2"
+                  onClick={() => onRemoveRow(index)}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  Remove row
+                </Button>
               </div>
             );
           })

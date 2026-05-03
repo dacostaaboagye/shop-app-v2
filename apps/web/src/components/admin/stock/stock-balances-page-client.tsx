@@ -20,6 +20,7 @@ import { StockCountWorkspace } from "@/components/admin/stock/stock-count-worksp
 import { AppDataTable } from "@/components/data-table/app-data-table";
 import { useAuthorization } from "@/components/providers/authorization-provider";
 import { StockWorkspaceTableSkeleton } from "@/components/stock/stock-workspace-feedback";
+import { AppBanner } from "@/components/system/app-banner";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { AppTableWrapper } from "@/components/system/app-table-wrapper";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
@@ -119,8 +120,14 @@ export function StockBalancesPageClient() {
         hasFilters={hasFilters}
         locations={locationsQuery.data?.items ?? []}
         locationsLoading={locationsQuery.isPending}
-        onClear={handleClear}
-        onSubmit={handleSubmit}
+        onClear={() => {
+          openingStockMutation.reset();
+          handleClear();
+        }}
+        onSubmit={(event) => {
+          openingStockMutation.reset();
+          handleSubmit(event);
+        }}
         resultLabel={
           stockQuery.data
             ? formatAdminStockResultLabel({
@@ -141,7 +148,8 @@ export function StockBalancesPageClient() {
           <OpeningStockSetupWorkspace
             error={openingStockMutation.error}
             isPending={openingStockMutation.isPending}
-            key={openingResetKey}
+            key={`${filter.locationSlug}:${openingResetKey}`}
+            lookup={{ locationSlug: filter.locationSlug, type: "admin" }}
             locationName={getStockBalanceLocationName(
               filter.locationSlug,
               stockQuery.data?.locationName,
@@ -173,6 +181,13 @@ export function StockBalancesPageClient() {
             }}
           />
         </>
+      ) : null}
+      {canCount && !filter.locationSlug ? (
+        <AppBanner
+          description="Opening stock and stock counts are location-specific. Choose a location above to prepare or correct quantities."
+          title="Select a location to manage stock"
+          tone="info"
+        />
       ) : null}
 
       <AppTableWrapper>
