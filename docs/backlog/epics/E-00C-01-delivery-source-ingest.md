@@ -249,6 +249,7 @@ Open user decisions before build:
 
 Status: Done by Codex on 2026-05-03.
 
+- PR evidence: https://github.com/dacostaaboagye/shop-app-v2/pull/95
 - POS, online-order, and transfer delivery creation now share the same delivery row/item response shape through `DeliveryCreationCompose`, source-specific ports, and public contract schemas.
 - POS and transfer source adapters live in their owning modules (`sales` and `stock`) and are injected into the deliveries runtime; online-order remains stubbed until E-14 but the route calls the service when a real source port resolves an order.
 - Route authorization uses coarse `any_active` metadata plus handler-level contextual origin checks for POS, online order, and transfer before service invocation.
