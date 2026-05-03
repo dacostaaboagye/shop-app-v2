@@ -1,7 +1,7 @@
 ---
 id: E-00C-05
 title: Expose REST API for delivery creation, assignment, status, and queries
-status: blocked
+status: done
 priority: P0
 domain: backend
 owner: claude
@@ -15,11 +15,11 @@ acceptance:
 size: medium
 ---
 
-> Current status note: Codex DoD audit on 2026-05-03 found the HTTP edge mostly implemented and added missing route/fallback evidence, but E-00C-05 is not DoD-ready until delivery REST DTOs stop exposing internal UUID/user identifiers or the product/architecture backlog explicitly approves a public delivery identifier strategy.
+> Current status note: E-00C-05 is DoD-complete after PR #107 resolved the public delivery identifier blocker raised by the Codex audit. Delivery REST routes now use delivery references, location/user slugs, and SKU public identifiers at the API boundary instead of exposing internal UUIDs.
 
 ## Codex DoD audit - 2026-05-03
 
-Outcome: **No ship**.
+Outcome: **Initially no ship; closed after E-00C-06 shipped**.
 
 Evidence added during audit:
 
@@ -27,9 +27,9 @@ Evidence added during audit:
 - Delivery route params now use Zod UUID parsing before query/status services run.
 - Default unwired delivery runtime now has structured 503 route tests for representative creation, status, detail, and list endpoints.
 
-Remaining blocker:
+Resolved blocker:
 
-- Delivery responses and route contracts still expose UUID fields such as `deliveryId`, `deliveryItemId`, `skuId`, `originLocationId`, `assignedUserId`, and `createdBy`. ADR 0002 requires public APIs to use slugs, codes, or references instead of raw internal IDs. Delivery persistence currently has item-level `itemReference` but no delivery-level public reference, so this needs an explicit identifier design before the ticket can be marked complete.
+- PR #107 added delivery header references, updated public route params and DTOs to use references/slugs/SKU codes, and added regression coverage that public delivery responses and errors do not serialize internal delivery, item, SKU, location, user, or creator UUIDs.
 
 ## Why
 
@@ -64,3 +64,11 @@ The deliveries module shipped a service surface in E-00C-01..04 but had no HTTP 
 4. `delivery-creation.routes.ts`, `delivery-status.routes.ts`, `delivery-query.routes.ts` (split for the 250-LOC budget).
 5. `register-deliveries-routes.ts` — top-level register function with 503 fallback for unwired runtimes.
 6. Wire `registerDeliveriesRoutes` into `create-server.ts`.
+
+## Shipped evidence
+
+- PR #106 hardened the delivery REST edge and route/fallback evidence.
+- PR #107 resolved the public identifier blocker and merged to `dev` on 2026-05-03.
+- PR #107 merge commit: `d13198612987a61b58912e64f8257e7e506f337b`.
+- CI `validate` for PR #107 passed on 2026-05-03 at 13:08 UTC.
+- E-00C-05 acceptance now has evidence through the combined route, authorization, fallback, DTO-shape, and public-identifier tests shipped across PR #106 and PR #107.
