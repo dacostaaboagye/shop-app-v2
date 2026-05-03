@@ -7,6 +7,7 @@ import {
   reassignDeliveryRequestSchema,
 } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
+import { z } from "zod";
 import type { PermissionResolutionScope } from "../access-control/permission-resolution.service.js";
 import type { AuthenticatedActor } from "../auth/access-token-authentication.service.js";
 import { getAuthenticatedActor } from "../auth/auth-route-support.js";
@@ -35,7 +36,9 @@ type Deps = {
   };
 };
 
-type DeliveryIdParams = { deliveryId: string };
+const deliveryIdParamsSchema = z.object({
+  deliveryId: z.string().uuid(),
+});
 
 export function registerDeliveryStatusRoutes(
   server: FastifyInstance,
@@ -47,7 +50,7 @@ export function registerDeliveryStatusRoutes(
     url: assignDeliveryRoute.url,
     async handler(request) {
       const actor = getAuthenticatedActor(request);
-      const params = request.params as DeliveryIdParams;
+      const params = deliveryIdParamsSchema.parse(request.params);
       const body = assignDeliveryRequestSchema.parse(request.body);
       await assertDeliveryOriginPermission({
         actor,
@@ -73,7 +76,7 @@ export function registerDeliveryStatusRoutes(
     url: reassignDeliveryRoute.url,
     async handler(request) {
       const actor = getAuthenticatedActor(request);
-      const params = request.params as DeliveryIdParams;
+      const params = deliveryIdParamsSchema.parse(request.params);
       const body = reassignDeliveryRequestSchema.parse(request.body);
       await assertDeliveryOriginPermission({
         actor,
@@ -99,7 +102,7 @@ export function registerDeliveryStatusRoutes(
     url: dispatchDeliveryRoute.url,
     async handler(request) {
       const actor = getAuthenticatedActor(request);
-      const params = request.params as DeliveryIdParams;
+      const params = deliveryIdParamsSchema.parse(request.params);
       dispatchDeliveryRequestSchema.parse(request.body ?? {});
       await assertDeliveryOriginPermission({
         actor,
@@ -124,7 +127,7 @@ export function registerDeliveryStatusRoutes(
     url: completeDeliveryRoute.url,
     async handler(request) {
       const actor = getAuthenticatedActor(request);
-      const params = request.params as DeliveryIdParams;
+      const params = deliveryIdParamsSchema.parse(request.params);
       completeDeliveryRequestSchema.parse(request.body ?? {});
       await assertDeliveryOriginPermission({
         actor,
@@ -149,7 +152,7 @@ export function registerDeliveryStatusRoutes(
     url: cancelDeliveryRoute.url,
     async handler(request) {
       const actor = getAuthenticatedActor(request);
-      const params = request.params as DeliveryIdParams;
+      const params = deliveryIdParamsSchema.parse(request.params);
       const body = cancelDeliveryRequestSchema.parse(request.body);
       await assertDeliveryOriginPermission({
         actor,
