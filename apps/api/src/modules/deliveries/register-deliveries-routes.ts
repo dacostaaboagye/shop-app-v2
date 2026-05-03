@@ -49,6 +49,7 @@ export function registerDeliveriesRoutes(
   });
   registerDeliveryQueryRoutes(server, {
     deliveryQueryService: deps.deliveryQueryService,
+    permissionService: deps.permissionService,
   });
 }
 
@@ -88,6 +89,7 @@ function createUnavailableDeliveriesDependencies(): DeliveriesRouteDependencies 
     },
     deliveryQueryService: {
       findById: unavailable,
+      hasSkuHistory: unavailable,
       listByAgent: unavailable,
       listByLocation: unavailable,
     },

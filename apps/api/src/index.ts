@@ -8,6 +8,7 @@ import { createAuthRuntime } from "./modules/auth/create-auth-runtime.js";
 import { createCatalogRuntime } from "./modules/catalog/create-catalog-runtime.js";
 import { PostgresVariantSearchRepository } from "./modules/catalog/postgres-variant-search.repository.js";
 import { createDeliveriesRuntime } from "./modules/deliveries/create-deliveries-runtime.js";
+import { PostgresDeliveryQueryRepository } from "./modules/deliveries/postgres-delivery-query.repository.js";
 import { createPlatformEventRuntime } from "./modules/events/create-platform-event-runtime.js";
 import { InMemoryPlatformEventBus } from "./modules/events/in-memory-platform-event-bus.js";
 import {
@@ -72,7 +73,11 @@ const adminDirectoryRuntime = createAdminDirectoryRuntime(databaseRuntime, {
   platformEventPublisher: platformEventRuntime.platformEventPublisher,
   ...(env.webBaseUrl ? { webBaseUrl: env.webBaseUrl } : {}),
 });
+const deliverySkuHistoryService = new PostgresDeliveryQueryRepository(
+  databaseRuntime.db,
+);
 const catalogRuntime = createCatalogRuntime(databaseRuntime, storage, {
+  deliverySkuHistoryService,
   platformEventPublisher: platformEventRuntime.platformEventPublisher,
 });
 const officialDocumentRuntime = createOfficialDocumentSettingsRuntime(

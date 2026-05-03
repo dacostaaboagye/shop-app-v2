@@ -15,6 +15,8 @@ acceptance:
 size: medium
 ---
 
+> Current status note: delivery REST routes exist in the codebase, but the Markdown backlog has not yet completed a Codex DoD audit for E-00C-05. Treat `built` here as built/unverified until acceptance evidence, security review, and test coverage are reconciled.
+
 ## Why
 
 The deliveries module shipped a service surface in E-00C-01..04 but had no HTTP edge. Other modules (manager portal, agent portal in E-15, future customer flows) need REST endpoints to drive delivery creation, assignment, dispatch, completion, cancellation, and reads.

@@ -146,6 +146,9 @@ function createDeliveryReassignServer(
           events.push(`query:${deliveryId}`);
           return deliveryRecord();
         },
+        async hasSkuHistory() {
+          throw unused();
+        },
         async listByAgent() {
           throw unused();
         },

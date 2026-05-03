@@ -2,6 +2,9 @@ import { deliveryResponseSchema, deliveryStatusSchema } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { AppError } from "../_core/errors/app-error.js";
+import type { PermissionResolutionScope } from "../access-control/permission-resolution.service.js";
+import type { AuthenticatedActor } from "../auth/access-token-authentication.service.js";
+import { getAuthenticatedActor } from "../auth/auth-route-support.js";
 import type { DeliveryQueryService } from "./delivery-query.contracts.js";
 import { toDeliveryResponse } from "./delivery-response.mapper.js";
 import {
@@ -11,6 +14,14 @@ import {
 
 type Deps = {
   deliveryQueryService: DeliveryQueryService;
+  permissionService: {
+    assertHasPermission(input: {
+      locationId?: string;
+      permission: string;
+      scope?: PermissionResolutionScope;
+      user: AuthenticatedActor;
+    }): Promise<void>;
+  };
 };
 
 type DeliveryIdParams = { deliveryId: string };
@@ -41,6 +52,7 @@ export function registerDeliveryQueryRoutes(
     method: findDeliveryRoute.method,
     url: findDeliveryRoute.url,
     async handler(request) {
+      const actor = getAuthenticatedActor(request);
       const params = request.params as DeliveryIdParams;
       const record = await deps.deliveryQueryService.findById(
         params.deliveryId,
@@ -53,6 +65,11 @@ export function registerDeliveryQueryRoutes(
           detail: `No delivery found for id ${params.deliveryId}.`,
         });
       }
+      await assertDeliveryViewPermission({
+        actor,
+        deps,
+        locationId: record.originLocationId,
+      });
       return deliveryResponseSchema.parse(toDeliveryResponse(record));
     },
   });
@@ -62,6 +79,7 @@ export function registerDeliveryQueryRoutes(
     method: listDeliveriesRoute.method,
     url: listDeliveriesRoute.url,
     async handler(request) {
+      const actor = getAuthenticatedActor(request);
       const query = listDeliveriesQuerySchema.parse(request.query);
       type StatusList = z.infer<typeof deliveryStatusSchema>[];
       const filters: { status?: StatusList; limit?: number } = {};
@@ -73,6 +91,21 @@ export function registerDeliveryQueryRoutes(
       if (query.limit !== undefined) {
         filters.limit = query.limit;
       }
+      if (query.locationId) {
+        await assertDeliveryViewPermission({
+          actor,
+          deps,
+          locationId: query.locationId,
+        });
+      }
+      if (query.agentUserId && query.agentUserId !== actor.userId) {
+        throw new AppError({
+          code: "forbidden",
+          detail: "Agent delivery lists can only be requested by that agent.",
+          statusCode: 403,
+          title: "Forbidden",
+        });
+      }
       const records = await (query.agentUserId
         ? deps.deliveryQueryService.listByAgent({
             agentUserId: query.agentUserId,
@@ -83,9 +116,44 @@ export function registerDeliveryQueryRoutes(
             locationId: query.locationId!,
             ...(Object.keys(filters).length > 0 ? { filters } : {}),
           }));
+      if (query.agentUserId) {
+        await assertDeliveryViewPermissionsForRecords({
+          actor,
+          deps,
+          locationIds: records.map((record) => record.originLocationId),
+        });
+      }
       return listDeliveriesResponseSchema.parse({
         items: records.map(toDeliveryResponse),
       });
     },
   });
+}
+
+async function assertDeliveryViewPermission(input: {
+  actor: AuthenticatedActor;
+  deps: Deps;
+  locationId: string;
+}): Promise<void> {
+  await input.deps.permissionService.assertHasPermission({
+    locationId: input.locationId,
+    permission: "deliveries.view",
+    scope: "contextual",
+    user: input.actor,
+  });
+}
+
+async function assertDeliveryViewPermissionsForRecords(input: {
+  actor: AuthenticatedActor;
+  deps: Deps;
+  locationIds: string[];
+}): Promise<void> {
+  const uniqueLocationIds = Array.from(new Set(input.locationIds));
+  for (const locationId of uniqueLocationIds) {
+    await assertDeliveryViewPermission({
+      actor: input.actor,
+      deps: input.deps,
+      locationId,
+    });
+  }
 }

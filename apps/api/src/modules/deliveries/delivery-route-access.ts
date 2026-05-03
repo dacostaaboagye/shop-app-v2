@@ -81,7 +81,11 @@ export const cancelDeliveryRoute: RouteDefinition = {
 };
 
 export const findDeliveryRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "deliveries.view" },
+  access: {
+    kind: "permission",
+    permission: "deliveries.view",
+    scope: "any_active",
+  },
   method: "GET",
   url: "/api/deliveries/:deliveryId",
 };
