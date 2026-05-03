@@ -3,7 +3,7 @@
 A snapshot of the master xlsx so we don't have to parse it every session.
 
 > **Source**: `Building and Refining Product Backlog(2).xlsx` at the repo root.
-> **Last derived**: 2026-05-03. The xlsx has been updated after the E-03-07 and E-03-06 catalog change-history work shipped; PR #92 closed the final diff-readability follow-up.
+> **Last derived**: 2026-05-03. Markdown closure updates were appended after PR #79, PR #107, and PR #108 merged; re-run the xlsx refresh flow to make the workbook-backed snapshot authoritative again.
 > **Authority**: the xlsx is the source of truth. This doc reflects state at the time it was written. **Re-derive from the xlsx whenever priority or status decisions are at stake** — do not trust this doc for current status if any time has passed since the date above.
 >
 > **To refresh**: ask Claude to "refresh the scope summary" (or invoke `/refresh-backlog-summary`). The skill at `.claude/skills/refresh-backlog-summary/SKILL.md` re-reads the xlsx, updates this file, and opens a PR.
@@ -20,7 +20,7 @@ A snapshot of the master xlsx so we don't have to parse it every session.
 
 ## Tier A — phase-1 + foundation tickets
 
-48 tickets broken into stories on the `Backlog Audit` sheet. **43 done · 4 partial / needs audit · 1 planned — 90% done**. All P0 or P1.
+48 tickets broken into stories on the `Backlog Audit` sheet. **47 done - 1 partial / needs audit - 98% done**. All P0 or P1.
 
 ### By area
 
@@ -28,29 +28,22 @@ A snapshot of the master xlsx so we don't have to parse it every session.
 |---|---|---|---|
 | **E-00A-01..06** | Stock ownership foundation (append-only event ledger, ownership resolution, assignment, handover, sales attribution, history view) | 6/6 ✓ | — |
 | **E-00B-01..07** | Stock balance + reservation foundation (real-time balance, reservation lifecycle, expiry release, movement sync, manager release, movement events, admin reservations endpoint) | 7/7 ✓ | — |
-| **E-00C-01..06** | **Deliveries foundation** | 4/6 | C-05 blocked by public-ID contract; C-06 planned to fix delivery public identifiers (all P0) |
-| **E-00D-01..07** | Access control + identifiers + portal routing foundation | 6/7 | D-07 lint+CI route-access guard partial |
+| **E-00C-01..06** | **Deliveries foundation** | 6/6 | - |
+| **E-00D-01..07** | Access control + identifiers + portal routing foundation | 7/7 | - |
 | **E-01-01..10** | Auth + navigation + notifications | 10/10 ✓ | — |
-| **E-02-01..05** | Locations | 4/5 | E-02-01 CRUD + zones + deactivation guard partial |
+| **E-02-01..05** | Locations | 5/5 | - |
 | **E-03-01..07** | Catalog | 6/7 | E-03-02 bulk import remains partial; E-03-07 immutable change-log and E-03-06 history UI are shipped |
 
-### The 5 unfinished tickets (everything left in tier A)
+### The 1 unfinished ticket (everything left in tier A)
 
-#### P0 — deliveries module (E-00C, must ship in order)
+#### Closed P0 - deliveries module (E-00C)
 
-| Code | Status | Gap |
-|---|---|---|
-| E-00C-05 | Blocked | REST endpoints exist and route/fallback evidence was hardened, but the public contract still exposes raw internal UUID/user identifiers. |
-| E-00C-06 | Planned | Add delivery header public references and replace delivery REST UUID DTOs/routes with references, slugs, and SKU/variant public identifiers. |
-
-E-00C-01 through E-00C-04 are complete in the Markdown working surface. E-00C-05 now has stronger HTTP-edge evidence, but cannot meet DoD until E-00C-06 supplies a delivery-owned public identifier contract.
+E-00C-01 through E-00C-06 are complete in the Markdown working surface. PR #107 closed the public delivery identifier blocker, which also lets E-00C-05 meet REST API DoD.
 
 #### P1 — scattered
 
 | Code | Status | Gap |
 |---|---|---|
-| E-00D-07 | Partial | Route middleware works; **lint rule + CI audit script that fails the build on missing `config.access`** still to write. |
-| E-02-01 | Partial | Locations module exists but **most CRUD + zones + deactivation guard** still pending. |
 | E-03-02 | Partial | Schema + contracts ready; **upload handler / parser / dry-run preview** still to ship. |
 
 ## Tier B — phase-2+ epics defined but **not yet ticketed**
@@ -75,10 +68,10 @@ These live as `EPICn` sheets in the xlsx. They have a title, story bullets, edge
 
 ## Critical dependency facts
 
-- **E-00C deliveries module gates four phase-2 epics.** E-12, E-14, E-15, E-16 all list E-00C as a dependency. Finishing the deliveries module isn't just closing a phase-1 P0 batch — it unblocks the whole online-sales + delivery-agent portal stack.
+- **E-00C deliveries module is now complete in the Markdown working surface.** E-12, E-14, E-15, E-16 all list E-00C as a dependency, so the downstream online-sales + delivery-agent portal stack is no longer blocked by the delivery foundation.
 - **E-04 is the most-referenced phase-2 epic.** Ten downstream epics name it as a dependency. Now that it's authored as "Inventory tracking per location" (variant + location stock counts, adjustments, stock takes, thresholds), sizing for E-05..E-15 is no longer blocked on PO definition. E-04 itself depends only on E-00B / E-02 / E-03 — all done or near done — so it can start as soon as the PO breaks it into tickets in `Backlog Audit`.
 - **E-09 (invoice management) gates E-07 + E-12 + E-14 + E-16.** Still unticketed. Will need to land before any sales channel is finished.
-- **E-13 → E-14 → E-15 → E-16** is the e-commerce ladder. Storefront → fulfilment → delivery → payments. None can start until E-00C ships.
+- **E-13 -> E-14 -> E-15 -> E-16** is the e-commerce ladder. Storefront -> fulfilment -> delivery -> payments. E-00C is no longer the blocker; E-04 and E-09 still need ticketing/implementation before the full sales-channel ladder can complete.
 
 ## Authoring issues to flag to the PO
 
@@ -94,9 +87,6 @@ These are oddities in the xlsx itself, not the work — worth noting so they get
 
 Based on what's in the xlsx today, the remaining near-term runway is clear:
 
-1. **E-00C-06** — add delivery public identifiers so E-00C-05 can satisfy REST API DoD. Unblocks E-12/E-14/E-15/E-16 downstream.
-2. **E-00D-07** — close the route-access lint + CI audit. Small effort, large safety per `Next Up` sheet rationale.
-3. **E-02-01** — finish location lifecycle (CRUD + zones + deactivation guard).
-4. **E-03-02** — catalog bulk import.
+1. **E-03-02** - catalog bulk import upload handler, parser, and dry-run preview.
 
 After that, the PO needs to break **E-04** into tickets in `Backlog Audit` so the rest of phase-2 (E-05..E-15) can be sized against it.

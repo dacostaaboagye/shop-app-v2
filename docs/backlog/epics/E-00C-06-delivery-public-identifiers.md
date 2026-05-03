@@ -1,7 +1,7 @@
 ---
 id: E-00C-06
 title: Replace delivery REST internal IDs with public references and slugs
-status: in_review
+status: done
 priority: P0
 domain: backend
 owner: codex
@@ -57,7 +57,7 @@ ADR 0002 requires public APIs and URLs to use slugs, codes, or generated referen
 
 PR: https://github.com/dacostaaboagye/shop-app-v2/pull/107
 
-Status: **In review**. Do not mark complete until PR #107 is merged and CI is green.
+Status: **Merged**. PR #107 merged to `dev` on 2026-05-03 with green CI.
 
 Acceptance evidence:
 
@@ -76,3 +76,9 @@ Verification:
 - `pnpm guard`
 - `git diff --check`
 - Final Codex subagent gates: backend/database/contracts ship=yes; security/QA/Product ship=yes.
+
+Merge evidence:
+
+- Merge commit: `d13198612987a61b58912e64f8257e7e506f337b`.
+- CI `validate`: passed on 2026-05-03 at 13:08 UTC.
+- Downstream effect: resolves the E-00C-05 public REST contract blocker and closes the deliveries foundation P0 batch.
