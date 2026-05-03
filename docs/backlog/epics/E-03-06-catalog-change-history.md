@@ -1,7 +1,7 @@
 ---
 id: E-03-06
 title: View the change history of any product or variant
-status: refined
+status: shipped
 priority: P1
 domain: full-stack
 owner: claude
@@ -108,4 +108,19 @@ Mobile-first: card stacks vertically by default. Desktop @ ≥768 expands the di
 
 ## Known follow-ups (post-ship refinements)
 
-- **[ops-history-diff-readability](./ops-history-diff-readability.md)** — Phase 2: resolve FK referent names inside snapshots so diff bodies show "Category: Crossbody Bags → Travel Bags" instead of raw UUIDs. Discovered during live UI review; the headline UUID surface is closed by this epic, but the diff body still leaks UUIDs for `categoryId` / `brandId` / `parentCategoryId`. Tracked separately so it doesn't gate this epic's ship.
+- **[ops-history-diff-readability](./ops-history-diff-readability.md)** - Phase 2 shipped in [PR #92](https://github.com/dacostaaboagye/shop-app-v2/pull/92). Diff bodies now resolve FK referent names where available and suppress legacy UUID-only values.
+
+## Related PRs
+
+- PR #86 - read API and admin endpoints.
+- PR #87 - actor avatar URL.
+- PR #88 - option entity reference name/value fix.
+- PR #89 - entity and parent entity names at read time.
+- PR #90 - dedicated frontend history pages and stakeholder-readable headers.
+- [PR #92](https://github.com/dacostaaboagye/shop-app-v2/pull/92) - final diff readability and UUID suppression.
+
+## Shipped evidence
+
+- Merged final follow-up to `dev` on 2026-05-03.
+- PR #92 CI `validate` passed.
+- Final acceptance evidence covers human-readable diffs, mobile-friendly before/after layout, paginated history reads, permission-gated endpoints, and no raw internal UUID leakage in catalog history surfaces.
