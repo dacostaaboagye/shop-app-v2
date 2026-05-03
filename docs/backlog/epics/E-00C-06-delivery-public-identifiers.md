@@ -1,7 +1,7 @@
 ---
 id: E-00C-06
 title: Replace delivery REST internal IDs with public references and slugs
-status: planned
+status: in_review
 priority: P0
 domain: backend
 owner: codex
@@ -52,3 +52,27 @@ ADR 0002 requires public APIs and URLs to use slugs, codes, or generated referen
 - Route-level authorization still happens after resolving delivery origin from the server-side record.
 - Existing E-00C-05 route tests are updated to the public-reference contract.
 - `pnpm guard` passes.
+
+## Codex implementation PR - 2026-05-03
+
+PR: https://github.com/dacostaaboagye/shop-app-v2/pull/107
+
+Status: **In review**. Do not mark complete until PR #107 is merged and CI is green.
+
+Acceptance evidence:
+
+- Delivery header references use the public-identifiers service with `DLV-*` sequence coverage and migration/backfill evidence.
+- Public delivery routes now use `deliveryReference`; user/location inputs use slugs; response DTOs expose references, slugs, and SKU codes instead of delivery, item, SKU, location, user, or creator UUIDs.
+- Route handlers resolve public identifiers at the API boundary and preserve contextual permission checks after server-side origin lookup.
+- Platform delivery events expose `deliveryReference` for user-facing delivery identity.
+- Public status and stock-validation error payloads are covered so internal delivery/user/location/SKU UUIDs are not serialized to clients.
+
+Verification:
+
+- `pnpm --filter @shop/api typecheck`
+- `pnpm --filter @shop/api test` (593 passing)
+- `pnpm --filter @shop/contracts test` (67 passing)
+- `pnpm --filter @shop/database test`
+- `pnpm guard`
+- `git diff --check`
+- Final Codex subagent gates: backend/database/contracts ship=yes; security/QA/Product ship=yes.
