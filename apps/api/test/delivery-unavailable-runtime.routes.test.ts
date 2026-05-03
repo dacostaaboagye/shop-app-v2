@@ -3,8 +3,8 @@ import { describe, it } from "node:test";
 import { createServer } from "../src/server/create-server.js";
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
-const DELIVERY_ID = "66666666-6666-4666-8666-666666666666";
-const LOCATION_ID = "22222222-2222-4222-8222-222222222222";
+const DELIVERY_REFERENCE = "DLV-00001";
+const LOCATION_SLUG = "main-store";
 const AUTH_HEADERS = { authorization: "Bearer test-token" };
 
 describe("delivery default unwired runtime routes", () => {
@@ -31,7 +31,7 @@ describe("delivery default unwired runtime routes", () => {
       headers: AUTH_HEADERS,
       method: "POST",
       payload: {},
-      url: `/api/deliveries/${DELIVERY_ID}/dispatch`,
+      url: `/api/deliveries/${DELIVERY_REFERENCE}/dispatch`,
     });
 
     assertDeliveriesUnavailable(response);
@@ -43,7 +43,7 @@ describe("delivery default unwired runtime routes", () => {
     const response = await server.inject({
       headers: AUTH_HEADERS,
       method: "GET",
-      url: `/api/deliveries/${DELIVERY_ID}`,
+      url: `/api/deliveries/${DELIVERY_REFERENCE}`,
     });
 
     assertDeliveriesUnavailable(response);
@@ -55,7 +55,7 @@ describe("delivery default unwired runtime routes", () => {
     const response = await server.inject({
       headers: AUTH_HEADERS,
       method: "GET",
-      url: `/api/deliveries?locationId=${LOCATION_ID}`,
+      url: `/api/deliveries?locationSlug=${LOCATION_SLUG}`,
     });
 
     assertDeliveriesUnavailable(response);

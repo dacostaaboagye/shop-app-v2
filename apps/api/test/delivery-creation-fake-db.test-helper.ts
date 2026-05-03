@@ -196,6 +196,7 @@ function defaultDeliveryInput() {
     destinationLocationId: null,
     destinationSnapshot: deliveryDestination(),
     originLocationId: ORIGIN_ID,
+    reference: "DLV-00001",
     sourceReference: "INV-POS-0001",
     sourceType: "pos_sale",
   };
@@ -241,6 +242,7 @@ function createDeliveryRow(input: Record<string, unknown>): DeliveryRow {
     dispatchedBy: null,
     id: "44444444-4444-4444-8444-444444444444",
     originLocationId: input.originLocationId as string,
+    reference: (input.reference as string | undefined) ?? "DLV-00001",
     sourceReference: input.sourceReference as string,
     sourceType: input.sourceType as DeliveryRow["sourceType"],
     status: "draft",

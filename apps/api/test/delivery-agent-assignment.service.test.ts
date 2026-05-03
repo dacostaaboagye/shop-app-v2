@@ -17,8 +17,11 @@ import type { PlatformEventRecord } from "../src/modules/events/platform-event.t
 
 const ACTOR = "00000000-0000-4000-8000-000000000099";
 const DELIVERY_ID = "00000000-0000-4000-8000-000000000001";
+const DELIVERY_REFERENCE = "DLV-00001";
 const ALICE = "00000000-0000-4000-8000-000000000010";
+const ALICE_SLUG = "alice-agent";
 const BOB = "00000000-0000-4000-8000-000000000011";
+const BOB_SLUG = "bob-agent";
 const REASSIGNED_AT = new Date("2026-05-03T10:30:00.000Z");
 
 function buildDelivery(
@@ -26,10 +29,12 @@ function buildDelivery(
 ): DeliveryRecord {
   return {
     deliveryId: DELIVERY_ID,
+    deliveryReference: DELIVERY_REFERENCE,
     sourceType: "transfer",
     sourceReference: "TRF-0001",
     status: "assigned",
     originLocationId: "00000000-0000-4000-8000-000000000020",
+    originLocationSlug: "main-store",
     destination: {
       kind: "location",
       locationId: "00000000-0000-4000-8000-000000000021",
@@ -43,6 +48,7 @@ function buildDelivery(
       },
     ],
     assignedUserId: ALICE,
+    assignedUserSlug: ALICE_SLUG,
     assignedAt: new Date("2026-05-01T10:00:00Z"),
     assignedBy: ACTOR,
     dispatchedAt: null,
@@ -54,6 +60,7 @@ function buildDelivery(
     cancellationReason: null,
     createdAt: new Date("2026-05-01T09:00:00Z"),
     createdBy: ACTOR,
+    createdBySlug: "actor-slug",
     ...overrides,
   };
 }
@@ -117,6 +124,7 @@ describe("DeliveryStatusService.reassign", () => {
         assignedAt: REASSIGNED_AT,
         assignedBy: ACTOR,
         assignedUserId: BOB,
+        assignedUserSlug: BOB_SLUG,
       }),
     );
     const service = buildService(tx);

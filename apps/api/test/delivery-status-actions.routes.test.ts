@@ -11,7 +11,9 @@ import { createServer } from "../src/server/create-server.js";
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
 const DELIVERY_ID = "66666666-6666-4666-8666-666666666666";
+const DELIVERY_REFERENCE = "DLV-00001";
 const ORIGIN_LOCATION_ID = "22222222-2222-4222-8222-222222222222";
+const ORIGIN_LOCATION_SLUG = "main-store";
 const AUTH_HEADERS = { authorization: "Bearer test-token" };
 
 const ACTIONS = [
@@ -20,26 +22,26 @@ const ACTIONS = [
     permission: "deliveries.dispatch",
     payload: {},
     toStatus: "in_transit",
-    url: `/api/deliveries/${DELIVERY_ID}/dispatch`,
+    url: `/api/deliveries/${DELIVERY_REFERENCE}/dispatch`,
   },
   {
     method: "complete",
     permission: "deliveries.complete",
     payload: {},
     toStatus: "completed",
-    url: `/api/deliveries/${DELIVERY_ID}/complete`,
+    url: `/api/deliveries/${DELIVERY_REFERENCE}/complete`,
   },
   {
     method: "cancel",
     permission: "deliveries.cancel",
     payload: { reason: "Customer requested cancellation" },
     toStatus: "cancelled",
-    url: `/api/deliveries/${DELIVERY_ID}/cancel`,
+    url: `/api/deliveries/${DELIVERY_REFERENCE}/cancel`,
   },
 ] as const;
 
 describe("delivery status action routes", () => {
-  it("rejects invalid delivery ids before route-level service lookup", async () => {
+  it("rejects invalid delivery references before route-level service lookup", async () => {
     const events: string[] = [];
     const server = createDeliveryStatusActionServer({ events });
 
@@ -51,7 +53,7 @@ describe("delivery status action routes", () => {
     });
 
     assertValidationProblem(response);
-    assert.match(response.json().detail, /deliveryId/);
+    assert.match(response.json().detail, /deliveryReference/);
     assert.deepEqual(events, ["middleware:deliveries.dispatch:any_active"]);
   });
 
@@ -70,7 +72,7 @@ describe("delivery status action routes", () => {
       assert.equal(response.statusCode, 403);
       assert.deepEqual(events, [
         `middleware:${action.permission}:any_active`,
-        `query:${DELIVERY_ID}`,
+        `query:${DELIVERY_REFERENCE}`,
         `route:${action.permission}:contextual:${ORIGIN_LOCATION_ID}`,
       ]);
     });
@@ -94,7 +96,7 @@ describe("delivery status action routes", () => {
       assert.equal(response.json().toStatus, action.toStatus);
       assert.deepEqual(events, [
         `middleware:${action.permission}:any_active`,
-        `query:${DELIVERY_ID}`,
+        `query:${DELIVERY_REFERENCE}`,
         `route:${action.permission}:contextual:${ORIGIN_LOCATION_ID}`,
         `status-service:${action.method}:${servicePayload(action)}`,
       ]);
@@ -151,9 +153,21 @@ function createDeliveryStatusActionServer(input: {
           throw unused();
         },
       },
+      deliveryPublicIdentifierResolver: {
+        async findLocationIdBySlug() {
+          throw unused();
+        },
+        async findUserIdBySlug() {
+          throw unused();
+        },
+      },
       deliveryQueryService: {
         async findById(deliveryId) {
           input.events.push(`query:${deliveryId}`);
+          return deliveryRecord();
+        },
+        async findByReference(deliveryReference) {
+          input.events.push(`query:${deliveryReference}`);
           return deliveryRecord();
         },
         async hasSkuHistory() {
@@ -238,6 +252,7 @@ function deliveryRecord(): DeliveryRecord {
     assignedAt: new Date("2026-05-01T10:00:00.000Z"),
     assignedBy: USER_ID,
     assignedUserId: "77777777-7777-4777-8777-777777777777",
+    assignedUserSlug: "delivery-agent",
     cancellationReason: null,
     cancelledAt: null,
     cancelledBy: null,
@@ -245,10 +260,13 @@ function deliveryRecord(): DeliveryRecord {
     completedBy: null,
     createdAt: new Date("2026-05-01T09:00:00.000Z"),
     createdBy: USER_ID,
+    createdBySlug: "manager-user",
     deliveryId: DELIVERY_ID,
+    deliveryReference: DELIVERY_REFERENCE,
     destination: {
       kind: "location",
       locationId: "33333333-3333-4333-8333-333333333333",
+      locationSlug: "warehouse",
     },
     dispatchedAt: null,
     dispatchedBy: null,
@@ -257,10 +275,12 @@ function deliveryRecord(): DeliveryRecord {
         deliveryItemId: "99999999-9999-4999-8999-999999999999",
         itemReference: "DEL-20260501-1",
         quantity: 1,
+        sku: "SKU-1",
         skuId: "44444444-4444-4444-8444-444444444444",
       },
     ],
     originLocationId: ORIGIN_LOCATION_ID,
+    originLocationSlug: ORIGIN_LOCATION_SLUG,
     sourceReference: "TRF-2026-000001",
     sourceType: "transfer",
     status: "assigned",

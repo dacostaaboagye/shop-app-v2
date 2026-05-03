@@ -9,6 +9,7 @@ import type { PermissionResolutionScope } from "../access-control/permission-res
 import type { AuthenticatedActor } from "../auth/access-token-authentication.service.js";
 import type { DeliveryCreationService } from "./delivery-creation.contracts.js";
 import { registerDeliveryCreationRoutes } from "./delivery-creation.routes.js";
+import type { DeliveryPublicIdentifierResolver } from "./delivery-public-identifier.repository.js";
 import type { DeliveryQueryService } from "./delivery-query.contracts.js";
 import { registerDeliveryQueryRoutes } from "./delivery-query.routes.js";
 import type { DeliveryStatusService } from "./delivery-status.contracts.js";
@@ -18,6 +19,7 @@ type DeliveriesRouteDependencies = {
   deliveryCreationService: DeliveryCreationService;
   deliveryStatusService: DeliveryStatusService;
   deliveryQueryService: DeliveryQueryService;
+  deliveryPublicIdentifierResolver: DeliveryPublicIdentifierResolver;
   permissionService: {
     assertHasPermission(input: {
       locationId?: string;
@@ -43,11 +45,13 @@ export function registerDeliveriesRoutes(
     transferSourcePort: deps.transferSourcePort,
   });
   registerDeliveryStatusRoutes(server, {
+    deliveryPublicIdentifierResolver: deps.deliveryPublicIdentifierResolver,
     deliveryQueryService: deps.deliveryQueryService,
     deliveryStatusService: deps.deliveryStatusService,
     permissionService: deps.permissionService,
   });
   registerDeliveryQueryRoutes(server, {
+    deliveryPublicIdentifierResolver: deps.deliveryPublicIdentifierResolver,
     deliveryQueryService: deps.deliveryQueryService,
     permissionService: deps.permissionService,
   });
@@ -89,9 +93,14 @@ function createUnavailableDeliveriesDependencies(): DeliveriesRouteDependencies 
     },
     deliveryQueryService: {
       findById: unavailable,
+      findByReference: unavailable,
       hasSkuHistory: unavailable,
       listByAgent: unavailable,
       listByLocation: unavailable,
+    },
+    deliveryPublicIdentifierResolver: {
+      findLocationIdBySlug: unavailable,
+      findUserIdBySlug: unavailable,
     },
   };
 }

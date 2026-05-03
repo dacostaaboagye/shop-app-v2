@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  assignDeliveryRequestSchema,
   createDeliveryFromOnlineOrderRequestSchema,
   createDeliveryFromPosSaleRequestSchema,
   createDeliveryFromTransferRequestSchema,
@@ -8,6 +9,7 @@ import {
   deliveryAddressSnapshotSchema,
   deliveryResponseSchema,
   deliverySourceTypeSchema,
+  reassignDeliveryRequestSchema,
 } from "./deliveries.js";
 
 const validSnapshot = {
@@ -101,62 +103,79 @@ describe("create-delivery request shapes", () => {
 });
 
 describe("delivery response shape", () => {
+  it("uses public references, slugs, and SKU codes", () => {
+    const parsed = deliveryResponseSchema.parse(validDeliveryResponse());
+
+    assert.equal(parsed.deliveryReference, "DLV-00001");
+    assert.equal(parsed.originLocationSlug, "accra-central");
+    assert.equal(parsed.items[0]?.sku, "SKU-ANK-001");
+    assert.equal(parsed.assignedUserSlug, null);
+    assert.equal(parsed.createdByUserSlug, "manager-ama");
+  });
+
   it("round-trips an external destination", () => {
-    const parsed = deliveryResponseSchema.parse({
-      deliveryId: "00000000-0000-4000-8000-000000000001",
-      sourceType: "pos_sale",
-      sourceReference: "INV-POS-00001",
-      status: "draft",
-      originLocationId: "00000000-0000-4000-8000-000000000002",
-      destination: { kind: "external", snapshot: validSnapshot },
-      items: [
-        {
-          deliveryItemId: "00000000-0000-4000-8000-000000000003",
-          itemReference: "DEL-20260501-1",
-          skuId: "00000000-0000-4000-8000-000000000004",
-          quantity: 2,
-        },
-      ],
-      assignedUserId: null,
-      assignedAt: null,
-      dispatchedAt: null,
-      completedAt: null,
-      cancelledAt: null,
-      cancellationReason: null,
-      createdAt: "2026-05-01T10:00:00.000Z",
-      createdBy: "00000000-0000-4000-8000-000000000005",
-    });
+    const parsed = deliveryResponseSchema.parse(validDeliveryResponse());
     assert.equal(parsed.destination.kind, "external");
+  });
+
+  it("does not expose raw internal UUID fields", () => {
+    const parsed = deliveryResponseSchema.parse({
+      ...validDeliveryResponse(),
+      destination: { kind: "location", locationSlug: "kumasi-depot" },
+    });
+
+    assertNoRawInternalKeys(parsed, [
+      "deliveryId",
+      "deliveryItemId",
+      "skuId",
+      "originLocationId",
+      "locationId",
+      "assignedUserId",
+      "createdBy",
+    ]);
+    assertNoRawInternalKeys(parsed.destination, ["locationId"]);
+    assertNoRawInternalKeys(parsed.items[0] ?? {}, ["deliveryItemId", "skuId"]);
   });
 
   it("rejects items with quantity 0", () => {
     assert.throws(() =>
       deliveryResponseSchema.parse({
-        deliveryId: "00000000-0000-4000-8000-000000000001",
-        sourceType: "transfer",
-        sourceReference: "TRF-00001",
-        status: "draft",
-        originLocationId: "00000000-0000-4000-8000-000000000002",
-        destination: {
-          kind: "location",
-          locationId: "00000000-0000-4000-8000-000000000006",
-        },
+        ...validDeliveryResponse(),
+        destination: { kind: "location", locationSlug: "kumasi-depot" },
         items: [
           {
-            deliveryItemId: "00000000-0000-4000-8000-000000000003",
-            itemReference: "DEL-20260501-1",
-            skuId: "00000000-0000-4000-8000-000000000004",
+            itemReference: "DEL-20260501-0001",
+            sku: "SKU-ANK-001",
             quantity: 0,
           },
         ],
-        assignedUserId: null,
-        assignedAt: null,
-        dispatchedAt: null,
-        completedAt: null,
-        cancelledAt: null,
-        cancellationReason: null,
-        createdAt: "2026-05-01T10:00:00.000Z",
-        createdBy: "00000000-0000-4000-8000-000000000005",
+      }),
+    );
+  });
+});
+
+describe("delivery assignment request shapes", () => {
+  it("assigns and reassigns by assignedUserSlug", () => {
+    const assign = assignDeliveryRequestSchema.parse({
+      assignedUserSlug: "agent-kwame",
+    });
+    const reassign = reassignDeliveryRequestSchema.parse({
+      assignedUserSlug: "agent-efua",
+    });
+
+    assert.equal(assign.assignedUserSlug, "agent-kwame");
+    assert.equal(reassign.assignedUserSlug, "agent-efua");
+  });
+
+  it("rejects assignment payloads that only provide an internal user ID", () => {
+    assert.throws(() =>
+      assignDeliveryRequestSchema.parse({
+        assignedUserId: "00000000-0000-4000-8000-000000000001",
+      }),
+    );
+    assert.throws(() =>
+      reassignDeliveryRequestSchema.parse({
+        assignedUserId: "00000000-0000-4000-8000-000000000001",
       }),
     );
   });
@@ -186,3 +205,38 @@ describe("delivery error codes", () => {
     );
   });
 });
+
+function validDeliveryResponse() {
+  return {
+    deliveryReference: "DLV-00001",
+    sourceType: "pos_sale",
+    sourceReference: "INV-POS-00001",
+    status: "draft",
+    originLocationSlug: "accra-central",
+    destination: { kind: "external", snapshot: validSnapshot },
+    items: [
+      {
+        itemReference: "DEL-20260501-0001",
+        sku: "SKU-ANK-001",
+        quantity: 2,
+      },
+    ],
+    assignedUserSlug: null,
+    assignedAt: null,
+    dispatchedAt: null,
+    completedAt: null,
+    cancelledAt: null,
+    cancellationReason: null,
+    createdAt: "2026-05-01T10:00:00.000Z",
+    createdByUserSlug: "manager-ama",
+  };
+}
+
+function assertNoRawInternalKeys(
+  value: Record<string, unknown>,
+  forbiddenKeys: string[],
+) {
+  for (const key of forbiddenKeys) {
+    assert.equal(Object.hasOwn(value, key), false);
+  }
+}

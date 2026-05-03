@@ -45,14 +45,13 @@ export const createDeliveryFromTransferRequestSchema = z.object({
 });
 
 export const deliveryItemResponseSchema = z.object({
-  deliveryItemId: z.string().uuid(),
   itemReference: z.string().min(1),
-  skuId: z.string().uuid(),
+  sku: z.string().min(1),
   quantity: z.number().int().min(1),
 });
 
 export const deliveryDestinationResponseSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("location"), locationId: z.string().uuid() }),
+  z.object({ kind: z.literal("location"), locationSlug: z.string().min(1) }),
   z.object({
     kind: z.literal("external"),
     snapshot: deliveryAddressSnapshotSchema,
@@ -60,25 +59,25 @@ export const deliveryDestinationResponseSchema = z.discriminatedUnion("kind", [
 ]);
 
 export const deliveryResponseSchema = z.object({
-  deliveryId: z.string().uuid(),
+  deliveryReference: z.string().min(1),
   sourceType: deliverySourceTypeSchema,
   sourceReference: z.string().min(1),
   status: deliveryStatusSchema,
-  originLocationId: z.string().uuid(),
+  originLocationSlug: z.string().min(1),
   destination: deliveryDestinationResponseSchema,
   items: z.array(deliveryItemResponseSchema).min(1),
-  assignedUserId: z.string().uuid().nullable(),
+  assignedUserSlug: z.string().min(1).nullable(),
   assignedAt: z.string().datetime().nullable(),
   dispatchedAt: z.string().datetime().nullable(),
   completedAt: z.string().datetime().nullable(),
   cancelledAt: z.string().datetime().nullable(),
   cancellationReason: z.string().nullable(),
   createdAt: z.string().datetime(),
-  createdBy: z.string().uuid(),
+  createdByUserSlug: z.string().min(1),
 });
 
 export const assignDeliveryRequestSchema = z.object({
-  assignedUserId: z.string().uuid(),
+  assignedUserSlug: z.string().trim().min(1).max(120),
 });
 
 export const dispatchDeliveryRequestSchema = z.object({}).strict();
@@ -90,7 +89,7 @@ export const cancelDeliveryRequestSchema = z.object({
 });
 
 export const reassignDeliveryRequestSchema = z.object({
-  assignedUserId: z.string().uuid(),
+  assignedUserSlug: z.string().trim().min(1).max(120),
 });
 
 export type ReassignDeliveryRequest = z.infer<

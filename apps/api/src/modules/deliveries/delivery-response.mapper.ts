@@ -10,26 +10,25 @@ import type { DeliveryTransitionResult } from "./delivery-status.contracts.js";
 
 export function toDeliveryResponse(record: DeliveryRecord): DeliveryResponse {
   return {
-    deliveryId: record.deliveryId,
+    deliveryReference: record.deliveryReference,
     sourceType: record.sourceType,
     sourceReference: record.sourceReference,
     status: record.status,
-    originLocationId: record.originLocationId,
+    originLocationSlug: record.originLocationSlug,
     destination: mapDestination(record.destination),
     items: record.items.map((item) => ({
-      deliveryItemId: item.deliveryItemId,
       itemReference: item.itemReference,
-      skuId: item.skuId,
+      sku: item.sku ?? "",
       quantity: item.quantity,
     })),
-    assignedUserId: record.assignedUserId,
+    assignedUserSlug: record.assignedUserSlug,
     assignedAt: record.assignedAt?.toISOString() ?? null,
     dispatchedAt: record.dispatchedAt?.toISOString() ?? null,
     completedAt: record.completedAt?.toISOString() ?? null,
     cancelledAt: record.cancelledAt?.toISOString() ?? null,
     cancellationReason: record.cancellationReason,
     createdAt: record.createdAt.toISOString(),
-    createdBy: record.createdBy,
+    createdByUserSlug: record.createdBySlug,
   };
 }
 
@@ -48,7 +47,7 @@ function mapDestination(
   destination: DeliveryDestinationRecord,
 ): DeliveryResponse["destination"] {
   if (destination.kind === "location") {
-    return { kind: "location", locationId: destination.locationId };
+    return { kind: "location", locationSlug: destination.locationSlug ?? "" };
   }
   return { kind: "external", snapshot: destination.snapshot };
 }
