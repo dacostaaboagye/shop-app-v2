@@ -11,6 +11,7 @@ import { PostgresDeliveryStockSideEffectsParticipant } from "./delivery-stock-si
 import { PostgresActiveReservationQueryRepository } from "./postgres-active-reservation-query.repository.js";
 import { PostgresAdminReservationQueryRepository } from "./postgres-admin-reservation-query.repository.js";
 import { AdminStockCountRepository } from "./postgres-admin-stock-count.repository.js";
+import { PostgresOpeningStockRepository } from "./postgres-opening-stock.repository.js";
 import { PostgresStockBalanceQueryRepository } from "./postgres-stock-balance-query.repository.js";
 import { PostgresSupplyRequestRepository } from "./postgres-supply-request.repository.js";
 import { StockSupplyService } from "./stock-supply.service.js";
@@ -34,6 +35,7 @@ type StockRuntime = {
       listActiveLocations(): Promise<{ id: string; name: string }[]>;
     };
     referenceNumberService: ReferenceNumberService;
+    openingStockRepo: PostgresOpeningStockRepository;
     reservationQueryRepo: PostgresAdminReservationQueryRepository;
     stockBalanceQueryRepo: PostgresStockBalanceQueryRepository;
     stockCountRepo: AdminStockCountRepository;
@@ -84,6 +86,10 @@ export function createStockRuntime(
         },
       },
       referenceNumberService,
+      openingStockRepo: new PostgresOpeningStockRepository(
+        databaseRuntime.db,
+        options.platformEventPublisher,
+      ),
       reservationQueryRepo: new PostgresAdminReservationQueryRepository(
         databaseRuntime.db,
       ),

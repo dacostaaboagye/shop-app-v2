@@ -3,6 +3,7 @@ import test from "node:test";
 import type { AdminStockBalanceSummary } from "@shop/contracts";
 import {
   buildStockCountRequest,
+  canUseOpeningCount,
   createStockCountFormDefaults,
   type StockCountFormValues,
   validateStockCountQuantity,
@@ -35,6 +36,7 @@ const validValues = {
 test("stock count defaults existing rows to the current on-hand quantity", () => {
   assert.equal(createStockCountFormDefaults(row).quantity, "10");
   assert.equal(createStockCountFormDefaults(null).quantity, "");
+  assert.equal(createStockCountFormDefaults(null).reasonCode, "cycle_count");
 });
 
 test("stock count quantities must be non-negative whole numbers", () => {
@@ -81,14 +83,19 @@ test("stock count payload omits blank notes for fresh counts", () => {
     buildStockCountRequest({
       locationSlug: "ablekuma",
       row: null,
-      values: { ...validValues, note: " ", reasonCode: "opening_count" },
+      values: { ...validValues, note: " " },
     }),
     {
       locationSlug: "ablekuma",
       note: undefined,
       onHandQuantity: 12,
-      reasonCode: "opening_count",
+      reasonCode: "correction",
       sku: "RICE-5KG",
     },
   );
+});
+
+test("opening count is not available from the normal count form", () => {
+  assert.equal(canUseOpeningCount({ row: null }), false);
+  assert.equal(canUseOpeningCount({ row }), false);
 });

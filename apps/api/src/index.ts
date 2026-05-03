@@ -225,6 +225,7 @@ const server = createServer({
     stockBalanceQueryRepo: stockRuntime.stock.stockBalanceQueryRepo,
   },
   stockCount: {
+    openingStockRepo: stockRuntime.stock.openingStockRepo,
     permissionService: authRuntime.accessControl.permissionService,
     stockCountRepo: stockRuntime.stock.stockCountRepo,
   },

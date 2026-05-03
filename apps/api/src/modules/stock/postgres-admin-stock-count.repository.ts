@@ -6,13 +6,13 @@ import { AppError } from "../_core/errors/app-error.js";
 import type { PlatformEventPipelinePublisher } from "../events/platform-event-pipeline.publisher.js";
 import { StockBalanceAdjustmentConflictError } from "./stock-balance-adjustment.contracts.js";
 import { createStockCountEvent } from "./stock-count-event.js";
+import { assertOpeningCountAllowed } from "./stock-count-opening-guard.js";
 
 export type AdminStockCountRequest = {
   locationSlug: string;
   note?: string | undefined;
   onHandQuantity: number;
   reasonCode:
-    | "opening_count"
     | "cycle_count"
     | "damaged"
     | "found_stock"
@@ -117,6 +117,13 @@ export class AdminStockCountRepository {
       const reserved = existingBalance?.reservedQuantity ?? 0;
       const delta = onHandQuantity - currentOnHand;
       const shouldPublishEvent = delta !== 0 && !!this.eventPublisher;
+
+      assertOpeningCountAllowed({
+        existingBalance,
+        locationSlug,
+        reasonCode,
+        sku,
+      });
 
       if (onHandQuantity < reserved) {
         throw new StockBalanceAdjustmentConflictError({

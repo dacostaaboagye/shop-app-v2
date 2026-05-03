@@ -37,7 +37,7 @@ describe("stock count routes", () => {
       payload: {
         locationSlug: "downtown-store",
         onHandQuantity: 12,
-        reasonCode: "opening_count",
+        reasonCode: "cycle_count",
         sku: "RICE-5KG",
       },
       url: "/api/manager/stock/balances/count",
@@ -139,6 +139,15 @@ function createStockCountServer(input: {
     reasonCode: string;
     sku: string;
   }) => void;
+  onOpening?: (input: {
+    initializedBy?: string;
+    initializedBySlug?: string;
+    lines: Array<{ onHandQuantity: number; sku: string }>;
+    locationSlug: string;
+    note?: string | undefined;
+    sourceReference?: string | undefined;
+    sourceType: string;
+  }) => void;
   onPermissionCheck?: (input: {
     locationId?: string;
     permission: string;
@@ -176,6 +185,50 @@ function createStockCountServer(input: {
       permissionService,
     },
     stockCount: {
+      openingStockRepo: {
+        async findOpeningLocationBySlug(locationSlug) {
+          if (locationSlug === "airport-store") {
+            return {
+              id: BLOCKED_LOCATION_ID,
+              name: "Airport Store",
+              slug: "airport-store",
+            };
+          }
+
+          return {
+            id: ALLOWED_LOCATION_ID,
+            name: "Downtown Store",
+            slug: "downtown-store",
+          };
+        },
+        async initializeOpeningStock(openingInput) {
+          input.onOpening?.(openingInput);
+          return {
+            initializedCount: openingInput.lines.length,
+            items: openingInput.lines.map((line) => ({
+              availableQuantity: line.onHandQuantity,
+              inTransitQuantity: 0,
+              locationName: "Downtown Store",
+              locationSlug: openingInput.locationSlug,
+              note: openingInput.note ?? null,
+              onHandQuantity: line.onHandQuantity,
+              openingQuantity: line.onHandQuantity,
+              productName: "Rice",
+              productSlug: "rice",
+              reservedQuantity: 0,
+              sku: line.sku,
+              skuId: SKU_ID,
+              updatedAt: NOW.toISOString(),
+              variantName: "5kg",
+              variantSlug: "rice-5kg",
+            })),
+            locationName: "Downtown Store",
+            locationSlug: openingInput.locationSlug,
+            sourceKey: openingInput.sourceReference ?? "generated-source",
+            sourceType: openingInput.sourceType,
+          };
+        },
+      },
       permissionService,
       stockCountRepo: {
         async findCountLocationBySlug(locationSlug) {

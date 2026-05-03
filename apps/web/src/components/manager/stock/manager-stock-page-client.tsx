@@ -4,6 +4,7 @@ import type { AdminStockBalanceSummary } from "@shop/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ClipboardList } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { OpeningStockSetupWorkspace } from "@/components/admin/stock/opening-stock-setup-workspace";
 import { buildStockBalanceColumns } from "@/components/admin/stock/stock-balance-columns";
 import { StockCountDialog } from "@/components/admin/stock/stock-count-dialog";
 import { AppDataTable } from "@/components/data-table/app-data-table";
@@ -24,6 +25,7 @@ import { usePermissionLocationScope } from "@/lib/authorization/use-permission-l
 import {
   fetchManagerStockBalances,
   managerStockBalancesQueryKey,
+  postManagerOpeningStock,
   postManagerStockCount,
 } from "@/lib/react-query/stock-admin";
 
@@ -46,6 +48,7 @@ export function ManagerStockPageClient() {
   const [requestTargets, setRequestTargets] = useState<SupplyRequestTarget[]>(
     [],
   );
+  const [openingResetKey, setOpeningResetKey] = useState(0);
 
   const query = useMemo(
     () => ({
@@ -71,6 +74,15 @@ export function ManagerStockPageClient() {
       });
       setCountOpen(false);
       setCountTarget(null);
+    },
+  });
+  const openingStockMutation = useMutation({
+    mutationFn: postManagerOpeningStock,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["stock", "balances", "manager"],
+      });
+      setOpeningResetKey((key) => key + 1);
     },
   });
 
@@ -159,6 +171,25 @@ export function ManagerStockPageClient() {
           onSubmit={handleSearch}
           placeholder="Search by product or SKU"
           search={search}
+        />
+      ) : null}
+
+      {canCount && selectedLocationScope ? (
+        <OpeningStockSetupWorkspace
+          error={openingStockMutation.error}
+          isPending={openingStockMutation.isPending}
+          key={openingResetKey}
+          locationName={selectedLocationScope.locationName}
+          locationSlug={selectedLocationScope.locationSlug}
+          onSubmit={(req) => {
+            openingStockMutation.reset();
+            openingStockMutation.mutate(req);
+          }}
+          successMessage={
+            openingStockMutation.data
+              ? `${openingStockMutation.data.initializedCount} SKU baseline(s) were initialized for ${openingStockMutation.data.locationName}.`
+              : null
+          }
         />
       ) : null}
 

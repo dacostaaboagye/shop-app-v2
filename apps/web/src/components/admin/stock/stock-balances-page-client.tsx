@@ -13,6 +13,7 @@ import {
   AdminStockFilterPanel,
   formatAdminStockResultLabel,
 } from "@/components/admin/stock/admin-stock-filter-panel";
+import { OpeningStockSetupWorkspace } from "@/components/admin/stock/opening-stock-setup-workspace";
 import { buildStockBalanceColumns } from "@/components/admin/stock/stock-balance-columns";
 import { StockCountDialog } from "@/components/admin/stock/stock-count-dialog";
 import { StockCountWorkspace } from "@/components/admin/stock/stock-count-workspace";
@@ -34,6 +35,7 @@ import {
 } from "@/lib/react-query/admin-directory";
 import {
   fetchStockBalances,
+  postOpeningStock,
   postStockCount,
   stockBalancesQueryKey,
 } from "@/lib/react-query/stock-admin";
@@ -53,6 +55,7 @@ export function StockBalancesPageClient() {
   const [countTarget, setCountTarget] =
     useState<AdminStockBalanceSummary | null>(null);
   const [countOpen, setCountOpen] = useState(false);
+  const [openingResetKey, setOpeningResetKey] = useState(0);
 
   const canCount = can("inventory.write");
   const locationsQuery = useQuery({
@@ -80,6 +83,13 @@ export function StockBalancesPageClient() {
       void queryClient.invalidateQueries({ queryKey: ["stock", "balances"] });
       setCountOpen(false);
       setCountTarget(null);
+    },
+  });
+  const openingStockMutation = useMutation({
+    mutationFn: postOpeningStock,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["stock", "balances"] });
+      setOpeningResetKey((key) => key + 1);
     },
   });
 
@@ -127,20 +137,42 @@ export function StockBalancesPageClient() {
       />
 
       {canCount && filter.locationSlug ? (
-        <StockCountWorkspace
-          error={countMutation.error}
-          isPending={countMutation.isPending}
-          locationName={getStockBalanceLocationName(
-            filter.locationSlug,
-            stockQuery.data?.locationName,
-            locationsQuery.data?.items,
-          )}
-          locationSlug={filter.locationSlug}
-          onSubmit={(req) => {
-            countMutation.reset();
-            countMutation.mutate(req);
-          }}
-        />
+        <>
+          <OpeningStockSetupWorkspace
+            error={openingStockMutation.error}
+            isPending={openingStockMutation.isPending}
+            key={openingResetKey}
+            locationName={getStockBalanceLocationName(
+              filter.locationSlug,
+              stockQuery.data?.locationName,
+              locationsQuery.data?.items,
+            )}
+            locationSlug={filter.locationSlug}
+            onSubmit={(req) => {
+              openingStockMutation.reset();
+              openingStockMutation.mutate(req);
+            }}
+            successMessage={
+              openingStockMutation.data
+                ? `${openingStockMutation.data.initializedCount} SKU baseline(s) were initialized for ${openingStockMutation.data.locationName}.`
+                : null
+            }
+          />
+          <StockCountWorkspace
+            error={countMutation.error}
+            isPending={countMutation.isPending}
+            locationName={getStockBalanceLocationName(
+              filter.locationSlug,
+              stockQuery.data?.locationName,
+              locationsQuery.data?.items,
+            )}
+            locationSlug={filter.locationSlug}
+            onSubmit={(req) => {
+              countMutation.reset();
+              countMutation.mutate(req);
+            }}
+          />
+        </>
       ) : null}
 
       <AppTableWrapper>

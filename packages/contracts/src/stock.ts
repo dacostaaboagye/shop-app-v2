@@ -58,8 +58,17 @@ export const adminStockBalanceListResponseSchema = z.object({
   totalCount: z.number().int().min(0),
 });
 
-export const stockCountReasonCodeSchema = z.enum([
+export const stockAdjustmentReasonCodeSchema = z.enum([
   "opening_count",
+  "cycle_count",
+  "damaged",
+  "found_stock",
+  "correction",
+  "shrinkage",
+  "return_restock",
+]);
+
+export const stockCountReasonCodeSchema = z.enum([
   "cycle_count",
   "damaged",
   "found_stock",
@@ -136,6 +145,71 @@ export const adminStockCountResponseSchema =
     status: z.enum(["changed", "no_change"]),
   });
 
+export const openingStockSourceTypeSchema = z.enum([
+  "physical_count",
+  "import",
+  "migration",
+]);
+
+const optionalStockNoteSchema = z
+  .string()
+  .trim()
+  .max(500)
+  .optional()
+  .transform((value) => (value ? value : undefined));
+
+export const adminOpeningStockLineSchema = z.object({
+  note: optionalStockNoteSchema,
+  onHandQuantity: z.number().int().min(0),
+  sku: z.string().trim().min(1).max(120),
+});
+
+export const adminOpeningStockRequestSchema = z
+  .object({
+    lines: z.array(adminOpeningStockLineSchema).min(1).max(1000),
+    locationSlug: z.string().trim().min(1).max(120),
+    note: optionalStockNoteSchema,
+    sourceReference: z
+      .string()
+      .trim()
+      .max(160)
+      .optional()
+      .transform((value) => (value ? value : undefined)),
+    sourceType: openingStockSourceTypeSchema,
+  })
+  .superRefine((value, context) => {
+    const seen = new Map<string, number>();
+
+    value.lines.forEach((line, index) => {
+      const key = line.sku.toUpperCase();
+      const previousIndex = seen.get(key);
+      if (previousIndex === undefined) {
+        seen.set(key, index);
+        return;
+      }
+
+      context.addIssue({
+        code: "custom",
+        message: `SKU "${line.sku}" appears more than once in this opening stock batch.`,
+        path: ["lines", index, "sku"],
+      });
+    });
+  });
+
+export const adminOpeningStockResponseSchema = z.object({
+  initializedCount: z.number().int().min(0),
+  items: z.array(
+    adminStockBalanceSummarySchema.omit({ skuId: true }).extend({
+      note: z.string().nullable(),
+      openingQuantity: z.number().int().min(0),
+    }),
+  ),
+  locationName: z.string(),
+  locationSlug: z.string(),
+  sourceKey: z.string().min(1).max(160),
+  sourceType: openingStockSourceTypeSchema,
+});
+
 export type AdminStockBalanceListQuery = z.infer<
   typeof adminStockBalanceQuerySchema
 >;
@@ -164,6 +238,19 @@ export type AdminStockCountResponse = z.infer<
   typeof adminStockCountResponseSchema
 >;
 export type StockCountReasonCode = z.infer<typeof stockCountReasonCodeSchema>;
+export type StockAdjustmentReasonCode = z.infer<
+  typeof stockAdjustmentReasonCodeSchema
+>;
+export type OpeningStockSourceType = z.infer<
+  typeof openingStockSourceTypeSchema
+>;
+export type AdminOpeningStockLine = z.infer<typeof adminOpeningStockLineSchema>;
+export type AdminOpeningStockRequest = z.infer<
+  typeof adminOpeningStockRequestSchema
+>;
+export type AdminOpeningStockResponse = z.infer<
+  typeof adminOpeningStockResponseSchema
+>;
 
 export const locationStockBalanceQuerySchema = z.object({
   locationId: z.string().uuid(),
