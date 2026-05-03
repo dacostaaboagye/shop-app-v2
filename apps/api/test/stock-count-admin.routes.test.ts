@@ -37,6 +37,7 @@ describe("stock count routes", () => {
       payload: {
         locationSlug: "downtown-store",
         onHandQuantity: 12,
+        reasonCode: "opening_count",
         sku: "RICE-5KG",
       },
       url: "/api/manager/stock/balances/count",
@@ -63,6 +64,7 @@ describe("stock count routes", () => {
       payload: {
         locationSlug: "airport-store",
         onHandQuantity: 12,
+        reasonCode: "correction",
         sku: "RICE-5KG",
       },
       url: "/api/manager/stock/balances/count",
@@ -90,7 +92,9 @@ describe("stock count routes", () => {
       method: "POST",
       payload: {
         locationSlug: "downtown-store",
+        note: "Shelf count after damage report.",
         onHandQuantity: 8,
+        reasonCode: "damaged",
         sku: "RICE-5KG",
       },
       url: "/api/admin/stock/balances/count",
@@ -100,6 +104,29 @@ describe("stock count routes", () => {
     assert.equal(state.countedBy, ACTOR_ID);
     assert.equal(state.countedBySlug, ACTOR_SLUG);
   });
+
+  it("rejects stock counts without a reason code", async () => {
+    const state = { countCalls: 0 };
+    const server = createStockCountServer({
+      onCount() {
+        state.countCalls += 1;
+      },
+    });
+
+    const response = await server.inject({
+      headers: authHeaders(),
+      method: "POST",
+      payload: {
+        locationSlug: "downtown-store",
+        onHandQuantity: 8,
+        sku: "RICE-5KG",
+      },
+      url: "/api/admin/stock/balances/count",
+    });
+
+    assert.equal(response.statusCode, 400);
+    assert.equal(state.countCalls, 0);
+  });
 });
 
 function createStockCountServer(input: {
@@ -107,7 +134,9 @@ function createStockCountServer(input: {
     countedBy?: string;
     countedBySlug?: string;
     locationSlug: string;
+    note?: string | undefined;
     onHandQuantity: number;
+    reasonCode: string;
     sku: string;
   }) => void;
   onPermissionCheck?: (input: {
@@ -171,12 +200,17 @@ function createStockCountServer(input: {
             inTransitQuantity: 0,
             locationName: "Downtown Store",
             locationSlug: countInput.locationSlug,
+            note: countInput.note ?? null,
             onHandQuantity: countInput.onHandQuantity,
+            previousOnHandQuantity: 0,
             productName: "Rice",
             productSlug: "rice",
+            quantityDelta: countInput.onHandQuantity,
+            reasonCode: countInput.reasonCode,
             reservedQuantity: 0,
             sku: countInput.sku,
             skuId: SKU_ID,
+            status: countInput.onHandQuantity === 0 ? "no_change" : "changed",
             updatedAt: NOW.toISOString(),
             variantName: "5kg",
             variantSlug: "rice-5kg",

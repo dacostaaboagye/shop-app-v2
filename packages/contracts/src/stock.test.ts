@@ -6,6 +6,8 @@ import {
   adminReservationQuerySchema,
   adminStockBalanceListResponseSchema,
   adminStockBalanceQuerySchema,
+  adminStockCountRequestSchema,
+  adminStockCountResponseSchema,
   locationReservationQuerySchema,
 } from "./stock.js";
 
@@ -92,6 +94,43 @@ describe("stock contracts", () => {
 
     assert.equal(parsed.locationSlug, "");
     assert.equal(parsed.limit, 50);
+  });
+
+  it("requires reason-coded stock counts and accepts no-change responses", () => {
+    const request = adminStockCountRequestSchema.parse({
+      locationSlug: "downtown-store",
+      note: " Opening shelf count. ",
+      onHandQuantity: 10,
+      reasonCode: "opening_count",
+      sku: "RICE-5KG",
+    });
+
+    assert.equal(request.note, "Opening shelf count.");
+    assert.equal(request.reasonCode, "opening_count");
+
+    const response = adminStockCountResponseSchema.parse({
+      availableQuantity: 10,
+      inTransitQuantity: 0,
+      locationName: "Downtown Store",
+      locationSlug: "downtown-store",
+      note: "Opening shelf count.",
+      onHandQuantity: 10,
+      previousOnHandQuantity: 10,
+      productName: "Rice",
+      productSlug: "rice",
+      quantityDelta: 0,
+      reasonCode: "opening_count",
+      reservedQuantity: 0,
+      sku: "RICE-5KG",
+      skuId: "22222222-2222-4222-8222-222222222222",
+      status: "no_change",
+      updatedAt: new Date("2026-04-08T09:00:00.000Z").toISOString(),
+      variantName: "5kg",
+      variantSlug: "rice-5kg",
+    });
+
+    assert.equal(response.status, "no_change");
+    assert.equal(response.quantityDelta, 0);
   });
 
   it("accepts location-scoped reservation filters", () => {

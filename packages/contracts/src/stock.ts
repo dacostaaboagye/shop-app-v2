@@ -58,6 +58,16 @@ export const adminStockBalanceListResponseSchema = z.object({
   totalCount: z.number().int().min(0),
 });
 
+export const stockCountReasonCodeSchema = z.enum([
+  "opening_count",
+  "cycle_count",
+  "damaged",
+  "found_stock",
+  "correction",
+  "shrinkage",
+  "return_restock",
+]);
+
 export type ActiveReservationListQuery = z.infer<
   typeof activeReservationListQuerySchema
 >;
@@ -106,9 +116,25 @@ export const adminReservationListResponseSchema = z.object({
 
 export const adminStockCountRequestSchema = z.object({
   locationSlug: z.string().trim().min(1).max(120),
+  note: z
+    .string()
+    .trim()
+    .max(500)
+    .optional()
+    .transform((value) => (value ? value : undefined)),
   onHandQuantity: z.number().int().min(0),
+  reasonCode: stockCountReasonCodeSchema,
   sku: z.string().trim().min(1).max(120),
 });
+
+export const adminStockCountResponseSchema =
+  adminStockBalanceSummarySchema.extend({
+    note: z.string().nullable(),
+    previousOnHandQuantity: z.number().int(),
+    quantityDelta: z.number().int(),
+    reasonCode: stockCountReasonCodeSchema,
+    status: z.enum(["changed", "no_change"]),
+  });
 
 export type AdminStockBalanceListQuery = z.infer<
   typeof adminStockBalanceQuerySchema
@@ -134,6 +160,10 @@ export type LocationReservationQuery = z.infer<
 export type AdminStockCountRequest = z.infer<
   typeof adminStockCountRequestSchema
 >;
+export type AdminStockCountResponse = z.infer<
+  typeof adminStockCountResponseSchema
+>;
+export type StockCountReasonCode = z.infer<typeof stockCountReasonCodeSchema>;
 
 export const locationStockBalanceQuerySchema = z.object({
   locationId: z.string().uuid(),
