@@ -2,6 +2,13 @@
 
 This repository is designed for multiple agents to work safely in parallel. Follow these rules exactly.
 
+## Codex sessions
+
+- Codex-specific orchestration lives in `CODEX.md`.
+- Codex agents must read `CODEX.md` after this file for project-scoped delivery workflow, standing subagent routing, specialist-role gates, and Claude-orchestration boundaries.
+- The project owner has explicitly requested standing Codex subagent orchestration for this repository; do not require a per-session reminder before using subagents for non-trivial delivery work when the subagent tool is available.
+- Do not modify `.claude/**` orchestration when adding or updating Codex-specific behavior.
+
 ## Execution model
 
 - Work from backlog ticket IDs. Every change must reference at least one ticket in the branch name, PR body, or commit message.
