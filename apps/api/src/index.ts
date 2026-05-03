@@ -150,6 +150,7 @@ const server = createServer({
   catalogBrands: catalogRuntime.catalog,
   catalogImport: catalogRuntime.catalog,
   catalogMedia: catalogRuntime.catalog,
+  catalogReferenceImport: catalogRuntime.catalog,
   events: {
     eventSubscriber: eventBus,
     permissionService: authRuntime.accessControl.permissionService,
