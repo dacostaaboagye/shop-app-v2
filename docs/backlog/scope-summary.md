@@ -85,6 +85,6 @@ These are oddities in the xlsx itself, not the work — worth noting so they get
 
 Based on what's in the xlsx today, the remaining near-term runway is clear:
 
-1. **E-04** - refine Inventory tracking per location into implementable tickets, then start the highest-value stock-count/opening-balance slice.
+1. **E-04** - refined in `docs/backlog/epics/E-04-inventory-tracking-flow-redesign.md`. Start with reason-coded stock counts/manual adjustments, then opening-stock hardening, thresholds, alerts, stock takes, barcode lookup, and the stock-level workspace UX foundation.
 
-The PO needs to break **E-04** into tickets in `Backlog Audit` so the rest of phase-2 (E-05..E-15) can be sized against it.
+The PO still needs to mirror **E-04** into `Backlog Audit` / `Next Up` in the workbook so the rest of phase-2 (E-05..E-15) can be tracked by the authoritative queue.

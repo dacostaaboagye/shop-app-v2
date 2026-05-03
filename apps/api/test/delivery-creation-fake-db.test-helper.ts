@@ -309,8 +309,11 @@ function createStockMovementRow(
     id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
     locationId: input.locationId as string,
     movementType: input.movementType as StockMovementRow["movementType"],
+    note: (input.note as string | null | undefined) ?? null,
     occurredAt: input.occurredAt as Date,
     quantityDelta: input.quantityDelta as number,
+    reasonCode:
+      (input.reasonCode as StockMovementRow["reasonCode"] | undefined) ?? null,
     skuId: input.skuId as string,
     sourceKey: input.sourceKey as string,
     sourceType: input.sourceType as string,

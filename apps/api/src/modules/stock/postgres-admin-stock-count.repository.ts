@@ -9,7 +9,16 @@ import { createStockCountEvent } from "./stock-count-event.js";
 
 export type AdminStockCountRequest = {
   locationSlug: string;
+  note?: string | undefined;
   onHandQuantity: number;
+  reasonCode:
+    | "opening_count"
+    | "cycle_count"
+    | "damaged"
+    | "found_stock"
+    | "correction"
+    | "shrinkage"
+    | "return_restock";
   sku: string;
 };
 
@@ -19,11 +28,16 @@ export type AdminStockCountSummary = {
   locationName: string;
   locationSlug: string;
   onHandQuantity: number;
+  note: string | null;
+  previousOnHandQuantity: number;
   productName: string;
   productSlug: string;
+  quantityDelta: number;
+  reasonCode: AdminStockCountRequest["reasonCode"];
   reservedQuantity: number;
   sku: string;
   skuId: string;
+  status: "changed" | "no_change";
   updatedAt: string;
   variantName: string;
   variantSlug: string;
@@ -44,8 +58,15 @@ export class AdminStockCountRepository {
       countedBySlug?: string;
     },
   ): Promise<AdminStockCountSummary> {
-    const { locationSlug, sku, onHandQuantity, countedBy, countedBySlug } =
-      input;
+    const {
+      locationSlug,
+      note,
+      sku,
+      onHandQuantity,
+      countedBy,
+      countedBySlug,
+      reasonCode,
+    } = input;
 
     const result = await this.db.transaction(async (tx) => {
       // 1. Resolve Location
@@ -138,6 +159,8 @@ export class AdminStockCountRepository {
           sourceType: "admin_count",
           sourceKey: randomUUID(),
           quantityDelta: delta,
+          reasonCode,
+          note: note ?? null,
           occurredAt: now,
           createdBy: countedBy ?? null,
           createdAt: now,
@@ -152,8 +175,10 @@ export class AdminStockCountRepository {
               locationName: location.name,
               locationSlug: location.slug,
               nextOnHandQuantity: onHandQuantity,
+              note: note ?? null,
               previousOnHandQuantity: currentOnHand,
               productName: variant.product.name,
+              reasonCode,
               sku: variant.sku,
               skuId: variant.id,
               variantName: variant.name,
@@ -163,6 +188,9 @@ export class AdminStockCountRepository {
         }
       }
 
+      const status: AdminStockCountSummary["status"] =
+        delta === 0 ? "no_change" : "changed";
+
       return {
         eventAppended: shouldPublishEvent,
         summary: {
@@ -171,11 +199,16 @@ export class AdminStockCountRepository {
           locationName: location.name,
           locationSlug,
           onHandQuantity,
+          note: note ?? null,
+          previousOnHandQuantity: currentOnHand,
           productName: variant.product.name,
           productSlug: variant.product.slug,
+          quantityDelta: delta,
+          reasonCode,
           reservedQuantity: reserved,
           sku: variant.sku,
           skuId: variant.id,
+          status,
           updatedAt: now.toISOString(),
           variantName: variant.name,
           variantSlug: variant.slug,

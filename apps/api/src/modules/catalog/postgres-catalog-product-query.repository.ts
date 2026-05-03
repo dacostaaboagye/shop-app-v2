@@ -3,8 +3,8 @@ import type {
   AdminProductListQuery,
   CatalogEntityStatus,
 } from "@shop/contracts";
-import { catalogProducts } from "@shop/database";
-import { and, eq, ilike, or } from "drizzle-orm";
+import { catalogProducts, productVariants } from "@shop/database";
+import { and, eq, ilike, or, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import {
   getPrimaryImageUrl,
@@ -117,6 +117,16 @@ export class PostgresCatalogProductQueryRepository
         ? or(
             ilike(catalogProducts.name, `%${q.trim()}%`),
             ilike(catalogProducts.slug, `%${q.trim()}%`),
+            sql`exists (
+              select 1
+              from ${productVariants}
+              where ${productVariants.productId} = ${catalogProducts.id}
+                and (
+                  ${productVariants.name} ilike ${`%${q.trim()}%`}
+                  or ${productVariants.sku} ilike ${`%${q.trim()}%`}
+                  or ${productVariants.barcode} ilike ${`%${q.trim()}%`}
+                )
+            )`,
           )
         : undefined,
       categoryId ? eq(catalogProducts.categoryId, categoryId) : undefined,

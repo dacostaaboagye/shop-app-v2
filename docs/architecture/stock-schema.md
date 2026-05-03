@@ -52,6 +52,9 @@ location.
 - `quantity_delta`: signed change applied to `stock_balances.on_hand_quantity`
 - `source_type` and `source_key`: upstream movement identity used for idempotent
   sync
+- `reason_code`: structured reason for manual adjustment/count movements such as
+  opening count, damage, shrinkage, found stock, or correction
+- `note`: optional operator note for the adjustment evidence
 - unique `(sku_id, location_id, source_type, source_key)` index prevents the
   same movement from being applied twice
 

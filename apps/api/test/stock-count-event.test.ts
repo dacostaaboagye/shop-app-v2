@@ -11,8 +11,10 @@ describe("createStockCountEvent", () => {
       locationName: "Airport Store",
       locationSlug: "airport-store",
       nextOnHandQuantity: 8,
+      note: "Two units found during count.",
       previousOnHandQuantity: 3,
       productName: "Travel Pack",
+      reasonCode: "found_stock",
       sku: "TRAVEL-001",
       skuId: "22222222-2222-4222-8222-222222222222",
       variantName: "Default",
@@ -21,8 +23,10 @@ describe("createStockCountEvent", () => {
     assert.equal(event.type, "stock.count.updated");
     assert.equal(
       event.summary,
-      "Stock count updated for Travel Pack Default (TRAVEL-001) at Airport Store: 3 to 8 (+5).",
+      "Stock count updated for Travel Pack Default (TRAVEL-001) at Airport Store: 3 to 8 (+5) for found stock.",
     );
+    assert.equal(event.payload.reasonCode, "found_stock");
+    assert.equal(event.payload.note, "Two units found during count.");
     assert.deepEqual(event.audience, [
       {
         kind: "permission",
