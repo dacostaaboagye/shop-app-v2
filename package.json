@@ -20,7 +20,7 @@
     "guard": "pnpm guard:routes && pnpm guard:public-ids && pnpm guard:frontend && pnpm guard:file-length",
     "lint": "turbo lint",
     "prepare": "husky",
-    "test": "turbo test",
+    "test": "node --test scripts/**/*.test.mjs && turbo test",
     "typecheck": "turbo typecheck",
     "validate": "pnpm enforce:branch-name && pnpm guard && pnpm lint && pnpm typecheck && pnpm test",
     "verify": "pnpm validate && pnpm build"
