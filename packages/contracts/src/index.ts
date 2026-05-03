@@ -12,6 +12,7 @@ export * from "./catalog-import.js";
 export * from "./catalog-media.js";
 export * from "./catalog-product-options.js";
 export * from "./catalog-products.js";
+export * from "./catalog-reference-import.js";
 export * from "./catalog-variants.js";
 export * from "./deliveries.js";
 export * from "./errors.js";
