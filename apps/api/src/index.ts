@@ -148,6 +148,7 @@ const server = createServer({
     ),
   },
   catalogBrands: catalogRuntime.catalog,
+  catalogImport: catalogRuntime.catalog,
   catalogMedia: catalogRuntime.catalog,
   events: {
     eventSubscriber: eventBus,

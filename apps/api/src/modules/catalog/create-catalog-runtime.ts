@@ -16,6 +16,8 @@ import {
   type CatalogHistoryEntityLookup,
   PostgresCatalogHistoryEntityLookup,
 } from "./catalog-history-entity-lookup.js";
+import { PostgresCatalogImportRepository } from "./catalog-import.repository.js";
+import { CatalogImportService } from "./catalog-import.service.js";
 import { CatalogMediaService } from "./catalog-media.service.js";
 import { CatalogProductQueryService } from "./catalog-product-query.service.js";
 import { CatalogProductWriteService } from "./catalog-product-write.service.js";
@@ -40,6 +42,7 @@ type CatalogRuntime = {
     catalogBrandWriteService: CatalogBrandWriteService;
     catalogCategoryQueryService: CatalogCategoryQueryService;
     catalogCategoryWriteService: CatalogCategoryWriteService;
+    catalogImportService: CatalogImportService;
     catalogMediaService: CatalogMediaService;
     catalogProductQueryService: CatalogProductQueryService;
     catalogProductWriteService: CatalogProductWriteService;
@@ -116,6 +119,19 @@ export function createCatalogRuntime(
           changeLogWriter,
         ),
         options.platformEventPublisher ?? null,
+      ),
+      catalogImportService: new CatalogImportService(
+        new PostgresCatalogImportRepository(databaseRuntime.db),
+        new CatalogProductWriteService(
+          new PostgresCatalogProductWriteRepository(productCommands),
+          new PostgresCatalogVariantWriteRepository(
+            variantCommands,
+            new PostgresCatalogVariantEventContextRepository(
+              databaseRuntime.db,
+            ),
+          ),
+          options.platformEventPublisher ?? null,
+        ),
       ),
       catalogMediaService: new CatalogMediaService(
         new PostgresCatalogMediaRepository(databaseRuntime.db),
