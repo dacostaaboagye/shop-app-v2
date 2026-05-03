@@ -14,6 +14,7 @@ export const createFromOnlineOrderRoute: RouteDefinition = {
   access: {
     kind: "permission",
     permission: "deliveries.create_from_online_order",
+    scope: "any_active",
   },
   method: "POST",
   url: "/api/deliveries/from-online-order",

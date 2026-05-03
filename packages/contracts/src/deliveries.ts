@@ -144,6 +144,7 @@ export const DELIVERY_ERROR_CODES = {
   sourceConflict: "delivery_source_conflict",
   insufficientOriginStock: "delivery_insufficient_origin_stock",
   invalidDestination: "delivery_invalid_destination",
+  invalidSourceQuantity: "delivery_invalid_source_quantity",
   partialUnsupported: "delivery_partial_unsupported",
   illegalTransition: "delivery_illegal_status_transition",
   terminalStatus: "delivery_terminal_status",
@@ -184,6 +185,12 @@ export type DeliveryEligibleTransfer = {
   transferReference: string;
   sourceLocationId: string;
   destinationLocationId: string;
+  supplyRequestId: string;
+  skuSnapshot: {
+    sku: string;
+    productName: string;
+    variantName: string;
+  };
   state: "approved" | "draft" | "cancelled" | "dispatched" | "received";
   items: DeliveryEligibleSourceItem[];
 };

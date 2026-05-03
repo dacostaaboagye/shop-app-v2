@@ -10,11 +10,13 @@ import type {
   TransferDeliverySourcePort,
 } from "@shop/contracts";
 import { DeliveryCreationCompose } from "../src/modules/deliveries/delivery-creation.compose.js";
+import type { DeliveryCreationStockSideEffectsPort } from "../src/modules/deliveries/delivery-creation.contracts.js";
 import { DeliveryCreationServiceImpl } from "../src/modules/deliveries/delivery-creation.service.js";
 import {
   DeliverySourceNotFoundError,
   DeliverySourceStateInvalidError,
 } from "../src/modules/deliveries/delivery-errors.js";
+import { FakeDeliveryDatabase } from "./delivery-creation-fake-db.test-helper.js";
 
 const validSnapshot: DeliveryAddressSnapshot = {
   contactName: "Ada Mensah",
@@ -49,16 +51,24 @@ class FakeTransferPort implements TransferDeliverySourcePort {
   }
 }
 
+const noopStockSideEffectsPort = {
+  async applyWithinTransaction() {
+    return { status: "ok" as const };
+  },
+} satisfies DeliveryCreationStockSideEffectsPort;
+
 function buildService(input: {
   posSale?: DeliveryEligiblePosSale | null;
   onlineOrder?: DeliveryEligibleOnlineOrder | null;
   transfer?: DeliveryEligibleTransfer | null;
 }) {
+  const db = new FakeDeliveryDatabase();
   const compose = new DeliveryCreationCompose({
-    db: {} as never,
+    db: db as never,
     posSaleSourcePort: new FakePosSalePort(input.posSale ?? null),
     onlineOrderSourcePort: new FakeOnlineOrderPort(input.onlineOrder ?? null),
     transferSourcePort: new FakeTransferPort(input.transfer ?? null),
+    stockSideEffectsPort: noopStockSideEffectsPort,
     referenceNumberService: {} as never,
   });
   return new DeliveryCreationServiceImpl(compose);
@@ -157,6 +167,12 @@ describe("DeliveryCreationService.createFromTransfer", () => {
         transferReference: "TRF-0001",
         sourceLocationId: "00000000-0000-4000-8000-000000000010",
         destinationLocationId: "00000000-0000-4000-8000-000000000011",
+        supplyRequestId: "00000000-0000-4000-8000-000000000012",
+        skuSnapshot: {
+          sku: "SKU-1",
+          productName: "Product",
+          variantName: "Variant",
+        },
         state: "draft",
         items: [{ skuId: "00000000-0000-4000-8000-000000000020", quantity: 5 }],
       },

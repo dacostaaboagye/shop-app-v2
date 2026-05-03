@@ -19,13 +19,20 @@ Delivery source ingest infrastructure is in place:
 
 ## What's still stubbed (follow-up work)
 
-Three source-port adapters ship as **stubs** that always return null. Real wiring lands in follow-up commits:
+The online-order source-port adapter remains a deliberate stub until E-14 ships the online order module:
 
-- `pos-sale-delivery-source-stub.adapter.ts` — wire to `apps/api/src/modules/sales/pos-sale.service.ts`.
-- `online-order-delivery-source-stub.adapter.ts` — wire when E-14 (online checkout) ships.
-- `transfer-delivery-source-stub.adapter.ts` — wire to the stock-transfers module.
+- `online-order-delivery-source-stub.adapter.ts` - wire when E-14 (online checkout) ships.
 
-Stock-module side effects inside `composeOnce` (reservation insert + onHand→reserved adjust for transfer; reservation insert for online order) are noted with a `TODO(e-00c-01)` and will land alongside the real adapters. The compose helper already owns the Drizzle tx, so the stock-tx factory will participate cleanly via `createPostgresStockReservationTransaction(tx)`.
+POS sale and transfer sources now use real adapters:
+
+- `../sales/pos-sale-delivery-source.adapter.ts` maps confirmed POS invoices and line items into delivery sources and is injected through `createSalesRuntime`.
+- `../stock/transfer-delivery-source.adapter.ts` maps approved stock transfers into delivery sources and is injected through `createStockRuntime`.
+
+Stock-module side effects run inside the same Drizzle transaction as delivery creation:
+
+- POS sale deliveries do not touch stock because POS confirmation already decremented stock.
+- Online order deliveries reserve stock at the origin once E-14 provides a real source.
+- Transfer deliveries call the stock-owned delivery stock side-effect participant, which reserves and confirms origin stock, records a `transfer_out` stock movement, and creates dispatched GTN evidence so stock reads surface the quantity as in-transit.
 
 ## Future work
 
