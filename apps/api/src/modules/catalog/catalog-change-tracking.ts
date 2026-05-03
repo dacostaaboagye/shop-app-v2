@@ -20,8 +20,8 @@ import type { CatalogChangeOperation } from "../catalog-change-log/catalog-chang
 export const TRACKED_PRODUCT_FIELDS = [
   "name",
   "description",
-  "categoryId",
-  "brandId",
+  "category",
+  "brand",
   "countryOfOrigin",
   "isTaxable",
   "taxCategory",
@@ -59,7 +59,7 @@ export const TRACKED_BRAND_FIELDS = [
 export const TRACKED_CATEGORY_FIELDS = [
   "name",
   "description",
-  "parentCategoryId",
+  "parentCategory",
   "status",
 ] as const satisfies readonly (keyof CategorySnapshot)[];
 
@@ -73,19 +73,27 @@ export const TRACKED_OPTION_VALUE_FIELDS = [
   "position",
 ] as const satisfies readonly (keyof OptionValueSnapshot)[];
 
+export type CatalogReferentSnapshot = { id: string; name: string } | null;
+
+export type ProductSnapshotContext = {
+  brandName?: string | null;
+  categoryName?: string | null;
+};
+
 export type ProductSnapshot = Pick<
   typeof catalogProducts.$inferSelect,
   | "name"
   | "description"
-  | "categoryId"
-  | "brandId"
   | "countryOfOrigin"
   | "isTaxable"
   | "taxCategory"
   | "priceIncludesTax"
   | "status"
   | "features"
->;
+> & {
+  brand: CatalogReferentSnapshot;
+  category: CatalogReferentSnapshot;
+};
 
 export type VariantSnapshot = Pick<
   typeof productVariants.$inferSelect,
@@ -112,10 +120,16 @@ export type BrandSnapshot = Pick<
   "name" | "description" | "website" | "status"
 >;
 
+export type CategorySnapshotContext = {
+  parentCategoryName?: string | null;
+};
+
 export type CategorySnapshot = Pick<
   typeof catalogCategories.$inferSelect,
-  "name" | "description" | "parentCategoryId" | "status"
->;
+  "name" | "description" | "status"
+> & {
+  parentCategory: CatalogReferentSnapshot;
+};
 
 export type OptionSnapshot = Pick<
   typeof catalogProductOptions.$inferSelect,
@@ -129,12 +143,13 @@ export type OptionValueSnapshot = Pick<
 
 export function snapshotProduct(
   row: typeof catalogProducts.$inferSelect,
+  context: ProductSnapshotContext = {},
 ): ProductSnapshot {
   return {
     name: row.name,
     description: row.description,
-    categoryId: row.categoryId,
-    brandId: row.brandId,
+    category: snapshotReferent(row.categoryId, context.categoryName),
+    brand: snapshotReferent(row.brandId, context.brandName),
     countryOfOrigin: row.countryOfOrigin,
     isTaxable: row.isTaxable,
     taxCategory: row.taxCategory,
@@ -180,11 +195,15 @@ export function snapshotBrand(
 
 export function snapshotCategory(
   row: typeof catalogCategories.$inferSelect,
+  context: CategorySnapshotContext = {},
 ): CategorySnapshot {
   return {
     name: row.name,
     description: row.description,
-    parentCategoryId: row.parentCategoryId,
+    parentCategory: snapshotReferent(
+      row.parentCategoryId,
+      context.parentCategoryName,
+    ),
     status: row.status,
   };
 }
@@ -220,4 +239,12 @@ export function operationFromStatusTransition(
   if (beforeStatus === afterStatus) return "updated";
   if (afterStatus === "archived") return "archived";
   return "restored";
+}
+
+function snapshotReferent(
+  id: string | null,
+  name: string | null | undefined,
+): CatalogReferentSnapshot {
+  if (id === null) return null;
+  return { id, name: name ?? "Unknown" };
 }

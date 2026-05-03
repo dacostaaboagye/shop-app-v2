@@ -1,4 +1,10 @@
-import type { catalogProducts, productVariants } from "@shop/database";
+import {
+  catalogBrands,
+  catalogCategories,
+  type catalogProducts,
+  type productVariants,
+} from "@shop/database";
+import { inArray } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import { diffSnapshot } from "../catalog-change-log/catalog-change-diff.js";
 import type { CatalogChangeLogWriter } from "../catalog-change-log/catalog-change-log-writer.js";
@@ -14,6 +20,27 @@ type ProductRow = typeof catalogProducts.$inferSelect;
 type VariantRow = typeof productVariants.$inferSelect;
 type ActorContext = { actorId: string; now: Date };
 
+export async function recordProductCreated(
+  tx: ApiDatabase,
+  writer: CatalogChangeLogWriter,
+  row: ProductRow,
+  ctx: ActorContext,
+): Promise<void> {
+  const [snapshotContext] = await loadProductSnapshotContexts(tx, [row]);
+
+  await writer.record(tx, {
+    entityType: "catalog_product",
+    entityId: row.id,
+    entityRef: row.slug,
+    operation: "created",
+    changedFields: [],
+    before: null,
+    after: snapshotProduct(row, snapshotContext),
+    actorId: ctx.actorId,
+    occurredAt: ctx.now,
+  });
+}
+
 /**
  * Compute the product diff and emit a change-log row.
  * No-op short-circuit: if operation resolves to `updated` and no tracked
@@ -27,9 +54,13 @@ export async function recordProductUpdate(
   after: ProductRow,
   ctx: ActorContext,
 ): Promise<void> {
+  const [beforeContext, afterContext] = await loadProductSnapshotContexts(tx, [
+    before,
+    after,
+  ]);
   const diff = diffSnapshot(
-    snapshotProduct(before),
-    snapshotProduct(after),
+    snapshotProduct(before, beforeContext),
+    snapshotProduct(after, afterContext),
     TRACKED_PRODUCT_FIELDS,
   );
 
@@ -92,6 +123,8 @@ export async function recordProductDeletion(
   variants: VariantRow[],
   ctx: ActorContext,
 ): Promise<void> {
+  const [productContext] = await loadProductSnapshotContexts(tx, [product]);
+
   for (const variant of variants) {
     await writer.record(tx, {
       entityType: "product_variant",
@@ -114,9 +147,48 @@ export async function recordProductDeletion(
     entityRef: product.slug,
     operation: "deleted",
     changedFields: TRACKED_PRODUCT_FIELDS as unknown as string[],
-    before: snapshotProduct(product),
+    before: snapshotProduct(product, productContext),
     after: null,
     actorId: ctx.actorId,
     occurredAt: ctx.now,
   });
+}
+
+async function loadProductSnapshotContexts(
+  tx: ApiDatabase,
+  rows: ProductRow[],
+) {
+  const categoryIds = uniqueStrings(rows.map((row) => row.categoryId));
+  const brandIds = uniqueStrings(rows.map((row) => row.brandId));
+  const categories =
+    categoryIds.length === 0
+      ? []
+      : await tx
+          .select({ id: catalogCategories.id, name: catalogCategories.name })
+          .from(catalogCategories)
+          .where(inArray(catalogCategories.id, categoryIds));
+  const brands =
+    brandIds.length === 0
+      ? []
+      : await tx
+          .select({ id: catalogBrands.id, name: catalogBrands.name })
+          .from(catalogBrands)
+          .where(inArray(catalogBrands.id, brandIds));
+  const categoryNames = new Map(categories.map((row) => [row.id, row.name]));
+  const brandNames = new Map(brands.map((row) => [row.id, row.name]));
+
+  return rows.map((row) => ({
+    brandName:
+      row.brandId === null ? null : (brandNames.get(row.brandId) ?? null),
+    categoryName:
+      row.categoryId === null
+        ? null
+        : (categoryNames.get(row.categoryId) ?? null),
+  }));
+}
+
+function uniqueStrings(values: Array<string | null>): string[] {
+  return [
+    ...new Set(values.filter((value): value is string => value !== null)),
+  ];
 }

@@ -9,8 +9,8 @@ import type { ApiDatabase } from "../../infrastructure/database.js";
 import { AppError } from "../_core/errors/app-error.js";
 import type { CatalogChangeLogWriter } from "../catalog-change-log/catalog-change-log-writer.js";
 import type { SlugAllocator } from "../public-identifiers/slug.service.js";
-import { snapshotProduct } from "./catalog-change-tracking.js";
 import {
+  recordProductCreated,
   recordProductDeletion,
   recordProductUpdate,
   recordVariantArchiveCascade,
@@ -77,17 +77,7 @@ export class CatalogProductCommands {
 
       if (!row) throw new Error("Unable to create product.");
 
-      await this.changeLogWriter.record(tx, {
-        entityType: "catalog_product",
-        entityId: row.id,
-        entityRef: row.slug,
-        operation: "created",
-        changedFields: [],
-        before: null,
-        after: snapshotProduct(row),
-        actorId: input.actorId,
-        occurredAt: input.now,
-      });
+      await recordProductCreated(tx, this.changeLogWriter, row, input);
 
       return row;
     });

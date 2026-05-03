@@ -1,5 +1,5 @@
-import type { catalogCategories } from "@shop/database";
-import type { InferSelectModel } from "drizzle-orm";
+import { catalogCategories } from "@shop/database";
+import { type InferSelectModel, inArray } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import { diffSnapshot } from "../catalog-change-log/catalog-change-diff.js";
 import type { CatalogChangeLogWriter } from "../catalog-change-log/catalog-change-log-writer.js";
@@ -19,9 +19,13 @@ export async function recordCategoryUpdate(
   after: CategoryRaw,
   ctx: ActorContext,
 ): Promise<void> {
+  const [beforeContext, afterContext] = await loadCategorySnapshotContexts(tx, [
+    before,
+    after,
+  ]);
   const diff = diffSnapshot(
-    snapshotCategory(before),
-    snapshotCategory(after),
+    snapshotCategory(before, beforeContext),
+    snapshotCategory(after, afterContext),
     TRACKED_CATEGORY_FIELDS,
   );
   const operation = operationFromStatusTransition(before.status, after.status);
@@ -46,6 +50,8 @@ export async function recordCategoryCreated(
   row: CategoryRaw,
   ctx: ActorContext,
 ): Promise<void> {
+  const [snapshotContext] = await loadCategorySnapshotContexts(tx, [row]);
+
   await writer.record(tx, {
     entityType: "catalog_category",
     entityId: row.id,
@@ -53,7 +59,7 @@ export async function recordCategoryCreated(
     operation: "created",
     changedFields: [],
     before: null,
-    after: snapshotCategory(row),
+    after: snapshotCategory(row, snapshotContext),
     actorId: ctx.actorId,
     occurredAt: ctx.now,
   });
@@ -65,15 +71,45 @@ export async function recordCategoryDeleted(
   row: CategoryRaw,
   ctx: ActorContext,
 ): Promise<void> {
+  const [snapshotContext] = await loadCategorySnapshotContexts(tx, [row]);
+
   await writer.record(tx, {
     entityType: "catalog_category",
     entityId: row.id,
     entityRef: row.slug,
     operation: "deleted",
     changedFields: TRACKED_CATEGORY_FIELDS as unknown as string[],
-    before: snapshotCategory(row),
+    before: snapshotCategory(row, snapshotContext),
     after: null,
     actorId: ctx.actorId,
     occurredAt: ctx.now,
   });
+}
+
+async function loadCategorySnapshotContexts(
+  tx: ApiDatabase,
+  rows: CategoryRaw[],
+) {
+  const parentIds = [
+    ...new Set(
+      rows
+        .map((row) => row.parentCategoryId)
+        .filter((value): value is string => value !== null),
+    ),
+  ];
+  const parents =
+    parentIds.length === 0
+      ? []
+      : await tx
+          .select({ id: catalogCategories.id, name: catalogCategories.name })
+          .from(catalogCategories)
+          .where(inArray(catalogCategories.id, parentIds));
+  const parentNames = new Map(parents.map((row) => [row.id, row.name]));
+
+  return rows.map((row) => ({
+    parentCategoryName:
+      row.parentCategoryId === null
+        ? null
+        : (parentNames.get(row.parentCategoryId) ?? null),
+  }));
 }

@@ -8,6 +8,7 @@ import type {
   ChangeLogCursor,
   ChangeLogEntry,
 } from "./catalog-change-log-read.types.js";
+import { sanitizePublicSnapshot } from "./catalog-change-log-snapshot-presenter.js";
 import { loadEntityNames } from "./catalog-entity-name.loader.js";
 
 type RowSelection = {
@@ -225,8 +226,8 @@ function toEntry(
     parentEntityName: row.parentEntityType ? row.parentEntityName : null,
     operation: row.operation,
     changedFields: row.changedFields,
-    before: row.before,
-    after: row.after,
+    before: sanitizePublicSnapshot(row.before),
+    after: sanitizePublicSnapshot(row.after),
     actorSlug: row.actorSlug ?? "",
     actorName: formatActorName(row.actorFirstName, row.actorLastName),
     actorAvatarUrl: row.actorAvatarUrl,
