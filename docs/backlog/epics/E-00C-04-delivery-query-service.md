@@ -1,7 +1,7 @@
 ---
 id: E-00C-04
 title: Provide service functions for delivery assignment and queries
-status: ready-for-human-review
+status: shipped
 priority: P0
 domain: backend
 owner: codex
@@ -43,3 +43,11 @@ Light tier, no architect call. New `DeliveryQueryService` interface implemented 
 - Exposed query routes now perform contextual `deliveries.view` checks for delivery origin locations and are covered by `apps/api/test/delivery-query-route-authorization.test.ts`.
 - Catalog product deletion no longer reads delivery tables directly; delivery history checks go through the delivery-owned `DeliveryQueryService` surface via the narrow `DeliverySkuHistoryService` port.
 - Verification run: `pnpm --filter @shop/api exec tsx --test test/delivery-query.repository.test.ts test/delivery-query.routes.test.ts test/delivery-query-route-authorization.test.ts`, `pnpm --filter @shop/api typecheck`, and `pnpm --filter @shop/api lint`.
+
+## Related PRs
+
+- PR #104: https://github.com/dacostaaboagye/shop-app-v2/pull/104
+  - Merged to `dev` on 2026-05-03 at 10:45 UTC.
+  - Merge commit: `a5668a7f2ee6d8f71ee9ebc2ebf6d8716dbf1e98`.
+  - CI `validate`: passed.
+  - Local validation before PR: `pnpm validate`.
