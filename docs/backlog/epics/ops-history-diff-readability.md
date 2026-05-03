@@ -1,7 +1,7 @@
 ---
 id: ops-history-diff-readability
 title: Resolve FK referent names in catalog change-log diffs (Phase 2 of E-03-06)
-status: refined
+status: shipped
 priority: P2
 domain: full-stack
 owner: claude
@@ -107,3 +107,14 @@ Single PR. ~150 LOC. No backfill needed. Frontend rendering is backwards-compati
 
 - Parent epic: [E-03-06](./E-03-06-catalog-change-history.md).
 - Foundation: E-03-07 catalog change log table + writer.
+
+## Related PRs
+
+- [PR #92](https://github.com/dacostaaboagye/shop-app-v2/pull/92) - `fix(e-03-06): hide catalog history referent ids`
+
+## Shipped evidence
+
+- Merged to `dev` on 2026-05-03.
+- CI `validate` passed on PR #92.
+- Backend/database, frontend/UX, and QA/Product subagent gates passed after remediation.
+- Acceptance closed: foreign-key diffs now render stakeholder-readable names where available, API read snapshots suppress internal UUID IDs, and legacy UUID-only snapshots render safe fallback copy instead of exposing raw IDs.

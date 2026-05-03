@@ -3,7 +3,7 @@
 A snapshot of the master xlsx so we don't have to parse it every session.
 
 > **Source**: `Building and Refining Product Backlog(2).xlsx` at the repo root.
-> **Last derived**: 2026-05-02. The `Audit Summary` sheet itself is still stamped 2026-05-01 — Tier-A counts and statuses are unchanged since then; the only material xlsx update is that EPIC4 has now been authored (see Tier B).
+> **Last derived**: 2026-05-03. The xlsx has been updated after the E-03-07 and E-03-06 catalog change-history work shipped; PR #92 closed the final diff-readability follow-up.
 > **Authority**: the xlsx is the source of truth. This doc reflects state at the time it was written. **Re-derive from the xlsx whenever priority or status decisions are at stake** — do not trust this doc for current status if any time has passed since the date above.
 >
 > **To refresh**: ask Claude to "refresh the scope summary" (or invoke `/refresh-backlog-summary`). The skill at `.claude/skills/refresh-backlog-summary/SKILL.md` re-reads the xlsx, updates this file, and opens a PR.
@@ -20,7 +20,7 @@ A snapshot of the master xlsx so we don't have to parse it every session.
 
 ## Tier A — phase-1 + foundation tickets
 
-47 tickets broken into stories on the `Backlog Audit` sheet. **38 done · 5 partial · 4 not started — 81% done**. All P0 or P1.
+47 tickets broken into stories on the `Backlog Audit` sheet. **40 done · 3 partial · 4 not started — 85% done**. All P0 or P1.
 
 ### By area
 
@@ -32,9 +32,9 @@ A snapshot of the master xlsx so we don't have to parse it every session.
 | **E-00D-01..07** | Access control + identifiers + portal routing foundation | 6/7 | D-07 lint+CI route-access guard partial |
 | **E-01-01..10** | Auth + navigation + notifications | 10/10 ✓ | — |
 | **E-02-01..05** | Locations | 4/5 | E-02-01 CRUD + zones + deactivation guard partial |
-| **E-03-01..07** | Catalog | 4/7 | E-03-02 bulk import, E-03-06 change-history UI, E-03-07 immutable change-log table all partial |
+| **E-03-01..07** | Catalog | 6/7 | E-03-02 bulk import remains partial; E-03-07 immutable change-log and E-03-06 history UI are shipped |
 
-### The 9 unfinished tickets (everything left in tier A)
+### The 7 unfinished tickets (everything left in tier A)
 
 #### P0 — deliveries module (E-00C, all 5 tickets, must ship in order)
 
@@ -54,8 +54,6 @@ E-00C-01 is complete in the Markdown working surface and workbook status. The ne
 | E-00D-07 | Partial | Route middleware works; **lint rule + CI audit script that fails the build on missing `config.access`** still to write. |
 | E-02-01 | Partial | Locations module exists but **most CRUD + zones + deactivation guard** still pending. |
 | E-03-02 | Partial | Schema + contracts ready; **upload handler / parser / dry-run preview** still to ship. |
-| E-03-07 | Partial | Audit columns capture changes; **dedicated immutable `change_log` table per ADR** not yet broken out. **Blocks E-03-06.** |
-| E-03-06 | Partial | Capture exists; **human-readable diff UI** is minimal. Becomes a thin wrapper once E-03-07 lands. |
 
 ## Tier B — phase-2+ epics defined but **not yet ticketed**
 
@@ -96,12 +94,11 @@ These are oddities in the xlsx itself, not the work — worth noting so they get
 
 ## Recommended runway
 
-Based on what's in the xlsx today, the first ~6 epics are clear:
+Based on what's in the xlsx today, the remaining near-term runway is clear:
 
 1. **E-00C-02..05** — continue the deliveries module. Four remaining P0s, mostly backend, sequential. Unblocks E-12/E-14/E-15/E-16 downstream.
 2. **E-00D-07** — close the route-access lint + CI audit. Small effort, large safety per `Next Up` sheet rationale.
 3. **E-02-01** — finish location lifecycle (CRUD + zones + deactivation guard).
-4. **E-03-07 → E-03-06** — immutable change-log table first, then UI view (linear dependency).
-5. **E-03-02** — catalog bulk import.
+4. **E-03-02** — catalog bulk import.
 
 After that, the PO needs to break **E-04** into tickets in `Backlog Audit` so the rest of phase-2 (E-05..E-15) can be sized against it.

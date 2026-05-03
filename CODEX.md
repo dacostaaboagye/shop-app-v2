@@ -101,6 +101,22 @@ When using worker subagents, always tell them:
 - not to revert or overwrite edits made by others
 - to list changed files and verification in their final response
 
+## Continuous Backlog Loop
+
+When a ticket reaches DoD and is shipped or ready for merge, do not wait for the user to ask for backlog closure or next work selection.
+
+Default closure flow:
+
+- Confirm DoD evidence, merged PR state, CI status, and any residual risks.
+- Update the relevant backlog epic file status and append shipped PR evidence.
+- Update the master backlog workbook when the changed item is represented there; if the xlsx cannot be safely edited, state the blocker and update the Markdown working surface.
+- Re-read the authoritative `Next Up` queue and current dependencies.
+- Select the highest-priority unblocked item that brings the soonest stakeholder value.
+- State the selected next item, why it is next, and the first execution step.
+- If the next item is implementation-ready, create the ticket branch and begin intake unless the user explicitly pauses.
+
+If the user corrects Codex's process, routing, shipping, DoD, backlog, or subagent behavior, treat the correction as an orchestration update candidate. Apply it to `CODEX.md` and the user-scoped `shop-app-codex-orchestration` skill when it should persist across sessions.
+
 ## Mandatory Role Gates
 
 Apply these role lenses when the trigger is present. Loading a matching skill is preferred when available. For substantial work, route the gate to a subagent when subagents are available; otherwise perform and label a local review pass.
@@ -237,6 +253,7 @@ Do not invent xlsx status. The workbook remains authoritative.
 4. Confirm mandatory role gates have passed or are explicitly documented as unavailable.
 5. Confirm no protected-branch push or hook bypass.
 6. Prepare PR/release notes with risks and test plan.
+7. After DoD is met, update backlog state and pick the next highest-value unblocked item without waiting for a separate prompt.
 
 ## Active Risk Register
 
