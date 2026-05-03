@@ -45,6 +45,26 @@ type InsertReservationInput = {
   sourceType: string;
 };
 
+type RecordGoodsTransferNoteInput = {
+  createdAt: Date;
+  destinationLocationId: string;
+  dispatchedAt: Date;
+  dispatchedBy: string;
+  notes: string | null;
+  quantity: number;
+  reference: string;
+  skuId: string;
+  skuSnapshot: {
+    sku: string;
+    productName: string;
+    variantName: string;
+  };
+  sourceLocationId: string;
+  status: "dispatched";
+  supplyRequestId: string;
+  updatedAt: Date;
+};
+
 export interface StockReservationTransaction
   extends StockAvailabilityRepository {
   adjustStockBalance(input: AdjustStockBalanceInput): Promise<boolean>;
@@ -65,6 +85,7 @@ export interface StockReservationTransaction
     releasedAt: Date;
     reservationId: string;
   }): Promise<StockReservationRecord>;
+  recordGoodsTransferNote(input: RecordGoodsTransferNoteInput): Promise<void>;
 }
 
 export interface StockReservationLifecycleRepository {

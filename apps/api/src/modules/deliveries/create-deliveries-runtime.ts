@@ -10,30 +10,35 @@ import { PostgresReferenceNumberRepository } from "../public-identifiers/postgre
 import { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
 import { DeliveryAgentEligibilityStubAdapter } from "./delivery-agent-eligibility-stub.adapter.js";
 import { DeliveryCreationCompose } from "./delivery-creation.compose.js";
-import type { DeliveryCreationService } from "./delivery-creation.contracts.js";
+import type {
+  DeliveryCreationService,
+  DeliveryCreationStockSideEffectsPort,
+} from "./delivery-creation.contracts.js";
 import { DeliveryCreationServiceImpl } from "./delivery-creation.service.js";
 import type { DeliveryQueryService } from "./delivery-query.contracts.js";
 import { DeliveryStatusCompose } from "./delivery-status.compose.js";
 import type { DeliveryStatusService } from "./delivery-status.contracts.js";
 import { DeliveryStatusServiceImpl } from "./delivery-status.service.js";
 import { OnlineOrderDeliverySourceStubAdapter } from "./online-order-delivery-source-stub.adapter.js";
-import { PosSaleDeliverySourceStubAdapter } from "./pos-sale-delivery-source-stub.adapter.js";
 import { PostgresDeliveryQueryRepository } from "./postgres-delivery-query.repository.js";
 import { PostgresDeliveryStatusWriteRepository } from "./postgres-delivery-status-write.repository.js";
-import { TransferDeliverySourceStubAdapter } from "./transfer-delivery-source-stub.adapter.js";
 
 type DeliveriesRuntime = {
   deliveries: {
     deliveryCreationService: DeliveryCreationService;
     deliveryStatusService: DeliveryStatusService;
     deliveryQueryService: DeliveryQueryService;
+    onlineOrderSourcePort: OnlineOrderDeliverySourcePort;
+    posSaleSourcePort: PosSaleDeliverySourcePort;
+    transferSourcePort: TransferDeliverySourcePort;
   };
 };
 
 type DeliveriesRuntimeOptions = {
-  posSaleSourcePort?: PosSaleDeliverySourcePort;
+  posSaleSourcePort: PosSaleDeliverySourcePort;
   onlineOrderSourcePort?: OnlineOrderDeliverySourcePort;
-  transferSourcePort?: TransferDeliverySourcePort;
+  transferSourcePort: TransferDeliverySourcePort;
+  stockSideEffectsPort: DeliveryCreationStockSideEffectsPort;
   agentEligibilityPort?: DeliveryAgentEligibilityPort;
   platformEventPublisher?: Pick<PlatformEventPublisher, "publish">;
   logger?: { warn: (message: string, meta?: Record<string, unknown>) => void };
@@ -41,28 +46,22 @@ type DeliveriesRuntimeOptions = {
 
 export function createDeliveriesRuntime(
   databaseRuntime: DatabaseRuntime,
-  options: DeliveriesRuntimeOptions = {},
+  options: DeliveriesRuntimeOptions,
 ): DeliveriesRuntime {
-  const posSaleSourcePort =
-    options.posSaleSourcePort ?? new PosSaleDeliverySourceStubAdapter();
+  const posSaleSourcePort = options.posSaleSourcePort;
   const onlineOrderSourcePort =
     options.onlineOrderSourcePort ?? new OnlineOrderDeliverySourceStubAdapter();
-  const transferSourcePort =
-    options.transferSourcePort ?? new TransferDeliverySourceStubAdapter();
+  const transferSourcePort = options.transferSourcePort;
 
   if (
     process.env.NODE_ENV === "production" &&
     options.logger &&
-    (!options.posSaleSourcePort ||
-      !options.onlineOrderSourcePort ||
-      !options.transferSourcePort)
+    !options.onlineOrderSourcePort
   ) {
     options.logger.warn(
-      "deliveries runtime is using stub source adapters in production",
+      "deliveries runtime is using the online order stub source adapter in production",
       {
-        posSale: !options.posSaleSourcePort,
-        onlineOrder: !options.onlineOrderSourcePort,
-        transfer: !options.transferSourcePort,
+        onlineOrder: true,
       },
     );
   }
@@ -76,6 +75,7 @@ export function createDeliveriesRuntime(
     posSaleSourcePort,
     onlineOrderSourcePort,
     transferSourcePort,
+    stockSideEffectsPort: options.stockSideEffectsPort,
     referenceNumberService,
   });
 
@@ -104,6 +104,9 @@ export function createDeliveriesRuntime(
       deliveryCreationService,
       deliveryStatusService,
       deliveryQueryService,
+      onlineOrderSourcePort,
+      posSaleSourcePort,
+      transferSourcePort,
     },
   };
 }

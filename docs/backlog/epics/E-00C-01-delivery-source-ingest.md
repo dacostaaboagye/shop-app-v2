@@ -1,7 +1,7 @@
 ---
 id: E-00C-01
 title: Create delivery items from any source in a consistent format
-status: planned
+status: done
 priority: P0
 domain: backend
 owner: claude
@@ -245,3 +245,16 @@ Open user decisions before build:
 - **`API_SYSTEM_USER_ID` env**: confirm we add a system user to the seed bootstrap and load its uuid via env. Alternative is a hardcoded uuid constant in the seed.
 - **Cross-module stock import**: the deliveries module imports `createPostgresStockReservationTransaction` directly from stock. Acceptable today (other modules do similar), or do we want a thin `StockReservationTxParticipant` boundary contract in `packages/contracts` first?
 
+## Completion Evidence
+
+Status: Done by Codex on 2026-05-03.
+
+- PR evidence: https://github.com/dacostaaboagye/shop-app-v2/pull/95
+- POS, online-order, and transfer delivery creation now share the same delivery row/item response shape through `DeliveryCreationCompose`, source-specific ports, and public contract schemas.
+- POS and transfer source adapters live in their owning modules (`sales` and `stock`) and are injected into the deliveries runtime; online-order remains stubbed until E-14 but the route calls the service when a real source port resolves an order.
+- Route authorization uses coarse `any_active` metadata plus handler-level contextual origin checks for POS, online order, and transfer before service invocation.
+- Idempotency is enforced by existing-source reads and unique-constraint retry; duplicate retries return the first delivery, and item-reference collisions retry at the outer transaction boundary.
+- Transfer stock movement uses the stock movement sync boundary inside the delivery transaction, and rollback evidence covers deliveries, delivery items, stock balances, stock reservations, stock movements, and GTNs.
+- Verification passed: targeted delivery/stock tests, `pnpm --filter @shop/api lint`, `pnpm --filter @shop/api typecheck`, `pnpm --filter @shop/contracts test`, `pnpm guard`, and full `pnpm verify`.
+- Independent final gates passed: Product/QA SHIP and Backend/Database/Security SHIP.
+- Residual environment note: `pnpm verify` exited successfully but Turbo emitted a non-fatal disk-space warning (`os error 112`).
