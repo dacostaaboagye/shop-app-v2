@@ -23,33 +23,69 @@ export const deliveryStatusEnum = pgEnum("delivery_status", [
   "cancelled",
 ]);
 
+export const deliverySourceTypeEnum = pgEnum("delivery_source_type", [
+  "pos_sale",
+  "online_order",
+  "transfer",
+]);
+
 export const deliveries = pgTable(
   "deliveries",
   {
     id: publicUuidColumn(),
+    sourceType: deliverySourceTypeEnum("source_type").notNull(),
+    sourceReference: varchar("source_reference", { length: 64 }).notNull(),
     originLocationId: uuid("origin_location_id")
       .notNull()
       .references(() => locations.id),
     destinationLocationId: uuid("destination_location_id").references(
       () => locations.id,
     ),
+    destinationKind: varchar("destination_kind", { length: 16 }).notNull(),
     destinationSnapshot: jsonb("destination_snapshot"),
     status: deliveryStatusEnum("status").default("draft").notNull(),
     assignedUserId: uuid("assigned_user_id").references(() => users.id),
     assignedAt: timestamp("assigned_at", { withTimezone: true }),
+    assignedBy: uuid("assigned_by").references(() => users.id),
     dispatchedAt: timestamp("dispatched_at", { withTimezone: true }),
+    dispatchedBy: uuid("dispatched_by").references(() => users.id),
     completedAt: timestamp("completed_at", { withTimezone: true }),
+    completedBy: uuid("completed_by").references(() => users.id),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
-    createdBy: uuid("created_by").references(() => users.id),
+    cancelledBy: uuid("cancelled_by").references(() => users.id),
+    cancellationReason: varchar("cancellation_reason", { length: 240 }),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
     ...auditColumns,
   },
   (table) => [
+    uniqueIndex("deliveries_source_unique").on(
+      table.sourceType,
+      table.sourceReference,
+    ),
     index("deliveries_origin_location_idx").on(table.originLocationId),
     index("deliveries_destination_location_idx").on(
       table.destinationLocationId,
     ),
     index("deliveries_status_idx").on(table.status),
     index("deliveries_assigned_user_idx").on(table.assignedUserId),
+    check(
+      "deliveries_destination_kind_consistent",
+      sql`(
+        (${table.destinationKind} = 'location' AND ${table.destinationLocationId} IS NOT NULL)
+        OR
+        (${table.destinationKind} = 'external' AND ${table.destinationLocationId} IS NULL AND ${table.destinationSnapshot} IS NOT NULL)
+      )`,
+    ),
+    check(
+      "deliveries_origin_destination_distinct",
+      sql`${table.destinationLocationId} IS NULL OR ${table.destinationLocationId} <> ${table.originLocationId}`,
+    ),
+    check(
+      "deliveries_cancellation_reason_consistent",
+      sql`(${table.status} = 'cancelled') = (${table.cancellationReason} IS NOT NULL)`,
+    ),
   ],
 );
 
@@ -74,7 +110,7 @@ export const deliveryItems = pgTable(
       .references(() => deliveries.id),
     skuId: uuid("sku_id").notNull(),
     quantity: integer("quantity").notNull(),
-    itemReference: varchar("item_reference", { length: 40 }),
+    itemReference: varchar("item_reference", { length: 40 }).notNull(),
     ...auditColumns,
   },
   (table) => [

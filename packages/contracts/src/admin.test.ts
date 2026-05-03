@@ -125,7 +125,7 @@ describe("admin contracts", () => {
         {
           createdAt: "2026-04-09T10:00:00.000Z",
           isFulfilmentEnabled: true,
-          managerName: "Jane Smith",
+          managers: [{ userSlug: "jane-smith", name: "Jane Smith" }],
           name: "Central Warehouse",
           slug: "central-warehouse",
           staffCount: 12,

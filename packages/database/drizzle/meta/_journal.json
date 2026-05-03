@@ -267,6 +267,34 @@
       "when": 1777420734363,
       "tag": "0037_amusing_shotgun",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1777679249792,
+      "tag": "0038_supreme_skreet",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1777707532514,
+      "tag": "0039_noisy_excalibur",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1777728747323,
+      "tag": "0040_nervous_daimon_hellstrom",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1777733577396,
+      "tag": "0041_lying_blue_marvel",
+      "breakpoints": true
     }
   ]
 }

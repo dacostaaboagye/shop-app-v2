@@ -31,7 +31,7 @@ export class PostgresAdminLocationQueryRepository
         type: locations.type,
         status: locations.status,
         isFulfilmentEnabled: locations.isFulfilmentEnabled,
-        managerName: managerNameSql(),
+        managers: managersSql(),
         createdAt: locations.createdAt,
         latitude: sql<number>`cast(${locations.latitude} as float)`,
         longitude: sql<number>`cast(${locations.longitude} as float)`,
@@ -95,7 +95,7 @@ export class PostgresAdminLocationQueryRepository
           type: locations.type,
           status: locations.status,
           isFulfilmentEnabled: locations.isFulfilmentEnabled,
-          managerName: managerNameSql(),
+          managers: managersSql(),
           createdAt: locations.createdAt,
           latitude: sql<number>`cast(${locations.latitude} as float)`,
           longitude: sql<number>`cast(${locations.longitude} as float)`,
@@ -187,9 +187,15 @@ export class PostgresAdminLocationQueryRepository
   }
 }
 
-function managerNameSql() {
-  return sql<string | null>`(
-    select NULLIF(TRIM(CONCAT_WS(' ', staff.first_name, staff.last_name)), '')
+function managersSql() {
+  return sql<Array<{ userSlug: string; name: string }>>`COALESCE((
+    select json_agg(
+      json_build_object(
+        'userSlug', staff.slug,
+        'name', NULLIF(TRIM(CONCAT_WS(' ', staff.first_name, staff.last_name)), '')
+      )
+      order by ${userRoles.assignedAt} desc, ${userRoles.id} desc
+    )
     from ${userRoles}
     inner join ${roles} on ${roles.id} = ${userRoles.roleId}
     inner join users as staff on staff.id = ${userRoles.userId}
@@ -197,9 +203,7 @@ function managerNameSql() {
       ${userRoles.locationId} = ${locations.id}
       and ${userRoles.revokedAt} is null
       and ${roles.slug} = 'manager'
-    order by ${userRoles.assignedAt} desc, ${userRoles.id} desc
-    limit 1
-  )`;
+  ), '[]'::json)`;
 }
 
 function staffCountSql() {

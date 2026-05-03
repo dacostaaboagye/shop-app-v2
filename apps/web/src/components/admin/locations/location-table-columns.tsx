@@ -52,14 +52,14 @@ export const locationTableColumns: Array<
     },
   },
   {
-    id: "managerName",
-    accessorKey: "managerName",
+    id: "managers",
+    accessorKey: "managers",
     enableSorting: false,
-    header: "Manager",
+    header: "Managers",
     cell: ({ row }) =>
-      row.original.managerName ? (
+      row.original.managers.length > 0 ? (
         <span className="block text-pretty text-sm text-foreground">
-          {row.original.managerName}
+          {row.original.managers.map((manager) => manager.name).join(", ")}
         </span>
       ) : (
         <span className="type-support text-muted-foreground">Unassigned</span>

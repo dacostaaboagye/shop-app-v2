@@ -1,6 +1,7 @@
 export * from "./access-control.js";
 export * from "./catalog.js";
 export * from "./catalog.relations.js";
+export * from "./catalog-change-log.js";
 export * from "./deliveries.js";
 export * from "./email-delivery.js";
 export * from "./goods-transfer.js";

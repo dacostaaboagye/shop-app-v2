@@ -7,6 +7,7 @@ import { AccountProfileMediaService } from "./modules/auth/account-profile-media
 import { createAuthRuntime } from "./modules/auth/create-auth-runtime.js";
 import { createCatalogRuntime } from "./modules/catalog/create-catalog-runtime.js";
 import { PostgresVariantSearchRepository } from "./modules/catalog/postgres-variant-search.repository.js";
+import { createDeliveriesRuntime } from "./modules/deliveries/create-deliveries-runtime.js";
 import { createPlatformEventRuntime } from "./modules/events/create-platform-event-runtime.js";
 import { InMemoryPlatformEventBus } from "./modules/events/in-memory-platform-event-bus.js";
 import {
@@ -92,6 +93,12 @@ const assignmentsRuntime = createAssignmentsRuntime(databaseRuntime, {
 const stockRuntime = createStockRuntime(databaseRuntime, {
   platformEventPublisher: platformEventRuntime.platformEventPublisher,
 });
+const deliveriesRuntime = createDeliveriesRuntime(databaseRuntime, {
+  platformEventPublisher: platformEventRuntime.platformEventPublisher,
+  posSaleSourcePort: salesRuntime.sales.posSaleDeliverySourcePort,
+  stockSideEffectsPort: stockRuntime.stock.deliveryStockSideEffectsPort,
+  transferSourcePort: stockRuntime.stock.transferDeliverySourcePort,
+});
 const notificationQueryService = new NotificationQueryService(
   new PostgresNotificationQueryRepository(databaseRuntime.db),
 );
@@ -144,6 +151,10 @@ const server = createServer({
     deliveryHealthService:
       platformEventRuntime.platformEventDeliveryHealthService,
   },
+  deliveries: {
+    ...deliveriesRuntime.deliveries,
+    permissionService: authRuntime.accessControl.permissionService,
+  },
   messagingAdmin: {
     adminCommunicationQueryService:
       messagingRuntime.adminCommunicationQueryService,
@@ -173,6 +184,10 @@ const server = createServer({
   },
   catalogProductOptions: {
     optionsRepo: catalogRuntime.catalog.productOptionsRepo,
+  },
+  catalogHistory: {
+    changeLogReadService: catalogRuntime.catalog.changeLogReadService,
+    entityLookup: catalogRuntime.catalog.historyEntityLookup,
   },
   catalogQuery: catalogRuntime.catalog,
   catalogWrite: catalogRuntime.catalog,

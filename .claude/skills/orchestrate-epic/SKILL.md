@@ -18,6 +18,24 @@ The user invokes this skill with one of:
   2. Otherwise, **read the xlsx `Next Up` sheet** at the repo root (`Building and Refining Product Backlog(*).xlsx`), pick the top entry whose status is `Not Started` or `Partial`, and start at Stage 1 to materialise it into an epic file.
 - **A description** ("the password reset flash bug", "rebuild media uploader"). Match against existing epic files first, then against xlsx ticket titles. If neither matches and it's clearly product work, ask the user whether to add a row to the xlsx before proceeding.
 
+## Pipeline tier
+
+Spinning up the full team for every epic is overkill. Pick the tier from the epic's id prefix and `size`, and tell the user which tier you picked when you announce the epic in Stage 0. The user can override.
+
+| Tier | When | Stages run |
+|---|---|---|
+| **Full** | Product epics (`E-*`) with `size: medium` or `large`. Anything where the design space is non-trivial (new schema, new module, multi-system change). | All seven: refine (PO) → design (architect) → plan → build → test (QA) → review → ship. |
+| **Light** | Product epics (`E-*`) with `size: small`. Or a partial epic where the xlsx `Backlog Audit` notes already say what to build (E-03-02 bulk import, E-00D-07 lint guard). | Skip the **PO** when the xlsx row + audit notes are already specific. Run architect → plan → build → QA → review → ship. |
+| **Minimal** | `ops-*` and `audit-*` ids. The audit doc or ops note is the spec. | Skip PO and architect. Run plan → build → review → ship. Use QA only if the change is non-trivial or hits production paths. |
+
+Override rules:
+
+- The user can ask for a different tier ("just do the minimal pipeline on E-03-02"). Honour it.
+- A `size: small` product epic that introduces a new schema or new public API gets bumped back to **full** — the size field doesn't override the architectural reach.
+- An `audit-*` id that touches auth, payments, or data integrity gets bumped to **light** — security-adjacent work gets the architect.
+
+When you skip a stage, say so explicitly in your status update so the user can see what wasn't done. The shape of the rule is *"skip this stage because X"*, not *"skipped"*.
+
 ## Workflow
 
 Walk these stages in order. Stop and report back to the user at every stage transition — *don't* fan out the whole pipeline silently.
@@ -45,10 +63,13 @@ Agent({
 
 The PO returns a refined epic. The orchestrator writes the file using the frontmatter contract, sets `status: refined`, and commits on a branch `chore/ops-refine-<id>`.
 
-For `ops-*` and `audit-*` ids the orchestrator may skip the PO and write the refined file directly, since these don't come from the product backlog.
+PO-skip cases (per the tier table):
+
+- **Minimal tier** — `ops-*` / `audit-*` ids. The orchestrator writes the refined file directly using the audit doc or ops note as the spec.
+- **Light tier** — `E-*` epics with `size: small` whose xlsx `Backlog Audit` notes are already specific. The orchestrator copies the user story + notes verbatim and writes the file directly. Note in the status update that the PO was skipped because the xlsx row was self-describing.
 
 ### Stage 2: design (architects in parallel)
-Decide which architect(s) the epic needs based on `domain`:
+Skipped on the **minimal** tier. On **light** and **full** tiers, decide which architect(s) the epic needs based on `domain`:
 - `backend` / `infra` → only `node-backend-systems-architect`.
 - `frontend` → only `frontend-ui-architect`.
 - `full-stack` → both, in parallel.
@@ -73,13 +94,36 @@ You (the orchestrator) own this stage. Read the design notes and decompose into 
 Use TaskCreate to track them in the session. Append a `## Tasks` section to the epic. Bump `status` to `planned`.
 
 ### Stage 4: build (orchestrator)
-Branch off `dev` per the [git workflow](../../../docs/engineering/git-workflow.md). Branch name pattern: `feature/<id>-<slug>` or `fix/<id>-<slug>` or `chore/ops-<slug>`.
+Branch off `dev` per the [git workflow](../../../docs/engineering/git-workflow.md). Branch name pattern: `feature/<id>-<slug>` or `fix/<id>-<slug>` or `chore/ops-<slug>`. Lowercase only — the validator rejects uppercase ids in branch names.
 
-Execute tasks in order. After each task: write the tests, run `pnpm guard` + the affected test files, commit with the epic id as the conventional-commit scope. Don't push yet.
+**Stack depth rule: at most one open PR per epic chain.** Do not start the next product epic on top of an unmerged feature branch. Squash-merge collapses history; stacked children below it get content-equivalent-but-SHA-different commits on `dev` and need manual rebase to fix. If the user wants to chain, ship one, wait for merge, then start the next.
+
+**For light tier**, ship the epic as a single PR — refine + design + plan land as commits on the same feature branch as the build, not as a separate `chore/ops-refine-<id>` PR. Avoids doubling the user's review queue.
+
+**Execute tasks in order.** After each task:
+1. Write the tests.
+2. Run `pnpm --filter <package> exec biome check --write <touched-paths>` to format-fix before staging.
+3. Run **`pnpm verify`** locally — not just `pnpm guard`. The pre-push hook runs it; running it earlier catches the broad-scope issues (cross-package contract test breakage) that scoped local tests miss.
+4. `git add` only specific files (avoid `-A`).
+5. Commit with the epic id as the conventional-commit scope. For `chore/ops-...` branches the scope is `ops`, not the epic id — the validator enforces this.
+
+**Don't use `--no-verify` to push.** That bypasses `pnpm verify` and ships unverified work to PR. The pre-push hook is the last automatic gate; if it fails, fix the underlying issue.
 
 When all tasks are done and local gates pass, bump `status` to `built`.
 
+### Stage 4 done definition
+
+"Built" requires more than "service interface compiles." Each epic must reach **callable in dev environment by a real role with real data** before being marked done — not just "tests pass with port fakes." That means:
+
+- New permission keys are seeded *and* granted to relevant roles in `apps/api/scripts/lib/access-control-seed.ts`.
+- New runtime singletons (event publisher, etc.) are wired in `apps/api/src/index.ts`, not just plumbed through types.
+- New ports have at least one real adapter (or a clearly-marked stub *and* a follow-up epic logged for the real adapter).
+
+Surface without integration is debt that compounds — five surface-only epics in a row leave nothing actually reachable in production. If integration cost makes the epic too large, scope cuts are the right call, not deferred wiring.
+
 ### Stage 5: test (QA agent)
+On the **minimal** tier, skip this stage unless the change touches auth, payments, data integrity, or production-path code — in which case run it. On **light** and **full**, always run it.
+
 Spawn `qa-quality-engineer` with:
 1. The refined epic (especially acceptance criteria).
 2. The diff: `git diff dev..HEAD`.
@@ -117,8 +161,11 @@ When the user confirms the PR has merged, bump `status` to `shipped`, list the P
 
 - **Never push directly to `dev`, `testing`, `staging`, `main`, or `master`.** PRs only.
 - **Never spawn a specialist agent to write code.** They return analysis or design; you write the diff. This keeps the merge boundary clean.
-- **Stop and report at stage transitions.** The user may want to redirect, change scope, or block on an external decision.
-- **One epic per branch.** If during build you discover a second epic worth of work, file a new epic, link it as a parent of the original, and ship the smaller scope.
+- **Plough through after specialists return.** Don't stop after each stage to ask permission — execute through build/test/review/ship autonomously. Report substantive in-flight updates only. The bar for stopping is in the Workflow section above.
+- **One epic per branch. Stack depth = 1.** Wait for the prior epic's PR to merge before starting the next. Squash-merge collapses history; stacked children below it conflict by SHA divergence even when content matches. The auto-update workflow we tried (#72) couldn't fix this — manual rebase to the squashed tip was always required. Cap concurrent open delivery PRs in a chain at one.
+- **Don't push with `--no-verify`.** It bypasses `pnpm verify` (the broad gate). Use it only for force-push of an already-verified branch — never to skip a failing pre-push hook. If `pnpm verify` fails, fix the underlying issue.
+- **Run `biome check --write` before staging**, not after the commit hook rejects format. Saves a write-fail-rewrite loop on every commit.
+- **Run `pnpm verify` locally before pushing**, not just `pnpm guard` + the touched test file. CI runs the full suite, including cross-package contract tests; scoped local tests miss cross-package breakage (real example: a contract grew an enum without the contract test being updated; scoped local test passed, full verify failed in CI).
 - **Ask before mutating epic content other than `status` and the additive sections (`## Design`, `## Tasks`, `## Test plan`, `## Related PRs`).** Title, why, acceptance, and out-of-scope are owned by the PO; mutating them silently violates the invariant in `docs/backlog/README.md`.
 
 ## Anti-patterns to avoid

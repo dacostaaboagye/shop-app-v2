@@ -73,8 +73,16 @@ export class CatalogProductWriteService {
     return product;
   }
 
-  async deleteProduct(slug: string): Promise<void> {
-    return this.productRepo.deleteProduct({ slug });
+  async deleteProduct(
+    actor: { userId: string; userSlug: string },
+    slug: string,
+    now: Date,
+  ): Promise<void> {
+    return this.productRepo.deleteProduct({
+      actorId: actor.userId,
+      now,
+      slug,
+    });
   }
 
   async deleteProductWithActor(
@@ -83,7 +91,11 @@ export class CatalogProductWriteService {
     now: Date,
   ): Promise<void> {
     const product = await this.productRepo.getProductForDeleteEvent(slug);
-    await this.productRepo.deleteProduct({ slug });
+    await this.productRepo.deleteProduct({
+      actorId: actor.userId,
+      now,
+      slug,
+    });
 
     if (product) {
       await this.eventPublisher?.publish(
@@ -161,7 +173,12 @@ export class CatalogProductWriteService {
       variantSlug,
     });
 
-    await this.variantRepo.deleteVariant({ productSlug, variantSlug });
+    await this.variantRepo.deleteVariant({
+      actorId: actor.userId,
+      now,
+      productSlug,
+      variantSlug,
+    });
 
     if (context) {
       await this.eventPublisher?.publish(

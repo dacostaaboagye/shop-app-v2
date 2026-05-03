@@ -113,6 +113,9 @@ export function createHarness(input?: {
       state.releaseCount += 1;
       return reservation;
     },
+    async recordGoodsTransferNote() {
+      throw new Error("recordGoodsTransferNote is not used by this harness.");
+    },
   };
   const repository: StockReservationLifecycleRepository = {
     async withTransaction(callback) {
