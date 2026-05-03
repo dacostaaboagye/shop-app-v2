@@ -109,6 +109,9 @@ export function CategoryDetailPageClient({ slug }: { slug: string }) {
       <PageHeader
         actions={
           <CatalogDetailHeaderActions
+            historyHref={toRoute(
+              `/admin/products/categories/${category.slug}/history`,
+            )}
             isEditing={isEditing}
             isPending={updateMutation.isPending}
             onCancel={() => setIsEditing(false)}

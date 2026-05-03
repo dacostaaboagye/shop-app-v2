@@ -17,12 +17,14 @@ import { registerStockAssignmentRoutes } from "../modules/assignments/stock-assi
 import { registerWorkerDashboardRoutes } from "../modules/assignments/worker-dashboard.routes.js";
 import { registerAccountProfileMediaRoutes } from "../modules/auth/account-profile-media.routes.js";
 import { registerAuthRoutes } from "../modules/auth/auth.routes.js";
+import { registerCatalogAdminHistoryRoutes } from "../modules/catalog/catalog-admin-history.routes.js";
 import { registerCatalogProductOptionsRoutes } from "../modules/catalog/catalog-admin-product-options.routes.js";
 import { registerCatalogAdminQueryRoutes } from "../modules/catalog/catalog-admin-query.routes.js";
 import { registerCatalogAdminWriteRoutes } from "../modules/catalog/catalog-admin-write.routes.js";
 import { registerCatalogBrandRoutes } from "../modules/catalog/catalog-brand.routes.js";
 import { registerCatalogManagerQueryRoutes } from "../modules/catalog/catalog-manager-query.routes.js";
 import { registerCatalogMediaRoutes } from "../modules/catalog/catalog-media.routes.js";
+import { registerDeliveriesRoutes } from "../modules/deliveries/register-deliveries-routes.js";
 import { registerInternalApiDocsRoutes } from "../modules/docs/internal-api-docs.routes.js";
 import { registerPlatformEventAdminRoutes } from "../modules/events/platform-event-admin.routes.js";
 import { registerPlatformEventRoutes } from "../modules/events/platform-events.routes.js";
@@ -68,8 +70,10 @@ type CreateServerOptions = {
   catalogProductOptions?: Parameters<
     typeof registerCatalogProductOptionsRoutes
   >[1];
+  catalogHistory?: Parameters<typeof registerCatalogAdminHistoryRoutes>[1];
   catalogQuery?: Parameters<typeof registerCatalogAdminQueryRoutes>[1];
   catalogWrite?: Parameters<typeof registerCatalogAdminWriteRoutes>[1];
+  deliveries?: Parameters<typeof registerDeliveriesRoutes>[1];
   posSales?: Parameters<typeof registerPosSaleRoutes>[1];
   stock?: Parameters<typeof registerStockRoutes>[1];
   stockSupply?: Parameters<typeof registerStockSupplyRoutes>[1];
@@ -107,6 +111,7 @@ export function createServer(options: CreateServerOptions = {}) {
   server.register(cookie);
   server.register(cors, {
     credentials: true,
+    exposedHeaders: ["Content-Disposition"],
     origin(origin, callback) {
       // Non-browser callers (curl, server-to-server, healthchecks) send no
       // Origin header and are not subject to CORS.
@@ -162,6 +167,7 @@ export function createServer(options: CreateServerOptions = {}) {
   registerCatalogAdminQueryRoutes(server, options.catalogQuery);
   registerCatalogAdminWriteRoutes(server, options.catalogWrite);
   registerCatalogProductOptionsRoutes(server, options.catalogProductOptions);
+  registerCatalogAdminHistoryRoutes(server, options.catalogHistory);
   registerInternalApiDocsRoutes(server);
   registerPlatformEventRoutes(server, options.events);
   registerPlatformEventAdminRoutes(server, options.eventsAdmin);
@@ -180,6 +186,7 @@ export function createServer(options: CreateServerOptions = {}) {
   registerStockAssignmentRoutes(server, options.stockAssignments);
   registerWorkerDashboardRoutes(server, options.workerDashboard);
   registerPosSaleRoutes(server, options.posSales);
+  registerDeliveriesRoutes(server, options.deliveries);
   registerStockSupplyRoutes(server, options.stockSupply);
   registerHealthRoutes(server);
 

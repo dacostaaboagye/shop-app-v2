@@ -103,10 +103,18 @@ export function LocationDetailView({
           value={location.zoneCount}
         />
         <StatCard
-          description="Assigned location manager."
+          description={
+            location.managers.length === 1
+              ? "Assigned location manager."
+              : "Assigned location managers."
+          }
           icon={Building2}
-          label="Manager"
-          value={location.managerName ?? "Unassigned"}
+          label={location.managers.length === 1 ? "Manager" : "Managers"}
+          value={
+            location.managers.length > 0
+              ? location.managers.map((manager) => manager.name).join(", ")
+              : "Unassigned"
+          }
         />
         <StatCard
           description="Date this location was registered."

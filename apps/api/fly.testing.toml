@@ -16,6 +16,9 @@ primary_region = "jnb"
   internal_port = 4000
   processes = ["api"]
   protocol = "tcp"
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
 
   [[services.ports]]
     handlers = ["http"]
@@ -27,7 +30,7 @@ primary_region = "jnb"
 
   [[services.http_checks]]
     grace_period = "15s"
-    interval = "15s"
+    interval = "30s"
     method = "get"
     path = "/health"
     timeout = "5s"

@@ -25,7 +25,11 @@ export type CatalogCategoryWriteRepository = {
     slug: string;
   }): Promise<AdminUpdateCategoryResponse | null>;
   getCategory(slug: string): Promise<AdminCategorySummary | null>;
-  deleteCategory(input: { slug: string }): Promise<void>;
+  deleteCategory(input: {
+    actorId: string;
+    now: Date;
+    slug: string;
+  }): Promise<void>;
 };
 
 export class CatalogCategoryWriteService {
@@ -88,7 +92,11 @@ export class CatalogCategoryWriteService {
     now: Date,
   ) {
     const category = await this.repository.getCategory(slug);
-    await this.repository.deleteCategory({ slug });
+    await this.repository.deleteCategory({
+      actorId: actor.userId,
+      now,
+      slug,
+    });
 
     if (category) {
       await this.eventPublisher?.publish(

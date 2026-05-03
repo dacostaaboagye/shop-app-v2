@@ -1,3 +1,4 @@
+import type { PosSaleDeliverySourcePort } from "@shop/contracts";
 import type { DatabaseRuntime } from "../../infrastructure/database.js";
 import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import { OwnershipQueryService } from "../inventory-ownership/ownership-query.service.js";
@@ -7,6 +8,7 @@ import type { OfficialDocumentSettingsService } from "../official-documents/offi
 import { PostgresReferenceNumberRepository } from "../public-identifiers/postgres-reference-number.repository.js";
 import { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
 import { PosSaleService } from "./pos-sale.service.js";
+import { PosSaleDeliverySourceAdapter } from "./pos-sale-delivery-source.adapter.js";
 import { PostgresInvoiceRepository } from "./postgres-invoice.repository.js";
 import { PostgresInvoiceQueryRepository } from "./postgres-invoice-query.repository.js";
 import { PostgresPosCatalogVariantRepository } from "./postgres-pos-catalog.repository.js";
@@ -16,6 +18,7 @@ type SalesRuntime = {
   sales: {
     invoiceQueryRepository: PostgresInvoiceQueryRepository;
     invoiceRepository: PostgresInvoiceRepository;
+    posSaleDeliverySourcePort: PosSaleDeliverySourcePort;
     posSaleService: PosSaleService;
   };
 };
@@ -87,6 +90,9 @@ export function createSalesRuntime(
     sales: {
       invoiceQueryRepository,
       invoiceRepository,
+      posSaleDeliverySourcePort: new PosSaleDeliverySourceAdapter(
+        invoiceQueryRepository,
+      ),
       posSaleService,
     },
   };

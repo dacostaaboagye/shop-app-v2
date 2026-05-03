@@ -1,16 +1,23 @@
+import type { TransferDeliverySourcePort } from "@shop/contracts";
 import { catalogProducts, locations, productVariants } from "@shop/database";
 import { and, asc, eq } from "drizzle-orm";
 import type { DatabaseRuntime } from "../../infrastructure/database.js";
+import type { DeliveryCreationStockSideEffectsPort } from "../deliveries/delivery-creation.contracts.js";
 import type { PlatformEventPipelinePublisher } from "../events/platform-event-pipeline.publisher.js";
 import { PostgresReferenceNumberRepository } from "../public-identifiers/postgres-reference-number.repository.js";
 import { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
 import { ActiveReservationQueryService } from "./active-reservation-query.service.js";
+import { PostgresDeliveryStockSideEffectsParticipant } from "./delivery-stock-side-effects.participant.js";
 import { PostgresActiveReservationQueryRepository } from "./postgres-active-reservation-query.repository.js";
 import { PostgresAdminReservationQueryRepository } from "./postgres-admin-reservation-query.repository.js";
 import { AdminStockCountRepository } from "./postgres-admin-stock-count.repository.js";
 import { PostgresStockBalanceQueryRepository } from "./postgres-stock-balance-query.repository.js";
 import { PostgresSupplyRequestRepository } from "./postgres-supply-request.repository.js";
 import { StockSupplyService } from "./stock-supply.service.js";
+import {
+  PostgresStockTransferDeliverySourceLookup,
+  TransferDeliverySourceAdapter,
+} from "./transfer-delivery-source.adapter.js";
 
 type CreateStockRuntimeOptions = {
   platformEventPublisher?: Pick<
@@ -22,6 +29,7 @@ type CreateStockRuntimeOptions = {
 type StockRuntime = {
   stock: {
     activeReservationQueryService: ActiveReservationQueryService;
+    deliveryStockSideEffectsPort: DeliveryCreationStockSideEffectsPort;
     locationRepository: {
       listActiveLocations(): Promise<{ id: string; name: string }[]>;
     };
@@ -31,6 +39,7 @@ type StockRuntime = {
     stockCountRepo: AdminStockCountRepository;
     supplyRequestRepository: PostgresSupplyRequestRepository;
     supplyService: StockSupplyService;
+    transferDeliverySourcePort: TransferDeliverySourcePort;
     variantSnapshotRepository: {
       getVariantSnapshot(skuId: string): Promise<{
         sku: string;
@@ -63,6 +72,8 @@ export function createStockRuntime(
       activeReservationQueryService: new ActiveReservationQueryService(
         new PostgresActiveReservationQueryRepository(databaseRuntime.db),
       ),
+      deliveryStockSideEffectsPort:
+        new PostgresDeliveryStockSideEffectsParticipant(),
       locationRepository: {
         async listActiveLocations() {
           return databaseRuntime.db
@@ -85,6 +96,9 @@ export function createStockRuntime(
       ),
       supplyRequestRepository,
       supplyService,
+      transferDeliverySourcePort: new TransferDeliverySourceAdapter(
+        new PostgresStockTransferDeliverySourceLookup(databaseRuntime.db),
+      ),
       variantSnapshotRepository: {
         async getVariantSnapshot(skuId) {
           const rows = await databaseRuntime.db

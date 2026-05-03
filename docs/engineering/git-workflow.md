@@ -47,6 +47,8 @@ Before opening a PR:
 2. Run `pnpm verify`.
 3. Fill in the PR template with backlog evidence and architecture checks.
 
+When a PR into `dev` is squash-merged, any other open PR that branched off the merged one will see *content-equivalent but commit-different* history on `dev`. GitHub will mark those PRs as conflicting. The fix is a manual rebase: `git fetch origin && git reset --hard origin/dev && git cherry-pick <unique commits>` then force-push. The simplest way to avoid this is to keep stack depth at 1 (don't start the next epic before the prior one merges).
+
 Recommended merge policy:
 
 1. Use squash merge from feature branches into `dev`.

@@ -21,7 +21,7 @@ describe("admin location write contracts", () => {
     const parsed = adminCreateLocationResponseSchema.parse({
       createdAt: "2026-04-09T12:00:00.000Z",
       isFulfilmentEnabled: true,
-      managerName: null,
+      managers: [],
       name: "Central Warehouse",
       slug: "central-warehouse",
       staffCount: 0,

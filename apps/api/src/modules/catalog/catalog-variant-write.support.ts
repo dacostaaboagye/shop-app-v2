@@ -89,6 +89,46 @@ export async function clearExistingDefaultVariant(
     );
 }
 
+export function buildVariantUpdates(
+  payload: AdminUpdateVariantRequest,
+  now: Date,
+): Partial<typeof productVariants.$inferInsert> {
+  const updates: Partial<typeof productVariants.$inferInsert> = {
+    updatedAt: now,
+  };
+  const statusPatch = getVariantStatusPatch(payload, now);
+
+  if (payload.name !== undefined) updates.name = payload.name;
+  if (payload.sku !== undefined) updates.sku = payload.sku;
+  if (payload.unitOfMeasure !== undefined)
+    updates.unitOfMeasure = payload.unitOfMeasure;
+  if (payload.costPrice !== undefined) updates.costPrice = payload.costPrice;
+  if (payload.sellingPrice !== undefined)
+    updates.sellingPrice = payload.sellingPrice;
+  if (payload.packagingType !== undefined)
+    updates.packagingType = payload.packagingType ?? null;
+  if (payload.status !== undefined) updates.status = payload.status;
+  if ("barcode" in payload) updates.barcode = payload.barcode ?? null;
+  if ("weightGrams" in payload)
+    updates.weightGrams = payload.weightGrams ?? null;
+  if ("manufacturerPartNumber" in payload)
+    updates.manufacturerPartNumber = payload.manufacturerPartNumber ?? null;
+  if ("customsCode" in payload)
+    updates.customsCode = payload.customsCode ?? null;
+  if ("isTaxable" in payload) updates.isTaxable = payload.isTaxable ?? null;
+  if ("taxCategory" in payload)
+    updates.taxCategory = payload.taxCategory ?? null;
+  if ("dimensionsCm" in payload)
+    updates.dimensionsCm = payload.dimensionsCm ?? null;
+  if (payload.attributes !== undefined) updates.attributes = payload.attributes;
+  if (statusPatch.archivedAt !== undefined)
+    updates.archivedAt = statusPatch.archivedAt;
+  if (statusPatch.isDefault !== undefined)
+    updates.isDefault = statusPatch.isDefault;
+
+  return updates;
+}
+
 export function toAdminVariantSummary(
   variant: typeof productVariants.$inferSelect,
 ): AdminVariantSummary {

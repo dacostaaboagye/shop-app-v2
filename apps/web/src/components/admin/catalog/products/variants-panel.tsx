@@ -17,6 +17,7 @@ import { VariantRow } from "./variant-row";
 type VariantsPanelProps = {
   canManage: boolean;
   canSeeCostPrice: boolean;
+  canViewHistory: boolean;
   options: AdminProductOption[];
   productSlug: string;
   variants: AdminVariantSummary[];
@@ -25,6 +26,7 @@ type VariantsPanelProps = {
 export function VariantsPanel({
   canManage,
   canSeeCostPrice,
+  canViewHistory,
   options,
   productSlug,
   variants,
@@ -64,6 +66,7 @@ export function VariantsPanel({
           <VariantRow
             canManage={canManage}
             canSeeCostPrice={canSeeCostPrice}
+            canViewHistory={canViewHistory}
             key={variant.slug}
             productSlug={productSlug}
             variant={variant}

@@ -1,4 +1,8 @@
-import { stockBalances, stockReservations } from "@shop/database";
+import {
+  goodsTransferNotes,
+  stockBalances,
+  stockReservations,
+} from "@shop/database";
 import { and, eq, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import { PostgresStockAvailabilityRepository } from "./postgres-availability-query.repository.js";
@@ -179,5 +183,27 @@ class PostgresStockReservationTransaction
     }
 
     return row;
+  }
+
+  async recordGoodsTransferNote(input: {
+    createdAt: Date;
+    destinationLocationId: string;
+    dispatchedAt: Date;
+    dispatchedBy: string;
+    notes: string | null;
+    quantity: number;
+    reference: string;
+    skuId: string;
+    skuSnapshot: {
+      sku: string;
+      productName: string;
+      variantName: string;
+    };
+    sourceLocationId: string;
+    status: "dispatched";
+    supplyRequestId: string;
+    updatedAt: Date;
+  }): Promise<void> {
+    await this.tx.insert(goodsTransferNotes).values(input);
   }
 }

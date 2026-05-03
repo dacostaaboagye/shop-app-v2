@@ -7,11 +7,17 @@ import { catalogMediaAssignments, productVariants } from "@shop/database";
 import { and, eq } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import { AppError } from "../_core/errors/app-error.js";
+import type { CatalogChangeLogWriter } from "../catalog-change-log/catalog-change-log-writer.js";
 import type { SlugAllocator } from "../public-identifiers/slug.service.js";
 import {
+  recordVariantCreated,
+  recordVariantDeleted,
+  recordVariantUpdate,
+} from "./catalog-variant-change-log.js";
+import {
+  buildVariantUpdates,
   clearExistingDefaultVariant,
   findProductIdBySlug,
-  getVariantStatusPatch,
   requireProductIdBySlug,
   toAdminVariantSummary,
 } from "./catalog-variant-write.support.js";
@@ -23,6 +29,7 @@ export class CatalogVariantCommands {
     private readonly db: ApiDatabase,
     private readonly slugAllocator: SlugAllocator,
     private readonly deleteGuard: PostgresCatalogProductDeleteGuard,
+    private readonly changeLogWriter: CatalogChangeLogWriter,
   ) {}
 
   async create(input: {
@@ -72,10 +79,18 @@ export class CatalogVariantCommands {
           })
           .returning();
 
+        if (!row) throw new Error("Unable to create variant.");
+
+        await recordVariantCreated(
+          tx,
+          this.changeLogWriter,
+          productId,
+          row,
+          input,
+        );
+
         return row;
       });
-
-      if (!inserted) throw new Error("Unable to create variant.");
 
       return toAdminVariantSummary(inserted);
     } catch (error) {
@@ -91,54 +106,24 @@ export class CatalogVariantCommands {
     variantSlug: string;
   }): Promise<AdminVariantSummary | null> {
     const productId = await findProductIdBySlug(this.db, input.productSlug);
-
     if (!productId) return null;
 
-    const statusPatch = getVariantStatusPatch(input.payload, input.now);
-
-    const updates: Partial<typeof productVariants.$inferInsert> = {
-      updatedAt: input.now,
-    };
-
-    if (input.payload.name !== undefined) updates.name = input.payload.name;
-    if (input.payload.sku !== undefined) updates.sku = input.payload.sku;
-    if (input.payload.unitOfMeasure !== undefined)
-      updates.unitOfMeasure = input.payload.unitOfMeasure;
-    if (input.payload.costPrice !== undefined)
-      updates.costPrice = input.payload.costPrice;
-    if (input.payload.sellingPrice !== undefined)
-      updates.sellingPrice = input.payload.sellingPrice;
-    if (input.payload.packagingType !== undefined)
-      updates.packagingType = input.payload.packagingType ?? null;
-    if (input.payload.status !== undefined)
-      updates.status = input.payload.status;
-
-    if ("barcode" in input.payload)
-      updates.barcode = input.payload.barcode ?? null;
-    if ("weightGrams" in input.payload)
-      updates.weightGrams = input.payload.weightGrams ?? null;
-    if ("manufacturerPartNumber" in input.payload)
-      updates.manufacturerPartNumber =
-        input.payload.manufacturerPartNumber ?? null;
-    if ("customsCode" in input.payload)
-      updates.customsCode = input.payload.customsCode ?? null;
-    if ("isTaxable" in input.payload)
-      updates.isTaxable = input.payload.isTaxable ?? null;
-    if ("taxCategory" in input.payload)
-      updates.taxCategory = input.payload.taxCategory ?? null;
-    if ("dimensionsCm" in input.payload)
-      updates.dimensionsCm = input.payload.dimensionsCm ?? null;
-
-    if (input.payload.attributes !== undefined)
-      updates.attributes = input.payload.attributes;
-
-    if (statusPatch.archivedAt !== undefined)
-      updates.archivedAt = statusPatch.archivedAt;
-    if (statusPatch.isDefault !== undefined)
-      updates.isDefault = statusPatch.isDefault;
+    const updates = buildVariantUpdates(input.payload, input.now);
 
     try {
       const updated = await this.db.transaction(async (tx) => {
+        const [before] = await tx
+          .select()
+          .from(productVariants)
+          .where(
+            and(
+              eq(productVariants.productId, productId),
+              eq(productVariants.slug, input.variantSlug),
+            ),
+          );
+
+        if (!before) return null;
+
         if (input.payload.isDefault === true) {
           await clearExistingDefaultVariant(tx, input.now, productId);
         }
@@ -154,11 +139,21 @@ export class CatalogVariantCommands {
           )
           .returning();
 
+        if (!row) return null;
+
+        await recordVariantUpdate(
+          tx,
+          this.changeLogWriter,
+          productId,
+          before,
+          row,
+          input,
+        );
+
         return row;
       });
 
       if (!updated) return null;
-
       return toAdminVariantSummary(updated);
     } catch (error) {
       throw translateDuplicateKey(error, input.payload.sku ?? "");
@@ -166,16 +161,15 @@ export class CatalogVariantCommands {
   }
 
   async delete(input: {
+    actorId: string;
+    now: Date;
     productSlug: string;
     variantSlug: string;
   }): Promise<void> {
     const variant = await this.db.query.productVariants.findFirst({
       where: eq(productVariants.slug, input.variantSlug),
-      columns: { id: true, sku: true, productId: true, slug: true },
       with: {
-        product: {
-          columns: { slug: true },
-        },
+        product: { columns: { slug: true } },
       },
     });
 
@@ -191,7 +185,6 @@ export class CatalogVariantCommands {
     await this.deleteGuard.assertCanDeleteVariant(variant.id, variant.sku);
 
     await this.db.transaction(async (tx) => {
-      // 1. Delete media assignments
       await tx
         .delete(catalogMediaAssignments)
         .where(
@@ -201,7 +194,14 @@ export class CatalogVariantCommands {
           ),
         );
 
-      // 2. Delete the variant
+      await recordVariantDeleted(
+        tx,
+        this.changeLogWriter,
+        variant.productId,
+        variant,
+        input,
+      );
+
       const result = await tx
         .delete(productVariants)
         .where(eq(productVariants.id, variant.id))

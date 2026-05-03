@@ -2,16 +2,18 @@
 
 import type { AdminVariantSummary } from "@shop/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Images, Pencil, X } from "lucide-react";
+import { History, Images, Pencil, X } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { CATALOG_STATUS_META } from "@/lib/admin-models";
 import {
   adminProductQueryKey,
   updateAdminVariant,
 } from "@/lib/react-query/admin-catalog-products";
+import { toRoute } from "@/lib/routes";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { MediaPanel } from "../media/media-panel";
@@ -28,6 +30,7 @@ import { VariantRowDetails } from "./variant-row-details";
 type VariantRowProps = {
   canManage: boolean;
   canSeeCostPrice: boolean;
+  canViewHistory: boolean;
   productSlug: string;
   variant: AdminVariantSummary;
 };
@@ -35,6 +38,7 @@ type VariantRowProps = {
 export function VariantRow({
   canManage,
   canSeeCostPrice,
+  canViewHistory,
   productSlug,
   variant,
 }: VariantRowProps) {
@@ -136,6 +140,17 @@ export function VariantRow({
           <Images className="size-3.5" />
           {showMedia ? "Hide media" : "Media"}
         </Button>
+        {canViewHistory ? (
+          <Link
+            className={buttonVariants({ size: "sm", variant: "ghost" })}
+            href={toRoute(
+              `/admin/products/${productSlug}/variants/${variant.slug}/history`,
+            )}
+          >
+            <History className="size-3.5" />
+            History
+          </Link>
+        ) : null}
         {canManage ? (
           <>
             {!isEditing ? (

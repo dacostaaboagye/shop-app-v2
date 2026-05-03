@@ -34,6 +34,7 @@ export class R2StorageService {
       },
       endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
       region: "auto",
+      requestChecksumCalculation: "WHEN_REQUIRED",
     });
   }
 

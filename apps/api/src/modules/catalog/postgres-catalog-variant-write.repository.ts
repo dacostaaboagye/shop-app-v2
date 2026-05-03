@@ -21,6 +21,8 @@ export type CatalogVariantRepository = {
     variantSlug: string;
   }): Promise<AdminVariantSummary | null>;
   deleteVariant(input: {
+    actorId: string;
+    now: Date;
     productSlug: string;
     variantSlug: string;
   }): Promise<void>;
@@ -62,6 +64,8 @@ export class PostgresCatalogVariantWriteRepository
   }
 
   async deleteVariant(input: {
+    actorId: string;
+    now: Date;
     productSlug: string;
     variantSlug: string;
   }): Promise<void> {
