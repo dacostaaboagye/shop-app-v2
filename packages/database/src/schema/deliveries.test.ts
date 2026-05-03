@@ -79,6 +79,26 @@ assert.match(
 );
 assert.match(
   allMigrationSql,
+  /"deliveries_assigned_state_consistent"/,
+  "expected assigned-state consistency check constraint",
+);
+assert.match(
+  allMigrationSql,
+  /"deliveries_in_transit_state_consistent"/,
+  "expected in-transit-state consistency check constraint",
+);
+assert.match(
+  allMigrationSql,
+  /"deliveries_completed_state_consistent"/,
+  "expected completed-state consistency check constraint",
+);
+assert.match(
+  allMigrationSql,
+  /"deliveries_cancelled_state_consistent"/,
+  "expected cancelled-state consistency check constraint",
+);
+assert.match(
+  allMigrationSql,
   /ADD COLUMN "cancellation_reason" varchar\(240\)/,
   "expected cancellation_reason column",
 );

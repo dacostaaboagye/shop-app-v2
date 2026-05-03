@@ -7,7 +7,11 @@ import {
   reassignDeliveryRequestSchema,
 } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
+import type { PermissionResolutionScope } from "../access-control/permission-resolution.service.js";
+import type { AuthenticatedActor } from "../auth/access-token-authentication.service.js";
 import { getAuthenticatedActor } from "../auth/auth-route-support.js";
+import { DeliverySourceNotFoundError } from "./delivery-errors.js";
+import type { DeliveryQueryService } from "./delivery-query.contracts.js";
 import { toTransitionResponse } from "./delivery-response.mapper.js";
 import {
   assignDeliveryRoute,
@@ -19,7 +23,16 @@ import {
 import type { DeliveryStatusService } from "./delivery-status.contracts.js";
 
 type Deps = {
+  deliveryQueryService: DeliveryQueryService;
   deliveryStatusService: DeliveryStatusService;
+  permissionService: {
+    assertHasPermission(input: {
+      locationId?: string;
+      permission: string;
+      scope?: PermissionResolutionScope;
+      user: AuthenticatedActor;
+    }): Promise<void>;
+  };
 };
 
 type DeliveryIdParams = { deliveryId: string };
@@ -36,6 +49,12 @@ export function registerDeliveryStatusRoutes(
       const actor = getAuthenticatedActor(request);
       const params = request.params as DeliveryIdParams;
       const body = assignDeliveryRequestSchema.parse(request.body);
+      await assertDeliveryOriginPermission({
+        actor,
+        deliveryId: params.deliveryId,
+        deps,
+        permission: "deliveries.assign",
+      });
       const result = await deps.deliveryStatusService.assign({
         deliveryId: params.deliveryId,
         assignedUserId: body.assignedUserId,
@@ -56,6 +75,12 @@ export function registerDeliveryStatusRoutes(
       const actor = getAuthenticatedActor(request);
       const params = request.params as DeliveryIdParams;
       const body = reassignDeliveryRequestSchema.parse(request.body);
+      await assertDeliveryOriginPermission({
+        actor,
+        deliveryId: params.deliveryId,
+        deps,
+        permission: "deliveries.reassign",
+      });
       const result = await deps.deliveryStatusService.reassign({
         deliveryId: params.deliveryId,
         assignedUserId: body.assignedUserId,
@@ -76,6 +101,12 @@ export function registerDeliveryStatusRoutes(
       const actor = getAuthenticatedActor(request);
       const params = request.params as DeliveryIdParams;
       dispatchDeliveryRequestSchema.parse(request.body ?? {});
+      await assertDeliveryOriginPermission({
+        actor,
+        deliveryId: params.deliveryId,
+        deps,
+        permission: "deliveries.dispatch",
+      });
       const result = await deps.deliveryStatusService.dispatch({
         deliveryId: params.deliveryId,
         actorUserId: actor.userId,
@@ -95,6 +126,12 @@ export function registerDeliveryStatusRoutes(
       const actor = getAuthenticatedActor(request);
       const params = request.params as DeliveryIdParams;
       completeDeliveryRequestSchema.parse(request.body ?? {});
+      await assertDeliveryOriginPermission({
+        actor,
+        deliveryId: params.deliveryId,
+        deps,
+        permission: "deliveries.complete",
+      });
       const result = await deps.deliveryStatusService.complete({
         deliveryId: params.deliveryId,
         actorUserId: actor.userId,
@@ -114,6 +151,12 @@ export function registerDeliveryStatusRoutes(
       const actor = getAuthenticatedActor(request);
       const params = request.params as DeliveryIdParams;
       const body = cancelDeliveryRequestSchema.parse(request.body);
+      await assertDeliveryOriginPermission({
+        actor,
+        deliveryId: params.deliveryId,
+        deps,
+        permission: "deliveries.cancel",
+      });
       const result = await deps.deliveryStatusService.cancel({
         deliveryId: params.deliveryId,
         reason: body.reason,
@@ -124,5 +167,29 @@ export function registerDeliveryStatusRoutes(
         toTransitionResponse(result),
       );
     },
+  });
+}
+
+async function assertDeliveryOriginPermission(input: {
+  actor: AuthenticatedActor;
+  deliveryId: string;
+  deps: Deps;
+  permission: string;
+}): Promise<void> {
+  const delivery = await input.deps.deliveryQueryService.findById(
+    input.deliveryId,
+  );
+  if (!delivery) {
+    throw new DeliverySourceNotFoundError({
+      sourceType: "delivery",
+      sourceReference: input.deliveryId,
+    });
+  }
+
+  await input.deps.permissionService.assertHasPermission({
+    locationId: delivery.originLocationId,
+    permission: input.permission,
+    scope: "contextual",
+    user: input.actor,
   });
 }

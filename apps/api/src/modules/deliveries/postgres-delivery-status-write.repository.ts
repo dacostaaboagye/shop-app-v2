@@ -2,8 +2,11 @@ import type { DeliveryStatus } from "@shop/contracts";
 import { deliveries, deliveryItems } from "@shop/database";
 import { and, eq } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
+import type { PlatformEventRecord } from "../events/platform-event.types.js";
 import type { DeliveryRecord } from "./delivery.types.js";
 import { mapDeliveryItemRow, mapDeliveryRow } from "./delivery-row-mapper.js";
+import type { DeliveryStatusEventPublisher } from "./delivery-status-event-publisher.js";
+import { appendDeliveryStatusChangedEvent } from "./delivery-status-event-publisher.js";
 
 export type TransitionStatusInput = {
   deliveryId: string;
@@ -17,6 +20,10 @@ export type TransitionStatusInput = {
 
 export interface DeliveryStatusWriteTransaction {
   findById(deliveryId: string): Promise<DeliveryRecord | null>;
+  appendPlatformEvent(
+    event: PlatformEventRecord,
+    publisher: DeliveryStatusEventPublisher,
+  ): Promise<void>;
   transitionStatus(
     input: TransitionStatusInput,
   ): Promise<DeliveryRecord | null>;
@@ -66,6 +73,17 @@ class PostgresDeliveryStatusWriteTransaction
       .from(deliveryItems)
       .where(eq(deliveryItems.deliveryId, deliveryRow.id));
     return mapDeliveryRow(deliveryRow, itemRows.map(mapDeliveryItemRow));
+  }
+
+  async appendPlatformEvent(
+    event: PlatformEventRecord,
+    publisher: DeliveryStatusEventPublisher,
+  ): Promise<void> {
+    await appendDeliveryStatusChangedEvent({
+      db: this.tx,
+      event,
+      publisher,
+    });
   }
 
   async transitionStatus(

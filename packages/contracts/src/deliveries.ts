@@ -150,6 +150,7 @@ export const DELIVERY_ERROR_CODES = {
   terminalStatus: "delivery_terminal_status",
   statusConflict: "delivery_status_conflict",
   assignmentRequired: "delivery_assignment_required",
+  cancellationReasonRequired: "delivery_cancellation_reason_required",
   agentNotEligible: "delivery_agent_not_eligible",
   reassignmentNotAllowed: "delivery_reassignment_not_allowed",
 } as const;

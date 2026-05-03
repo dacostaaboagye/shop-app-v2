@@ -10,6 +10,7 @@ import type {
   TransferDeliverySourcePort,
 } from "@shop/contracts";
 import { AppError } from "../src/modules/_core/errors/app-error.js";
+import type { DeliveryRecord } from "../src/modules/deliveries/delivery.types.js";
 import { createServer } from "../src/server/create-server.js";
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
@@ -140,9 +141,61 @@ describe("delivery creation route origin authorization", () => {
       "service:WEB-2026-000001",
     ]);
   });
+
+  it("rejects status transitions for a foreign delivery origin before service invocation", async () => {
+    const events: string[] = [];
+    const server = createDeliveryRouteServer({
+      deliveryRecord: deliveryRecord(),
+      events,
+    });
+
+    const response = await server.inject({
+      headers: AUTH_HEADERS,
+      method: "POST",
+      payload: {
+        assignedUserId: "88888888-8888-4888-8888-888888888888",
+      },
+      url: "/api/deliveries/66666666-6666-4666-8666-666666666666/assign",
+    });
+
+    assert.equal(response.statusCode, 403);
+    assert.deepEqual(events, [
+      "middleware:deliveries.assign:any_active",
+      "query:66666666-6666-4666-8666-666666666666",
+      `route:deliveries.assign:contextual:${ORIGIN_LOCATION_ID}`,
+    ]);
+  });
+
+  it("runs a status transition only after delivery-origin permission passes", async () => {
+    const events: string[] = [];
+    const server = createDeliveryRouteServer({
+      allowRoutePermission: true,
+      deliveryRecord: deliveryRecord(),
+      events,
+    });
+
+    const response = await server.inject({
+      headers: AUTH_HEADERS,
+      method: "POST",
+      payload: {
+        assignedUserId: "88888888-8888-4888-8888-888888888888",
+      },
+      url: "/api/deliveries/66666666-6666-4666-8666-666666666666/assign",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().status, "transitioned");
+    assert.deepEqual(events, [
+      "middleware:deliveries.assign:any_active",
+      "query:66666666-6666-4666-8666-666666666666",
+      `route:deliveries.assign:contextual:${ORIGIN_LOCATION_ID}`,
+      "status-service:assign",
+    ]);
+  });
 });
 function createDeliveryRouteServer(input: {
   allowRoutePermission?: boolean;
+  deliveryRecord?: DeliveryRecord;
   events: string[];
   onlineOrderResponse?: DeliveryResponse;
   onlineOrderSourcePort?: OnlineOrderDeliverySourcePort;
@@ -198,8 +251,9 @@ function createDeliveryRouteServer(input: {
         },
       },
       deliveryQueryService: {
-        async findById() {
-          throw unused();
+        async findById(deliveryId) {
+          input.events.push(`query:${deliveryId}`);
+          return input.deliveryRecord ?? null;
         },
         async listByAgent() {
           throw unused();
@@ -210,7 +264,19 @@ function createDeliveryRouteServer(input: {
       },
       deliveryStatusService: {
         async assign() {
-          throw unused();
+          input.events.push("status-service:assign");
+          const record = input.deliveryRecord ?? deliveryRecord();
+          return {
+            delivery: {
+              ...record,
+              status: "assigned",
+              assignedUserId: "88888888-8888-4888-8888-888888888888",
+              assignedAt: new Date("2026-05-03T10:00:00.000Z"),
+            },
+            fromStatus: "draft",
+            status: "transitioned",
+            toStatus: "assigned",
+          };
         },
         async cancel() {
           throw unused();
@@ -303,6 +369,21 @@ function deliveryResponse(sourceReference: string): DeliveryResponse {
     sourceReference,
     sourceType: "online_order",
     status: "draft",
+  };
+}
+function deliveryRecord(): DeliveryRecord {
+  const response = deliveryResponse("TRF-2026-000001");
+  return {
+    ...response,
+    assignedAt: null,
+    assignedBy: null,
+    cancelledAt: null,
+    cancelledBy: null,
+    completedAt: null,
+    completedBy: null,
+    createdAt: new Date(response.createdAt),
+    dispatchedAt: null,
+    dispatchedBy: null,
   };
 }
 function transferSource(reference: string): DeliveryEligibleTransfer {

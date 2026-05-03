@@ -31,31 +31,51 @@ export const createFromTransferRoute: RouteDefinition = {
 };
 
 export const assignDeliveryRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "deliveries.assign" },
+  access: {
+    kind: "permission",
+    permission: "deliveries.assign",
+    scope: "any_active",
+  },
   method: "POST",
   url: "/api/deliveries/:deliveryId/assign",
 };
 
 export const reassignDeliveryRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "deliveries.reassign" },
+  access: {
+    kind: "permission",
+    permission: "deliveries.reassign",
+    scope: "any_active",
+  },
   method: "POST",
   url: "/api/deliveries/:deliveryId/reassign",
 };
 
 export const dispatchDeliveryRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "deliveries.dispatch" },
+  access: {
+    kind: "permission",
+    permission: "deliveries.dispatch",
+    scope: "any_active",
+  },
   method: "POST",
   url: "/api/deliveries/:deliveryId/dispatch",
 };
 
 export const completeDeliveryRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "deliveries.complete" },
+  access: {
+    kind: "permission",
+    permission: "deliveries.complete",
+    scope: "any_active",
+  },
   method: "POST",
   url: "/api/deliveries/:deliveryId/complete",
 };
 
 export const cancelDeliveryRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "deliveries.cancel" },
+  access: {
+    kind: "permission",
+    permission: "deliveries.cancel",
+    scope: "any_active",
+  },
   method: "POST",
   url: "/api/deliveries/:deliveryId/cancel",
 };

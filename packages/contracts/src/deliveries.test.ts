@@ -167,6 +167,7 @@ describe("delivery error codes", () => {
     assert.deepEqual(Object.values(DELIVERY_ERROR_CODES).sort(), [
       "delivery_agent_not_eligible",
       "delivery_assignment_required",
+      "delivery_cancellation_reason_required",
       "delivery_illegal_status_transition",
       "delivery_insufficient_origin_stock",
       "delivery_invalid_destination",

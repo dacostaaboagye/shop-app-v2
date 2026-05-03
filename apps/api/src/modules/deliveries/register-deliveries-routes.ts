@@ -43,7 +43,9 @@ export function registerDeliveriesRoutes(
     transferSourcePort: deps.transferSourcePort,
   });
   registerDeliveryStatusRoutes(server, {
+    deliveryQueryService: deps.deliveryQueryService,
     deliveryStatusService: deps.deliveryStatusService,
+    permissionService: deps.permissionService,
   });
   registerDeliveryQueryRoutes(server, {
     deliveryQueryService: deps.deliveryQueryService,

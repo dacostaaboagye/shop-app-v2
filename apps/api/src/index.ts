@@ -94,6 +94,7 @@ const stockRuntime = createStockRuntime(databaseRuntime, {
   platformEventPublisher: platformEventRuntime.platformEventPublisher,
 });
 const deliveriesRuntime = createDeliveriesRuntime(databaseRuntime, {
+  logger: console,
   platformEventPublisher: platformEventRuntime.platformEventPublisher,
   posSaleSourcePort: salesRuntime.sales.posSaleDeliverySourcePort,
   stockSideEffectsPort: stockRuntime.stock.deliveryStockSideEffectsPort,

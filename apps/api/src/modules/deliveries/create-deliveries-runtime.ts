@@ -5,7 +5,6 @@ import type {
   TransferDeliverySourcePort,
 } from "@shop/contracts";
 import type { DatabaseRuntime } from "../../infrastructure/database.js";
-import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import { PostgresReferenceNumberRepository } from "../public-identifiers/postgres-reference-number.repository.js";
 import { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
 import { DeliveryAgentEligibilityStubAdapter } from "./delivery-agent-eligibility-stub.adapter.js";
@@ -19,6 +18,7 @@ import type { DeliveryQueryService } from "./delivery-query.contracts.js";
 import { DeliveryStatusCompose } from "./delivery-status.compose.js";
 import type { DeliveryStatusService } from "./delivery-status.contracts.js";
 import { DeliveryStatusServiceImpl } from "./delivery-status.service.js";
+import type { DeliveryStatusEventPublisher } from "./delivery-status-event-publisher.js";
 import { OnlineOrderDeliverySourceStubAdapter } from "./online-order-delivery-source-stub.adapter.js";
 import { PostgresDeliveryQueryRepository } from "./postgres-delivery-query.repository.js";
 import { PostgresDeliveryStatusWriteRepository } from "./postgres-delivery-status-write.repository.js";
@@ -40,8 +40,11 @@ type DeliveriesRuntimeOptions = {
   transferSourcePort: TransferDeliverySourcePort;
   stockSideEffectsPort: DeliveryCreationStockSideEffectsPort;
   agentEligibilityPort?: DeliveryAgentEligibilityPort;
-  platformEventPublisher?: Pick<PlatformEventPublisher, "publish">;
-  logger?: { warn: (message: string, meta?: Record<string, unknown>) => void };
+  platformEventPublisher?: DeliveryStatusEventPublisher;
+  logger?: {
+    error?: (message: string, meta?: Record<string, unknown>) => void;
+    warn: (message: string, meta?: Record<string, unknown>) => void;
+  };
 };
 
 export function createDeliveriesRuntime(
@@ -91,6 +94,9 @@ export function createDeliveriesRuntime(
     agentEligibilityPort,
     ...(options.platformEventPublisher
       ? { platformEventPublisher: options.platformEventPublisher }
+      : {}),
+    ...(options.logger?.error
+      ? { logger: { error: options.logger.error } }
       : {}),
   });
   const deliveryStatusService = new DeliveryStatusServiceImpl(statusCompose);
