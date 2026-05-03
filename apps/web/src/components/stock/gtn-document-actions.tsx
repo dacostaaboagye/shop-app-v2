@@ -13,6 +13,7 @@ import {
 import { fetchGtnDocumentDownloadFile } from "@/lib/react-query/official-documents";
 import { toRoute } from "@/lib/routes";
 import { cn } from "@/lib/utils";
+import { getGtnDocumentHref } from "./gtn-document-actions.support";
 
 type GtnDocumentAction = "download" | "share";
 
@@ -22,10 +23,7 @@ export function GtnDocumentActions({ reference }: { reference: string }) {
   );
   const pathname = usePathname();
   const disabled = pendingAction != null;
-  const portal = pathname.startsWith("/manager") ? "manager" : "worker";
-  const viewHref = toRoute(
-    `/${portal}/documents/gtns/${encodeURIComponent(reference)}`,
-  );
+  const viewHref = toRoute(getGtnDocumentHref({ pathname, reference }));
 
   async function getFile() {
     return fetchGtnDocumentDownloadFile(reference);

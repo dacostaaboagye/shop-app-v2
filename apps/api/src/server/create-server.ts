@@ -111,6 +111,7 @@ export function createServer(options: CreateServerOptions = {}) {
   server.register(cookie);
   server.register(cors, {
     credentials: true,
+    exposedHeaders: ["Content-Disposition"],
     origin(origin, callback) {
       // Non-browser callers (curl, server-to-server, healthchecks) send no
       // Origin header and are not subject to CORS.
