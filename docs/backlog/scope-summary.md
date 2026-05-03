@@ -28,7 +28,7 @@ A snapshot of the master xlsx so we don't have to parse it every session.
 |---|---|---|---|
 | **E-00A-01..06** | Stock ownership foundation (append-only event ledger, ownership resolution, assignment, handover, sales attribution, history view) | 6/6 ✓ | — |
 | **E-00B-01..07** | Stock balance + reservation foundation (real-time balance, reservation lifecycle, expiry release, movement sync, manager release, movement events, admin reservations endpoint) | 7/7 ✓ | — |
-| **E-00C-01..05** | **Deliveries foundation** | 2/5 | C-03..05 not started (all P0) |
+| **E-00C-01..05** | **Deliveries foundation** | 2/5 | C-03 ready for review; C-04..05 not started (all P0) |
 | **E-00D-01..07** | Access control + identifiers + portal routing foundation | 6/7 | D-07 lint+CI route-access guard partial |
 | **E-01-01..10** | Auth + navigation + notifications | 10/10 ✓ | — |
 | **E-02-01..05** | Locations | 4/5 | E-02-01 CRUD + zones + deactivation guard partial |
@@ -40,11 +40,11 @@ A snapshot of the master xlsx so we don't have to parse it every session.
 
 | Code | Status | Gap |
 |---|---|---|
-| E-00C-03 | Not Started | No agent assignment service or routes. |
+| E-00C-03 | Ready for Review | Agent assignment/reassignment service, real agent-role eligibility adapter, manager permissions, and route evidence are in PR preparation. |
 | E-00C-04 | Not Started | Service layer for `assignDelivery` / `reassignDelivery` / `listDeliveriesByAgent` / `listByLocation`. |
 | E-00C-05 | Not Started | REST endpoints for delivery CRUD, assignment, status, filtered queries. |
 
-E-00C-01 and E-00C-02 are complete in the Markdown working surface. The next unblocked delivery item is E-00C-03, because agent assignment now has a status lifecycle seam to build on.
+E-00C-01 and E-00C-02 are complete in the Markdown working surface. E-00C-03 is in PR preparation because agent assignment now has a status lifecycle seam to build on.
 
 #### P1 — scattered
 

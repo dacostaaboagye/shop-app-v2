@@ -75,7 +75,7 @@ export class DeliveryStatusTransitionRunner {
         });
       }
       const updated = await tx.transitionStatus(
-        buildTransitionParams(input, current.status, now),
+        buildTransitionParams(input, current, now),
       );
       if (!updated) {
         const fresh = await tx.findById(input.deliveryId);
@@ -147,14 +147,14 @@ function buildTransitionParams(
     assignedUserId?: string;
     cancellationReason?: string;
   },
-  expectedStatus: DeliveryStatus,
+  current: DeliveryRecord,
   now: Date,
 ): Parameters<DeliveryStatusWriteTransaction["transitionStatus"]>[0] {
   const params: Parameters<
     DeliveryStatusWriteTransaction["transitionStatus"]
   >[0] = {
     deliveryId: input.deliveryId,
-    expectedStatus,
+    expectedStatus: current.status,
     nextStatus: input.nextStatus,
     actorUserId: input.actorUserId,
     now,

@@ -7,7 +7,6 @@ import type {
 import type { DatabaseRuntime } from "../../infrastructure/database.js";
 import { PostgresReferenceNumberRepository } from "../public-identifiers/postgres-reference-number.repository.js";
 import { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
-import { DeliveryAgentEligibilityStubAdapter } from "./delivery-agent-eligibility-stub.adapter.js";
 import { DeliveryCreationCompose } from "./delivery-creation.compose.js";
 import type {
   DeliveryCreationService,
@@ -20,6 +19,7 @@ import type { DeliveryStatusService } from "./delivery-status.contracts.js";
 import { DeliveryStatusServiceImpl } from "./delivery-status.service.js";
 import type { DeliveryStatusEventPublisher } from "./delivery-status-event-publisher.js";
 import { OnlineOrderDeliverySourceStubAdapter } from "./online-order-delivery-source-stub.adapter.js";
+import { PostgresDeliveryAgentEligibilityAdapter } from "./postgres-delivery-agent-eligibility.adapter.js";
 import { PostgresDeliveryQueryRepository } from "./postgres-delivery-query.repository.js";
 import { PostgresDeliveryStatusWriteRepository } from "./postgres-delivery-status-write.repository.js";
 
@@ -88,7 +88,8 @@ export function createDeliveriesRuntime(
     databaseRuntime.db,
   );
   const agentEligibilityPort =
-    options.agentEligibilityPort ?? new DeliveryAgentEligibilityStubAdapter();
+    options.agentEligibilityPort ??
+    new PostgresDeliveryAgentEligibilityAdapter(databaseRuntime.db);
   const statusCompose = new DeliveryStatusCompose({
     repository: statusRepository,
     agentEligibilityPort,

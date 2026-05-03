@@ -250,5 +250,7 @@ export class AdminUserAccessWriteService {
 }
 
 function roleRequiresLocationScope(roleSlug: string) {
-  return roleSlug === "manager" || roleSlug === "worker";
+  return (
+    roleSlug === "agent" || roleSlug === "manager" || roleSlug === "worker"
+  );
 }

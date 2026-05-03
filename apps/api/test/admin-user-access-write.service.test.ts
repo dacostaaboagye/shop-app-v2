@@ -47,6 +47,28 @@ describe("AdminUserAccessWriteService", () => {
     ]);
   });
 
+  it("requires delivery agents to be assigned to a location", async () => {
+    const service = createService([]);
+
+    await assert.rejects(
+      () =>
+        service.assignRole(
+          ACTOR,
+          "kojo-agent",
+          {
+            locationSlug: null,
+            reason: "Agent needs a delivery location scope",
+            roleSlug: "agent",
+          },
+          NOW,
+        ),
+      {
+        name: "AppError",
+        message: 'Role "agent" must be assigned to a location.',
+      },
+    );
+  });
+
   it("publishes a durable event after revoking a user role", async () => {
     const events: PlatformEventRecord[] = [];
     const service = createService(events);
