@@ -1,13 +1,13 @@
-import type { VariantSearchResult } from @shop/contracts;
+import type { VariantSearchResult } from "@shop/contracts";
 import {
   catalogProducts,
   locations,
   productVariants,
   stockBalances,
-} from @shop/database;
-import { and, asc, eq, gt, ilike, or, sql } from drizzle-orm;
-import type { ApiDatabase } from ../../infrastructure/database.js;
-import { listPrimaryImageUrls } from ./catalog-primary-image.loader.js;
+} from "@shop/database";
+import { and, asc, eq, gt, ilike, or, sql } from "drizzle-orm";
+import type { ApiDatabase } from "../../infrastructure/database.js";
+import { listPrimaryImageUrls } from "./catalog-primary-image.loader.js";
 
 export class PostgresVariantSearchRepository {
   constructor(private readonly db: ApiDatabase) {}
@@ -70,7 +70,7 @@ export class PostgresVariantSearchRepository {
 
     const primaryImageUrls = await listPrimaryImageUrls(
       this.db,
-      product,
+      "product",
       rows.map((row) => row.productSlug),
     );
 
@@ -126,8 +126,8 @@ export class PostgresVariantSearchRepository {
         : undefined;
 
     const activeCatalogCondition = and(
-      eq(catalogProducts.status, active),
-      eq(productVariants.status, active),
+      eq(catalogProducts.status, "active"),
+      eq(productVariants.status, "active"),
       searchFilter,
     );
 
@@ -145,7 +145,7 @@ export class PostgresVariantSearchRepository {
           name: productVariants.name,
           onHandQuantity: sql<number>`coalesce(${stockBalances.onHandQuantity}, 0)::int`,
           openingStockStatus: sql<
-            VariantSearchResult[openingStockStatus]
+            VariantSearchResult["openingStockStatus"]
           >`case when ${stockBalances.id} is not null then 'initialized' else 'available' end`,
           productName: catalogProducts.name,
           productSlug: catalogProducts.slug,
@@ -173,7 +173,7 @@ export class PostgresVariantSearchRepository {
 
     const primaryImageUrls = await listPrimaryImageUrls(
       this.db,
-      product,
+      "product",
       rows.map((row) => row.productSlug),
     );
 
