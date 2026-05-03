@@ -21,9 +21,13 @@ describe("error handling", () => {
   it("returns generic 500 details for unexpected errors", async () => {
     const server = createServer();
 
-    server.get("/boom", async () => {
-      throw new Error("database exploded");
-    });
+    server.get(
+      "/boom",
+      { config: { access: { kind: "public" } } },
+      async () => {
+        throw new Error("database exploded");
+      },
+    );
 
     const response = await server.inject({ method: "GET", url: "/boom" });
 
@@ -40,14 +44,18 @@ describe("error handling", () => {
   it("preserves explicit domain errors", async () => {
     const server = createServer();
 
-    server.get("/conflict", async () => {
-      throw new AppError({
-        code: "conflict",
-        statusCode: 409,
-        title: "Conflict",
-        detail: "The resource already exists.",
-      });
-    });
+    server.get(
+      "/conflict",
+      { config: { access: { kind: "public" } } },
+      async () => {
+        throw new AppError({
+          code: "conflict",
+          detail: "The resource already exists.",
+          statusCode: 409,
+          title: "Conflict",
+        });
+      },
+    );
 
     const response = await server.inject({ method: "GET", url: "/conflict" });
 

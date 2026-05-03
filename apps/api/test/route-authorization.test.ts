@@ -198,6 +198,44 @@ describe("route authorization", () => {
     assert.equal(response.statusCode, 200);
     assert.equal(state.scope, "any_active");
   });
+
+  it("fails closed when a matched route has no access metadata", async () => {
+    const server = createProtectedServer({
+      now: new Date("2026-04-08T12:00:00.000Z"),
+      user: {
+        id: "usr_123",
+        slug: "store-manager",
+        status: "active",
+      },
+    });
+
+    const response = await server.inject({
+      method: "GET",
+      url: "/missing-access-metadata",
+    });
+
+    assert.equal(response.statusCode, 500);
+    assert.equal(response.json().title, "Route access metadata missing");
+  });
+
+  it("preserves normal 404 handling for unmatched routes", async () => {
+    const server = createProtectedServer({
+      now: new Date("2026-04-08T12:00:00.000Z"),
+      user: {
+        id: "usr_123",
+        slug: "store-manager",
+        status: "active",
+      },
+    });
+
+    const response = await server.inject({
+      method: "GET",
+      url: "/route-does-not-exist",
+    });
+
+    assert.equal(response.statusCode, 404);
+    assert.equal(response.json().title, "Resource Not Found");
+  });
 });
 
 function createProtectedServer(input: {
@@ -293,6 +331,14 @@ function createProtectedServer(input: {
     },
     method: "GET",
     url: "/scope-any-protected",
+    async handler() {
+      return { ok: true };
+    },
+  });
+
+  server.route({
+    method: "GET",
+    url: "/missing-access-metadata",
     async handler() {
       return { ok: true };
     },
