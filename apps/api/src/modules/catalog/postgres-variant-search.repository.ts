@@ -1,14 +1,13 @@
-import type { VariantSearchResult } from "@shop/contracts";
+import type { VariantSearchResult } from @shop/contracts;
 import {
   catalogProducts,
   locations,
   productVariants,
-  stockBalanceInitializations,
   stockBalances,
-} from "@shop/database";
-import { and, asc, eq, gt, ilike, or, sql } from "drizzle-orm";
-import type { ApiDatabase } from "../../infrastructure/database.js";
-import { listPrimaryImageUrls } from "./catalog-primary-image.loader.js";
+} from @shop/database;
+import { and, asc, eq, gt, ilike, or, sql } from drizzle-orm;
+import type { ApiDatabase } from ../../infrastructure/database.js;
+import { listPrimaryImageUrls } from ./catalog-primary-image.loader.js;
 
 export class PostgresVariantSearchRepository {
   constructor(private readonly db: ApiDatabase) {}
@@ -30,7 +29,7 @@ export class PostgresVariantSearchRepository {
           )
         : undefined;
 
-    // Use stock_balances as the base — only variants that physically exist at this location
+    // Use stock_balances as the base â€” only variants that physically exist at this location
     const baseCondition = and(
       eq(stockBalances.locationId, input.locationId),
       gt(stockBalances.onHandQuantity, 0),
@@ -71,7 +70,7 @@ export class PostgresVariantSearchRepository {
 
     const primaryImageUrls = await listPrimaryImageUrls(
       this.db,
-      "product",
+      product,
       rows.map((row) => row.productSlug),
     );
 
@@ -127,8 +126,8 @@ export class PostgresVariantSearchRepository {
         : undefined;
 
     const activeCatalogCondition = and(
-      eq(catalogProducts.status, "active"),
-      eq(productVariants.status, "active"),
+      eq(catalogProducts.status, active),
+      eq(productVariants.status, active),
       searchFilter,
     );
 
@@ -146,8 +145,8 @@ export class PostgresVariantSearchRepository {
           name: productVariants.name,
           onHandQuantity: sql<number>`coalesce(${stockBalances.onHandQuantity}, 0)::int`,
           openingStockStatus: sql<
-            VariantSearchResult["openingStockStatus"]
-          >`case when ${stockBalances.id} is not null or ${stockBalanceInitializations.id} is not null then 'initialized' else 'available' end`,
+            VariantSearchResult[openingStockStatus]
+          >`case when ${stockBalances.id} is not null then 'initialized' else 'available' end`,
           productName: catalogProducts.name,
           productSlug: catalogProducts.slug,
           sellingPrice: productVariants.sellingPrice,
@@ -166,13 +165,6 @@ export class PostgresVariantSearchRepository {
             eq(stockBalances.locationId, input.locationId),
           ),
         )
-        .leftJoin(
-          stockBalanceInitializations,
-          and(
-            eq(stockBalanceInitializations.skuId, productVariants.id),
-            eq(stockBalanceInitializations.locationId, input.locationId),
-          ),
-        )
         .where(activeCatalogCondition)
         .orderBy(asc(catalogProducts.name), asc(productVariants.name))
         .limit(input.pageSize)
@@ -181,7 +173,7 @@ export class PostgresVariantSearchRepository {
 
     const primaryImageUrls = await listPrimaryImageUrls(
       this.db,
-      "product",
+      product,
       rows.map((row) => row.productSlug),
     );
 
