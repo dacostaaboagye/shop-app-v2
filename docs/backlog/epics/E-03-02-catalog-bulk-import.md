@@ -12,6 +12,7 @@ acceptance:
   - Valid rows in the file are imported; rows with errors are skipped and reported with row-level reasons.
   - After processing, the manager can see imported and failed counts and download a failed-row report.
   - Duplicate SKUs within the same file are detected and reported, not only duplicates against the existing catalogue.
+  - A manager can bulk import categories and brands before importing products that reference them.
   - Large files are processed without blocking the page.
 size: large
 ---
@@ -29,6 +30,8 @@ Managers need to populate hundreds of products and sellable variants before go-l
 - Import execution that skips invalid rows, imports valid rows, and produces summary counts.
 - Job status and failed-row report endpoints for the manager UI.
 - Admin products page entry point with upload, status, summary, and failed-report download.
+- Dedicated CSV template and upload flows for bulk brands.
+- Dedicated CSV template and upload flows for bulk categories, including parent category references by slug.
 
 ## Columns
 
@@ -63,7 +66,7 @@ Optional:
 - General media upload UX or R2 hardening.
 - Invoice PDF or stock-transfer document rendering.
 - Initial stock counts, stock transfers, supplier linkage, or opening balances.
-- Auto-creating categories, brands, suppliers, or locations from the file.
+- Auto-creating categories, brands, suppliers, or locations during product import. Categories and brands are imported through their dedicated bulk import flows first.
 - XLSX parsing in the first PR unless a lightweight dependency can be added safely without delaying CSV value.
 
 ## Design decisions
@@ -76,6 +79,8 @@ Optional:
 - Validate by row, skip failed rows, and continue processing valid rows.
 - Reject duplicate SKUs within the same file. Existing SKU conflicts are row-level failures.
 - Category and brand references must already exist when supplied.
+- Brand and category bulk imports use existing catalog write services so permissions, slugs, change logs, and platform events remain consistent with manual creation.
+- Brand and category imports are bounded synchronous setup helpers for catalogue taxonomy. The durable queued job/status/report workflow applies to product/variant imports, where file size and processing time are materially higher.
 
 ## UAT scenarios
 
@@ -85,6 +90,8 @@ Optional:
 4. Large file: upload returns a job reference quickly and the UI remains usable while status is shown.
 5. Permission: users without catalog product management permission cannot start imports, view job results, or download reports.
 6. Retry correction: manager fixes failed rows from the report and re-uploads them without duplicating previously imported SKUs.
+7. Brand setup: manager downloads the brand template, imports active and archived brands, and receives row-level failures for duplicate or existing names.
+8. Category setup: manager downloads the category template, imports parent and child categories by slug, and receives row-level failures for missing names, invalid statuses, duplicates, or invalid parent references.
 
 ## Definition of Done
 
@@ -92,4 +99,6 @@ Optional:
 - Parser tests cover clean, mixed, duplicate, malformed, and limit cases.
 - API tests cover permission, validation, job creation, processing summary, and report download.
 - Frontend covers loading, empty, error, pending, completed, and failed-row states.
+- Brand and category imports have contract, parser, service, API, and frontend coverage for success and row-level failure paths.
+- Product/variant imports provide durable job status and failed-row report recovery; brand/category imports return immediate row-level results and a downloadable failed-row CSV from the dialog result.
 - `pnpm guard` passes; `pnpm verify` runs when practical.

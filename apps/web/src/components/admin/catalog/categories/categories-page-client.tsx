@@ -27,6 +27,7 @@ import {
   readStringParam,
 } from "@/lib/url-state";
 import { createCatalogBulkActions } from "../catalog-bulk-status-actions";
+import { ReferenceImportDialog } from "../reference-import-dialog";
 import {
   CATEGORY_PAGE_SIZE_OPTIONS,
   CATEGORY_SKELETON_KEYS,
@@ -106,6 +107,7 @@ export function CategoriesPageClient() {
       <PageHeader
         actions={
           <PermissionGate permission="catalog.categories.manage">
+            <ReferenceImportDialog entity="category" />
             <Link
               className={buttonVariants({ size: "sm" })}
               href={toRoute("/admin/products/categories/new")}
