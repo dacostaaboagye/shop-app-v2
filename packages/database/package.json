@@ -16,7 +16,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "lint": "biome check src drizzle.config.ts",
-    "test": "pnpm build && node dist/src/schema/index.test.js && node dist/src/schema/deliveries.test.js && node dist/src/schema/catalog-change-log.test.js && node dist/src/schema/catalog-import.test.js && node dist/src/schema/stock-initializations.test.js",
+    "test": "pnpm build && node dist/src/schema/index.test.js && node dist/src/schema/deliveries.test.js && node dist/src/schema/catalog-change-log.test.js && node dist/src/schema/catalog-import.test.js && node dist/src/schema/stock-initializations.test.js && node dist/src/schema/stock-takes.test.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

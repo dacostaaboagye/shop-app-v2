@@ -187,12 +187,15 @@ describe("portal-shell-config", () => {
   it("keeps global admin stock pages out of the topbar location selector", () => {
     const stockLevels = getRouteItem("/admin/stock/balances");
     const reservations = getRouteItem("/admin/stock/reservations");
+    const stockTakes = getRouteItem("/admin/stock/takes");
     const transfers = getRouteItem("/admin/transfers");
 
     assert.equal(stockLevels?.requiredPermission, "admin.dashboard.view");
     assert.equal(stockLevels?.locationSelectorPermission, null);
     assert.equal(reservations?.requiredPermission, "admin.dashboard.view");
     assert.equal(reservations?.locationSelectorPermission, null);
+    assert.equal(stockTakes?.requiredPermission, "inventory.write");
+    assert.equal(stockTakes?.locationSelectorPermission, null);
     assert.equal(transfers?.requiredPermission, "stock.supply.manage");
     assert.equal(transfers?.locationSelectorPermission, null);
   });
@@ -217,12 +220,15 @@ describe("portal-shell-config", () => {
   it("keeps manager stock and manager supply requests as distinct sidebar paths", () => {
     const stockLevels = getRouteItem("/manager/stock");
     const reservations = getRouteItem("/manager/stock/reservations");
+    const stockTakes = getRouteItem("/manager/stock/takes");
     const supplyRequests = getRouteItem("/manager/stock/supply-requests");
 
     assert.equal(stockLevels?.label, "Location stock");
     assert.equal(stockLevels?.requiredPermission, "stock.view");
     assert.equal(reservations?.label, "Reservations");
     assert.equal(reservations?.requiredPermission, "stock.view");
+    assert.equal(stockTakes?.label, "Stock-take sheets");
+    assert.equal(stockTakes?.requiredPermission, "inventory.write");
     assert.equal(supplyRequests?.label, "Supply requests");
     assert.equal(supplyRequests?.requiredPermission, "stock.supply.manage");
   });

@@ -125,6 +125,16 @@ export const COMMERCE_CATALOG_SUPPLY_NAV_REGISTRY: readonly NavRegistryEntry[] =
       section: "Supply",
     },
     {
+      activeMatchers: [{ mode: "descendants", path: "/admin/stock/takes" }],
+      description: "Generate printable stock-take sheets and count booklets.",
+      href: toRoute("/admin/stock/takes"),
+      icon: ClipboardList,
+      label: "Stock-take sheets",
+      locationSelectorPermission: null,
+      requiredPermission: "inventory.write",
+      section: "Supply",
+    },
+    {
       activeMatchers: [{ mode: "descendants", path: "/admin/transfers" }],
       description:
         "Monitor transfers, bottlenecks, and exception states across the network.",

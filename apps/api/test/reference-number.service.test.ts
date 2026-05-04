@@ -33,6 +33,18 @@ describe("ReferenceNumberService", () => {
     assert.deepEqual(harness.state.sequenceKeys, ["supply-request-group"]);
   });
 
+  it("generates year-scoped stock-take references", async () => {
+    const harness = createHarness();
+
+    const reference = await harness.service.generateReference({
+      now: new Date("2026-05-04T10:00:00.000Z"),
+      sequenceKey: "stock-take",
+    });
+
+    assert.equal(reference, "STKTAKE-2026-0001");
+    assert.deepEqual(harness.state.sequenceKeys, ["stock-take:2026"]);
+  });
+
   it("generates padded delivery header public references", async () => {
     const harness = createHarness();
 

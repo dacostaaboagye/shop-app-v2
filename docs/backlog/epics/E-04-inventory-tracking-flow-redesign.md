@@ -327,6 +327,7 @@ The PDF should be optimized for paper counting:
 - Add stock-take session and line schemas.
 - Add contracts for session creation and sheet download metadata.
 - Generate CSV sheet from active catalog variants and selected location.
+- Generate a browser-printable booklet view for physical stock taking.
 - Support blank-sheet generation when no active SKUs exist.
 - Add admin and manager entry points from stock pages.
 - Do not apply stock changes in this slice.
@@ -351,7 +352,7 @@ The PDF should be optimized for paper counting:
 
 ### E-04-06: PDF booklet and variance report
 
-- Generate printable PDF booklet.
+- Generate downloadable PDF booklet after the browser-printable booklet proves the workflow.
 - Generate final variance report after apply.
 - Align with official document settings where practical.
 - Preserve issued/applied evidence for audit and reporting.

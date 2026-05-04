@@ -330,6 +330,13 @@
       "when": 1777838892870,
       "tag": "0046_wooden_cardiac",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1777886139665,
+      "tag": "0047_colossal_lyja",
+      "breakpoints": true
     }
   ]
 }
