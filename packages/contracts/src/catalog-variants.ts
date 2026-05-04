@@ -7,9 +7,17 @@ export const variantSearchQuerySchema = z.object({
   q: z.string().max(120).default(""),
 });
 
+export const adminOpeningVariantSearchQuerySchema = z.object({
+  locationSlug: z.string().trim().min(1).max(120),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  q: z.string().max(120).default(""),
+});
+
 export const variantSearchResultSchema = z.object({
   name: z.string(),
   onHandQuantity: z.number().int().min(0),
+  openingStockStatus: z.enum(["available", "initialized"]).optional(),
   primaryImageUrl: z.string().nullable().optional(),
   productName: z.string(),
   productSlug: z.string(),
@@ -26,5 +34,8 @@ export const variantSearchResponseSchema = z.object({
 });
 
 export type VariantSearchQuery = z.infer<typeof variantSearchQuerySchema>;
+export type AdminOpeningVariantSearchQuery = z.infer<
+  typeof adminOpeningVariantSearchQuerySchema
+>;
 export type VariantSearchResult = z.infer<typeof variantSearchResultSchema>;
 export type VariantSearchResponse = z.infer<typeof variantSearchResponseSchema>;

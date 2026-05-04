@@ -5,17 +5,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ClipboardList } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { buildStockBalanceColumns } from "@/components/admin/stock/stock-balance-columns";
-import { StockCountDialog } from "@/components/admin/stock/stock-count-dialog";
-import { AppDataTable } from "@/components/data-table/app-data-table";
-import { ManagerBulkSupplyRequestDialog } from "@/components/manager/stock/manager-bulk-supply-request-dialog";
-import { toSupplyRequestTarget } from "@/components/manager/stock/manager-stock-page-client.support";
-import { StockWorkspaceTableSkeleton } from "@/components/stock/stock-workspace-feedback";
 import {
-  StockMetricGrid,
-  StockSearchToolbar,
-} from "@/components/stock/stock-workspace-panels";
-import { AppErrorBanner } from "@/components/system/app-error";
-import { AppTableWrapper } from "@/components/system/app-table-wrapper";
+  ManagerBulkSupplyDialogSection,
+  ManagerOpeningStockSetup,
+  ManagerStockCountDialogSection,
+  ManagerStockMetrics,
+  ManagerStockTableSection,
+} from "@/components/manager/stock/manager-stock-page-sections";
+import { StockSearchToolbar } from "@/components/stock/stock-workspace-panels";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { Button } from "@/components/ui/button";
@@ -24,6 +21,7 @@ import { usePermissionLocationScope } from "@/lib/authorization/use-permission-l
 import {
   fetchManagerStockBalances,
   managerStockBalancesQueryKey,
+  postManagerOpeningStock,
   postManagerStockCount,
 } from "@/lib/react-query/stock-admin";
 
@@ -46,6 +44,7 @@ export function ManagerStockPageClient() {
   const [requestTargets, setRequestTargets] = useState<SupplyRequestTarget[]>(
     [],
   );
+  const [openingResetKey, setOpeningResetKey] = useState(0);
 
   const query = useMemo(
     () => ({
@@ -73,6 +72,15 @@ export function ManagerStockPageClient() {
       setCountTarget(null);
     },
   });
+  const openingStockMutation = useMutation({
+    mutationFn: postManagerOpeningStock,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["stock", "balances", "manager"],
+      });
+      setOpeningResetKey((key) => key + 1);
+    },
+  });
 
   const openCountDialog = useCallback(
     (row: AdminStockBalanceSummary | null) => {
@@ -92,19 +100,6 @@ export function ManagerStockPageClient() {
     [canCount, openCountDialog],
   );
   const stockItems = stockQuery.data?.items ?? [];
-  const totals = useMemo(
-    () =>
-      stockItems.reduce(
-        (acc, item) => ({
-          available: acc.available + item.availableQuantity,
-          inTransit: acc.inTransit + item.inTransitQuantity,
-          onHand: acc.onHand + item.onHandQuantity,
-          reserved: acc.reserved + item.reservedQuantity,
-        }),
-        { available: 0, inTransit: 0, onHand: 0, reserved: 0 },
-      ),
-    [stockItems],
-  );
 
   const handleSearch = useCallback(
     (event: React.FormEvent) => {
@@ -140,6 +135,7 @@ export function ManagerStockPageClient() {
         isLoading={isLoading}
         locationScopes={accessibleLocationScopes}
         onLocationChange={(slug) => {
+          openingStockMutation.reset();
           setSelectedLocationSlug(slug);
           setSearch("");
           setActiveSearch("");
@@ -162,78 +158,42 @@ export function ManagerStockPageClient() {
         />
       ) : null}
 
+      <ManagerOpeningStockSetup
+        canCount={canCount}
+        error={openingStockMutation.error}
+        isPending={openingStockMutation.isPending}
+        location={selectedLocationScope}
+        onSubmit={(req) => {
+          openingStockMutation.reset();
+          openingStockMutation.mutate(req);
+        }}
+        resetKey={openingResetKey}
+        success={openingStockMutation.data}
+      />
+
       {stockQuery.data ? (
-        <StockMetricGrid
-          items={[
-            { label: "SKUs", value: stockQuery.data.totalCount },
-            { label: "On hand", value: totals.onHand },
-            { label: "Reserved", value: totals.reserved },
-            { label: "Available", value: totals.available },
-            { label: "In transit", value: totals.inTransit },
-          ]}
+        <ManagerStockMetrics
+          items={stockItems}
+          totalCount={stockQuery.data.totalCount}
         />
       ) : null}
 
-      <AppTableWrapper>
-        {stockQuery.isPending && selectedLocationScope ? (
-          <StockWorkspaceTableSkeleton
-            keys={[1, 2, 3, 4, 5, 6, 7, 8]}
-            rowClassName="h-10 w-full rounded-lg"
-          />
-        ) : stockQuery.isError ? (
-          <div className="p-8">
-            <AppErrorBanner
-              detail="Could not load stock data for this location."
-              error={stockQuery.error}
-              onRetry={() => void stockQuery.refetch()}
-              title="Unable to load stock"
-            />
-          </div>
-        ) : (
-          <AppDataTable
-            bulkActions={
-              canRequestSupply && selectedLocationScope
-                ? {
-                    render: ({ clearSelection, selectedRows }) => (
-                      <Button
-                        onClick={() => {
-                          setRequestTargets(
-                            selectedRows.map((row) =>
-                              toSupplyRequestTarget(row, {
-                                locationId: selectedLocationScope.locationId,
-                                locationName:
-                                  selectedLocationScope.locationName,
-                              }),
-                            ),
-                          );
-                          setRequestOpen(true);
-                          clearSelection();
-                        }}
-                        size="sm"
-                        type="button"
-                      >
-                        Request supply
-                      </Button>
-                    ),
-                    selectionAriaLabel: "stock items",
-                  }
-                : undefined
-            }
-            columns={columns}
-            data={stockItems}
-            density="compact"
-            emptyDescription={
-              selectedLocationScope
-                ? "No stock entered or in transit yet at this location."
-                : "Select a location above to load stock data."
-            }
-            emptyTitle="No stock data"
-            getRowId={(row: AdminStockBalanceSummary) => row.skuId}
-          />
-        )}
-      </AppTableWrapper>
+      <ManagerStockTableSection
+        canRequestSupply={canRequestSupply}
+        columns={columns}
+        error={stockQuery.error}
+        isError={stockQuery.isError}
+        isPending={stockQuery.isPending}
+        items={stockItems}
+        location={selectedLocationScope}
+        onOpenSupplyRequest={(targets) => {
+          setRequestTargets(targets);
+          setRequestOpen(true);
+        }}
+        onRetry={() => void stockQuery.refetch()}
+      />
 
-      <StockCountDialog
+      <ManagerStockCountDialogSection
         error={countMutation.error}
         isPending={countMutation.isPending}
         locationName={selectedLocationScope?.locationName ?? ""}
@@ -246,7 +206,7 @@ export function ManagerStockPageClient() {
         open={countOpen}
         row={countTarget}
       />
-      <ManagerBulkSupplyRequestDialog
+      <ManagerBulkSupplyDialogSection
         onOpenChange={(open) => {
           setRequestOpen(open);
           if (!open) {

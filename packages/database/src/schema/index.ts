@@ -16,6 +16,7 @@ export * from "./oauth.js";
 export * from "./official-documents.js";
 export * from "./sales.js";
 export * from "./stock.js";
+export * from "./stock-initializations.js";
 export * from "./stock-supply.js";
 export * from "./stock-transfers.js";
 export * from "./supplier-portal-invites.js";

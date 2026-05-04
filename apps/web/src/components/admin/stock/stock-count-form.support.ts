@@ -22,11 +22,17 @@ export type StockCountInitialTarget = {
   variantName: string;
 };
 
+export function canUseOpeningCount(input: {
+  row: AdminStockBalanceSummary | null;
+}) {
+  void input;
+  return false;
+}
+
 export const STOCK_COUNT_REASON_OPTIONS: ReadonlyArray<{
   label: string;
   value: StockCountReasonCode;
 }> = [
-  { label: "Opening count", value: "opening_count" },
   { label: "Cycle count", value: "cycle_count" },
   { label: "Damaged stock", value: "damaged" },
   { label: "Found stock", value: "found_stock" },
@@ -53,7 +59,7 @@ export function createStockCountFormDefaults(
       : initialTarget
         ? String(initialTarget.onHandQuantity)
         : "",
-    reasonCode: row ? "cycle_count" : "opening_count",
+    reasonCode: "cycle_count",
     sku: row?.sku ?? initialTarget?.sku ?? "",
   };
 }
