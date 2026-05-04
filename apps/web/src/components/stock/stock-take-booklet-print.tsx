@@ -227,5 +227,5 @@ function formatDateTime(value: string) {
 }
 
 function getExpectedQuantity(line: StockTakeLine) {
-  return line.expectedQuantity ?? line.systemOnHand ?? "";
+  return line.systemOnHand ?? "";
 }

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type {
   StockTakeCreateRequest,
+  StockTakeImportDryRunResponse,
   StockTakeSessionDetail,
 } from "@shop/contracts";
 import { AppError } from "../src/modules/_core/errors/app-error.js";
@@ -127,6 +128,76 @@ describe("stock take routes", () => {
     );
     assert.match(response.body, /lineNumber,productName,variantName,sku/);
   });
+
+  it("passes admin stock-take dry-run uploads to the import service", async () => {
+    const state = { dryRunCalls: 0, reference: "" };
+    const server = createStockTakeServer({
+      onDryRun(input) {
+        state.dryRunCalls += 1;
+        state.reference = input.reference;
+      },
+    });
+
+    const response = await server.inject({
+      headers: authHeaders(),
+      method: "POST",
+      payload: {
+        contentType: "text/csv",
+        csv: "lineNumber,sku,countedQuantity\n1,RICE-5KG,12",
+        fileName: "stock-take.csv",
+      },
+      url: "/api/admin/stock-takes/STKTAKE-2026-0001/imports/dry-run",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().canApply, true);
+    assert.equal(state.dryRunCalls, 1);
+    assert.equal(state.reference, "STKTAKE-2026-0001");
+  });
+
+  it("requires manager write scope before stock-take dry-run import", async () => {
+    const state = { dryRunCalls: 0 };
+    const server = createStockTakeServer({
+      blockedSessionReference: "STKTAKE-2026-0002",
+      onDryRun() {
+        state.dryRunCalls += 1;
+      },
+    });
+
+    const response = await server.inject({
+      headers: authHeaders(),
+      method: "POST",
+      payload: {
+        contentType: "text/csv",
+        csv: "lineNumber,sku,countedQuantity\n1,RICE-5KG,12",
+        fileName: "stock-take.csv",
+      },
+      url: "/api/manager/stock-takes/STKTAKE-2026-0002/imports/dry-run",
+    });
+
+    assert.equal(response.statusCode, 403);
+    assert.equal(state.dryRunCalls, 0);
+  });
+
+  it("checks manager dry-run scope before parsing the upload body", async () => {
+    const state = { dryRunCalls: 0 };
+    const server = createStockTakeServer({
+      blockedSessionReference: "STKTAKE-2026-0002",
+      onDryRun() {
+        state.dryRunCalls += 1;
+      },
+    });
+
+    const response = await server.inject({
+      headers: authHeaders(),
+      method: "POST",
+      payload: {},
+      url: "/api/manager/stock-takes/STKTAKE-2026-0002/imports/dry-run",
+    });
+
+    assert.equal(response.statusCode, 403);
+    assert.equal(state.dryRunCalls, 0);
+  });
 });
 
 function createStockTakeServer(input: {
@@ -138,6 +209,7 @@ function createStockTakeServer(input: {
     request: StockTakeCreateRequest;
     portal: "admin" | "manager";
   }) => void;
+  onDryRun?: (input: { reference: string }) => void;
   onGetSession?: () => void;
 }) {
   const permissionService = {
@@ -201,6 +273,30 @@ function createStockTakeServer(input: {
         },
       },
     },
+    stockTakeImport: {
+      permissionService,
+      stockTakeImportService: {
+        async dryRun(dryRunInput) {
+          input.onDryRun?.({ reference: dryRunInput.reference });
+          return createDryRunResponse();
+        },
+      },
+      stockTakeService: {
+        async findSessionLocationByReference(reference) {
+          return reference === input.blockedSessionReference
+            ? {
+                id: BLOCKED_LOCATION_ID,
+                name: "Airport Store",
+                slug: "airport-store",
+              }
+            : {
+                id: ALLOWED_LOCATION_ID,
+                name: "Downtown Store",
+                slug: "downtown-store",
+              };
+        },
+      },
+    },
   });
 }
 
@@ -240,6 +336,43 @@ function createSessionDetail(
     sheetCsvUrl: "/api/admin/stock-takes/STKTAKE-2026-0001/sheet.csv",
     status: "generated",
     stockTakeReference: "STKTAKE-2026-0001",
+  };
+}
+
+function createDryRunResponse(): StockTakeImportDryRunResponse {
+  return {
+    canApply: true,
+    errors: [],
+    locationName: "Downtown Store",
+    locationSlug: "downtown-store",
+    rows: [
+      {
+        availableQuantity: 8,
+        countedQuantity: 12,
+        lineNumber: 1,
+        note: null,
+        productName: "Rice",
+        reservedQuantity: 2,
+        rowNumber: 2,
+        sku: "RICE-5KG",
+        status: "valid",
+        systemOnHand: 10,
+        variance: 2,
+        variantName: "5kg",
+      },
+    ],
+    status: "generated",
+    stockTakeReference: "STKTAKE-2026-0001",
+    summary: {
+      duplicateRows: 0,
+      invalidRows: 0,
+      totalNegativeVariance: 0,
+      totalPositiveVariance: 2,
+      totalRows: 1,
+      unknownRows: 0,
+      validRows: 1,
+      varianceRows: 1,
+    },
   };
 }
 

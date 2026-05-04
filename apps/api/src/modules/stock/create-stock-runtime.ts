@@ -14,9 +14,11 @@ import { AdminStockCountRepository } from "./postgres-admin-stock-count.reposito
 import { PostgresOpeningStockRepository } from "./postgres-opening-stock.repository.js";
 import { PostgresStockBalanceQueryRepository } from "./postgres-stock-balance-query.repository.js";
 import { PostgresStockTakeRepository } from "./postgres-stock-take.repository.js";
+import { PostgresStockTakeImportRepository } from "./postgres-stock-take-import.repository.js";
 import { PostgresSupplyRequestRepository } from "./postgres-supply-request.repository.js";
 import { StockSupplyService } from "./stock-supply.service.js";
 import { StockTakeService } from "./stock-take.service.js";
+import { StockTakeImportService } from "./stock-take-import.service.js";
 import {
   PostgresStockTransferDeliverySourceLookup,
   TransferDeliverySourceAdapter,
@@ -42,6 +44,7 @@ type StockRuntime = {
     stockBalanceQueryRepo: PostgresStockBalanceQueryRepository;
     stockCountRepo: AdminStockCountRepository;
     stockTakeRepository: PostgresStockTakeRepository;
+    stockTakeImportService: StockTakeImportService;
     stockTakeService: StockTakeService;
     supplyRequestRepository: PostgresSupplyRequestRepository;
     supplyService: StockSupplyService;
@@ -68,6 +71,9 @@ export function createStockRuntime(
     databaseRuntime.db,
   );
   const stockTakeRepository = new PostgresStockTakeRepository(
+    databaseRuntime.db,
+  );
+  const stockTakeImportRepository = new PostgresStockTakeImportRepository(
     databaseRuntime.db,
   );
   const supplyService = new StockSupplyService(
@@ -108,6 +114,9 @@ export function createStockRuntime(
         options.platformEventPublisher,
       ),
       stockTakeRepository,
+      stockTakeImportService: new StockTakeImportService(
+        stockTakeImportRepository,
+      ),
       stockTakeService: new StockTakeService(
         stockTakeRepository,
         referenceNumberService,

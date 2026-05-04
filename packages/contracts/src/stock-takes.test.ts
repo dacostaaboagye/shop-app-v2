@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   stockTakeCreateRequestSchema,
+  stockTakeImportDryRunRequestSchema,
+  stockTakeImportDryRunResponseSchema,
   stockTakeSessionDetailSchema,
 } from "./stock-takes.js";
 
@@ -92,5 +94,58 @@ describe("stock take contracts", () => {
     assert.equal(detail.lines[0]?.systemOnHand, null);
     assert.equal(detail.lines[0]?.reservedQuantity, null);
     assert.equal(detail.lines[0]?.availableQuantity, null);
+  });
+
+  it("accepts stock-take dry-run upload requests", () => {
+    const request = stockTakeImportDryRunRequestSchema.parse({
+      contentType: "text/csv",
+      csv: "lineNumber,sku,countedQuantity\n1,RICE-5KG,12",
+      fileName: "STKTAKE-2026-0001.csv",
+    });
+
+    assert.equal(request.fileName, "STKTAKE-2026-0001.csv");
+  });
+
+  it("keeps stock-take dry-run responses free of internal identifiers", () => {
+    const response = stockTakeImportDryRunResponseSchema.parse({
+      canApply: true,
+      errors: [],
+      locationName: "Downtown Store",
+      locationSlug: "downtown-store",
+      rows: [
+        {
+          availableQuantity: 10,
+          countedQuantity: 12,
+          lineNumber: 1,
+          note: "front shelf",
+          productName: "Rice",
+          reservedQuantity: 2,
+          rowNumber: 2,
+          sku: "RICE-5KG",
+          status: "valid",
+          systemOnHand: 10,
+          variance: 2,
+          variantName: "5kg",
+        },
+      ],
+      status: "generated",
+      stockTakeReference: "STKTAKE-2026-0001",
+      summary: {
+        duplicateRows: 0,
+        invalidRows: 0,
+        totalNegativeVariance: 0,
+        totalPositiveVariance: 2,
+        totalRows: 1,
+        unknownRows: 0,
+        validRows: 1,
+        varianceRows: 1,
+      },
+    });
+
+    assert.equal("id" in response, false);
+    assert.equal("locationId" in response, false);
+    const firstRow = response.rows[0];
+    assert.ok(firstRow);
+    assert.equal("skuId" in firstRow, false);
   });
 });

@@ -34,6 +34,14 @@ export const stockTakeReferenceParamsSchema = z.object({
   reference: z.string().trim().min(1).max(40),
 });
 
+export const stockTakeImportDryRunRequestSchema = z
+  .object({
+    contentType: z.enum(["text/csv", "application/vnd.ms-excel"]),
+    csv: z.string().min(1).max(1_000_000),
+    fileName: z.string().trim().min(1).max(240),
+  })
+  .strict();
+
 export const stockTakeSessionSummarySchema = z.object({
   blankSheet: z.boolean(),
   generatedAt: z.iso.datetime(),
@@ -71,8 +79,105 @@ export const stockTakeSessionDetailSchema =
     lines: z.array(stockTakeLineSchema),
   });
 
+export const stockTakeDryRunErrorCodeSchema = z.enum([
+  "duplicate_line",
+  "duplicate_sku",
+  "invalid_quantity",
+  "line_sku_mismatch",
+  "malformed_csv",
+  "manual_row_unsupported",
+  "missing_required",
+  "unknown_sku",
+]);
+
+export const stockTakeDryRunFieldSchema = z.enum([
+  "countedQuantity",
+  "lineNumber",
+  "notes",
+  "sku",
+]);
+
+export const stockTakeDryRunRowStatusSchema = z.enum([
+  "valid",
+  "invalid",
+  "manual_unsupported",
+]);
+
+export const stockTakeDryRunRowErrorSchema = z
+  .object({
+    code: stockTakeDryRunErrorCodeSchema,
+    field: stockTakeDryRunFieldSchema.optional(),
+    lineNumber: z.number().int().positive().optional(),
+    message: z.string().min(1).max(240),
+    rowNumber: z.number().int().positive(),
+    sku: z.string().max(80).optional(),
+  })
+  .strict();
+
+export const stockTakeDryRunPreviewRowSchema = z
+  .object({
+    availableQuantity: z.number().int().min(0).nullable(),
+    countedQuantity: z.number().int().min(0).nullable(),
+    lineNumber: z.number().int().positive().nullable(),
+    note: z.string().nullable(),
+    productName: z.string(),
+    reservedQuantity: z.number().int().min(0).nullable(),
+    rowNumber: z.number().int().positive(),
+    sku: z.string(),
+    status: stockTakeDryRunRowStatusSchema,
+    systemOnHand: z.number().int().min(0).nullable(),
+    variance: z.number().int().nullable(),
+    variantName: z.string(),
+  })
+  .strict();
+
+export const stockTakeDryRunSummarySchema = z
+  .object({
+    duplicateRows: z.number().int().min(0),
+    invalidRows: z.number().int().min(0),
+    totalNegativeVariance: z.number().int().max(0),
+    totalPositiveVariance: z.number().int().min(0),
+    totalRows: z.number().int().min(0),
+    unknownRows: z.number().int().min(0),
+    validRows: z.number().int().min(0),
+    varianceRows: z.number().int().min(0),
+  })
+  .strict();
+
+export const stockTakeImportDryRunResponseSchema = z
+  .object({
+    canApply: z.boolean(),
+    errors: z.array(stockTakeDryRunRowErrorSchema),
+    locationName: z.string(),
+    locationSlug: z.string(),
+    rows: z.array(stockTakeDryRunPreviewRowSchema),
+    status: stockTakeStatusSchema,
+    stockTakeReference: z.string().min(1).max(40),
+    summary: stockTakeDryRunSummarySchema,
+  })
+  .strict();
+
 export type StockTakeCreateRequest = z.infer<
   typeof stockTakeCreateRequestSchema
+>;
+export type StockTakeDryRunErrorCode = z.infer<
+  typeof stockTakeDryRunErrorCodeSchema
+>;
+export type StockTakeDryRunField = z.infer<typeof stockTakeDryRunFieldSchema>;
+export type StockTakeDryRunPreviewRow = z.infer<
+  typeof stockTakeDryRunPreviewRowSchema
+>;
+export type StockTakeDryRunRowError = z.infer<
+  typeof stockTakeDryRunRowErrorSchema
+>;
+export type StockTakeDryRunSummary = z.infer<
+  typeof stockTakeDryRunSummarySchema
+>;
+export type StockTakeImportDryRunRequest = z.infer<
+  typeof stockTakeImportDryRunRequestSchema
+>;
+export type StockTakeImportDryRunResponse = z.infer<
+  typeof stockTakeImportDryRunResponseSchema
 >;
 export type StockTakeLine = z.infer<typeof stockTakeLineSchema>;
 export type StockTakeMode = z.infer<typeof stockTakeModeSchema>;

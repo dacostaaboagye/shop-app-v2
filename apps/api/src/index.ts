@@ -233,6 +233,11 @@ const server = createServer({
     permissionService: authRuntime.accessControl.permissionService,
     stockTakeService: stockRuntime.stock.stockTakeService,
   },
+  stockTakeImport: {
+    permissionService: authRuntime.accessControl.permissionService,
+    stockTakeImportService: stockRuntime.stock.stockTakeImportService,
+    stockTakeService: stockRuntime.stock.stockTakeService,
+  },
   stockSupply: {
     locationRepository: stockRuntime.stock.locationRepository,
     permissionService: authRuntime.accessControl.permissionService,
