@@ -23,12 +23,12 @@ export function ManagerStockTakeGenerationPageClient() {
   return (
     <PageShell>
       <PageHeader
-        description="Generate blind or assisted stock-take sheets for your managed location."
-        title="Stock-take sheets"
+        description="Generate blind or assisted XLSX workbooks for your managed location."
+        title="Stock-take workbooks"
       />
 
       <LocationScopePanel
-        description="Sheet generation follows the write access linked to your manager location scope."
+        description="Workbook generation follows the write access linked to your manager location scope."
         emptyDescription="No managed location is available for stock-take generation."
         isLoading={isLoading}
         locationScopes={accessibleLocationScopes}
@@ -53,7 +53,7 @@ export function ManagerStockTakeGenerationPageClient() {
         </div>
       ) : (
         <AppEmptyState
-          description="Choose a managed location with inventory write access to generate a count sheet."
+          description="Choose a managed location with inventory write access to generate a count workbook."
           title="No location selected"
         />
       )}

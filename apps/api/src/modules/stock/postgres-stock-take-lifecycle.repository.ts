@@ -72,6 +72,7 @@ export class PostgresStockTakeLifecycleRepository {
         mode: session.mode,
         printableBookletUrl: `/${input.portal}/stock/takes/${session.reference}/booklet`,
         sheetCsvUrl: `/api/${input.portal}/stock-takes/${session.reference}/sheet.csv`,
+        sheetXlsxUrl: `/api/${input.portal}/stock-takes/${session.reference}/sheet.xlsx`,
         status: session.status,
         stockTakeReference: session.reference,
         varianceReportPdfUrl: null,

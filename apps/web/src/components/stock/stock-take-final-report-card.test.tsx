@@ -79,6 +79,7 @@ function buildStockTake(
     mode: "blind",
     printableBookletUrl: "/manager/stock/takes/STK-2026-0001/booklet",
     sheetCsvUrl: "/api/manager/stock-takes/STK-2026-0001/sheet.csv",
+    sheetXlsxUrl: "/api/manager/stock-takes/STK-2026-0001/sheet.xlsx",
     status,
     stockTakeReference: "STK-2026-0001",
     varianceReportPdfUrl:

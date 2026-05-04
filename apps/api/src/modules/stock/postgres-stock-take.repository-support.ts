@@ -46,6 +46,7 @@ export function buildStockTakeSessionDetail(input: {
     mode: input.mode,
     printableBookletUrl: `/${input.portal}/stock/takes/${input.reference}/booklet`,
     sheetCsvUrl: `/api/${input.portal}/stock-takes/${input.reference}/sheet.csv`,
+    sheetXlsxUrl: `/api/${input.portal}/stock-takes/${input.reference}/sheet.xlsx`,
     status: input.status,
     stockTakeReference: input.reference,
     varianceReportPdfUrl:

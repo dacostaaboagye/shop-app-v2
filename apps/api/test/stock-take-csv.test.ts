@@ -92,6 +92,7 @@ function createSession(input: {
     mode: input.mode ?? "blind",
     printableBookletUrl: "/manager/stock/takes/STKTAKE-2026-0001/booklet",
     sheetCsvUrl: "/api/manager/stock-takes/STKTAKE-2026-0001/sheet.csv",
+    sheetXlsxUrl: "/api/manager/stock-takes/STKTAKE-2026-0001/sheet.xlsx",
     status: "generated",
     stockTakeReference: "STKTAKE-2026-0001",
     varianceReportPdfUrl: null,

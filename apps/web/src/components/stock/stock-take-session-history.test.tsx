@@ -29,6 +29,8 @@ describe("StockTakeSessionHistoryList", () => {
                 "/manager/stock/takes/STKTAKE-2026-0001/booklet",
               sheetCsvUrl:
                 "/api/manager/stock-takes/STKTAKE-2026-0001/sheet.csv",
+              sheetXlsxUrl:
+                "/api/manager/stock-takes/STKTAKE-2026-0001/sheet.xlsx",
               status: "generated",
               stockTakeReference: "STKTAKE-2026-0001",
               varianceReportPdfUrl: null,
@@ -39,11 +41,13 @@ describe("StockTakeSessionHistoryList", () => {
           totalCount: 1,
         }}
         onDelete={() => undefined}
+        onDownloadWorkbook={() => undefined}
       />,
     );
 
     assert.match(markup, /STKTAKE-2026-0001/);
     assert.match(markup, /Downtown Store/);
+    assert.match(markup, /Workbook/);
     assert.match(markup, /Review/);
     assert.match(markup, /Booklet/);
     assert.match(markup, /Delete/);
@@ -70,6 +74,8 @@ describe("StockTakeSessionHistoryList", () => {
               printableBookletUrl:
                 "/admin/stock/takes/STKTAKE-2026-0001/booklet",
               sheetCsvUrl: "/api/admin/stock-takes/STKTAKE-2026-0001/sheet.csv",
+              sheetXlsxUrl:
+                "/api/admin/stock-takes/STKTAKE-2026-0001/sheet.xlsx",
               status: "applied",
               stockTakeReference: "STKTAKE-2026-0001",
               varianceReportPdfUrl:
@@ -81,6 +87,7 @@ describe("StockTakeSessionHistoryList", () => {
           totalCount: 1,
         }}
         onDelete={() => undefined}
+        onDownloadWorkbook={() => undefined}
       />,
     );
 

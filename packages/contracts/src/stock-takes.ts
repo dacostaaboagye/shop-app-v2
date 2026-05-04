@@ -60,6 +60,7 @@ export const stockTakeSessionSummarySchema = z.object({
   mode: stockTakeModeSchema,
   printableBookletUrl: z.string().min(1),
   sheetCsvUrl: z.string().min(1),
+  sheetXlsxUrl: z.string().min(1),
   status: stockTakeStatusSchema,
   stockTakeReference: z.string().min(1).max(40),
   varianceReportPdfUrl: z.string().min(1).nullable(),

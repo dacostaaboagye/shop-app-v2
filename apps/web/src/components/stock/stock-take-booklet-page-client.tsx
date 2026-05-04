@@ -82,7 +82,7 @@ export function StockTakeBookletPageClient({
             </>
           }
           backHref={getBackHref(portal)}
-          backLabel="Stock-take sheets"
+          backLabel="Stock-take workbooks"
           description="Print this booklet for physical count capture and sign-off."
           eyebrow="Printable stock-take booklet"
           title={reference}

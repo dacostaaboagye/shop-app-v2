@@ -127,6 +127,7 @@ function buildSession(
     mode,
     printableBookletUrl: "/manager/stock/takes/STK-2026-0001/booklet",
     sheetCsvUrl: "/api/manager/stock-takes/STK-2026-0001/sheet.csv",
+    sheetXlsxUrl: "/api/manager/stock-takes/STK-2026-0001/sheet.xlsx",
     status: "generated",
     stockTakeReference: "STK-2026-0001",
     varianceReportPdfUrl: null,

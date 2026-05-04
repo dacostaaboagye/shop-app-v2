@@ -411,7 +411,7 @@ Status: pending; depends on stakeholder confirmation of minimum catalog defaults
 
 ### E-04-08: Editable workbook and in-app count entry
 
-Status: selected on 2026-05-04 after PR #122 merged.
+Status: in progress; E-04-08A and E-04-08E shipped in PR #123 on 2026-05-04.
 
 - Generate an XLSX stock-taking workbook from the same stock-take session rows.
 - Make the workbook printable and uploadable without conversion.
@@ -423,17 +423,18 @@ Status: selected on 2026-05-04 after PR #122 merged.
 
 Implementation sub-slices:
 
-- E-04-08A: Remove barcode and QR fields from stock-taking sheets, imports,
-  PDFs, public DTOs, and tests while preserving any internal legacy snapshots.
+- E-04-08A: Shipped in PR #123. Remove barcode and QR fields from
+  stock-taking sheets, imports, PDFs, public DTOs, and tests while preserving
+  any internal legacy snapshots.
 - E-04-08B: Add XLSX workbook generation from stock-take session rows with
   printable layout and read-only system columns.
 - E-04-08C: Add XLSX workbook import by normalizing rows into the existing
   stock-take dry-run validation path.
 - E-04-08D: Add in-app count entry so paper counts can be entered directly
   without requiring file conversion.
-- E-04-08E: Add stock-take session history on the admin and manager
-  stock-taking workspaces, with audited deletion implemented as cancellation
-  for non-applied sessions.
+- E-04-08E: Shipped in PR #123. Add stock-take session history on the admin
+  and manager stock-taking workspaces, with audited deletion implemented as
+  cancellation for non-applied sessions.
 
 ## UAT scenarios
 
@@ -485,3 +486,4 @@ Implementation sub-slices:
 - E-04 apply reviewed stock take: PR #120.
 - E-04 stock-take PDF reports: PR #121.
 - E-04 stock-take location selector cleanup: PR #122.
+- E-04 stock-take barcode removal and session history: PR #123.
