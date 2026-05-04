@@ -1,4 +1,6 @@
 import type {
+  StockTakeApplyRequest,
+  StockTakeApplyResponse,
   StockTakeSessionDetail as StockTakeDetailResponse,
   StockTakeImportDryRunRequest,
   StockTakeImportDryRunResponse,
@@ -9,6 +11,8 @@ import { fetchFile } from "@/lib/react-query/fetch-file";
 import { fetchJson } from "@/lib/react-query/fetch-json";
 
 export type {
+  StockTakeApplyRequest,
+  StockTakeApplyResponse,
   StockTakeDryRunPreviewRow as StockTakeImportDryRunRow,
   StockTakeDryRunRowError as StockTakeImportDryRunError,
   StockTakeDryRunSummary as StockTakeImportDryRunSummary,
@@ -89,6 +93,22 @@ export async function dryRunStockTakeImport(
     `/api/${portal}/stock-takes/${encodeURIComponent(
       reference,
     )}/imports/dry-run`,
+    {
+      body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+    { auth: "required" },
+  );
+}
+
+export async function applyStockTakeImport(
+  portal: StockTakePortal,
+  reference: string,
+  body: StockTakeApplyRequest,
+): Promise<StockTakeApplyResponse> {
+  return fetchJson<StockTakeApplyResponse>(
+    `/api/${portal}/stock-takes/${encodeURIComponent(reference)}/apply`,
     {
       body: JSON.stringify(body),
       headers: { "Content-Type": "application/json" },

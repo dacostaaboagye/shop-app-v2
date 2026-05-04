@@ -1,4 +1,6 @@
 import {
+  stockTakeApplyRequestSchema,
+  stockTakeApplyResponseSchema,
   stockTakeImportDryRunRequestSchema,
   stockTakeImportDryRunResponseSchema,
   stockTakeReferenceParamsSchema,
@@ -18,6 +20,11 @@ const adminDryRunRoute: RouteDefinition = {
   method: "POST",
   url: "/api/admin/stock-takes/:reference/imports/dry-run",
 };
+const adminApplyRoute: RouteDefinition = {
+  access: { kind: "permission", permission: "inventory.write" },
+  method: "POST",
+  url: "/api/admin/stock-takes/:reference/apply",
+};
 const managerDryRunRoute: RouteDefinition = {
   access: {
     kind: "permission",
@@ -27,6 +34,15 @@ const managerDryRunRoute: RouteDefinition = {
   method: "POST",
   url: "/api/manager/stock-takes/:reference/imports/dry-run",
 };
+const managerApplyRoute: RouteDefinition = {
+  access: {
+    kind: "permission",
+    permission: "inventory.write",
+    scope: "any_active",
+  },
+  method: "POST",
+  url: "/api/manager/stock-takes/:reference/apply",
+};
 
 export function registerStockTakeImportRoutes(
   server: FastifyInstance,
@@ -34,6 +50,8 @@ export function registerStockTakeImportRoutes(
 ) {
   registerDryRunRoute(server, deps, "admin", adminDryRunRoute);
   registerDryRunRoute(server, deps, "manager", managerDryRunRoute);
+  registerApplyRoute(server, deps, "admin", adminApplyRoute);
+  registerApplyRoute(server, deps, "manager", managerApplyRoute);
 }
 
 function registerDryRunRoute(
@@ -56,6 +74,36 @@ function registerDryRunRoute(
 
       return stockTakeImportDryRunResponseSchema.parse(
         await deps.stockTakeImportService.dryRun({
+          reference,
+          request: body,
+        }),
+      );
+    },
+  });
+}
+
+function registerApplyRoute(
+  server: FastifyInstance,
+  deps: StockTakeImportRouteDeps,
+  portal: "admin" | "manager",
+  route: RouteDefinition,
+) {
+  server.route({
+    config: { access: route.access },
+    method: route.method,
+    url: route.url,
+    async handler(request) {
+      const { reference } = stockTakeReferenceParamsSchema.parse(
+        request.params,
+      );
+      const actor = getAuthenticatedActor(request);
+      await assertDryRunAllowed(deps, portal, reference, actor);
+      const body = stockTakeApplyRequestSchema.parse(request.body);
+
+      return stockTakeApplyResponseSchema.parse(
+        await deps.stockTakeApplyService.apply({
+          appliedBy: actor.userId,
+          appliedBySlug: actor.userSlug,
           reference,
           request: body,
         }),

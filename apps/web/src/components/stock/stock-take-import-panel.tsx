@@ -17,13 +17,22 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import {
   dryRunStockTakeImport,
+  type StockTakeImportDryRunRequest,
   type StockTakeImportDryRunResponse,
   type StockTakePortal,
 } from "@/lib/react-query/stock-takes";
-import { resolveImportContentType } from "./stock-take-import-review.support";
+import {
+  buildStockTakeImportRequest,
+  getImportFileSignature,
+} from "./stock-take-import-review.support";
 
 type StockTakeImportPanelProps = {
-  onDryRun: (dryRun: StockTakeImportDryRunResponse) => void;
+  onDryRun: (input: {
+    dryRun: StockTakeImportDryRunResponse;
+    fileSignature: string;
+    request: StockTakeImportDryRunRequest;
+  }) => void;
+  onFileSignatureChange: (fileSignature: string | null) => void;
   onPreviewReset: () => void;
   portal: StockTakePortal;
   reference: string;
@@ -31,6 +40,7 @@ type StockTakeImportPanelProps = {
 
 export function StockTakeImportPanel({
   onDryRun,
+  onFileSignatureChange,
   onPreviewReset,
   portal,
   reference,
@@ -39,12 +49,16 @@ export function StockTakeImportPanel({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const dryRunMutation = useMutation({
-    mutationFn: async (file: File) =>
-      dryRunStockTakeImport(portal, reference, {
-        contentType: resolveImportContentType(file),
-        csv: await file.text(),
-        fileName: file.name,
-      }),
+    mutationFn: async (file: File) => {
+      const request = await buildStockTakeImportRequest(file);
+      const dryRun = await dryRunStockTakeImport(portal, reference, request);
+
+      return {
+        dryRun,
+        fileSignature: getImportFileSignature(file),
+        request,
+      };
+    },
     onSuccess: onDryRun,
   });
 
@@ -75,7 +89,9 @@ export function StockTakeImportPanel({
             onChange={(event) => {
               setFileError(null);
               onPreviewReset();
-              setSelectedFile(event.currentTarget.files?.[0] ?? null);
+              const file = event.currentTarget.files?.[0] ?? null;
+              setSelectedFile(file);
+              onFileSignatureChange(file ? getImportFileSignature(file) : null);
             }}
             type="file"
           />

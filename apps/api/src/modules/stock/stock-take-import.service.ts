@@ -12,6 +12,7 @@ import type {
 import {
   addDuplicateErrors,
   addMatchErrors,
+  addMissingCatalogLineErrors,
   buildDryRunSummary,
   normalizeSku,
 } from "./stock-take-import.service-support.js";
@@ -61,6 +62,12 @@ export class StockTakeImportService {
         seenSkus,
       }),
     );
+    addMissingCatalogLineErrors({
+      lines: snapshot.lines,
+      message: "Every generated catalog SKU line must be counted before apply.",
+      rowErrors,
+      rows: parsed.rows,
+    });
     const invalidRowNumbers = new Set(
       rowErrors.map((error) => error.rowNumber),
     );

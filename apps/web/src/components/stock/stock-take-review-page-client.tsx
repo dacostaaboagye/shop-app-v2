@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileDown, Printer } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
@@ -11,17 +11,27 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  applyStockTakeImport,
   fetchStockTakeDetail,
+  type StockTakeApplyResponse,
+  type StockTakeImportDryRunRequest,
   type StockTakeImportDryRunResponse,
   type StockTakePortal,
   stockTakeQueryKey,
 } from "@/lib/react-query/stock-takes";
 import { toRoute } from "@/lib/routes";
 import { cn } from "@/lib/utils";
+import { StockTakeApplyReviewCard } from "./stock-take-apply-review-card";
 import { StockTakeImportErrors } from "./stock-take-import-errors";
 import { StockTakeImportPanel } from "./stock-take-import-panel";
 import { StockTakeImportPreview } from "./stock-take-import-preview";
 import { StockTakeImportSummary } from "./stock-take-import-summary";
+
+type ValidatedImport = {
+  dryRun: StockTakeImportDryRunResponse;
+  fileSignature: string;
+  request: StockTakeImportDryRunRequest;
+};
 
 type StockTakeReviewPageClientProps = {
   portal: StockTakePortal;
@@ -32,13 +42,49 @@ export function StockTakeReviewPageClient({
   portal,
   reference,
 }: StockTakeReviewPageClientProps) {
-  const [dryRun, setDryRun] = useState<StockTakeImportDryRunResponse | null>(
+  const queryClient = useQueryClient();
+  const [validatedImport, setValidatedImport] =
+    useState<ValidatedImport | null>(null);
+  const [currentFileSignature, setCurrentFileSignature] = useState<
+    string | null
+  >(null);
+  const [applyResult, setApplyResult] = useState<StockTakeApplyResponse | null>(
     null,
   );
   const detailQuery = useQuery({
     queryFn: () => fetchStockTakeDetail(portal, reference),
     queryKey: stockTakeQueryKey(portal, reference),
   });
+  const applyMutation = useMutation({
+    mutationFn: () => {
+      if (!validatedImport) {
+        throw new Error("Run a successful dry-run before applying.");
+      }
+
+      return applyStockTakeImport(portal, reference, {
+        ...validatedImport.request,
+        reviewed: true,
+      });
+    },
+    onSuccess: async (result) => {
+      setApplyResult(result);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["stock-takes"] }),
+        queryClient.invalidateQueries({ queryKey: ["stock", "balances"] }),
+      ]);
+      await Promise.all([
+        queryClient.refetchQueries({
+          queryKey: stockTakeQueryKey(portal, reference),
+          type: "active",
+        }),
+        queryClient.refetchQueries({
+          queryKey: ["stock", "balances"],
+          type: "active",
+        }),
+      ]);
+    },
+  });
+  const dryRun = validatedImport?.dryRun ?? null;
 
   return (
     <PageShell>
@@ -81,8 +127,17 @@ export function StockTakeReviewPageClient({
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
           <div className="flex min-w-0 flex-col gap-6">
             <StockTakeImportPanel
-              onDryRun={setDryRun}
-              onPreviewReset={() => setDryRun(null)}
+              onDryRun={(input) => {
+                applyMutation.reset();
+                setApplyResult(null);
+                setValidatedImport(input);
+              }}
+              onFileSignatureChange={setCurrentFileSignature}
+              onPreviewReset={() => {
+                applyMutation.reset();
+                setValidatedImport(null);
+                setApplyResult(null);
+              }}
               portal={portal}
               reference={reference}
             />
@@ -97,10 +152,21 @@ export function StockTakeReviewPageClient({
             )}
           </div>
           <aside className="flex flex-col gap-4">
+            <StockTakeApplyReviewCard
+              applyError={applyMutation.error}
+              applyResult={applyResult}
+              currentFileSignature={currentFileSignature}
+              dryRun={dryRun}
+              importFileName={validatedImport?.request.fileName ?? null}
+              isApplyPending={applyMutation.isPending}
+              onApply={() => applyMutation.mutate()}
+              sessionStatus={applyResult?.status ?? detailQuery.data.status}
+              validatedFileSignature={validatedImport?.fileSignature ?? null}
+            />
             <StockTakeContextCard
               locationName={detailQuery.data.locationName}
               locationSlug={detailQuery.data.locationSlug}
-              status={detailQuery.data.status}
+              status={applyResult?.status ?? detailQuery.data.status}
               stockTakeReference={detailQuery.data.stockTakeReference}
             />
           </aside>
@@ -144,7 +210,7 @@ function StockTakeContextCard({
         </div>
         <p className="rounded-lg border border-border/60 bg-muted/30 p-3 text-sm text-muted-foreground">
           No stock has changed. This screen validates the file and reports what
-          would happen in a later apply step.
+          will change only after a confirmed apply succeeds on the server.
         </p>
       </div>
     </div>

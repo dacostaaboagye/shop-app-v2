@@ -1,19 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import type {
-  StockTakeCreateRequest,
-  StockTakeImportDryRunResponse,
-  StockTakeSessionDetail,
-} from "@shop/contracts";
-import { AppError } from "../src/modules/_core/errors/app-error.js";
-import { issueAccessToken } from "../src/modules/auth/access-token.js";
-import { createServer } from "../src/server/create-server.js";
-
-const NOW = new Date("2026-05-04T10:00:00.000Z");
-const ACTOR_ID = "11111111-1111-4111-8111-111111111111";
-const ACTOR_SLUG = "store-manager";
-const ALLOWED_LOCATION_ID = "22222222-2222-4222-8222-222222222222";
-const BLOCKED_LOCATION_ID = "33333333-3333-4333-8333-333333333333";
+import {
+  ACTOR_ID,
+  ACTOR_SLUG,
+  authHeaders,
+  createStockTakeServer,
+} from "./stock-take-route-fixtures.js";
 
 describe("stock take routes", () => {
   it("passes the authenticated actor to admin stock-take generation", async () => {
@@ -155,6 +147,37 @@ describe("stock take routes", () => {
     assert.equal(state.reference, "STKTAKE-2026-0001");
   });
 
+  it("passes reviewed admin stock-take apply uploads to the apply service", async () => {
+    const state = { applyCalls: 0, reference: "", userId: "", userSlug: "" };
+    const server = createStockTakeServer({
+      onApply(input) {
+        state.applyCalls += 1;
+        state.reference = input.reference;
+        state.userId = input.userId ?? "";
+        state.userSlug = input.userSlug ?? "";
+      },
+    });
+
+    const response = await server.inject({
+      headers: authHeaders(),
+      method: "POST",
+      payload: {
+        contentType: "text/csv",
+        csv: "lineNumber,sku,countedQuantity\n1,RICE-5KG,12",
+        fileName: "stock-take.csv",
+        reviewed: true,
+      },
+      url: "/api/admin/stock-takes/STKTAKE-2026-0001/apply",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().status, "applied");
+    assert.equal(state.applyCalls, 1);
+    assert.equal(state.reference, "STKTAKE-2026-0001");
+    assert.equal(state.userId, ACTOR_ID);
+    assert.equal(state.userSlug, ACTOR_SLUG);
+  });
+
   it("requires manager write scope before stock-take dry-run import", async () => {
     const state = { dryRunCalls: 0 };
     const server = createStockTakeServer({
@@ -198,192 +221,72 @@ describe("stock take routes", () => {
     assert.equal(response.statusCode, 403);
     assert.equal(state.dryRunCalls, 0);
   });
+
+  it("requires manager write scope before stock-take apply", async () => {
+    const state = { applyCalls: 0 };
+    const server = createStockTakeServer({
+      blockedSessionReference: "STKTAKE-2026-0002",
+      onApply() {
+        state.applyCalls += 1;
+      },
+    });
+
+    const response = await server.inject({
+      headers: authHeaders(),
+      method: "POST",
+      payload: {
+        contentType: "text/csv",
+        csv: "lineNumber,sku,countedQuantity\n1,RICE-5KG,12",
+        fileName: "stock-take.csv",
+        reviewed: true,
+      },
+      url: "/api/manager/stock-takes/STKTAKE-2026-0002/apply",
+    });
+
+    assert.equal(response.statusCode, 403);
+    assert.equal(state.applyCalls, 0);
+  });
+
+  it("checks manager apply scope before parsing the upload body", async () => {
+    const state = { applyCalls: 0 };
+    const server = createStockTakeServer({
+      blockedSessionReference: "STKTAKE-2026-0002",
+      onApply() {
+        state.applyCalls += 1;
+      },
+    });
+
+    const response = await server.inject({
+      headers: authHeaders(),
+      method: "POST",
+      payload: {},
+      url: "/api/manager/stock-takes/STKTAKE-2026-0002/apply",
+    });
+
+    assert.equal(response.statusCode, 403);
+    assert.equal(state.applyCalls, 0);
+  });
+
+  it("requires explicit review confirmation before stock-take apply", async () => {
+    const state = { applyCalls: 0 };
+    const server = createStockTakeServer({
+      onApply() {
+        state.applyCalls += 1;
+      },
+    });
+
+    const response = await server.inject({
+      headers: authHeaders(),
+      method: "POST",
+      payload: {
+        contentType: "text/csv",
+        csv: "lineNumber,sku,countedQuantity\n1,RICE-5KG,12",
+        fileName: "stock-take.csv",
+      },
+      url: "/api/admin/stock-takes/STKTAKE-2026-0001/apply",
+    });
+
+    assert.equal(response.statusCode, 400);
+    assert.equal(state.applyCalls, 0);
+  });
 });
-
-function createStockTakeServer(input: {
-  blockedSessionReference?: string;
-  detailMode?: "blind" | "assisted";
-  onCreate?: (input: {
-    generatedBy?: string;
-    generatedBySlug?: string;
-    request: StockTakeCreateRequest;
-    portal: "admin" | "manager";
-  }) => void;
-  onDryRun?: (input: { reference: string }) => void;
-  onGetSession?: () => void;
-}) {
-  const permissionService = {
-    async assertHasPermission(args: { locationId?: string }) {
-      if (!args.locationId || args.locationId === ALLOWED_LOCATION_ID) return;
-
-      throw new AppError({
-        code: "forbidden",
-        detail: "You do not have permission to use stock takes here.",
-        statusCode: 403,
-        title: "Forbidden",
-      });
-    },
-  };
-
-  return createServer({
-    accessControl: {
-      accessTokenAuthenticationService: {
-        async authenticate() {
-          return { userId: ACTOR_ID, userSlug: ACTOR_SLUG };
-        },
-      },
-      permissionService,
-    },
-    stockTake: {
-      permissionService,
-      stockTakeService: {
-        async createSession(createInput) {
-          input.onCreate?.(createInput);
-          return createSessionDetail(createInput.request.mode);
-        },
-        async findLocationBySlug(locationSlug) {
-          return locationSlug === "airport-store"
-            ? {
-                id: BLOCKED_LOCATION_ID,
-                name: "Airport Store",
-                slug: "airport-store",
-              }
-            : {
-                id: ALLOWED_LOCATION_ID,
-                name: "Downtown Store",
-                slug: "downtown-store",
-              };
-        },
-        async findSessionLocationByReference(reference) {
-          return reference === input.blockedSessionReference
-            ? {
-                id: BLOCKED_LOCATION_ID,
-                name: "Airport Store",
-                slug: "airport-store",
-              }
-            : {
-                id: ALLOWED_LOCATION_ID,
-                name: "Downtown Store",
-                slug: "downtown-store",
-              };
-        },
-        async getSession() {
-          input.onGetSession?.();
-          return createSessionDetail(input.detailMode ?? "blind");
-        },
-      },
-    },
-    stockTakeImport: {
-      permissionService,
-      stockTakeImportService: {
-        async dryRun(dryRunInput) {
-          input.onDryRun?.({ reference: dryRunInput.reference });
-          return createDryRunResponse();
-        },
-      },
-      stockTakeService: {
-        async findSessionLocationByReference(reference) {
-          return reference === input.blockedSessionReference
-            ? {
-                id: BLOCKED_LOCATION_ID,
-                name: "Airport Store",
-                slug: "airport-store",
-              }
-            : {
-                id: ALLOWED_LOCATION_ID,
-                name: "Downtown Store",
-                slug: "downtown-store",
-              };
-        },
-      },
-    },
-  });
-}
-
-function createSessionDetail(
-  mode: "blind" | "assisted",
-): StockTakeSessionDetail {
-  const shouldMask = mode === "blind";
-
-  return {
-    blankSheet: false,
-    generatedAt: NOW.toISOString(),
-    generatedByUserSlug: ACTOR_SLUG,
-    lineCount: 1,
-    lines: [
-      {
-        availableQuantity: shouldMask ? null : 8,
-        barcode: "12345",
-        countedQuantity: null,
-        lineNumber: 1,
-        note: null,
-        productName: "Rice",
-        productSlug: "rice",
-        reservedQuantity: shouldMask ? null : 2,
-        rowStatus: "catalog_sku",
-        sku: "RICE-5KG",
-        systemOnHand: shouldMask ? null : 10,
-        unitOfMeasure: "bag",
-        variance: null,
-        variantName: "5kg",
-        variantSlug: "rice-5kg",
-      },
-    ],
-    locationName: "Downtown Store",
-    locationSlug: "downtown-store",
-    mode,
-    printableBookletUrl: "/admin/stock/takes/STKTAKE-2026-0001/booklet",
-    sheetCsvUrl: "/api/admin/stock-takes/STKTAKE-2026-0001/sheet.csv",
-    status: "generated",
-    stockTakeReference: "STKTAKE-2026-0001",
-  };
-}
-
-function createDryRunResponse(): StockTakeImportDryRunResponse {
-  return {
-    canApply: true,
-    errors: [],
-    locationName: "Downtown Store",
-    locationSlug: "downtown-store",
-    rows: [
-      {
-        availableQuantity: 8,
-        countedQuantity: 12,
-        lineNumber: 1,
-        note: null,
-        productName: "Rice",
-        reservedQuantity: 2,
-        rowNumber: 2,
-        sku: "RICE-5KG",
-        status: "valid",
-        systemOnHand: 10,
-        variance: 2,
-        variantName: "5kg",
-      },
-    ],
-    status: "generated",
-    stockTakeReference: "STKTAKE-2026-0001",
-    summary: {
-      duplicateRows: 0,
-      invalidRows: 0,
-      totalNegativeVariance: 0,
-      totalPositiveVariance: 2,
-      totalRows: 1,
-      unknownRows: 0,
-      validRows: 1,
-      varianceRows: 1,
-    },
-  };
-}
-
-function authHeaders() {
-  const { token } = issueAccessToken({
-    expiresInSeconds: 900,
-    now: NOW,
-    secret: "development-access-secret",
-    userId: ACTOR_ID,
-    userSlug: ACTOR_SLUG,
-  });
-
-  return { authorization: `Bearer ${token}` };
-}

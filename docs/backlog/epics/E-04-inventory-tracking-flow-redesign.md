@@ -336,7 +336,7 @@ Status: shipped in PR #118 on 2026-05-04.
 
 ### E-04-04: Stock-take import and dry run
 
-Status: PR #119 opened on 2026-05-04.
+Status: shipped in PR #119 on 2026-05-04.
 
 - Upload completed CSV.
 - Parse counted quantities.
@@ -346,6 +346,8 @@ Status: PR #119 opened on 2026-05-04.
 - Do not mutate stock during dry run.
 
 ### E-04-05: Apply reviewed stock take
+
+Status: ready for PR on 2026-05-04.
 
 - Apply valid reviewed counts transactionally.
 - Lock balances and session rows.

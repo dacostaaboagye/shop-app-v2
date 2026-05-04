@@ -101,6 +101,34 @@ export function addMatchErrors(
   }
 }
 
+export function addMissingCatalogLineErrors(input: {
+  lines: StockTakeImportLine[];
+  message: string;
+  rowErrors: StockTakeDryRunRowError[];
+  rows: ParsedStockTakeImportRow[];
+}) {
+  const countedSkuKeys = new Set(
+    input.rows
+      .filter((row) => row.countedQuantity != null)
+      .map((row) => normalizeSku(row.sku)),
+  );
+  const syntheticRowNumber = Math.max(input.rows.length + 1, 1);
+
+  for (const line of input.lines) {
+    if (line.rowStatus === "manual_blank") continue;
+    if (countedSkuKeys.has(normalizeSku(line.sku))) continue;
+
+    input.rowErrors.push({
+      code: "missing_line",
+      field: "lineNumber",
+      lineNumber: line.lineNumber,
+      message: input.message,
+      rowNumber: syntheticRowNumber,
+      sku: line.sku,
+    });
+  }
+}
+
 export function normalizeSku(sku: string) {
   return sku.trim().toLowerCase();
 }

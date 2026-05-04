@@ -50,7 +50,11 @@ describe("StockTakeImportService", () => {
 
     const result = await service.dryRun({
       reference: "STKTAKE-2026-0001",
-      request: request("lineNumber,sku,countedQuantity\n1,RICE-5KG,12"),
+      request: request(
+        ["lineNumber,sku,countedQuantity", "1,RICE-5KG,12", "2,OIL-1L,3"].join(
+          "\n",
+        ),
+      ),
     });
 
     assert.equal(result.canApply, true);
@@ -94,6 +98,23 @@ describe("StockTakeImportService", () => {
     );
   });
 
+  it("blocks apply readiness when generated catalog lines are missing", async () => {
+    const service = new StockTakeImportService({
+      async getSnapshot() {
+        return generatedSnapshot;
+      },
+    });
+
+    const result = await service.dryRun({
+      reference: "STKTAKE-2026-0001",
+      request: request("lineNumber,sku,countedQuantity\n1,RICE-5KG,12"),
+    });
+
+    assert.equal(result.canApply, false);
+    assert.equal(result.errors.at(-1)?.code, "missing_line");
+    assert.equal(result.errors.at(-1)?.sku, "OIL-1L");
+  });
+
   it("rejects applied sessions with conflict problem details", async () => {
     const service = new StockTakeImportService({
       async getSnapshot() {
@@ -108,7 +129,13 @@ describe("StockTakeImportService", () => {
       () =>
         service.dryRun({
           reference: "STKTAKE-2026-0001",
-          request: request("lineNumber,sku,countedQuantity\n1,RICE-5KG,12"),
+          request: request(
+            [
+              "lineNumber,sku,countedQuantity",
+              "1,RICE-5KG,12",
+              "2,OIL-1L,3",
+            ].join("\n"),
+          ),
         }),
       { statusCode: 409 },
     );
@@ -151,7 +178,11 @@ describe("StockTakeImportService", () => {
 
     const result = await service.dryRun({
       reference: "STKTAKE-2026-0001",
-      request: request("lineNumber,sku,countedQuantity\n1,RICE-5KG,12"),
+      request: request(
+        ["lineNumber,sku,countedQuantity", "1,RICE-5KG,12", "2,OIL-1L,3"].join(
+          "\n",
+        ),
+      ),
     });
 
     assert.equal(result.canApply, true);
@@ -171,7 +202,13 @@ describe("StockTakeImportService", () => {
 
     const result = await service.dryRun({
       reference: "STKTAKE-2026-0001",
-      request: request("lineNumber,sku,countedQuantity\n999,RICE-5KG,12"),
+      request: request(
+        [
+          "lineNumber,sku,countedQuantity",
+          "999,RICE-5KG,12",
+          "2,OIL-1L,3",
+        ].join("\n"),
+      ),
     });
 
     assert.equal(result.canApply, false);
