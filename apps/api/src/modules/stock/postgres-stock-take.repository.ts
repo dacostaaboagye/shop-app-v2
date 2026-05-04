@@ -2,7 +2,12 @@ import type {
   StockTakeCreateRequest,
   StockTakeSessionDetail,
 } from "@shop/contracts";
-import { locations, stockTakeLines, stockTakeSessions } from "@shop/database";
+import {
+  locations,
+  stockTakeLines,
+  stockTakeSessions,
+  users,
+} from "@shop/database";
 import { asc, eq } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import {
@@ -103,6 +108,8 @@ export class PostgresStockTakeRepository {
       await tx.insert(stockTakeLines).values(preparedLines);
 
       return buildStockTakeSessionDetail({
+        appliedAt: null,
+        appliedByUserSlug: null,
         generatedAt: session.generatedAt,
         generatedByUserSlug: input.generatedBySlug ?? null,
         lines: preparedLines.map(mapStockTakeLineInsertToDto),
@@ -145,6 +152,9 @@ export class PostgresStockTakeRepository {
     const rows = await this.db
       .select({
         availableQuantity: stockTakeLines.expectedAvailableSnapshot,
+        appliedDelta: stockTakeLines.appliedDelta,
+        appliedAt: stockTakeSessions.appliedAt,
+        appliedByUserSlug: users.slug,
         barcode: stockTakeLines.barcodeSnapshot,
         countedQuantity: stockTakeLines.countedQuantity,
         generatedAt: stockTakeSessions.generatedAt,
@@ -168,6 +178,7 @@ export class PostgresStockTakeRepository {
       })
       .from(stockTakeSessions)
       .innerJoin(locations, eq(locations.id, stockTakeSessions.locationId))
+      .leftJoin(users, eq(users.id, stockTakeSessions.appliedBy))
       .innerJoin(
         stockTakeLines,
         eq(stockTakeLines.sessionId, stockTakeSessions.id),
@@ -179,10 +190,13 @@ export class PostgresStockTakeRepository {
     if (!first) return null;
 
     return buildStockTakeSessionDetail({
+      appliedAt: first.appliedAt,
+      appliedByUserSlug: first.appliedByUserSlug,
       generatedAt: first.generatedAt,
       generatedByUserSlug: first.generatedByUserSlug,
       lines: rows.map((row) => ({
         availableQuantity: row.availableQuantity,
+        appliedDelta: row.appliedDelta,
         barcode: row.barcode,
         countedQuantity: row.countedQuantity,
         lineNumber: row.lineNumber,

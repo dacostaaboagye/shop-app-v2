@@ -22,6 +22,7 @@ import {
 import { toRoute } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import { StockTakeApplyReviewCard } from "./stock-take-apply-review-card";
+import { StockTakeFinalReportCard } from "./stock-take-final-report-card";
 import { StockTakeImportErrors } from "./stock-take-import-errors";
 import { StockTakeImportPanel } from "./stock-take-import-panel";
 import { StockTakeImportPreview } from "./stock-take-import-preview";
@@ -163,6 +164,11 @@ export function StockTakeReviewPageClient({
               sessionStatus={applyResult?.status ?? detailQuery.data.status}
               validatedFileSignature={validatedImport?.fileSignature ?? null}
             />
+            <StockTakeFinalReportCard
+              applyResult={applyResult}
+              portal={portal}
+              stockTake={detailQuery.data}
+            />
             <StockTakeContextCard
               locationName={detailQuery.data.locationName}
               locationSlug={detailQuery.data.locationSlug}
@@ -187,11 +193,12 @@ function StockTakeContextCard({
   status: string;
   stockTakeReference: string;
 }) {
+  const isApplied = status === "applied";
   return (
     <div className="rounded-xl border border-border/60 bg-card p-5 shadow-sm">
       <div className="flex flex-col gap-3">
         <Badge className="w-fit" variant="secondary">
-          Preview only
+          {isApplied ? "Applied evidence" : "Preview only"}
         </Badge>
         <div>
           <p className="type-support text-muted-foreground">Reference</p>
@@ -209,8 +216,9 @@ function StockTakeContextCard({
           <p className="font-medium text-foreground">{status}</p>
         </div>
         <p className="rounded-lg border border-border/60 bg-muted/30 p-3 text-sm text-muted-foreground">
-          No stock has changed. This screen validates the file and reports what
-          will change only after a confirmed apply succeeds on the server.
+          {isApplied
+            ? "Stock has been applied. Use the final variance report as the reconciliation evidence for this count."
+            : "No stock has changed. This screen validates the file and reports what will change only after a confirmed apply succeeds on the server."}
         </p>
       </div>
     </div>

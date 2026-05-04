@@ -26,6 +26,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import {
   createStockTakeSheet,
+  downloadStockTakeBookletPdf,
   downloadStockTakeSheetCsv,
   type StockTakeMode,
   type StockTakePortal,
@@ -65,6 +66,11 @@ export function StockTakeSheetCard({
   const csvMutation = useMutation({
     mutationFn: (reference: string) =>
       downloadStockTakeSheetCsv(portal, reference),
+    onSuccess: saveDownloadedFile,
+  });
+  const pdfMutation = useMutation({
+    mutationFn: (reference: string) =>
+      downloadStockTakeBookletPdf(portal, reference),
     onSuccess: saveDownloadedFile,
   });
   const form = useForm({
@@ -215,18 +221,17 @@ export function StockTakeSheetCard({
       </CardContent>
       {createdSheet ? (
         <CardFooter className="flex flex-col items-stretch gap-4">
-          {csvMutation.error ? (
-            <AppErrorBanner
-              detail="The sheet was generated, but the CSV download failed. You can retry the download or open the printable booklet."
-              error={csvMutation.error}
-              title="Unable to download CSV"
-            />
-          ) : null}
           <GeneratedSheetActions
+            csvError={csvMutation.error}
             isCsvPending={csvMutation.isPending}
+            isPdfPending={pdfMutation.isPending}
             onDownloadCsv={() =>
               csvMutation.mutate(createdSheet.stockTakeReference)
             }
+            onDownloadPdf={() =>
+              pdfMutation.mutate(createdSheet.stockTakeReference)
+            }
+            pdfError={pdfMutation.error}
             sheet={createdSheet}
           />
         </CardFooter>

@@ -9,6 +9,7 @@ export type StockTakeRouteDeps = {
     | "createSession"
     | "findLocationBySlug"
     | "findSessionLocationByReference"
+    | "getAppliedVarianceReportSession"
     | "getSession"
   >;
 };
@@ -26,6 +27,9 @@ export function createUnavailableStockTakeDeps(): StockTakeRouteDeps {
         throw unavailableStockTakeError();
       },
       async getSession() {
+        throw unavailableStockTakeError();
+      },
+      async getAppliedVarianceReportSession() {
         throw unavailableStockTakeError();
       },
     },

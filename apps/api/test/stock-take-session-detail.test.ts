@@ -8,6 +8,8 @@ const GENERATED_AT = new Date("2026-05-04T10:00:00.000Z");
 describe("stock take session detail mapping", () => {
   it("masks expected quantities for blind count details", () => {
     const detail = buildStockTakeSessionDetail({
+      appliedAt: null,
+      appliedByUserSlug: null,
       generatedAt: GENERATED_AT,
       generatedByUserSlug: "manager",
       lines: [createLine()],
@@ -30,6 +32,8 @@ describe("stock take session detail mapping", () => {
 
   it("preserves expected quantities for assisted count details", () => {
     const detail = buildStockTakeSessionDetail({
+      appliedAt: null,
+      appliedByUserSlug: null,
       generatedAt: GENERATED_AT,
       generatedByUserSlug: "manager",
       lines: [createLine()],
@@ -52,6 +56,7 @@ describe("stock take session detail mapping", () => {
 
 function createLine(): StockTakeLine {
   return {
+    appliedDelta: null,
     availableQuantity: 8,
     barcode: "12345",
     countedQuantity: null,

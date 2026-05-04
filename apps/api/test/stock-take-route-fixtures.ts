@@ -25,7 +25,9 @@ export function createStockTakeServer(input: {
     portal: "admin" | "manager";
   }) => void;
   onDryRun?: (input: { reference: string }) => void;
+  onGetVarianceReport?: () => void;
   onGetSession?: () => void;
+  reportStatus?: "generated" | "applied";
 }) {
   const permissionService = {
     async assertHasPermission(args: { locationId?: string }) {
@@ -54,7 +56,7 @@ export function createStockTakeServer(input: {
       stockTakeService: {
         async createSession(createInput) {
           input.onCreate?.(createInput);
-          return createSessionDetail(createInput.request.mode);
+          return createSessionDetail(createInput.request.mode, "generated");
         },
         async findLocationBySlug(locationSlug) {
           return locationSlug === "airport-store"
@@ -68,7 +70,20 @@ export function createStockTakeServer(input: {
         },
         async getSession() {
           input.onGetSession?.();
-          return createSessionDetail(input.detailMode ?? "blind");
+          return createSessionDetail(input.detailMode ?? "blind", "generated");
+        },
+        async getAppliedVarianceReportSession() {
+          input.onGetVarianceReport?.();
+          const status = input.reportStatus ?? "applied";
+          if (status !== "applied") {
+            throw new AppError({
+              code: "conflict",
+              detail: "Apply this stock-take before downloading the report.",
+              statusCode: 409,
+              title: "Variance report unavailable",
+            });
+          }
+          return createSessionDetail(input.detailMode ?? "blind", status);
         },
       },
     },
@@ -170,29 +185,34 @@ function createApplyResponse(): StockTakeApplyResponse {
 
 function createSessionDetail(
   mode: "blind" | "assisted",
+  status: StockTakeSessionDetail["status"],
 ): StockTakeSessionDetail {
   const shouldMask = mode === "blind";
 
   return {
+    appliedAt: status === "applied" ? NOW.toISOString() : null,
+    appliedByUserSlug: status === "applied" ? ACTOR_SLUG : null,
     blankSheet: false,
+    bookletPdfUrl: "/api/admin/stock-takes/STKTAKE-2026-0001/booklet.pdf",
     generatedAt: NOW.toISOString(),
     generatedByUserSlug: ACTOR_SLUG,
     lineCount: 1,
     lines: [
       {
+        appliedDelta: status === "applied" ? 2 : null,
         availableQuantity: shouldMask ? null : 8,
         barcode: "12345",
-        countedQuantity: null,
+        countedQuantity: status === "applied" ? 12 : null,
         lineNumber: 1,
         note: null,
         productName: "Rice",
         productSlug: "rice",
         reservedQuantity: shouldMask ? null : 2,
-        rowStatus: "catalog_sku",
+        rowStatus: status === "applied" ? "counted" : "catalog_sku",
         sku: "RICE-5KG",
         systemOnHand: shouldMask ? null : 10,
         unitOfMeasure: "bag",
-        variance: null,
+        variance: status === "applied" && !shouldMask ? 2 : null,
         variantName: "5kg",
         variantSlug: "rice-5kg",
       },
@@ -202,8 +222,12 @@ function createSessionDetail(
     mode,
     printableBookletUrl: "/admin/stock/takes/STKTAKE-2026-0001/booklet",
     sheetCsvUrl: "/api/admin/stock-takes/STKTAKE-2026-0001/sheet.csv",
-    status: "generated",
+    status,
     stockTakeReference: "STKTAKE-2026-0001",
+    varianceReportPdfUrl:
+      status === "applied"
+        ? "/api/admin/stock-takes/STKTAKE-2026-0001/variance-report.pdf"
+        : null,
   };
 }
 

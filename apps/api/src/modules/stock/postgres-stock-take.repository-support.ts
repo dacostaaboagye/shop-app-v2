@@ -17,6 +17,8 @@ import type { ApiDatabase } from "../../infrastructure/database.js";
 type StockTakeLocation = { id: string; name: string; slug: string };
 
 export function buildStockTakeSessionDetail(input: {
+  appliedAt: Date | null;
+  appliedByUserSlug: string | null;
   generatedAt: Date;
   generatedByUserSlug: string | null;
   lines: StockTakeLine[];
@@ -32,7 +34,10 @@ export function buildStockTakeSessionDetail(input: {
   const lines =
     input.mode === "blind" ? input.lines.map(maskBlindLine) : input.lines;
   const summary = {
+    appliedAt: input.appliedAt?.toISOString() ?? null,
+    appliedByUserSlug: input.appliedByUserSlug,
     blankSheet,
+    bookletPdfUrl: `/api/${input.portal}/stock-takes/${input.reference}/booklet.pdf`,
     generatedAt: input.generatedAt.toISOString(),
     generatedByUserSlug: input.generatedByUserSlug,
     lineCount: input.lines.length,
@@ -43,6 +48,10 @@ export function buildStockTakeSessionDetail(input: {
     sheetCsvUrl: `/api/${input.portal}/stock-takes/${input.reference}/sheet.csv`,
     status: input.status,
     stockTakeReference: input.reference,
+    varianceReportPdfUrl:
+      input.status === "applied"
+        ? `/api/${input.portal}/stock-takes/${input.reference}/variance-report.pdf`
+        : null,
   };
 
   return { ...summary, lines };
@@ -63,6 +72,7 @@ export function mapStockTakeLineInsertToDto(input: {
   variantSlugSnapshot: string | null;
 }): StockTakeLine {
   return {
+    appliedDelta: null,
     availableQuantity: input.expectedAvailableSnapshot,
     barcode: input.barcodeSnapshot,
     countedQuantity: null,
