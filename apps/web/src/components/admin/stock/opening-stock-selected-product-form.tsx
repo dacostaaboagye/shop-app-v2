@@ -93,7 +93,7 @@ export function OpeningStockSelectedProductForm({
 
       <dl className="mt-4 rounded-lg bg-muted/25 p-3 text-sm">
         <div>
-          <dt className="text-muted-foreground">Current on hand</dt>
+          <dt className="text-muted-foreground">Current on hand reference</dt>
           <dd className="font-semibold">{selectedProduct.onHandQuantity}</dd>
         </div>
       </dl>
@@ -107,10 +107,10 @@ export function OpeningStockSelectedProductForm({
 
           return (
             <AppFormField
-              description="This starts from the current on-hand quantity. Change it only if the physical count is different."
+              description="Enter the quantity physically counted for this location. The current on-hand value above is only a reference."
               errors={quantityError ? [quantityError] : []}
               inputId={field.name}
-              label="Opening quantity"
+              label="Physical opening count"
             >
               <Input
                 aria-invalid={quantityError ? true : undefined}
@@ -147,7 +147,7 @@ export function OpeningStockSelectedProductForm({
           ? "Opening stock already set"
           : isInReview
             ? "Update review quantity"
-            : "Add product to review"}
+            : "Add count to review"}
       </Button>
     </div>
   );

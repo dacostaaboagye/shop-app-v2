@@ -49,27 +49,32 @@ export function OpeningStockProductPicker({
           stock.
         </p>
       </div>
-      <form
-        className="mt-3 flex flex-col gap-2 sm:flex-row"
-        onSubmit={(event) => {
-          event.preventDefault();
-          onSearchSubmit();
-        }}
-      >
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
         <AppFormField inputId="opening-stock-product-search" label="Search">
           <Input
             autoComplete="off"
             id="opening-stock-product-search"
             onChange={(event) => onSearchChange(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter") return;
+              event.preventDefault();
+              if (isFetching) return;
+              onSearchSubmit();
+            }}
             placeholder="Product name or SKU"
             value={query}
           />
         </AppFormField>
-        <Button className="sm:self-end" disabled={isFetching} type="submit">
+        <Button
+          className="sm:self-end"
+          disabled={isFetching}
+          onClick={onSearchSubmit}
+          type="button"
+        >
           <Search data-icon="inline-start" />
           Search
         </Button>
-      </form>
+      </div>
       {hasPendingSearch ? (
         <p className="mt-2 text-xs text-muted-foreground">
           Press Search to update the product list.

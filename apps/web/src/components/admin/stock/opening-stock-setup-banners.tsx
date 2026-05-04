@@ -39,7 +39,7 @@ export function OpeningStockSetupBanners({
 
       {hasDraft ? (
         <AppBanner
-          description="Use Add product to review before saving so the selected product and quantity are included."
+          description="Use Add count to review before saving so the selected product and quantity are included."
           title="Add selected product first"
           tone="warning"
         />
