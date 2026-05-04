@@ -336,6 +336,8 @@ Status: shipped in PR #118 on 2026-05-04.
 
 ### E-04-04: Stock-take import and dry run
 
+Status: PR #119 opened on 2026-05-04.
+
 - Upload completed CSV.
 - Parse counted quantities.
 - Validate duplicate SKUs, unknown SKUs, missing counts, invalid quantities, and location scope.
@@ -405,3 +407,4 @@ Status: shipped in PR #118 on 2026-05-04.
 - E-04 opening stock setup and hardening: PR #115.
 - E-04 opening stock setup UI rearrangement: PR #116.
 - E-04 stock-take sheet generation and printable booklet: PR #118.
+- E-04 stock-take import and dry run: PR #119.
