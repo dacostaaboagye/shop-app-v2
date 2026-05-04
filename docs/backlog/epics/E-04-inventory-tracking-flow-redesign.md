@@ -347,7 +347,7 @@ Status: shipped in PR #119 on 2026-05-04.
 
 ### E-04-05: Apply reviewed stock take
 
-Status: ready for PR on 2026-05-04.
+Status: PR #120 opened on 2026-05-04.
 
 - Apply valid reviewed counts transactionally.
 - Lock balances and session rows.
@@ -410,3 +410,4 @@ Status: ready for PR on 2026-05-04.
 - E-04 opening stock setup UI rearrangement: PR #116.
 - E-04 stock-take sheet generation and printable booklet: PR #118.
 - E-04 stock-take import and dry run: PR #119.
+- E-04 apply reviewed stock take: PR #120.
