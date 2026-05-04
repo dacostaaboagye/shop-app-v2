@@ -20,12 +20,16 @@ describe("stock take contracts", () => {
 
   it("keeps public session details free of internal identifiers", () => {
     const detail = stockTakeSessionDetailSchema.parse({
+      appliedAt: null,
+      appliedByUserSlug: null,
       blankSheet: false,
+      bookletPdfUrl: "/api/manager/stock-takes/STKTAKE-00001/booklet.pdf",
       generatedAt: "2026-05-04T10:00:00.000Z",
       generatedByUserSlug: "manager",
       lineCount: 1,
       lines: [
         {
+          appliedDelta: null,
           availableQuantity: 8,
           barcode: "12345",
           countedQuantity: null,
@@ -50,6 +54,7 @@ describe("stock take contracts", () => {
       sheetCsvUrl: "/api/manager/stock-takes/STKTAKE-00001/sheet.csv",
       status: "generated",
       stockTakeReference: "STKTAKE-00001",
+      varianceReportPdfUrl: null,
     });
 
     assert.equal("id" in detail, false);
@@ -61,12 +66,16 @@ describe("stock take contracts", () => {
 
   it("allows blind session details to mask system quantities", () => {
     const detail = stockTakeSessionDetailSchema.parse({
+      appliedAt: null,
+      appliedByUserSlug: null,
       blankSheet: false,
+      bookletPdfUrl: "/api/manager/stock-takes/STKTAKE-00001/booklet.pdf",
       generatedAt: "2026-05-04T10:00:00.000Z",
       generatedByUserSlug: "manager",
       lineCount: 1,
       lines: [
         {
+          appliedDelta: null,
           availableQuantity: null,
           barcode: "12345",
           countedQuantity: null,
@@ -91,6 +100,7 @@ describe("stock take contracts", () => {
       sheetCsvUrl: "/api/manager/stock-takes/STKTAKE-00001/sheet.csv",
       status: "generated",
       stockTakeReference: "STKTAKE-00001",
+      varianceReportPdfUrl: null,
     });
 
     assert.equal(detail.lines[0]?.systemOnHand, null);

@@ -84,6 +84,36 @@ export async function downloadStockTakeSheetCsv(
   );
 }
 
+export async function downloadStockTakeBookletPdf(
+  portal: StockTakePortal,
+  reference: string,
+): Promise<File> {
+  return fetchFile(
+    `/api/${portal}/stock-takes/${encodeURIComponent(reference)}/booklet.pdf`,
+    undefined,
+    {
+      auth: "required",
+      fallbackFilename: `${reference}-stock-take-booklet.pdf`,
+    },
+  );
+}
+
+export async function downloadStockTakeVarianceReportPdf(
+  portal: StockTakePortal,
+  reference: string,
+): Promise<File> {
+  return fetchFile(
+    `/api/${portal}/stock-takes/${encodeURIComponent(
+      reference,
+    )}/variance-report.pdf`,
+    undefined,
+    {
+      auth: "required",
+      fallbackFilename: `${reference}-variance-report.pdf`,
+    },
+  );
+}
+
 export async function dryRunStockTakeImport(
   portal: StockTakePortal,
   reference: string,

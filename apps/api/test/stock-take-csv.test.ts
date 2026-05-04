@@ -62,12 +62,16 @@ function createSession(input: {
 }): StockTakeSessionDetail {
   const blankSheet = input.blankSheet ?? false;
   return {
+    appliedAt: null,
+    appliedByUserSlug: null,
     blankSheet,
+    bookletPdfUrl: "/api/manager/stock-takes/STKTAKE-2026-0001/booklet.pdf",
     generatedAt: "2026-05-04T10:00:00.000Z",
     generatedByUserSlug: "manager",
     lineCount: 1,
     lines: [
       {
+        appliedDelta: null,
         availableQuantity: blankSheet ? 0 : 8,
         barcode: blankSheet ? null : "12345",
         countedQuantity: null,
@@ -93,6 +97,7 @@ function createSession(input: {
     sheetCsvUrl: "/api/manager/stock-takes/STKTAKE-2026-0001/sheet.csv",
     status: "generated",
     stockTakeReference: "STKTAKE-2026-0001",
+    varianceReportPdfUrl: null,
   };
 }
 

@@ -48,7 +48,10 @@ export const stockTakeApplyRequestSchema =
   });
 
 export const stockTakeSessionSummarySchema = z.object({
+  appliedAt: z.iso.datetime().nullable(),
+  appliedByUserSlug: z.string().nullable(),
   blankSheet: z.boolean(),
+  bookletPdfUrl: z.string().min(1),
   generatedAt: z.iso.datetime(),
   generatedByUserSlug: z.string().nullable(),
   lineCount: z.number().int().min(0),
@@ -59,9 +62,11 @@ export const stockTakeSessionSummarySchema = z.object({
   sheetCsvUrl: z.string().min(1),
   status: stockTakeStatusSchema,
   stockTakeReference: z.string().min(1).max(40),
+  varianceReportPdfUrl: z.string().min(1).nullable(),
 });
 
 export const stockTakeLineSchema = z.object({
+  appliedDelta: z.number().int().nullable(),
   availableQuantity: z.number().int().min(0).nullable(),
   barcode: z.string().nullable(),
   countedQuantity: z.number().int().min(0).nullable(),

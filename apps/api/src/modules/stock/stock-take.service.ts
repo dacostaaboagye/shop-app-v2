@@ -85,4 +85,23 @@ export class StockTakeService {
 
     return session;
   }
+
+  async getAppliedVarianceReportSession(input: {
+    portal: "admin" | "manager";
+    reference: string;
+  }): Promise<StockTakeSessionDetail> {
+    const session = await this.getSession(input);
+
+    if (session.status !== "applied") {
+      throw new AppError({
+        code: "conflict",
+        detail:
+          "Apply this stock-take before downloading the final variance report.",
+        statusCode: 409,
+        title: "Variance report unavailable",
+      });
+    }
+
+    return session;
+  }
 }

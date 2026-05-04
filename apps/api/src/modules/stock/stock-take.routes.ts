@@ -12,6 +12,7 @@ import {
   buildStockTakeCsv,
   createStockTakeCsvFilename,
 } from "./stock-take-csv.js";
+import { registerStockTakePdfRoutes } from "./stock-take-pdf.routes.js";
 import {
   createUnavailableStockTakeDeps,
   getStockTakePermissionService,
@@ -111,6 +112,7 @@ export function registerStockTakeRoutes(
     ...managerReadRoute,
     url: "/api/manager/stock-takes/:reference/sheet.csv",
   });
+  registerStockTakePdfRoutes(server, deps);
 }
 
 function registerReadRoutes(

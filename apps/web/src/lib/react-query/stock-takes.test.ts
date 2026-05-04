@@ -3,7 +3,9 @@ import { afterEach, describe, it, mock } from "node:test";
 import {
   applyStockTakeImport,
   createStockTakeSheet,
+  downloadStockTakeBookletPdf,
   downloadStockTakeSheetCsv,
+  downloadStockTakeVarianceReportPdf,
   dryRunStockTakeImport,
   fetchStockTakeDetail,
 } from "./stock-takes";
@@ -32,7 +34,10 @@ describe("stock take helpers", () => {
         });
 
         return jsonResponse({
+          appliedAt: null,
+          appliedByUserSlug: null,
           blankSheet: true,
+          bookletPdfUrl: "/api/admin/stock-takes/STK-2026-0001/booklet.pdf",
           generatedAt: "2026-05-04T09:00:00.000Z",
           generatedByUserSlug: "admin-user",
           lineCount: 24,
@@ -43,6 +48,7 @@ describe("stock take helpers", () => {
           sheetCsvUrl: "/api/admin/stock-takes/STK-2026-0001/sheet.csv",
           status: "generated",
           stockTakeReference: "STK-2026-0001",
+          varianceReportPdfUrl: null,
         });
       },
     );
@@ -69,12 +75,16 @@ describe("stock take helpers", () => {
         );
 
         return jsonResponse({
+          appliedAt: null,
+          appliedByUserSlug: null,
           blankSheet: false,
+          bookletPdfUrl: "/api/manager/stock-takes/STK-2026-0001/booklet.pdf",
           generatedAt: "2026-05-04T09:00:00.000Z",
           generatedByUserSlug: "manager-user",
           lineCount: 1,
           lines: [
             {
+              appliedDelta: null,
               availableQuantity: 8,
               barcode: null,
               countedQuantity: null,
@@ -99,6 +109,7 @@ describe("stock take helpers", () => {
           sheetCsvUrl: "/api/manager/stock-takes/STK-2026-0001/sheet.csv",
           status: "generated",
           stockTakeReference: "STK-2026-0001",
+          varianceReportPdfUrl: null,
         });
       },
     );
@@ -135,6 +146,40 @@ describe("stock take helpers", () => {
 
     assert.equal(file.name, "stock-take.csv");
     assert.equal(fetchMock.mock.callCount(), 1);
+  });
+
+  it("downloads stock-take PDF files from the selected portal", async () => {
+    process.env.NEXT_PUBLIC_API_BASE_URL = "http://localhost:4000";
+    const urls: string[] = [];
+    const fetchMock = mock.method(
+      globalThis,
+      "fetch",
+      async (input: RequestInfo | URL) => {
+        urls.push(String(input));
+
+        return new Response("%PDF", {
+          headers: {
+            "content-disposition": 'attachment; filename="stock-take.pdf"',
+            "content-type": "application/pdf",
+          },
+          status: 200,
+        });
+      },
+    );
+
+    const file = await downloadStockTakeBookletPdf("manager", "STK-2026-0001");
+    const report = await downloadStockTakeVarianceReportPdf(
+      "admin",
+      "STK-2026-0001",
+    );
+
+    assert.deepEqual(urls, [
+      "http://localhost:4000/api/manager/stock-takes/STK-2026-0001/booklet.pdf",
+      "http://localhost:4000/api/admin/stock-takes/STK-2026-0001/variance-report.pdf",
+    ]);
+    assert.equal(file.name, "stock-take.pdf");
+    assert.equal(report.type, "application/pdf");
+    assert.equal(fetchMock.mock.callCount(), 2);
   });
 
   it("posts stock take import dry-runs by public reference", async () => {

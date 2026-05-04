@@ -8,7 +8,9 @@ import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
+import { downloadDocumentFile } from "@/lib/documents/document-file-actions";
 import {
+  downloadStockTakeBookletPdf,
   downloadStockTakeSheetCsv,
   fetchStockTakeDetail,
   type StockTakePortal,
@@ -32,14 +34,11 @@ export function StockTakeBookletPageClient({
   });
   const csvMutation = useMutation({
     mutationFn: () => downloadStockTakeSheetCsv(portal, reference),
-    onSuccess(file) {
-      const url = URL.createObjectURL(file);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = file.name;
-      link.click();
-      URL.revokeObjectURL(url);
-    },
+    onSuccess: downloadDocumentFile,
+  });
+  const pdfMutation = useMutation({
+    mutationFn: () => downloadStockTakeBookletPdf(portal, reference),
+    onSuccess: downloadDocumentFile,
   });
 
   return (
@@ -48,6 +47,20 @@ export function StockTakeBookletPageClient({
         <PageHeader
           actions={
             <>
+              <Button
+                disabled={pdfMutation.isPending}
+                onClick={() => pdfMutation.mutate()}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {pdfMutation.isPending ? (
+                  <Spinner data-icon="inline-start" />
+                ) : (
+                  <Download data-icon="inline-start" />
+                )}
+                PDF
+              </Button>
               <Button
                 disabled={csvMutation.isPending}
                 onClick={() => csvMutation.mutate()}
@@ -79,6 +92,13 @@ export function StockTakeBookletPageClient({
             detail="The booklet is still available to print, but the CSV download failed."
             error={csvMutation.error}
             title="Unable to download CSV"
+          />
+        ) : null}
+        {pdfMutation.error ? (
+          <AppErrorBanner
+            detail="The booklet remains available to print, but the PDF download failed."
+            error={pdfMutation.error}
+            title="Unable to download PDF"
           />
         ) : null}
       </div>

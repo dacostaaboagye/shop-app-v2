@@ -347,7 +347,7 @@ Status: shipped in PR #119 on 2026-05-04.
 
 ### E-04-05: Apply reviewed stock take
 
-Status: PR #120 opened on 2026-05-04.
+Status: shipped in PR #120 on 2026-05-04.
 
 - Apply valid reviewed counts transactionally.
 - Lock balances and session rows.
@@ -357,6 +357,8 @@ Status: PR #120 opened on 2026-05-04.
 - Mark stock-take session applied.
 
 ### E-04-06: PDF booklet and variance report
+
+Status: PR #121 opened on 2026-05-04.
 
 - Generate downloadable PDF booklet after the browser-printable booklet proves the workflow.
 - Generate final variance report after apply.
