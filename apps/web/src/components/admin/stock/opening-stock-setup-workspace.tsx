@@ -7,11 +7,10 @@ import type {
 import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { openingVariantSearchQueryKey } from "@/lib/react-query/catalog-variants";
 import { OpeningStockProductPicker } from "./opening-stock-product-picker";
-import { OpeningStockRowReview } from "./opening-stock-row-review";
+import { OpeningStockReviewPanel } from "./opening-stock-review-panel";
 import { OpeningStockSelectedProductForm } from "./opening-stock-selected-product-form";
 import {
   buildOpeningStockRequest,
@@ -27,7 +26,6 @@ import {
   removeOpeningStockRow,
   upsertOpeningStockRow,
 } from "./opening-stock-setup.support";
-import { OpeningStockSetupBanners } from "./opening-stock-setup-banners";
 import {
   OpeningStockAuditFields,
   OpeningStockPasteSection,
@@ -156,88 +154,85 @@ export function OpeningStockSetupWorkspace({
               locationName={locationName}
               readyCount={readyRows.length}
             />
-            <CardContent className="grid gap-4 p-4 xl:grid-cols-[minmax(280px,400px)_1fr]">
-              <div>
-                <OpeningStockProductPicker
-                  error={productLookupQuery.error}
-                  isFetching={productLookupQuery.isFetching}
-                  items={productLookupQuery.data?.items ?? []}
-                  onRetry={() => void productLookupQuery.refetch()}
-                  onSearchChange={setProductSearchDraft}
-                  onSearchSubmit={() => {
-                    setProductSearch(productSearchDraft.trim());
-                  }}
-                  onSelect={(item) => {
-                    setSelectedProduct(item);
-                    form.setFieldValue("skuEntry", item.sku);
-                    form.setFieldValue(
-                      "quantityEntry",
-                      String(Math.max(0, item.onHandQuantity)),
-                    );
-                  }}
-                  query={productSearchDraft}
-                  reviewedSkus={reviewedSkus}
-                  selectedSku={selectedProduct?.sku ?? null}
-                  submittedQuery={productSearch}
-                  totalCount={productLookupQuery.data?.total ?? 0}
-                />
-              </div>
+            <CardContent className="p-4">
               <form
-                className="flex flex-col gap-4"
+                className="grid gap-4 xl:grid-cols-[minmax(280px,400px)_minmax(0,1fr)]"
                 onSubmit={(event) => {
                   event.preventDefault();
                   void form.handleSubmit();
                 }}
               >
-                <OpeningStockSelectedProductForm
-                  canAdd={canAddSelectedProduct}
-                  form={form}
-                  isOpeningBlocked={selectedProductOpeningBlocked}
-                  isInReview={selectedProductIsInReview}
-                  onAdd={() => {
-                    if (!selectedProduct) return;
-                    const nextRows = upsertOpeningStockRow({
-                      currentRows: values.rawRows,
-                      quantity: values.quantityEntry,
-                      sku: selectedProduct.sku,
-                    });
-                    if (nextRows === values.rawRows) return;
+                <div className="flex min-w-0 flex-col gap-4 xl:sticky xl:top-4 xl:self-start">
+                  <OpeningStockProductPicker
+                    error={productLookupQuery.error}
+                    isFetching={productLookupQuery.isFetching}
+                    items={productLookupQuery.data?.items ?? []}
+                    onRetry={() => void productLookupQuery.refetch()}
+                    onSearchChange={setProductSearchDraft}
+                    onSearchSubmit={() => {
+                      setProductSearch(productSearchDraft.trim());
+                    }}
+                    onSelect={(item) => {
+                      setSelectedProduct(item);
+                      form.setFieldValue("skuEntry", item.sku);
+                      form.setFieldValue(
+                        "quantityEntry",
+                        String(Math.max(0, item.onHandQuantity)),
+                      );
+                    }}
+                    query={productSearchDraft}
+                    reviewedSkus={reviewedSkus}
+                    selectedSku={selectedProduct?.sku ?? null}
+                    submittedQuery={productSearch}
+                    totalCount={productLookupQuery.data?.total ?? 0}
+                  />
 
-                    form.setFieldValue("rawRows", nextRows);
-                    form.setFieldValue("skuEntry", "");
-                    form.setFieldValue("quantityEntry", "");
-                    setSelectedProduct(null);
-                  }}
-                  panelRef={selectedPanelRef}
-                  quantityInputRef={quantityInputRef}
-                  selectedProduct={selectedProduct}
-                />
-                <OpeningStockPasteSection form={form} />
-                <OpeningStockAuditFields form={form} />
+                  <OpeningStockSelectedProductForm
+                    canAdd={canAddSelectedProduct}
+                    form={form}
+                    isOpeningBlocked={selectedProductOpeningBlocked}
+                    isInReview={selectedProductIsInReview}
+                    onAdd={() => {
+                      if (!selectedProduct) return;
+                      const nextRows = upsertOpeningStockRow({
+                        currentRows: values.rawRows,
+                        quantity: values.quantityEntry,
+                        sku: selectedProduct.sku,
+                      });
+                      if (nextRows === values.rawRows) return;
 
-                <OpeningStockRowReview
+                      form.setFieldValue("rawRows", nextRows);
+                      form.setFieldValue("skuEntry", "");
+                      form.setFieldValue("quantityEntry", "");
+                      setSelectedProduct(null);
+                    }}
+                    panelRef={selectedPanelRef}
+                    quantityInputRef={quantityInputRef}
+                    selectedProduct={selectedProduct}
+                  />
+
+                  <OpeningStockPasteSection form={form} />
+                  <OpeningStockAuditFields form={form} />
+                </div>
+
+                <OpeningStockReviewPanel
+                  canSubmit={canSubmit}
+                  error={error}
+                  hasDraft={hasDraft}
+                  isPending={isPending}
                   onRemoveRow={(index) => {
                     form.setFieldValue(
                       "rawRows",
                       removeOpeningStockRow({ index, rows }),
                     );
                   }}
+                  readyCount={readyRows.length}
                   rows={rows}
-                  serverErrors={serverErrors}
-                />
-
-                <OpeningStockSetupBanners
-                  error={error}
-                  hasDraft={hasDraft}
-                  overLimit={overLimit}
-                  rowsLength={rows.length}
                   serverBlockedCount={serverBlockedCount}
+                  serverErrors={serverErrors}
                   successMessage={successMessage}
+                  overLimit={overLimit}
                 />
-
-                <Button disabled={!canSubmit} type="submit">
-                  {isPending ? "Saving..." : "Save opening stock"}
-                </Button>
               </form>
             </CardContent>
           </Card>
