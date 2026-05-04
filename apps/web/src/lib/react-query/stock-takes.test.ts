@@ -3,6 +3,7 @@ import { afterEach, describe, it, mock } from "node:test";
 import {
   createStockTakeSheet,
   downloadStockTakeSheetCsv,
+  dryRunStockTakeImport,
   fetchStockTakeDetail,
 } from "./stock-takes";
 
@@ -73,11 +74,21 @@ describe("stock take helpers", () => {
           lineCount: 1,
           lines: [
             {
-              expectedQuantity: 10,
+              availableQuantity: 8,
+              barcode: null,
+              countedQuantity: null,
               lineNumber: 1,
+              note: null,
               productName: "Rice",
+              productSlug: "rice",
+              reservedQuantity: 2,
+              rowStatus: "catalog_sku",
               sku: "RICE-5KG",
+              systemOnHand: 10,
+              unitOfMeasure: "each",
+              variance: null,
               variantName: "5kg",
+              variantSlug: "5kg",
             },
           ],
           locationName: "Central Shop",
@@ -122,6 +133,75 @@ describe("stock take helpers", () => {
     const file = await downloadStockTakeSheetCsv("admin", "STK-2026-0001");
 
     assert.equal(file.name, "stock-take.csv");
+    assert.equal(fetchMock.mock.callCount(), 1);
+  });
+
+  it("posts stock take import dry-runs by public reference", async () => {
+    process.env.NEXT_PUBLIC_API_BASE_URL = "http://localhost:4000";
+
+    const fetchMock = mock.method(
+      globalThis,
+      "fetch",
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        assert.equal(
+          String(input),
+          "http://localhost:4000/api/manager/stock-takes/STK-2026-0001/imports/dry-run",
+        );
+        assert.equal(init?.method, "POST");
+        assert.deepEqual(JSON.parse(String(init?.body)), {
+          contentType: "text/csv",
+          csv: "sku,countedQuantity\nRICE-5KG,12",
+          fileName: "count.csv",
+        });
+
+        return jsonResponse({
+          canApply: true,
+          errors: [],
+          locationName: "Central Shop",
+          locationSlug: "central-shop",
+          rows: [
+            {
+              availableQuantity: 8,
+              countedQuantity: 12,
+              lineNumber: 1,
+              note: null,
+              productName: "Rice",
+              reservedQuantity: 2,
+              rowNumber: 2,
+              sku: "RICE-5KG",
+              status: "valid",
+              systemOnHand: 10,
+              variance: 2,
+              variantName: "5kg",
+            },
+          ],
+          status: "generated",
+          stockTakeReference: "STK-2026-0001",
+          summary: {
+            duplicateRows: 0,
+            invalidRows: 0,
+            totalNegativeVariance: 0,
+            totalPositiveVariance: 2,
+            totalRows: 1,
+            unknownRows: 0,
+            validRows: 1,
+            varianceRows: 1,
+          },
+        });
+      },
+    );
+
+    const response = await dryRunStockTakeImport("manager", "STK-2026-0001", {
+      contentType: "text/csv",
+      csv: "sku,countedQuantity\nRICE-5KG,12",
+      fileName: "count.csv",
+    });
+
+    const [row] = response.rows;
+
+    assert.equal(response.canApply, true);
+    assert.ok(row);
+    assert.equal(row.variance, 2);
     assert.equal(fetchMock.mock.callCount(), 1);
   });
 });

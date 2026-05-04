@@ -1,6 +1,6 @@
 "use client";
 
-import { FileDown, Printer } from "lucide-react";
+import { FileDown, FileSearch, Printer } from "lucide-react";
 import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -49,6 +49,13 @@ export function GeneratedSheetActions({
         </Button>
         <Link
           className={cn(buttonVariants({ variant: "default" }))}
+          href={toRoute(getReviewUrl(sheet))}
+        >
+          <FileSearch data-icon="inline-start" />
+          Review import
+        </Link>
+        <Link
+          className={cn(buttonVariants({ variant: "outline" }))}
           href={toRoute(sheet.printableBookletUrl)}
         >
           <Printer data-icon="inline-start" />
@@ -57,6 +64,10 @@ export function GeneratedSheetActions({
       </div>
     </div>
   );
+}
+
+function getReviewUrl(sheet: StockTakeSheetResponse) {
+  return sheet.printableBookletUrl.replace(/\/booklet$/, "");
 }
 
 export function saveDownloadedFile(file: File) {

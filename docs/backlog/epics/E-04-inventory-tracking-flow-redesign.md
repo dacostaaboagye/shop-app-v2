@@ -324,6 +324,8 @@ The PDF should be optimized for paper counting:
 
 ### E-04-03: Stock-take sheet generation
 
+Status: shipped in PR #118 on 2026-05-04.
+
 - Add stock-take session and line schemas.
 - Add contracts for session creation and sheet download metadata.
 - Generate CSV sheet from active catalog variants and selected location.
@@ -402,3 +404,4 @@ The PDF should be optimized for paper counting:
 - E-04 reason-coded stock count workspace: PR #114.
 - E-04 opening stock setup and hardening: PR #115.
 - E-04 opening stock setup UI rearrangement: PR #116.
+- E-04 stock-take sheet generation and printable booklet: PR #118.
