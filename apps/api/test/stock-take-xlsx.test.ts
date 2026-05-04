@@ -12,9 +12,14 @@ describe("stock take XLSX workbook", () => {
     assert.equal(file.filename, "STKTAKE-2026-0001-sheet.xlsx");
     assert.equal(worksheet.getCell("A1").value, "Stock-take workbook");
     assert.equal(worksheet.getCell("B2").value, "STKTAKE-2026-0001");
-    assert.equal(worksheet.getCell("A9").value, "lineNumber");
-    assert.equal(worksheet.getCell("F9").value, "countedQuantity");
-    assert.equal(worksheet.getCell("G9").value, "notes");
+    assert.equal(
+      (worksheet.views[0] as { topLeftCell?: string } | undefined)?.topLeftCell,
+      "A10",
+    );
+    assert.equal(worksheet.getCell("B5").value, "May 4, 2026, 10:00 AM");
+    assert.equal(worksheet.getCell("A9").value, "Line #");
+    assert.equal(worksheet.getCell("F9").value, "Counted quantity");
+    assert.equal(worksheet.getCell("G9").value, "Notes");
     assert.equal(worksheet.getCell("H9").value, null);
     assert.equal(worksheet.getCell("B10").value, "Rice");
     assert.notEqual(worksheet.getCell("A10").protection?.locked, false);
@@ -27,10 +32,10 @@ describe("stock take XLSX workbook", () => {
       (await toStockTakeXlsxFile(createSession("assisted"))).body,
     );
 
-    assert.equal(worksheet.getCell("H9").value, "systemOnHand");
-    assert.equal(worksheet.getCell("I9").value, "reservedQuantity");
-    assert.equal(worksheet.getCell("J9").value, "availableQuantity");
-    assert.equal(worksheet.getCell("K9").value, "variance");
+    assert.equal(worksheet.getCell("H9").value, "System on hand");
+    assert.equal(worksheet.getCell("I9").value, "Reserved");
+    assert.equal(worksheet.getCell("J9").value, "Available");
+    assert.equal(worksheet.getCell("K9").value, "Variance");
     assert.equal(worksheet.getCell("H10").value, 10);
   });
 
