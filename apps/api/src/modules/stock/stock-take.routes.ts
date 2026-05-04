@@ -8,10 +8,12 @@ import type { FastifyInstance, FastifyReply } from "fastify";
 import type { RouteDefinition } from "../_core/route-contract.js";
 import { getAuthenticatedActor } from "../auth/auth-route-support.js";
 import type { StockTakeService } from "./stock-take.service.js";
+import { registerStockTakeCancelRoutes } from "./stock-take-cancel.routes.js";
 import {
   buildStockTakeCsv,
   createStockTakeCsvFilename,
 } from "./stock-take-csv.js";
+import { registerStockTakeListRoutes } from "./stock-take-list.routes.js";
 import { registerStockTakePdfRoutes } from "./stock-take-pdf.routes.js";
 import {
   createUnavailableStockTakeDeps,
@@ -54,6 +56,9 @@ export function registerStockTakeRoutes(
   server: FastifyInstance,
   deps: StockTakeRouteDeps = createUnavailableStockTakeDeps(),
 ) {
+  registerStockTakeListRoutes(server, deps);
+  registerStockTakeCancelRoutes(server, deps);
+
   server.route({
     config: { access: adminCreateRoute.access },
     method: adminCreateRoute.method,

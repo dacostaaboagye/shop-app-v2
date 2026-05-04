@@ -68,7 +68,6 @@ export const stockTakeSessionSummarySchema = z.object({
 export const stockTakeLineSchema = z.object({
   appliedDelta: z.number().int().nullable(),
   availableQuantity: z.number().int().min(0).nullable(),
-  barcode: z.string().nullable(),
   countedQuantity: z.number().int().min(0).nullable(),
   lineNumber: z.number().int().positive(),
   note: z.string().nullable(),

@@ -4,6 +4,7 @@ import { AppEmptyState } from "@/components/system/app-empty-state";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { useActiveLocationScope } from "@/lib/authorization/use-active-location-scope";
+import { StockTakeSessionHistory } from "./stock-take-session-history";
 import { StockTakeSheetCard } from "./stock-take-sheet-card";
 
 export function ManagerStockTakeGenerationPageClient() {
@@ -37,13 +38,19 @@ export function ManagerStockTakeGenerationPageClient() {
       />
 
       {selectedLocationScope ? (
-        <StockTakeSheetCard
-          initialLocationSlug={selectedLocationScope.locationSlug}
-          key={selectedLocationScope.locationSlug}
-          locationControl="fixed"
-          locations={locationOptions}
-          portal="manager"
-        />
+        <div className="flex flex-col gap-6">
+          <StockTakeSheetCard
+            initialLocationSlug={selectedLocationScope.locationSlug}
+            key={selectedLocationScope.locationSlug}
+            locationControl="fixed"
+            locations={locationOptions}
+            portal="manager"
+          />
+          <StockTakeSessionHistory
+            locationSlug={selectedLocationScope.locationSlug}
+            portal="manager"
+          />
+        </div>
       ) : (
         <AppEmptyState
           description="Choose a managed location with inventory write access to generate a count sheet."

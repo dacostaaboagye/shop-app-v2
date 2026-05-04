@@ -13,7 +13,6 @@ const SUPPORTED_COLUMNS = new Set<string>([
   ...REQUIRED_COLUMNS,
   ...OPTIONAL_COLUMNS,
   "availableQuantity",
-  "barcode",
   "productName",
   "reservedQuantity",
   "systemOnHand",

@@ -27,5 +27,6 @@ export * from "./shared/public-identifiers.js";
 export * from "./stock.js";
 export * from "./stock-supply.js";
 export * from "./stock-takes.js";
+export * from "./stock-takes-list.js";
 export * from "./system.js";
 export * from "./worker-dashboard.js";

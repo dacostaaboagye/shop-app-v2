@@ -17,6 +17,7 @@ const BLOCKED_LOCATION_ID = "33333333-3333-4333-8333-333333333333";
 export function createStockTakeServer(input: {
   blockedSessionReference?: string;
   detailMode?: "blind" | "assisted";
+  detailStatus?: StockTakeSessionDetail["status"];
   onApply?: (input: ApplyRouteInput) => void;
   onCreate?: (input: {
     generatedBy?: string;
@@ -27,6 +28,11 @@ export function createStockTakeServer(input: {
   onDryRun?: (input: { reference: string }) => void;
   onGetVarianceReport?: () => void;
   onGetSession?: () => void;
+  onListSessions?: (input: {
+    locationSlug?: string;
+    portal: "admin" | "manager";
+  }) => void;
+  onCancel?: (input: { reference: string; userId?: string }) => void;
   reportStatus?: "generated" | "applied";
 }) {
   const permissionService = {
@@ -53,6 +59,28 @@ export function createStockTakeServer(input: {
     },
     stockTake: {
       permissionService,
+      stockTakeLifecycleService: {
+        async cancelSession(cancelInput) {
+          input.onCancel?.({
+            reference: cancelInput.reference,
+            ...(cancelInput.cancelledBy
+              ? { userId: cancelInput.cancelledBy }
+              : {}),
+          });
+          return createSessionSummary("cancelled", cancelInput.portal);
+        },
+      },
+      stockTakeListService: {
+        async listSessions(listInput) {
+          input.onListSessions?.({
+            ...(listInput.query.locationSlug
+              ? { locationSlug: listInput.query.locationSlug }
+              : {}),
+            portal: listInput.portal,
+          });
+          return createSessionListResponse(listInput.portal);
+        },
+      },
       stockTakeService: {
         async createSession(createInput) {
           input.onCreate?.(createInput);
@@ -70,7 +98,10 @@ export function createStockTakeServer(input: {
         },
         async getSession() {
           input.onGetSession?.();
-          return createSessionDetail(input.detailMode ?? "blind", "generated");
+          return createSessionDetail(
+            input.detailMode ?? "blind",
+            input.detailStatus ?? "generated",
+          );
         },
         async getAppliedVarianceReportSession() {
           input.onGetVarianceReport?.();
@@ -116,6 +147,44 @@ export function createStockTakeServer(input: {
       },
     },
   });
+}
+
+function createSessionListResponse(portal: "admin" | "manager"): {
+  items: ReturnType<typeof createSessionSummary>[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+} {
+  return {
+    items: [createSessionSummary("generated", portal)],
+    page: 1,
+    pageSize: 25,
+    totalCount: 1,
+  };
+}
+
+function createSessionSummary(
+  status: StockTakeSessionDetail["status"],
+  portal: "admin" | "manager",
+) {
+  const detail = createSessionDetail("blind", status);
+  return {
+    appliedAt: detail.appliedAt,
+    appliedByUserSlug: detail.appliedByUserSlug,
+    blankSheet: detail.blankSheet,
+    bookletPdfUrl: `/api/${portal}/stock-takes/${detail.stockTakeReference}/booklet.pdf`,
+    generatedAt: detail.generatedAt,
+    generatedByUserSlug: detail.generatedByUserSlug,
+    lineCount: detail.lineCount,
+    locationName: detail.locationName,
+    locationSlug: detail.locationSlug,
+    mode: detail.mode,
+    printableBookletUrl: `/${portal}/stock/takes/${detail.stockTakeReference}/booklet`,
+    sheetCsvUrl: `/api/${portal}/stock-takes/${detail.stockTakeReference}/sheet.csv`,
+    status: detail.status,
+    stockTakeReference: detail.stockTakeReference,
+    varianceReportPdfUrl: detail.varianceReportPdfUrl,
+  };
 }
 
 type ApplyRouteInput = {
@@ -201,7 +270,6 @@ function createSessionDetail(
       {
         appliedDelta: status === "applied" ? 2 : null,
         availableQuantity: shouldMask ? null : 8,
-        barcode: "12345",
         countedQuantity: status === "applied" ? 12 : null,
         lineNumber: 1,
         note: null,

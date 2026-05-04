@@ -9,6 +9,7 @@ import {
   adminLocationsQueryKey,
   fetchAdminLocations,
 } from "@/lib/react-query/admin-directory";
+import { StockTakeSessionHistory } from "./stock-take-session-history";
 import { StockTakeSheetCard } from "./stock-take-sheet-card";
 
 const STOCK_TAKE_LOCATION_QUERY = {
@@ -55,7 +56,10 @@ export function AdminStockTakeGenerationPageClient() {
           title="No active locations"
         />
       ) : (
-        <StockTakeSheetCard locations={locationOptions} portal="admin" />
+        <div className="flex flex-col gap-6">
+          <StockTakeSheetCard locations={locationOptions} portal="admin" />
+          <StockTakeSessionHistory portal="admin" />
+        </div>
       )}
     </PageShell>
   );

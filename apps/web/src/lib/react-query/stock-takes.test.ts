@@ -86,7 +86,6 @@ describe("stock take helpers", () => {
             {
               appliedDelta: null,
               availableQuantity: 8,
-              barcode: null,
               countedQuantity: null,
               lineNumber: 1,
               note: null,

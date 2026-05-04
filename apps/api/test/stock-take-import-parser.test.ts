@@ -25,6 +25,18 @@ describe("stock take import parser", () => {
     assert.equal(result.errors[0]?.field, "lineNumber");
   });
 
+  it("rejects barcode as unsupported stock-take input", () => {
+    const result = parseStockTakeImportCsv(
+      "lineNumber,sku,barcode,countedQuantity\n1,RICE-5KG,12345,12",
+    );
+
+    assert.equal(result.errors[0]?.code, "malformed_csv");
+    assert.match(
+      result.errors[0]?.message ?? "",
+      /Unsupported column "barcode"/,
+    );
+  });
+
   it("rejects missing, decimal, negative, and text quantities", () => {
     const result = parseStockTakeImportCsv(
       [
