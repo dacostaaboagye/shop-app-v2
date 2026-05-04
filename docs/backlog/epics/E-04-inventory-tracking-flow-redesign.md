@@ -358,7 +358,7 @@ Status: shipped in PR #120 on 2026-05-04.
 
 ### E-04-06: PDF booklet and variance report
 
-Status: next selected on 2026-05-04 after PR #120 merged.
+Status: PR #121 opened on 2026-05-04.
 
 - Generate downloadable PDF booklet after the browser-printable booklet proves the workflow.
 - Generate final variance report after apply.
