@@ -119,6 +119,7 @@ function toSummary(
     mode: row.mode,
     printableBookletUrl: `/${portal}/stock/takes/${row.reference}/booklet`,
     sheetCsvUrl: `${base}/sheet.csv`,
+    sheetXlsxUrl: `${base}/sheet.xlsx`,
     status: row.status,
     stockTakeReference: row.reference,
     varianceReportPdfUrl:

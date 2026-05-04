@@ -50,7 +50,7 @@ export class PostgresStockTakeRepository {
               : {}),
             ...(input.request.q ? { q: input.request.q } : {}),
           },
-          sourceFileName: `${input.reference}-${input.location.slug}-sheet.csv`,
+          sourceFileName: `${input.reference}-${input.location.slug}-sheet.xlsx`,
           status: "generated",
           updatedAt: input.now,
         })

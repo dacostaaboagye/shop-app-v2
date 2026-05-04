@@ -37,22 +37,22 @@ export function AdminStockTakeGenerationPageClient() {
   return (
     <PageShell>
       <PageHeader
-        description="Generate blind or assisted stock-take sheets for controlled physical counts."
-        title="Stock-take sheets"
+        description="Generate blind or assisted XLSX workbooks for controlled physical counts."
+        title="Stock-take workbooks"
       />
 
       {locationsQuery.isPending ? (
         <Skeleton className="h-80 rounded-xl" />
       ) : locationsQuery.isError ? (
         <AppErrorBanner
-          detail="Locations are required before a stock-take sheet can be generated."
+          detail="Locations are required before a stock-take workbook can be generated."
           error={locationsQuery.error}
           onRetry={() => void locationsQuery.refetch()}
           title="Unable to load locations"
         />
       ) : locationOptions.length === 0 ? (
         <AppEmptyState
-          description="Add an active location before preparing a stock-take sheet."
+          description="Add an active location before preparing a stock-take workbook."
           title="No active locations"
         />
       ) : (

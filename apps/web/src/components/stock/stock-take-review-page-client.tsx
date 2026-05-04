@@ -97,7 +97,7 @@ export function StockTakeReviewPageClient({
               href={toRoute(`/${portal}/stock/takes`)}
             >
               <FileDown data-icon="inline-start" />
-              Sheets
+              Workbooks
             </Link>
             <Link
               className={cn(buttonVariants({ size: "sm", variant: "default" }))}
@@ -109,7 +109,7 @@ export function StockTakeReviewPageClient({
           </>
         }
         backHref={toRoute(`/${portal}/stock/takes`)}
-        backLabel="Stock-take sheets"
+        backLabel="Stock-take workbooks"
         description="Dry-run a counted CSV before any stock is adjusted. Preview only. No stock has changed."
         eyebrow="Stock-take import review"
         title={reference}

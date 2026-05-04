@@ -125,6 +125,20 @@ export async function downloadStockTakeSheetCsv(
   );
 }
 
+export async function downloadStockTakeSheetXlsx(
+  portal: StockTakePortal,
+  reference: string,
+): Promise<File> {
+  return fetchFile(
+    `/api/${portal}/stock-takes/${encodeURIComponent(reference)}/sheet.xlsx`,
+    undefined,
+    {
+      auth: "required",
+      fallbackFilename: `${reference}-stock-take-sheet.xlsx`,
+    },
+  );
+}
+
 export async function downloadStockTakeBookletPdf(
   portal: StockTakePortal,
   reference: string,

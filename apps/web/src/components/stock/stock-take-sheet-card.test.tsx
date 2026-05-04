@@ -12,8 +12,8 @@ describe("StockTakeSheetCard", () => {
     const markup = renderCard({ locationControl: "fixed" });
 
     assert.doesNotMatch(markup, />Location</);
-    assert.match(markup, /Sheet mode/);
-    assert.match(markup, /Generate sheet/);
+    assert.match(markup, /Workbook mode/);
+    assert.match(markup, /Generate workbook/);
   });
 
   it("renders location selection when the card owns the location choice", () => {

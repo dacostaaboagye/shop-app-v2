@@ -22,6 +22,7 @@ import {
   type StockTakeRouteDeps,
   stockTakeNotFoundError,
 } from "./stock-take-route-support.js";
+import { registerStockTakeXlsxRoutes } from "./stock-take-xlsx.routes.js";
 
 const adminCreateRoute: RouteDefinition = {
   access: { kind: "permission", permission: "inventory.write" },
@@ -58,6 +59,7 @@ export function registerStockTakeRoutes(
 ) {
   registerStockTakeListRoutes(server, deps);
   registerStockTakeCancelRoutes(server, deps);
+  registerStockTakeXlsxRoutes(server, deps);
 
   server.route({
     config: { access: adminCreateRoute.access },

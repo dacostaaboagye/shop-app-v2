@@ -1,13 +1,12 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileSearch, History, Printer, Trash2 } from "lucide-react";
+import { History } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { AppEmptyState } from "@/components/system/app-empty-state";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -25,7 +24,8 @@ import {
   stockTakeSessionsQueryKey,
 } from "@/lib/react-query/stock-takes";
 import { toRoute } from "@/lib/routes";
-import { cn } from "@/lib/utils";
+import { useStockTakeDownloads } from "./stock-take-downloads";
+import { StockTakeSessionActions } from "./stock-take-session-actions";
 
 type StockTakeSessionHistoryProps = {
   locationSlug?: string;
@@ -37,6 +37,7 @@ export function StockTakeSessionHistory({
   portal,
 }: StockTakeSessionHistoryProps) {
   const queryClient = useQueryClient();
+  const { workbookMutation } = useStockTakeDownloads(portal);
   const query = { locationSlug, page: 1, pageSize: 25 };
   const enabled = portal === "admin" || Boolean(locationSlug);
   const sessionsQuery = useQuery({
@@ -82,9 +83,20 @@ export function StockTakeSessionHistory({
           />
         ) : (
           <StockTakeSessionHistoryList
-            deletingReference={cancelMutation.variables ?? null}
+            deletingReference={getActiveMutationReference(
+              cancelMutation.isPending,
+              cancelMutation.variables,
+            )}
             deleteError={cancelMutation.error}
+            downloadingReference={getActiveMutationReference(
+              workbookMutation.isPending,
+              workbookMutation.variables,
+            )}
+            downloadError={workbookMutation.error}
             onDelete={(reference) => cancelMutation.mutate(reference)}
+            onDownloadWorkbook={(reference) =>
+              workbookMutation.mutate(reference)
+            }
             portal={portal}
             response={sessionsQuery.data}
           />
@@ -97,13 +109,19 @@ export function StockTakeSessionHistory({
 export function StockTakeSessionHistoryList({
   deletingReference = null,
   deleteError = null,
+  downloadingReference = null,
+  downloadError = null,
   onDelete,
+  onDownloadWorkbook,
   portal,
   response,
 }: {
   deletingReference?: string | null;
   deleteError?: unknown;
+  downloadingReference?: string | null;
+  downloadError?: unknown;
   onDelete?: (reference: string) => void;
+  onDownloadWorkbook?: (reference: string) => void;
   portal: StockTakePortal;
   response: StockTakeSessionListResponse;
 }) {
@@ -123,6 +141,13 @@ export function StockTakeSessionHistoryList({
           detail="The session could not be deleted. Applied or already cancelled sessions are retained as audit evidence."
           error={deleteError}
           title="Unable to delete stock-take session"
+        />
+      ) : null}
+      {downloadError ? (
+        <AppErrorBanner
+          detail="The workbook could not be downloaded. Retry from this session or open the review page."
+          error={downloadError}
+          title="Unable to download workbook"
         />
       ) : null}
       <p className="type-support text-muted-foreground">
@@ -162,50 +187,14 @@ export function StockTakeSessionHistoryList({
                   : ""}
               </p>
             </div>
-            <div className="flex flex-wrap gap-2 border-border/60 border-t pt-4">
-              <Link
-                className={cn(
-                  buttonVariants({ size: "sm", variant: "default" }),
-                )}
-                href={toRoute(
-                  `/${portal}/stock/takes/${session.stockTakeReference}`,
-                )}
-              >
-                <FileSearch data-icon="inline-start" />
-                Review
-              </Link>
-              <Link
-                className={cn(
-                  buttonVariants({ size: "sm", variant: "outline" }),
-                )}
-                href={toRoute(session.printableBookletUrl)}
-              >
-                <Printer data-icon="inline-start" />
-                Booklet
-              </Link>
-              {canDelete(session.status) && onDelete ? (
-                <Button
-                  disabled={deletingReference === session.stockTakeReference}
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        `Delete stock-take ${session.stockTakeReference}? This will cancel the session and keep an audit record.`,
-                      )
-                    ) {
-                      onDelete(session.stockTakeReference);
-                    }
-                  }}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  <Trash2 data-icon="inline-start" />
-                  {deletingReference === session.stockTakeReference
-                    ? "Deleting..."
-                    : "Delete"}
-                </Button>
-              ) : null}
-            </div>
+            <StockTakeSessionActions
+              deletingReference={deletingReference}
+              downloadingReference={downloadingReference}
+              {...(onDelete ? { onDelete } : {})}
+              {...(onDownloadWorkbook ? { onDownloadWorkbook } : {})}
+              portal={portal}
+              session={session}
+            />
           </div>
         </article>
       ))}
@@ -230,10 +219,6 @@ function statusVariant(status: StockTakeStatus) {
   return "outline";
 }
 
-function canDelete(status: StockTakeStatus) {
-  return status !== "applied" && status !== "cancelled";
-}
-
 function formatStatus(status: StockTakeStatus) {
   return status.replaceAll("_", " ");
 }
@@ -247,4 +232,11 @@ function formatDateTime(value: string) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+export function getActiveMutationReference(
+  isPending: boolean,
+  reference?: string,
+) {
+  return isPending ? (reference ?? null) : null;
 }

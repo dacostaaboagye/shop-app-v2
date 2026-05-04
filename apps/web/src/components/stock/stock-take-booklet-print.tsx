@@ -156,7 +156,7 @@ function BookletFooter({ stockTake }: { stockTake: StockTakeDetailResponse }) {
   return (
     <footer className="mt-6 flex flex-wrap justify-between gap-3 border-t border-border pt-3 text-xs text-muted-foreground">
       <span>Reference: {stockTake.stockTakeReference}</span>
-      <span>CSV: {stockTake.sheetCsvUrl}</span>
+      <span>Workbook: {stockTake.sheetXlsxUrl}</span>
     </footer>
   );
 }

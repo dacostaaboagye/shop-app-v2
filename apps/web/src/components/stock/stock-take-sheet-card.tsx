@@ -26,16 +26,12 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import {
   createStockTakeSheet,
-  downloadStockTakeBookletPdf,
-  downloadStockTakeSheetCsv,
   type StockTakeMode,
   type StockTakePortal,
   type StockTakeSheetResponse,
 } from "@/lib/react-query/stock-takes";
-import {
-  GeneratedSheetActions,
-  saveDownloadedFile,
-} from "./stock-take-sheet-card-actions";
+import { useStockTakeDownloads } from "./stock-take-downloads";
+import { GeneratedSheetActions } from "./stock-take-sheet-card-actions";
 
 export type StockTakeLocationOption = {
   name: string;
@@ -65,16 +61,8 @@ export function StockTakeSheetCard({
       createStockTakeSheet(portal, value),
     onSuccess: setCreatedSheet,
   });
-  const csvMutation = useMutation({
-    mutationFn: (reference: string) =>
-      downloadStockTakeSheetCsv(portal, reference),
-    onSuccess: saveDownloadedFile,
-  });
-  const pdfMutation = useMutation({
-    mutationFn: (reference: string) =>
-      downloadStockTakeBookletPdf(portal, reference),
-    onSuccess: saveDownloadedFile,
-  });
+  const { csvMutation, pdfMutation, workbookMutation } =
+    useStockTakeDownloads(portal);
   const form = useForm({
     defaultValues: {
       locationSlug: defaultLocationSlug ?? "",
@@ -98,10 +86,10 @@ export function StockTakeSheetCard({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ScrollText className="size-4 text-primary" />
-          Generate stock-take sheet
+          Generate stock-take workbook
         </CardTitle>
         <CardDescription>
-          Create a controlled sheet for a physical count. Blind mode hides
+          Create a controlled workbook for a physical count. Blind mode hides
           system quantities; assisted mode includes expected stock for review.
         </CardDescription>
       </CardHeader>
@@ -127,7 +115,7 @@ export function StockTakeSheetCard({
               >
                 {(field) => (
                   <AppFormField
-                    description="Sheets are generated for one operating location at a time."
+                    description="Workbooks are generated for one operating location at a time."
                     errors={field.state.meta.errors}
                     inputId={field.name}
                     label="Location"
@@ -166,7 +154,7 @@ export function StockTakeSheetCard({
               {(field) => (
                 <AppFormField
                   inputId={field.name}
-                  label="Sheet mode"
+                  label="Workbook mode"
                   showErrors={wasSubmitted}
                 >
                   <Select
@@ -190,9 +178,9 @@ export function StockTakeSheetCard({
 
           {createMutation.error ? (
             <AppErrorBanner
-              detail="The sheet could not be generated. Confirm the location access and try again."
+              detail="The workbook could not be generated. Confirm the location access and try again."
               error={createMutation.error}
-              title="Unable to generate stock-take sheet"
+              title="Unable to generate stock-take workbook"
             />
           ) : null}
 
@@ -220,7 +208,7 @@ export function StockTakeSheetCard({
                     Generating...
                   </>
                 ) : (
-                  "Generate sheet"
+                  "Generate workbook"
                 )}
               </Button>
             )}
@@ -233,14 +221,19 @@ export function StockTakeSheetCard({
             csvError={csvMutation.error}
             isCsvPending={csvMutation.isPending}
             isPdfPending={pdfMutation.isPending}
+            isWorkbookPending={workbookMutation.isPending}
             onDownloadCsv={() =>
               csvMutation.mutate(createdSheet.stockTakeReference)
             }
             onDownloadPdf={() =>
               pdfMutation.mutate(createdSheet.stockTakeReference)
             }
+            onDownloadWorkbook={() =>
+              workbookMutation.mutate(createdSheet.stockTakeReference)
+            }
             pdfError={pdfMutation.error}
             sheet={createdSheet}
+            workbookError={workbookMutation.error}
           />
         </CardFooter>
       ) : null}

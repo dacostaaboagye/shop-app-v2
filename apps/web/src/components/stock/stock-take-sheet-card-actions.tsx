@@ -16,33 +16,46 @@ type GeneratedSheetActionsProps = {
   csvError: unknown;
   isCsvPending: boolean;
   isPdfPending: boolean;
+  isWorkbookPending: boolean;
   onDownloadCsv: () => void;
   onDownloadPdf: () => void;
+  onDownloadWorkbook: () => void;
   pdfError: unknown;
   sheet: StockTakeSheetResponse;
+  workbookError: unknown;
 };
 
 export function GeneratedSheetActions({
   csvError,
   isCsvPending,
   isPdfPending,
+  isWorkbookPending,
   onDownloadCsv,
   onDownloadPdf,
+  onDownloadWorkbook,
   pdfError,
   sheet,
+  workbookError,
 }: GeneratedSheetActionsProps) {
   return (
     <>
+      {workbookError ? (
+        <AppErrorBanner
+          detail="The workbook was generated, but the XLSX download failed. Retry the download or use the CSV fallback."
+          error={workbookError}
+          title="Unable to download workbook"
+        />
+      ) : null}
       {csvError ? (
         <AppErrorBanner
-          detail="The sheet was generated, but the CSV download failed. You can retry the download or open the printable booklet."
+          detail="The CSV fallback could not be downloaded. Retry the fallback or use the workbook."
           error={csvError}
-          title="Unable to download CSV"
+          title="Unable to download CSV fallback"
         />
       ) : null}
       {pdfError ? (
         <AppErrorBanner
-          detail="The sheet was generated, but the PDF download failed. Open the printable booklet and retry from there."
+          detail="The workbook was generated, but the PDF download failed. Open the printable booklet and retry from there."
           error={pdfError}
           title="Unable to download PDF"
         />
@@ -57,7 +70,20 @@ export function GeneratedSheetActions({
             {formatDateTime(sheet.generatedAt)}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Button
+            className="w-full sm:w-auto"
+            disabled={isWorkbookPending}
+            onClick={onDownloadWorkbook}
+            type="button"
+          >
+            {isWorkbookPending ? (
+              <Spinner data-icon="inline-start" />
+            ) : (
+              <FileDown data-icon="inline-start" />
+            )}
+            Download workbook (.xlsx)
+          </Button>
           <Button
             disabled={isCsvPending}
             onClick={onDownloadCsv}
@@ -69,7 +95,7 @@ export function GeneratedSheetActions({
             ) : (
               <FileDown data-icon="inline-start" />
             )}
-            CSV
+            CSV fallback
           </Button>
           <Button
             disabled={isPdfPending}
@@ -89,7 +115,7 @@ export function GeneratedSheetActions({
             href={toRoute(getReviewUrl(sheet))}
           >
             <FileSearch data-icon="inline-start" />
-            Review import
+            Review CSV import
           </Link>
           <Link
             className={cn(buttonVariants({ variant: "outline" }))}
@@ -106,15 +132,6 @@ export function GeneratedSheetActions({
 
 function getReviewUrl(sheet: StockTakeSheetResponse) {
   return sheet.printableBookletUrl.replace(/\/booklet$/, "");
-}
-
-export function saveDownloadedFile(file: File) {
-  const url = URL.createObjectURL(file);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = file.name;
-  link.click();
-  URL.revokeObjectURL(url);
 }
 
 function formatMode(mode: StockTakeMode) {

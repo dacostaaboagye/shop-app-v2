@@ -66,6 +66,7 @@ describe("stock take session helpers", () => {
           mode: "blind",
           printableBookletUrl: "/admin/stock/takes/STKTAKE-2026-0001/booklet",
           sheetCsvUrl: "/api/admin/stock-takes/STKTAKE-2026-0001/sheet.csv",
+          sheetXlsxUrl: "/api/admin/stock-takes/STKTAKE-2026-0001/sheet.xlsx",
           status: "cancelled",
           stockTakeReference: "STKTAKE-2026-0001",
           varianceReportPdfUrl: null,
