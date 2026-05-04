@@ -1,16 +1,23 @@
 import { AppError } from "../_core/errors/app-error.js";
 import type { PermissionResolutionService } from "../access-control/permission-resolution.service.js";
 import type { StockTakeService } from "./stock-take.service.js";
+import type { StockTakeApplyService } from "./stock-take-apply.service.js";
 import type { StockTakeImportService } from "./stock-take-import.service.js";
 
 export type StockTakeImportRouteDeps = {
   permissionService?: Pick<PermissionResolutionService, "assertHasPermission">;
+  stockTakeApplyService: Pick<StockTakeApplyService, "apply">;
   stockTakeImportService: Pick<StockTakeImportService, "dryRun">;
   stockTakeService: Pick<StockTakeService, "findSessionLocationByReference">;
 };
 
 export function createUnavailableStockTakeImportDeps(): StockTakeImportRouteDeps {
   return {
+    stockTakeApplyService: {
+      async apply() {
+        throw unavailableStockTakeImportError();
+      },
+    },
     stockTakeImportService: {
       async dryRun() {
         throw unavailableStockTakeImportError();

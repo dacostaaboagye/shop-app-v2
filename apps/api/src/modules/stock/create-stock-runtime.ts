@@ -14,10 +14,12 @@ import { AdminStockCountRepository } from "./postgres-admin-stock-count.reposito
 import { PostgresOpeningStockRepository } from "./postgres-opening-stock.repository.js";
 import { PostgresStockBalanceQueryRepository } from "./postgres-stock-balance-query.repository.js";
 import { PostgresStockTakeRepository } from "./postgres-stock-take.repository.js";
+import { PostgresStockTakeApplyRepository } from "./postgres-stock-take-apply.repository.js";
 import { PostgresStockTakeImportRepository } from "./postgres-stock-take-import.repository.js";
 import { PostgresSupplyRequestRepository } from "./postgres-supply-request.repository.js";
 import { StockSupplyService } from "./stock-supply.service.js";
 import { StockTakeService } from "./stock-take.service.js";
+import { StockTakeApplyService } from "./stock-take-apply.service.js";
 import { StockTakeImportService } from "./stock-take-import.service.js";
 import {
   PostgresStockTransferDeliverySourceLookup,
@@ -43,6 +45,7 @@ type StockRuntime = {
     reservationQueryRepo: PostgresAdminReservationQueryRepository;
     stockBalanceQueryRepo: PostgresStockBalanceQueryRepository;
     stockCountRepo: AdminStockCountRepository;
+    stockTakeApplyService: StockTakeApplyService;
     stockTakeRepository: PostgresStockTakeRepository;
     stockTakeImportService: StockTakeImportService;
     stockTakeService: StockTakeService;
@@ -74,6 +77,9 @@ export function createStockRuntime(
     databaseRuntime.db,
   );
   const stockTakeImportRepository = new PostgresStockTakeImportRepository(
+    databaseRuntime.db,
+  );
+  const stockTakeApplyRepository = new PostgresStockTakeApplyRepository(
     databaseRuntime.db,
   );
   const supplyService = new StockSupplyService(
@@ -114,6 +120,10 @@ export function createStockRuntime(
         options.platformEventPublisher,
       ),
       stockTakeRepository,
+      stockTakeApplyService: new StockTakeApplyService(
+        stockTakeApplyRepository,
+        stockTakeImportRepository,
+      ),
       stockTakeImportService: new StockTakeImportService(
         stockTakeImportRepository,
       ),

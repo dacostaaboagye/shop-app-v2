@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  stockTakeApplyRequestSchema,
+  stockTakeApplyResponseSchema,
   stockTakeCreateRequestSchema,
   stockTakeImportDryRunRequestSchema,
   stockTakeImportDryRunResponseSchema,
@@ -106,6 +108,17 @@ describe("stock take contracts", () => {
     assert.equal(request.fileName, "STKTAKE-2026-0001.csv");
   });
 
+  it("requires reviewed confirmation for stock-take apply requests", () => {
+    const request = stockTakeApplyRequestSchema.parse({
+      contentType: "text/csv",
+      csv: "lineNumber,sku,countedQuantity\n1,RICE-5KG,12",
+      fileName: "STKTAKE-2026-0001.csv",
+      reviewed: true,
+    });
+
+    assert.equal(request.reviewed, true);
+  });
+
   it("keeps stock-take dry-run responses free of internal identifiers", () => {
     const response = stockTakeImportDryRunResponseSchema.parse({
       canApply: true,
@@ -147,5 +160,42 @@ describe("stock take contracts", () => {
     const firstRow = response.rows[0];
     assert.ok(firstRow);
     assert.equal("skuId" in firstRow, false);
+  });
+
+  it("keeps stock-take apply responses free of internal identifiers", () => {
+    const response = stockTakeApplyResponseSchema.parse({
+      appliedAt: "2026-05-04T10:05:00.000Z",
+      appliedByUserSlug: "manager",
+      lines: [
+        {
+          countedQuantity: 12,
+          lineNumber: 1,
+          movementCreated: true,
+          previousOnHandQuantity: 10,
+          productName: "Rice",
+          quantityDelta: 2,
+          sku: "RICE-5KG",
+          status: "changed",
+          variantName: "5kg",
+        },
+      ],
+      locationName: "Downtown Store",
+      locationSlug: "downtown-store",
+      status: "applied",
+      stockTakeReference: "STKTAKE-2026-0001",
+      summary: {
+        appliedRows: 1,
+        changedRows: 1,
+        noChangeRows: 0,
+        totalNegativeDelta: 0,
+        totalPositiveDelta: 2,
+      },
+    });
+
+    assert.equal("id" in response, false);
+    assert.equal("locationId" in response, false);
+    const firstLine = response.lines[0];
+    assert.ok(firstLine);
+    assert.equal("skuId" in firstLine, false);
   });
 });

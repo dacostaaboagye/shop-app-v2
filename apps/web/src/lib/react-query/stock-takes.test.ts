@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it, mock } from "node:test";
 import {
+  applyStockTakeImport,
   createStockTakeSheet,
   downloadStockTakeSheetCsv,
   dryRunStockTakeImport,
@@ -202,6 +203,68 @@ describe("stock take helpers", () => {
     assert.equal(response.canApply, true);
     assert.ok(row);
     assert.equal(row.variance, 2);
+    assert.equal(fetchMock.mock.callCount(), 1);
+  });
+
+  it("posts reviewed stock take imports to the apply endpoint", async () => {
+    process.env.NEXT_PUBLIC_API_BASE_URL = "http://localhost:4000";
+
+    const fetchMock = mock.method(
+      globalThis,
+      "fetch",
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        assert.equal(
+          String(input),
+          "http://localhost:4000/api/manager/stock-takes/STK-2026-0001/apply",
+        );
+        assert.equal(init?.method, "POST");
+        assert.deepEqual(JSON.parse(String(init?.body)), {
+          contentType: "text/csv",
+          csv: "sku,countedQuantity\nRICE-5KG,12",
+          fileName: "count.csv",
+          reviewed: true,
+        });
+
+        return jsonResponse({
+          appliedAt: "2026-05-04T09:30:00.000Z",
+          appliedByUserSlug: "manager-user",
+          lines: [
+            {
+              countedQuantity: 12,
+              lineNumber: 1,
+              movementCreated: true,
+              previousOnHandQuantity: 10,
+              productName: "Rice",
+              quantityDelta: 2,
+              sku: "RICE-5KG",
+              status: "changed",
+              variantName: "5kg",
+            },
+          ],
+          locationName: "Central Shop",
+          locationSlug: "central-shop",
+          status: "applied",
+          stockTakeReference: "STK-2026-0001",
+          summary: {
+            appliedRows: 1,
+            changedRows: 1,
+            noChangeRows: 0,
+            totalNegativeDelta: 0,
+            totalPositiveDelta: 2,
+          },
+        });
+      },
+    );
+
+    const response = await applyStockTakeImport("manager", "STK-2026-0001", {
+      contentType: "text/csv",
+      csv: "sku,countedQuantity\nRICE-5KG,12",
+      fileName: "count.csv",
+      reviewed: true,
+    });
+
+    assert.equal(response.status, "applied");
+    assert.equal(response.summary.changedRows, 1);
     assert.equal(fetchMock.mock.callCount(), 1);
   });
 });

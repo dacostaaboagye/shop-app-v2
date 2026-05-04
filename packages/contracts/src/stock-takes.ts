@@ -42,6 +42,11 @@ export const stockTakeImportDryRunRequestSchema = z
   })
   .strict();
 
+export const stockTakeApplyRequestSchema =
+  stockTakeImportDryRunRequestSchema.extend({
+    reviewed: z.literal(true),
+  });
+
 export const stockTakeSessionSummarySchema = z.object({
   blankSheet: z.boolean(),
   generatedAt: z.iso.datetime(),
@@ -86,7 +91,10 @@ export const stockTakeDryRunErrorCodeSchema = z.enum([
   "line_sku_mismatch",
   "malformed_csv",
   "manual_row_unsupported",
+  "missing_line",
   "missing_required",
+  "reserved_conflict",
+  "system_drift",
   "unknown_sku",
 ]);
 
@@ -157,6 +165,43 @@ export const stockTakeImportDryRunResponseSchema = z
   })
   .strict();
 
+export const stockTakeApplyLineSchema = z
+  .object({
+    countedQuantity: z.number().int().min(0),
+    lineNumber: z.number().int().positive(),
+    movementCreated: z.boolean(),
+    previousOnHandQuantity: z.number().int().min(0),
+    productName: z.string(),
+    quantityDelta: z.number().int(),
+    sku: z.string(),
+    status: z.enum(["changed", "no_change"]),
+    variantName: z.string(),
+  })
+  .strict();
+
+export const stockTakeApplySummarySchema = z
+  .object({
+    appliedRows: z.number().int().min(0),
+    changedRows: z.number().int().min(0),
+    noChangeRows: z.number().int().min(0),
+    totalNegativeDelta: z.number().int().max(0),
+    totalPositiveDelta: z.number().int().min(0),
+  })
+  .strict();
+
+export const stockTakeApplyResponseSchema = z
+  .object({
+    appliedAt: z.iso.datetime(),
+    appliedByUserSlug: z.string().nullable(),
+    lines: z.array(stockTakeApplyLineSchema),
+    locationName: z.string(),
+    locationSlug: z.string(),
+    status: z.literal("applied"),
+    stockTakeReference: z.string().min(1).max(40),
+    summary: stockTakeApplySummarySchema,
+  })
+  .strict();
+
 export type StockTakeCreateRequest = z.infer<
   typeof stockTakeCreateRequestSchema
 >;
@@ -172,6 +217,10 @@ export type StockTakeDryRunRowError = z.infer<
 >;
 export type StockTakeDryRunSummary = z.infer<
   typeof stockTakeDryRunSummarySchema
+>;
+export type StockTakeApplyRequest = z.infer<typeof stockTakeApplyRequestSchema>;
+export type StockTakeApplyResponse = z.infer<
+  typeof stockTakeApplyResponseSchema
 >;
 export type StockTakeImportDryRunRequest = z.infer<
   typeof stockTakeImportDryRunRequestSchema

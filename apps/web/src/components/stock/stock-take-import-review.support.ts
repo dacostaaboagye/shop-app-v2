@@ -1,9 +1,11 @@
 import type {
   StockTakeImportContentType,
   StockTakeImportDryRunError,
+  StockTakeImportDryRunRequest,
   StockTakeImportDryRunResponse,
   StockTakeImportDryRunRow,
   StockTakeImportDryRunSummary,
+  StockTakeStatus,
 } from "@/lib/react-query/stock-takes";
 
 export const STOCK_TAKE_IMPORT_CONTENT_TYPES = [
@@ -21,6 +23,25 @@ export function resolveImportContentType(
   return "text/csv";
 }
 
+export function getImportFileSignature(file: File) {
+  return [
+    file.name,
+    file.size,
+    file.lastModified,
+    resolveImportContentType(file),
+  ].join(":");
+}
+
+export async function buildStockTakeImportRequest(
+  file: File,
+): Promise<StockTakeImportDryRunRequest> {
+  return {
+    contentType: resolveImportContentType(file),
+    csv: await file.text(),
+    fileName: file.name,
+  };
+}
+
 export function getDryRunReadinessMessage(
   dryRun: StockTakeImportDryRunResponse,
 ) {
@@ -29,6 +50,43 @@ export function getDryRunReadinessMessage(
   }
 
   return "Resolve the reported rows before this import can be applied.";
+}
+
+export function getApplyDisabledReason(input: {
+  currentFileSignature: string | null;
+  dryRun: StockTakeImportDryRunResponse | null;
+  isPending: boolean;
+  sessionStatus: StockTakeStatus;
+  validatedFileSignature: string | null;
+}) {
+  if (input.isPending) {
+    return "Apply is already in progress.";
+  }
+
+  if (input.sessionStatus === "applied") {
+    return "This stock-take has already been applied.";
+  }
+
+  if (input.sessionStatus === "cancelled") {
+    return "This stock-take was cancelled and cannot be applied.";
+  }
+
+  if (!input.dryRun) {
+    return "Run a successful dry-run before applying.";
+  }
+
+  if (!input.dryRun.canApply) {
+    return "Resolve the dry-run errors before applying.";
+  }
+
+  if (
+    !input.currentFileSignature ||
+    input.currentFileSignature !== input.validatedFileSignature
+  ) {
+    return "The selected file changed. Run the dry-run again before applying.";
+  }
+
+  return null;
 }
 
 export function getRowDisplayName(row: StockTakeImportDryRunRow) {
