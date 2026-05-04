@@ -68,6 +68,15 @@ export const SECONDARY_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     section: "Operations",
   },
   {
+    activeMatchers: [{ mode: "descendants", path: "/manager/stock/takes" }],
+    description: "Generate printable stock-take sheets for this location.",
+    href: toRoute("/manager/stock/takes"),
+    icon: ClipboardList,
+    label: "Stock-take sheets",
+    requiredPermission: "inventory.write",
+    section: "Operations",
+  },
+  {
     activeMatchers: [{ mode: "descendants", path: "/manager/transfers" }],
     description: "Inbound and outbound stock transfers for this location.",
     href: toRoute("/manager/transfers"),
