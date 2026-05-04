@@ -40,6 +40,7 @@ export function ManagerStockTakeGenerationPageClient() {
         <StockTakeSheetCard
           initialLocationSlug={selectedLocationScope.locationSlug}
           key={selectedLocationScope.locationSlug}
+          locationControl="fixed"
           locations={locationOptions}
           portal="manager"
         />

@@ -44,12 +44,14 @@ export type StockTakeLocationOption = {
 
 type StockTakeSheetCardProps = {
   initialLocationSlug?: string;
+  locationControl?: "fixed" | "select";
   locations: StockTakeLocationOption[];
   portal: StockTakePortal;
 };
 
 export function StockTakeSheetCard({
   initialLocationSlug = "",
+  locationControl = "select",
   locations,
   portal,
 }: StockTakeSheetCardProps) {
@@ -89,6 +91,7 @@ export function StockTakeSheetCard({
   const selectedLocation = locations.find(
     (location) => location.slug === defaultLocationSlug,
   );
+  const showLocationField = locationControl === "select";
 
   return (
     <Card className="shadow-sm">
@@ -114,45 +117,50 @@ export function StockTakeSheetCard({
           }}
         >
           <FieldGroup>
-            <form.Field
-              name="locationSlug"
-              validators={{
-                onSubmit: ({ value }) =>
-                  value.trim() ? undefined : "Choose a location.",
-              }}
-            >
-              {(field) => (
-                <AppFormField
-                  description="Sheets are generated for one operating location at a time."
-                  errors={field.state.meta.errors}
-                  inputId={field.name}
-                  label="Location"
-                  showErrors={wasSubmitted}
-                >
-                  {locations.length > 1 ? (
-                    <Select
-                      onValueChange={field.handleChange}
-                      value={field.state.value}
-                    >
-                      <SelectTrigger id={field.name}>
-                        <SelectValue placeholder="Choose location" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {locations.map((location) => (
-                          <SelectItem key={location.slug} value={location.slug}>
-                            {location.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-sm font-medium">
-                      {selectedLocation?.name ?? "No location selected"}
-                    </div>
-                  )}
-                </AppFormField>
-              )}
-            </form.Field>
+            {showLocationField ? (
+              <form.Field
+                name="locationSlug"
+                validators={{
+                  onSubmit: ({ value }) =>
+                    value.trim() ? undefined : "Choose a location.",
+                }}
+              >
+                {(field) => (
+                  <AppFormField
+                    description="Sheets are generated for one operating location at a time."
+                    errors={field.state.meta.errors}
+                    inputId={field.name}
+                    label="Location"
+                    showErrors={wasSubmitted}
+                  >
+                    {locations.length > 1 ? (
+                      <Select
+                        onValueChange={field.handleChange}
+                        value={field.state.value}
+                      >
+                        <SelectTrigger id={field.name}>
+                          <SelectValue placeholder="Choose location" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {locations.map((location) => (
+                            <SelectItem
+                              key={location.slug}
+                              value={location.slug}
+                            >
+                              {location.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-sm font-medium">
+                        {selectedLocation?.name ?? "No location selected"}
+                      </div>
+                    )}
+                  </AppFormField>
+                )}
+              </form.Field>
+            ) : null}
 
             <form.Field name="mode">
               {(field) => (
