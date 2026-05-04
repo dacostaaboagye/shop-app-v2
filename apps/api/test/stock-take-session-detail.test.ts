@@ -58,7 +58,6 @@ function createLine(): StockTakeLine {
   return {
     appliedDelta: null,
     availableQuantity: 8,
-    barcode: "12345",
     countedQuantity: null,
     lineNumber: 1,
     note: null,

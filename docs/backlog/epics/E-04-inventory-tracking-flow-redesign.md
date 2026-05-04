@@ -98,7 +98,6 @@ The sheet should optimize for counting, not catalog review. Minimum columns:
 - product name
 - variant name
 - SKU
-- barcode, when present
 - unit of measure
 - counted quantity
 - notes
@@ -179,7 +178,8 @@ Suggested columns:
 - `product_slug_snapshot`
 - `variant_name_snapshot`
 - `variant_slug_snapshot`
-- `barcode_snapshot`
+- `barcode_snapshot`, internal compatibility only and not exposed on
+  stock-taking artifacts
 - `unit_of_measure_snapshot`
 - `expected_on_hand_snapshot`
 - `expected_reserved_snapshot`
@@ -281,16 +281,33 @@ and reconciliation.
 - Given the manager selects assisted count mode, when the sheet is generated, then current on-hand, reserved, and available quantities are included.
 - Given no products exist, when the manager downloads a sheet, then a blank stock-take sheet with manual rows is generated instead of blocking the flow.
 - Given a user lacks access to the location, when they request a stock-take sheet, then the API denies the request.
-- Given a completed stock-take CSV is uploaded for dry run, when rows contain invalid quantities, duplicate SKUs, or unknown SKUs, then row-level validation errors are returned and no stock is mutated.
+- Given a completed stock-take workbook or CSV is uploaded for dry run, when rows contain invalid quantities, duplicate SKUs, or unknown SKUs, then row-level validation errors are returned and no stock is mutated.
+- Given staff counted stock on paper, when a manager opens the stock-take session in the app, then they can enter counted quantities directly without converting the paper sheet into a CSV.
 - Given the dry run is valid, when the manager applies the stock take, then balances are updated transactionally and stock movements are appended for non-zero variances.
 - Given a counted quantity is below reserved quantity, when the manager applies the stock take, then the line is rejected with an actionable conflict message.
 
-### Minimum CSV columns
+### Stock-taking workbook
 
-Generated populated sheet:
+The primary offline artifact should be an editable XLSX workbook that is also
+printable. PDF remains optional print evidence, not the primary import format.
+CSV remains a technical fallback for integrations and power users.
+
+Workbook rules:
+
+- one stock-take session per workbook
+- one location per workbook
+- system-owned columns are locked or clearly marked read-only
+- user-editable columns are limited to counted quantity and notes
+- no barcode or QR columns in the stock-taking workflow
+- no product descriptions, prices, supplier data, tax data, or internal IDs
+- assisted mode may show system quantity columns
+- blind mode must hide system quantity columns
+- blank/manual rows are allowed but become review drafts, not products
+
+Generated populated sheet minimum columns:
 
 ```csv
-lineNumber,productName,variantName,sku,barcode,unitOfMeasure,countedQuantity,notes
+lineNumber,productName,variantName,sku,unitOfMeasure,countedQuantity,notes
 ```
 
 Assisted mode adds:
@@ -305,6 +322,19 @@ Blank sheet:
 lineNumber,productName,variantName,sku,unitOfMeasure,countedQuantity,notes
 ```
 
+### In-app count entry
+
+The system should also support direct count entry inside the stock-take session.
+This is the recovery path for teams that prefer paper counting but do not want
+to prepare an import file afterward.
+
+- The screen shows the same ordered rows as the workbook.
+- Users can search by product name, variant, or SKU.
+- Users can save counted quantities and notes incrementally.
+- The app validates missing counts, invalid quantities, duplicates, and unknown
+  manual rows before review.
+- Applying stock still requires the reviewed stock-take apply flow.
+
 ### PDF/booklet layout
 
 The PDF should be optimized for paper counting:
@@ -316,6 +346,7 @@ The PDF should be optimized for paper counting:
 - compact table rows
 - page numbers
 - signature area for counted by and reviewed by
+- no barcode or QR columns
 - no product descriptions
 - no prices
 - no internal IDs
@@ -358,7 +389,7 @@ Status: shipped in PR #120 on 2026-05-04.
 
 ### E-04-06: PDF booklet and variance report
 
-Status: PR #121 opened on 2026-05-04.
+Status: shipped in PR #121 on 2026-05-04.
 
 - Generate downloadable PDF booklet after the browser-printable booklet proves the workflow.
 - Generate final variance report after apply.
@@ -367,10 +398,39 @@ Status: PR #121 opened on 2026-05-04.
 
 ### E-04-07: Missing catalog from blank stock take
 
+Status: pending; depends on stakeholder confirmation of minimum catalog defaults.
+
 - Let managers review blank-sheet manual rows that do not map to existing SKUs.
-- Create missing catalog records only through an explicit review flow.
+- Convert manual rows into catalog intake drafts, not live products.
+- Create missing catalog records only after explicit review and completion of
+  required product/variant defaults.
 - Require minimum catalog defaults such as unit, cost price, and selling price.
-- Keep this out of the first stock-take release unless stakeholders confirm the defaults.
+- After draft approval, record the counted quantity as opening stock during
+  setup or as found-stock movement in a live system.
+- Keep automatic product creation out of scope.
+
+### E-04-08: Editable workbook and in-app count entry
+
+Status: selected on 2026-05-04 after PR #122 merged.
+
+- Generate an XLSX stock-taking workbook from the same stock-take session rows.
+- Make the workbook printable and uploadable without conversion.
+- Keep CSV import/export as a secondary technical format.
+- Add in-app counted quantity entry for users who counted on paper.
+- Preserve dry-run review, variance review, manager location scope, and
+  structured row-level validation.
+- Do not add barcode or QR columns to the stock-taking workflow.
+
+Implementation sub-slices:
+
+- E-04-08A: Remove barcode and QR fields from stock-taking sheets, imports,
+  PDFs, public DTOs, and tests while preserving any internal legacy snapshots.
+- E-04-08B: Add XLSX workbook generation from stock-take session rows with
+  printable layout and read-only system columns.
+- E-04-08C: Add XLSX workbook import by normalizing rows into the existing
+  stock-take dry-run validation path.
+- E-04-08D: Add in-app count entry so paper counts can be entered directly
+  without requiring file conversion.
 
 ## UAT scenarios
 
@@ -378,19 +438,22 @@ Status: PR #121 opened on 2026-05-04.
 2. Manager generates an assisted count sheet; system on-hand, reserved, available, and variance columns are present.
 3. Manager generates a sheet for a location with no products; the downloaded file contains 20 blank manual rows and no error.
 4. Manager without access to the selected location cannot generate or download its stock-take sheet.
-5. Staff complete a sheet with valid counts; dry run shows expected variances without mutating stock.
-6. Staff upload a sheet with duplicate SKUs, invalid quantities, and unknown SKUs; row-level errors are shown and no stock changes occur.
-7. Manager applies a valid reviewed stock take; balances update and stock movements are appended for non-zero differences.
-8. A counted quantity below reserved quantity is rejected with a safe actionable message.
-9. Re-applying an already applied stock take is rejected or idempotently returns the applied result without duplicate movements.
-10. A no-change line is retained as session evidence but does not create a movement row.
+5. Staff download the XLSX workbook, print or edit it, enter counts, upload the same file, and dry run shows expected variances without mutating stock.
+6. Staff count on paper, manager enters counts directly in the stock-take session, and dry run shows expected variances without requiring an import file.
+7. Staff upload a sheet with duplicate SKUs, invalid quantities, and unknown SKUs; row-level errors are shown and no stock changes occur.
+8. Manual rows for unknown products become catalog intake drafts that require review before any product is created.
+9. Manager applies a valid reviewed stock take; balances update and stock movements are appended for non-zero differences.
+10. A counted quantity below reserved quantity is rejected with a safe actionable message.
+11. Re-applying an already applied stock take is rejected or idempotently returns the applied result without duplicate movements.
+12. A no-change line is retained as session evidence but does not create a movement row.
 
 ## Definition of Done
 
 - E-04 stock-take contracts avoid raw internal IDs.
 - Backend route handlers validate input, enforce permissions, and delegate workflows to services/repositories.
 - Stock-take apply is transactional and preserves append-only movement evidence.
-- CSV generation and parsing have unit tests for populated, assisted, blind, and blank-sheet modes.
+- XLSX and CSV generation/parsing have unit tests for populated, assisted, blind, and blank-sheet modes.
+- In-app count entry uses the same validation and review path as file import.
 - API tests cover admin access, manager location-scope denial, dry-run non-mutation, apply mutation, conflict handling, and structured problem details.
 - Database tests cover session reference uniqueness, line uniqueness, non-negative quantities, status enum, and indexes.
 - Frontend handles loading, empty, error, pending, review, and success states.
@@ -403,7 +466,8 @@ Status: PR #121 opened on 2026-05-04.
 - How many blank manual rows should the blank sheet include by default: 20, 50, or configurable?
 - Should managers be allowed to apply partial stock takes, or must every generated line be counted or deliberately skipped?
 - Which role owns final approval: location manager only, admin only, or either with `inventory.write`?
-- Should PDF booklet generation ship with the first slice, or should CSV come first for faster value?
+- Should the workbook protect read-only columns with Excel sheet protection, or
+  should validation alone enforce system-owned fields after upload?
 
 ## Related PRs
 
@@ -413,3 +477,5 @@ Status: PR #121 opened on 2026-05-04.
 - E-04 stock-take sheet generation and printable booklet: PR #118.
 - E-04 stock-take import and dry run: PR #119.
 - E-04 apply reviewed stock take: PR #120.
+- E-04 stock-take PDF reports: PR #121.
+- E-04 stock-take location selector cleanup: PR #122.

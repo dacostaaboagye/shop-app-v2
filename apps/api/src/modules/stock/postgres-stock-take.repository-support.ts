@@ -58,7 +58,6 @@ export function buildStockTakeSessionDetail(input: {
 }
 
 export function mapStockTakeLineInsertToDto(input: {
-  barcodeSnapshot: string | null;
   expectedAvailableSnapshot: number;
   expectedOnHandSnapshot: number;
   expectedReservedSnapshot: number;
@@ -74,7 +73,6 @@ export function mapStockTakeLineInsertToDto(input: {
   return {
     appliedDelta: null,
     availableQuantity: input.expectedAvailableSnapshot,
-    barcode: input.barcodeSnapshot,
     countedQuantity: null,
     lineNumber: input.lineNumber,
     note: null,

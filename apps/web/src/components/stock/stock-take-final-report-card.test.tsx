@@ -59,7 +59,6 @@ function buildStockTake(
       {
         appliedDelta: status === "applied" ? 2 : null,
         availableQuantity: null,
-        barcode: null,
         countedQuantity: status === "applied" ? 12 : null,
         lineNumber: 1,
         note: null,

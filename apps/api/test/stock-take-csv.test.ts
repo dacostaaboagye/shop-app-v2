@@ -9,7 +9,7 @@ describe("stock take CSV", () => {
 
     assert.equal(
       firstLine(csv),
-      "lineNumber,productName,variantName,sku,barcode,unitOfMeasure,countedQuantity,notes",
+      "lineNumber,productName,variantName,sku,unitOfMeasure,countedQuantity,notes",
     );
     assert.doesNotMatch(csv, /systemOnHand/);
   });
@@ -19,7 +19,7 @@ describe("stock take CSV", () => {
 
     assert.equal(
       firstLine(csv),
-      "lineNumber,productName,variantName,sku,barcode,unitOfMeasure,countedQuantity,notes,systemOnHand,reservedQuantity,availableQuantity,variance",
+      "lineNumber,productName,variantName,sku,unitOfMeasure,countedQuantity,notes,systemOnHand,reservedQuantity,availableQuantity,variance",
     );
     assert.match(csv, /10,2,8/);
   });
@@ -38,7 +38,6 @@ describe("stock take CSV", () => {
     const csv = buildStockTakeCsv(
       createSession({
         lineOverride: {
-          barcode: "@barcode",
           note: "-note",
           productName: "=cmd",
           sku: "+sku",
@@ -49,7 +48,6 @@ describe("stock take CSV", () => {
 
     assert.match(csv, /,'=cmd,/);
     assert.match(csv, /'\+sku/);
-    assert.match(csv, /'@barcode/);
     assert.match(csv, /'-note/);
     assert.match(csv, /'\t=variant/);
   });
@@ -73,7 +71,6 @@ function createSession(input: {
       {
         appliedDelta: null,
         availableQuantity: blankSheet ? 0 : 8,
-        barcode: blankSheet ? null : "12345",
         countedQuantity: null,
         lineNumber: 1,
         note: null,

@@ -155,7 +155,6 @@ export class PostgresStockTakeRepository {
         appliedDelta: stockTakeLines.appliedDelta,
         appliedAt: stockTakeSessions.appliedAt,
         appliedByUserSlug: users.slug,
-        barcode: stockTakeLines.barcodeSnapshot,
         countedQuantity: stockTakeLines.countedQuantity,
         generatedAt: stockTakeSessions.generatedAt,
         generatedByUserSlug: stockTakeSessions.generatedBySlug,
@@ -197,7 +196,6 @@ export class PostgresStockTakeRepository {
       lines: rows.map((row) => ({
         availableQuantity: row.availableQuantity,
         appliedDelta: row.appliedDelta,
-        barcode: row.barcode,
         countedQuantity: row.countedQuantity,
         lineNumber: row.lineNumber,
         note: row.note,

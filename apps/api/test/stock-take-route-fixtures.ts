@@ -201,7 +201,6 @@ function createSessionDetail(
       {
         appliedDelta: status === "applied" ? 2 : null,
         availableQuantity: shouldMask ? null : 8,
-        barcode: "12345",
         countedQuantity: status === "applied" ? 12 : null,
         lineNumber: 1,
         note: null,

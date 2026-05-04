@@ -31,7 +31,6 @@ describe("stock take contracts", () => {
         {
           appliedDelta: null,
           availableQuantity: 8,
-          barcode: "12345",
           countedQuantity: null,
           lineNumber: 1,
           note: null,
@@ -61,6 +60,7 @@ describe("stock take contracts", () => {
     assert.equal("locationId" in detail, false);
     const firstLine = detail.lines[0];
     assert.ok(firstLine);
+    assert.equal("barcode" in firstLine, false);
     assert.equal("skuId" in firstLine, false);
   });
 
@@ -77,7 +77,6 @@ describe("stock take contracts", () => {
         {
           appliedDelta: null,
           availableQuantity: null,
-          barcode: "12345",
           countedQuantity: null,
           lineNumber: 1,
           note: null,

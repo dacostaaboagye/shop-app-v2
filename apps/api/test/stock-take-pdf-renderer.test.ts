@@ -107,7 +107,6 @@ function buildSession(
       {
         appliedDelta: null,
         availableQuantity: blankSheet ? 0 : 8,
-        barcode: null,
         countedQuantity: null,
         lineNumber: 1,
         note: null,

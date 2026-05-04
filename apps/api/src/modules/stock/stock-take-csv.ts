@@ -9,7 +9,6 @@ const blindHeaders = [
   "productName",
   "variantName",
   "sku",
-  "barcode",
   "unitOfMeasure",
   "countedQuantity",
   "notes",
@@ -61,7 +60,6 @@ function selectHeaders(session: StockTakeSessionDetail) {
 function rowForLine(line: StockTakeLine, mode: StockTakeMode) {
   return {
     availableQuantity: line.availableQuantity?.toString() ?? "",
-    barcode: line.barcode ?? "",
     countedQuantity: line.countedQuantity?.toString() ?? "",
     lineNumber: String(line.lineNumber),
     notes: line.note ?? "",
