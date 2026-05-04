@@ -83,9 +83,15 @@ export function StockTakeSessionHistory({
           />
         ) : (
           <StockTakeSessionHistoryList
-            deletingReference={cancelMutation.variables ?? null}
+            deletingReference={getActiveMutationReference(
+              cancelMutation.isPending,
+              cancelMutation.variables,
+            )}
             deleteError={cancelMutation.error}
-            downloadingReference={workbookMutation.variables ?? null}
+            downloadingReference={getActiveMutationReference(
+              workbookMutation.isPending,
+              workbookMutation.variables,
+            )}
             downloadError={workbookMutation.error}
             onDelete={(reference) => cancelMutation.mutate(reference)}
             onDownloadWorkbook={(reference) =>
@@ -226,4 +232,11 @@ function formatDateTime(value: string) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+export function getActiveMutationReference(
+  isPending: boolean,
+  reference?: string,
+) {
+  return isPending ? (reference ?? null) : null;
 }

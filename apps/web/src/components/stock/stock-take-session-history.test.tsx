@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { StockTakeSessionHistoryList } from "./stock-take-session-history";
+import {
+  getActiveMutationReference,
+  StockTakeSessionHistoryList,
+} from "./stock-take-session-history";
 
 Object.assign(globalThis, { React });
 
@@ -103,5 +106,14 @@ describe("StockTakeSessionHistoryList", () => {
     );
 
     assert.match(markup, /No stock-take sessions yet/);
+  });
+
+  it("clears action loading state when a mutation finishes", () => {
+    assert.equal(
+      getActiveMutationReference(true, "STKTAKE-2026-0001"),
+      "STKTAKE-2026-0001",
+    );
+    assert.equal(getActiveMutationReference(false, "STKTAKE-2026-0001"), null);
+    assert.equal(getActiveMutationReference(true), null);
   });
 });
