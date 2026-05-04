@@ -1,6 +1,8 @@
 import { AppError } from "../_core/errors/app-error.js";
 import type { PermissionResolutionService } from "../access-control/permission-resolution.service.js";
 import type { StockTakeService } from "./stock-take.service.js";
+import type { StockTakeLifecycleService } from "./stock-take-lifecycle.service.js";
+import type { StockTakeListService } from "./stock-take-list.service.js";
 
 export type StockTakeRouteDeps = {
   permissionService?: Pick<PermissionResolutionService, "assertHasPermission">;
@@ -12,6 +14,8 @@ export type StockTakeRouteDeps = {
     | "getAppliedVarianceReportSession"
     | "getSession"
   >;
+  stockTakeListService: Pick<StockTakeListService, "listSessions">;
+  stockTakeLifecycleService: Pick<StockTakeLifecycleService, "cancelSession">;
 };
 
 export function createUnavailableStockTakeDeps(): StockTakeRouteDeps {
@@ -30,6 +34,16 @@ export function createUnavailableStockTakeDeps(): StockTakeRouteDeps {
         throw unavailableStockTakeError();
       },
       async getAppliedVarianceReportSession() {
+        throw unavailableStockTakeError();
+      },
+    },
+    stockTakeListService: {
+      async listSessions() {
+        throw unavailableStockTakeError();
+      },
+    },
+    stockTakeLifecycleService: {
+      async cancelSession() {
         throw unavailableStockTakeError();
       },
     },

@@ -431,6 +431,9 @@ Implementation sub-slices:
   stock-take dry-run validation path.
 - E-04-08D: Add in-app count entry so paper counts can be entered directly
   without requiring file conversion.
+- E-04-08E: Add stock-take session history on the admin and manager
+  stock-taking workspaces, with audited deletion implemented as cancellation
+  for non-applied sessions.
 
 ## UAT scenarios
 
@@ -446,6 +449,9 @@ Implementation sub-slices:
 10. A counted quantity below reserved quantity is rejected with a safe actionable message.
 11. Re-applying an already applied stock take is rejected or idempotently returns the applied result without duplicate movements.
 12. A no-change line is retained as session evidence but does not create a movement row.
+13. Admins and managers can find previous stock-take sessions from the
+    stock-taking workspace, open the review page, print the booklet, and cancel
+    only non-applied sessions while applied evidence remains retained.
 
 ## Definition of Done
 

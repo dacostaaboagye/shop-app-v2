@@ -16,11 +16,15 @@ import { PostgresStockBalanceQueryRepository } from "./postgres-stock-balance-qu
 import { PostgresStockTakeRepository } from "./postgres-stock-take.repository.js";
 import { PostgresStockTakeApplyRepository } from "./postgres-stock-take-apply.repository.js";
 import { PostgresStockTakeImportRepository } from "./postgres-stock-take-import.repository.js";
+import { PostgresStockTakeLifecycleRepository } from "./postgres-stock-take-lifecycle.repository.js";
+import { PostgresStockTakeListRepository } from "./postgres-stock-take-list.repository.js";
 import { PostgresSupplyRequestRepository } from "./postgres-supply-request.repository.js";
 import { StockSupplyService } from "./stock-supply.service.js";
 import { StockTakeService } from "./stock-take.service.js";
 import { StockTakeApplyService } from "./stock-take-apply.service.js";
 import { StockTakeImportService } from "./stock-take-import.service.js";
+import { StockTakeLifecycleService } from "./stock-take-lifecycle.service.js";
+import { StockTakeListService } from "./stock-take-list.service.js";
 import {
   PostgresStockTransferDeliverySourceLookup,
   TransferDeliverySourceAdapter,
@@ -46,6 +50,8 @@ type StockRuntime = {
     stockBalanceQueryRepo: PostgresStockBalanceQueryRepository;
     stockCountRepo: AdminStockCountRepository;
     stockTakeApplyService: StockTakeApplyService;
+    stockTakeListService: StockTakeListService;
+    stockTakeLifecycleService: StockTakeLifecycleService;
     stockTakeRepository: PostgresStockTakeRepository;
     stockTakeImportService: StockTakeImportService;
     stockTakeService: StockTakeService;
@@ -74,6 +80,12 @@ export function createStockRuntime(
     databaseRuntime.db,
   );
   const stockTakeRepository = new PostgresStockTakeRepository(
+    databaseRuntime.db,
+  );
+  const stockTakeListRepository = new PostgresStockTakeListRepository(
+    databaseRuntime.db,
+  );
+  const stockTakeLifecycleRepository = new PostgresStockTakeLifecycleRepository(
     databaseRuntime.db,
   );
   const stockTakeImportRepository = new PostgresStockTakeImportRepository(
@@ -123,6 +135,10 @@ export function createStockRuntime(
       stockTakeApplyService: new StockTakeApplyService(
         stockTakeApplyRepository,
         stockTakeImportRepository,
+      ),
+      stockTakeListService: new StockTakeListService(stockTakeListRepository),
+      stockTakeLifecycleService: new StockTakeLifecycleService(
+        stockTakeLifecycleRepository,
       ),
       stockTakeImportService: new StockTakeImportService(
         stockTakeImportRepository,

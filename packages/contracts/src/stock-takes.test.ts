@@ -8,6 +8,10 @@ import {
   stockTakeImportDryRunResponseSchema,
   stockTakeSessionDetailSchema,
 } from "./stock-takes.js";
+import {
+  stockTakeSessionListQuerySchema,
+  stockTakeSessionListResponseSchema,
+} from "./stock-takes-list.js";
 
 describe("stock take contracts", () => {
   it("defaults stock-take creation to blind count mode", () => {
@@ -206,5 +210,46 @@ describe("stock take contracts", () => {
     const firstLine = response.lines[0];
     assert.ok(firstLine);
     assert.equal("skuId" in firstLine, false);
+  });
+
+  it("accepts stock-take session list filters and responses", () => {
+    const query = stockTakeSessionListQuerySchema.parse({
+      locationSlug: " downtown-store ",
+      mode: "blind",
+      page: "2",
+      pageSize: "10",
+      status: "generated",
+    });
+    const response = stockTakeSessionListResponseSchema.parse({
+      items: [
+        {
+          appliedAt: null,
+          appliedByUserSlug: null,
+          blankSheet: false,
+          bookletPdfUrl: "/api/admin/stock-takes/STKTAKE-00001/booklet.pdf",
+          generatedAt: "2026-05-04T10:00:00.000Z",
+          generatedByUserSlug: "manager",
+          lineCount: 12,
+          locationName: "Downtown Store",
+          locationSlug: "downtown-store",
+          mode: "blind",
+          printableBookletUrl: "/admin/stock/takes/STKTAKE-00001/booklet",
+          sheetCsvUrl: "/api/admin/stock-takes/STKTAKE-00001/sheet.csv",
+          status: "generated",
+          stockTakeReference: "STKTAKE-00001",
+          varianceReportPdfUrl: null,
+        },
+      ],
+      page: 2,
+      pageSize: 10,
+      totalCount: 1,
+    });
+    const firstItem = response.items[0];
+
+    assert.equal(query.locationSlug, "downtown-store");
+    assert.ok(firstItem);
+    assert.equal(firstItem.stockTakeReference, "STKTAKE-00001");
+    assert.equal("id" in firstItem, false);
+    assert.equal("locationId" in firstItem, false);
   });
 });

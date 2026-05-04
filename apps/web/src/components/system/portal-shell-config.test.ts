@@ -190,12 +190,16 @@ describe("portal-shell-config", () => {
     const stockTakes = getRouteItem("/admin/stock/takes");
     const transfers = getRouteItem("/admin/transfers");
 
+    assert.equal(stockLevels?.label, "Global stock levels");
     assert.equal(stockLevels?.requiredPermission, "admin.dashboard.view");
     assert.equal(stockLevels?.locationSelectorPermission, null);
+    assert.equal(reservations?.label, "Global reservations");
     assert.equal(reservations?.requiredPermission, "admin.dashboard.view");
     assert.equal(reservations?.locationSelectorPermission, null);
+    assert.equal(stockTakes?.label, "Global stock-takes");
     assert.equal(stockTakes?.requiredPermission, "inventory.write");
     assert.equal(stockTakes?.locationSelectorPermission, null);
+    assert.equal(transfers?.label, "Network transfers");
     assert.equal(transfers?.requiredPermission, "stock.supply.manage");
     assert.equal(transfers?.locationSelectorPermission, null);
   });

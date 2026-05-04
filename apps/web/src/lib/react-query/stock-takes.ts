@@ -5,6 +5,8 @@ import type {
   StockTakeImportDryRunRequest,
   StockTakeImportDryRunResponse,
   StockTakeMode,
+  StockTakeSessionListQuery,
+  StockTakeSessionListResponse,
   StockTakeSessionSummary as StockTakeSheetResponse,
 } from "@shop/contracts";
 import { fetchFile } from "@/lib/react-query/fetch-file";
@@ -21,6 +23,8 @@ export type {
   StockTakeLine,
   StockTakeMode,
   StockTakeSessionDetail as StockTakeDetailResponse,
+  StockTakeSessionListQuery,
+  StockTakeSessionListResponse,
   StockTakeSessionSummary as StockTakeSheetResponse,
   StockTakeStatus,
 } from "@shop/contracts";
@@ -38,6 +42,11 @@ export type StockTakeImportContentType =
 
 export const stockTakeQueryKey = (portal: StockTakePortal, reference: string) =>
   ["stock-takes", portal, reference] as const;
+
+export const stockTakeSessionsQueryKey = (
+  portal: StockTakePortal,
+  query: Partial<StockTakeSessionListQuery>,
+) => ["stock-takes", portal, "sessions", query] as const;
 
 export const stockTakeImportDryRunQueryKey = (
   portal: StockTakePortal,
@@ -66,6 +75,38 @@ export async function fetchStockTakeDetail(
   return fetchJson<StockTakeDetailResponse>(
     `/api/${portal}/stock-takes/${encodeURIComponent(reference)}`,
     undefined,
+    { auth: "required" },
+  );
+}
+
+export async function fetchStockTakeSessions(
+  portal: StockTakePortal,
+  query: StockTakeSessionListQuery,
+): Promise<StockTakeSessionListResponse> {
+  const params = new URLSearchParams({
+    page: String(query.page),
+    pageSize: String(query.pageSize),
+  });
+
+  if (query.locationSlug) params.set("locationSlug", query.locationSlug);
+  if (query.mode) params.set("mode", query.mode);
+  if (query.q) params.set("q", query.q);
+  if (query.status) params.set("status", query.status);
+
+  return fetchJson<StockTakeSessionListResponse>(
+    `/api/${portal}/stock-takes?${params.toString()}`,
+    undefined,
+    { auth: "required" },
+  );
+}
+
+export async function cancelStockTakeSession(
+  portal: StockTakePortal,
+  reference: string,
+): Promise<StockTakeSheetResponse> {
+  return fetchJson<StockTakeSheetResponse>(
+    `/api/${portal}/stock-takes/${encodeURIComponent(reference)}/cancel`,
+    { method: "POST" },
     { auth: "required" },
   );
 }
