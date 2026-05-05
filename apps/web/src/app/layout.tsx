@@ -18,8 +18,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="font-sans">
-      <body className="min-h-svh font-sans text-base leading-[1.55] text-foreground">
+    <html lang="en" className="font-sans" data-scroll-behavior="smooth">
+      <body
+        className="min-h-svh font-sans text-base leading-[1.55] text-foreground"
+        suppressHydrationWarning
+      >
         <AppProviders>{children}</AppProviders>
       </body>
     </html>
