@@ -3,12 +3,12 @@ import ExcelJS from "exceljs";
 
 const baseHeaders = [
   "line",
+  "counted",
+  "notes",
   "product",
   "variant",
   "sku",
   "unit",
-  "counted",
-  "notes",
 ] as const;
 
 const assistedHeaders = [
@@ -70,7 +70,7 @@ export async function toStockTakeXlsxFile(
     formatColumns: false,
     formatRows: false,
     insertRows: false,
-    selectLockedCells: true,
+    selectLockedCells: false,
     selectUnlockedCells: true,
   });
 
@@ -112,8 +112,8 @@ function applyMetadata(
     [
       "Instructions",
       session.blankSheet
-        ? "No active SKUs were found. Fill the blank rows for the physical count. Catalog creation remains a separate review step."
-        : "Fill only Counted quantity and Notes. System quantity columns are locked and will be validated after upload.",
+        ? "Fill the highlighted Counted quantity and Notes columns. No active SKUs were found, so catalog creation remains a separate review step."
+        : "Fill the highlighted Counted quantity and Notes columns only. The other columns are locked and will be validated after upload.",
     ],
   ] as const;
 
@@ -138,10 +138,17 @@ function applyHeaderRow(
     cell.value = headerLabels[header];
     cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
     cell.fill = {
-      fgColor: { argb: "FF1C5C57" },
+      fgColor: { argb: header === "counted" ? "FFB45309" : "FF1C5C57" },
       pattern: "solid",
       type: "pattern",
     };
+    if (header === "notes") {
+      cell.fill = {
+        fgColor: { argb: "FF2F6F64" },
+        pattern: "solid",
+        type: "pattern",
+      };
+    }
   });
 }
 
@@ -157,6 +164,13 @@ function applyDataRows(
       const cell = row.getCell(headerIndex + 1);
       cell.value = rowValues[header];
       cell.alignment = { vertical: "top", wrapText: true };
+      if (header === "counted" || header === "notes") {
+        cell.fill = {
+          fgColor: { argb: "FFFFF4CC" },
+          pattern: "solid",
+          type: "pattern",
+        };
+      }
       cell.protection = {
         locked: header !== "counted" && header !== "notes",
       };

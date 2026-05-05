@@ -142,8 +142,8 @@ async function buildWorkbookBase64(
 
   rows.forEach((row, index) => {
     const worksheetRow = worksheet.getRow(index + 10);
-    worksheetRow.getCell(6).value = row.counted;
-    worksheetRow.getCell(7).value = row.note;
+    worksheetRow.getCell(2).value = row.counted;
+    worksheetRow.getCell(3).value = row.note;
   });
 
   const buffer = await workbook.xlsx.writeBuffer();
