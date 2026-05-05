@@ -28,4 +28,17 @@ describe("problemDetailsSchema", () => {
 
     assert.equal(parsed.code, "payload_too_large");
   });
+
+  it("accepts rate limit problem details", () => {
+    const parsed = problemDetailsSchema.parse({
+      code: "rate_limited",
+      status: 429,
+      title: "Too Many Requests",
+      detail: "Too many requests were received from this client.",
+      requestId: "req_123",
+      timestamp: new Date().toISOString(),
+    });
+
+    assert.equal(parsed.code, "rate_limited");
+  });
 });

@@ -45,7 +45,11 @@ import { registerStockTakeRoutes } from "../modules/stock/stock-take.routes.js";
 import { registerStockTakeImportRoutes } from "../modules/stock/stock-take-import.routes.js";
 import { registerStockSupplyRoutes } from "../modules/stock/supply-request.routes.js";
 import { registerHealthRoutes } from "../modules/system/health/health.routes.js";
+import { registerGlobalRateLimit } from "./global-rate-limit.js";
 import { registerErrorHandling } from "./register-error-handling.js";
+
+const GLOBAL_RATE_LIMIT_MAX = 600;
+const GLOBAL_RATE_LIMIT_WINDOW_MS = 60_000;
 
 type CreateServerOptions = {
   accessControl?: Parameters<typeof registerRouteAuthorization>[1];
@@ -156,7 +160,11 @@ export function createServer(options: CreateServerOptions = {}) {
     referrerPolicy: { policy: "strict-origin-when-cross-origin" },
   });
   server.register(rateLimit, {
-    global: false, // Apply only to routes that opt-in via config
+    global: false, // Route-specific limits still opt in via config.
+  });
+  registerGlobalRateLimit(server, {
+    max: GLOBAL_RATE_LIMIT_MAX,
+    windowMs: GLOBAL_RATE_LIMIT_WINDOW_MS,
   });
   registerErrorHandling(server);
   registerRouteAuthorization(server, options.accessControl);

@@ -22,7 +22,10 @@ export function registerOAuthRoutes(
   dependencies: AuthRouteDependencies,
 ) {
   server.route({
-    config: { access: googleOAuthInitiateRoute.access },
+    config: {
+      access: googleOAuthInitiateRoute.access,
+      rateLimit: { max: 20, timeWindow: "15 minutes" },
+    },
     method: googleOAuthInitiateRoute.method,
     url: googleOAuthInitiateRoute.url,
     async handler(_request, reply) {
@@ -32,7 +35,10 @@ export function registerOAuthRoutes(
   });
 
   server.route({
-    config: { access: googleOAuthCallbackRoute.access },
+    config: {
+      access: googleOAuthCallbackRoute.access,
+      rateLimit: { max: 20, timeWindow: "15 minutes" },
+    },
     method: googleOAuthCallbackRoute.method,
     url: googleOAuthCallbackRoute.url,
     async handler(request, reply) {

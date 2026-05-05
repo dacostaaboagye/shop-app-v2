@@ -59,6 +59,20 @@ export function registerErrorHandling(server: FastifyInstance) {
       return reply.status(400).send(problem);
     }
 
+    if (isRateLimitError(error)) {
+      const problem = toProblemDetails(
+        new AppError({
+          code: "rate_limited",
+          detail:
+            "Too many requests were received from this client. Please wait and try again.",
+          statusCode: 429,
+          title: "Too Many Requests",
+        }),
+        request,
+      );
+      return reply.status(problem.status).send(problem);
+    }
+
     request.log.error({ err: error }, "Unhandled request failure");
     const problem = toUnexpectedProblemDetails(request);
     return reply.status(problem.status).send(problem);
@@ -71,5 +85,14 @@ function isBodyTooLargeError(error: unknown): error is { code: string } {
     error !== null &&
     "code" in error &&
     error.code === "FST_ERR_CTP_BODY_TOO_LARGE"
+  );
+}
+
+function isRateLimitError(error: unknown): error is { statusCode: 429 } {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "statusCode" in error &&
+    error.statusCode === 429
   );
 }

@@ -4,12 +4,7 @@ import type {
   AdminMediaUpdateRequest,
   CatalogMediaEntityType,
 } from "@shop/contracts";
-import {
-  ALLOWED_MEDIA_MIMES,
-  MAX_DOCUMENT_BYTES,
-  MAX_IMAGE_BYTES,
-  MAX_VIDEO_BYTES,
-} from "@shop/contracts";
+import { ALLOWED_MEDIA_MIMES } from "@shop/contracts";
 import type { R2StorageService } from "../../infrastructure/r2-storage.js";
 import { AppError } from "../_core/errors/app-error.js";
 import {
@@ -18,6 +13,13 @@ import {
   detectFileKind,
   MAGIC_BYTES_HEAD_SIZE,
 } from "../_core/file-magic.js";
+import {
+  assertStorageKeyMatchesEntity,
+  getLimitLabel,
+  getMaxBytes,
+  getMediaType,
+  storageUnavailable,
+} from "./catalog-media-validation.js";
 
 export type CatalogMediaRepository = {
   confirmMedia(input: {
@@ -114,6 +116,7 @@ export class CatalogMediaService {
         title: "Unsupported media type",
       });
     }
+    assertStorageKeyMatchesEntity(payload);
     // Single GetObject with Range bytes=0-15 verifies existence, returns
     // the full Content-Length, and gives us 16 bytes to sniff the format
     // against the claimed MIME. Replaces the old objectExists() HEAD; same
@@ -218,31 +221,4 @@ export class CatalogMediaService {
   ) {
     return this.repository.setPrimary(id, entityType, entitySlug, now);
   }
-}
-
-function getMediaType(mimeType: string): "document" | "image" | "video" {
-  if (mimeType.startsWith("video/")) return "video";
-  if (mimeType.startsWith("image/")) return "image";
-  return "document";
-}
-
-function getMaxBytes(mediaType: "document" | "image" | "video") {
-  if (mediaType === "video") return MAX_VIDEO_BYTES;
-  if (mediaType === "document") return MAX_DOCUMENT_BYTES;
-  return MAX_IMAGE_BYTES;
-}
-
-function getLimitLabel(mediaType: "document" | "image" | "video") {
-  if (mediaType === "video") return "100 MB video";
-  if (mediaType === "document") return "25 MB document";
-  return "10 MB image";
-}
-
-function storageUnavailable() {
-  return new AppError({
-    code: "internal_error",
-    detail: "Media storage is not configured. Set R2_* environment variables.",
-    statusCode: 503,
-    title: "Storage unavailable",
-  });
 }
