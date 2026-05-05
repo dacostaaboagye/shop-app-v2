@@ -113,7 +113,10 @@ export function registerAuthRoutes(
   });
 
   server.route({
-    config: { access: refreshRoute.access },
+    config: {
+      access: refreshRoute.access,
+      rateLimit: { max: 60, timeWindow: "15 minutes" },
+    },
     method: refreshRoute.method,
     url: refreshRoute.url,
     async handler(request, reply) {
@@ -131,7 +134,10 @@ export function registerAuthRoutes(
   });
 
   server.route({
-    config: { access: logoutRoute.access },
+    config: {
+      access: logoutRoute.access,
+      rateLimit: { max: 60, timeWindow: "15 minutes" },
+    },
     method: logoutRoute.method,
     url: logoutRoute.url,
     async handler(request, reply) {
