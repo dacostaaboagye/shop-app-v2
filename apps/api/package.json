@@ -31,6 +31,7 @@
     "@fastify/cors": "^11.2.0",
     "@fastify/helmet": "^13.0.2",
     "@fastify/rate-limit": "^10.3.0",
+    "@neondatabase/serverless": "^1.1.0",
     "@shop/contracts": "workspace:*",
     "@shop/database": "workspace:*",
     "@shop/domain": "workspace:*",
