@@ -15,10 +15,8 @@ import {
   addMissingCatalogLineErrors,
   normalizeSku,
 } from "./stock-take-import.service-support.js";
-import {
-  type ParsedStockTakeImportRow,
-  parseStockTakeImportCsv,
-} from "./stock-take-import-parser.js";
+import type { ParsedStockTakeImportRow } from "./stock-take-import-parser.js";
+import { parseStockTakeImportRequest } from "./stock-take-import-request.js";
 
 type StockTakeApplyRepository = Pick<PostgresStockTakeApplyRepository, "apply">;
 type StockTakeImportRepository = Pick<
@@ -40,7 +38,7 @@ export class StockTakeApplyService {
   }): Promise<StockTakeApplyResponse> {
     const snapshot = await this.importRepository.getSnapshot(input.reference);
     if (!snapshot) throw stockTakeApplyNotFound(input.reference);
-    const parsed = parseStockTakeImportCsv(input.request.csv);
+    const parsed = await parseStockTakeImportRequest(input.request);
     const errors = validateApplyRows(
       snapshot.lines,
       parsed.rows,
@@ -106,7 +104,8 @@ function stockTakeApplyValidationError(
 ): AppError {
   return new AppError({
     code: "validation_error",
-    detail: "The stock-take CSV has validation errors and cannot be applied.",
+    detail:
+      "The stock-take import file has validation errors and cannot be applied.",
     details: { errors },
     statusCode: 400,
     title: "Stock take apply validation failed",

@@ -30,7 +30,7 @@ export function StockTakeImportPreview({ rows }: StockTakeImportPreviewProps) {
       <CardContent>
         {rows.length === 0 ? (
           <AppEmptyState
-            description="Upload a CSV and run the preview to see row-level results."
+            description="Upload a workbook or CSV fallback and run the preview to see row-level results."
             title="No preview rows"
           />
         ) : (

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  buildStockTakeImportRequest,
   buildSummaryStats,
   getApplyDisabledReason,
   getDryRunReadinessMessage,
@@ -20,6 +21,22 @@ describe("stock take import review helpers", () => {
 
     assert.equal(resolveImportContentType(file), "text/csv");
     assert.equal(getImportFileSignature(file), "count.csv:19:0:text/csv");
+  });
+
+  it("builds binary-safe workbook import requests", async () => {
+    const file = new File([new Uint8Array([80, 75, 3, 4])], "count.xlsx", {
+      lastModified: 0,
+      type: "application/vnd.ms-excel",
+    });
+    const request = await buildStockTakeImportRequest(file);
+
+    assert.equal(
+      resolveImportContentType(file),
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    assert.equal(request.fileName, "count.xlsx");
+    assert.equal("workbookBase64" in request, true);
+    assert.equal("csv" in request, false);
   });
 
   it("builds clear dry-run status copy", () => {

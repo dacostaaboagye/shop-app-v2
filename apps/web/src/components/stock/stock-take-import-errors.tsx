@@ -20,8 +20,8 @@ export function StockTakeImportErrors({ errors }: StockTakeImportErrorsProps) {
       <CardHeader>
         <CardTitle>Error report</CardTitle>
         <CardDescription>
-          Rows listed here must be corrected in the CSV before the final import
-          can proceed.
+          Rows listed here must be corrected in the workbook or CSV fallback
+          before the final import can proceed.
         </CardDescription>
       </CardHeader>
       <CardContent>

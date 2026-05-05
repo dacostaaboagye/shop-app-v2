@@ -123,6 +123,18 @@ describe("stock take contracts", () => {
     assert.equal(request.fileName, "STKTAKE-2026-0001.csv");
   });
 
+  it("accepts stock-take workbook dry-run upload requests", () => {
+    const request = stockTakeImportDryRunRequestSchema.parse({
+      contentType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      fileName: "STKTAKE-2026-0001.xlsx",
+      workbookBase64: "UEsDBAo=",
+    });
+
+    assert.equal(request.fileName, "STKTAKE-2026-0001.xlsx");
+    assert.equal("csv" in request, false);
+  });
+
   it("requires reviewed confirmation for stock-take apply requests", () => {
     const request = stockTakeApplyRequestSchema.parse({
       contentType: "text/csv",
@@ -132,6 +144,19 @@ describe("stock take contracts", () => {
     });
 
     assert.equal(request.reviewed, true);
+  });
+
+  it("requires reviewed confirmation for stock-take workbook apply requests", () => {
+    const request = stockTakeApplyRequestSchema.parse({
+      contentType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      fileName: "STKTAKE-2026-0001.xlsx",
+      reviewed: true,
+      workbookBase64: "UEsDBAo=",
+    });
+
+    assert.equal(request.reviewed, true);
+    assert.equal("csv" in request, false);
   });
 
   it("keeps stock-take dry-run responses free of internal identifiers", () => {

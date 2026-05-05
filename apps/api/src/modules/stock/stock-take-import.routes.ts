@@ -43,6 +43,7 @@ const managerApplyRoute: RouteDefinition = {
   method: "POST",
   url: "/api/manager/stock-takes/:reference/apply",
 };
+const stockTakeImportBodyLimitBytes = 5_250_000;
 
 export function registerStockTakeImportRoutes(
   server: FastifyInstance,
@@ -61,6 +62,7 @@ function registerDryRunRoute(
   route: RouteDefinition,
 ) {
   server.route({
+    bodyLimit: stockTakeImportBodyLimitBytes,
     config: { access: route.access },
     method: route.method,
     url: route.url,
@@ -89,6 +91,7 @@ function registerApplyRoute(
   route: RouteDefinition,
 ) {
   server.route({
+    bodyLimit: stockTakeImportBodyLimitBytes,
     config: { access: route.access },
     method: route.method,
     url: route.url,

@@ -38,7 +38,8 @@ export type CreateStockTakeRequest = {
 
 export type StockTakeImportContentType =
   | "text/csv"
-  | "application/vnd.ms-excel";
+  | "application/vnd.ms-excel"
+  | "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 export const stockTakeQueryKey = (portal: StockTakePortal, reference: string) =>
   ["stock-takes", portal, reference] as const;

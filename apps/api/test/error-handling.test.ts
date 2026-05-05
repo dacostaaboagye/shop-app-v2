@@ -68,4 +68,28 @@ describe("error handling", () => {
     assert.equal(payload.detail, "The resource already exists.");
     assert.ok(payload.requestId);
   });
+
+  it("returns structured problem details for oversized request bodies", async () => {
+    const server = createServer();
+
+    server.post(
+      "/upload",
+      { config: { access: { kind: "public" } } },
+      async () => ({ ok: true }),
+    );
+
+    const response = await server.inject({
+      method: "POST",
+      payload: { body: "x".repeat(1_100_000) },
+      url: "/upload",
+    });
+
+    const payload = response.json();
+
+    assert.equal(response.statusCode, 413);
+    assert.equal(payload.code, "payload_too_large");
+    assert.equal(payload.status, 413);
+    assert.equal(payload.title, "Payload Too Large");
+    assert.ok(payload.requestId);
+  });
 });

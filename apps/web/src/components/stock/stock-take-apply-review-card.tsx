@@ -88,8 +88,9 @@ export function StockTakeApplyReviewCard({
             Apply reviewed stock-take
           </CardTitle>
           <CardDescription>
-            Apply the exact reviewed CSV to update stock balances. This action
-            is only enabled after a clean dry-run for the selected file.
+            Apply the exact reviewed workbook or CSV fallback to update stock
+            balances. This action is only enabled after a clean preview for the
+            selected file.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -157,7 +158,7 @@ export function StockTakeApplyReviewCard({
           <DialogHeader>
             <DialogTitle>Apply reviewed stock-take?</DialogTitle>
             <DialogDescription>
-              This will post the reviewed CSV to the apply endpoint and update
+              This will post the reviewed file to the apply endpoint and update
               stock balances after the server accepts it. Type the stock-take
               reference to confirm.
             </DialogDescription>

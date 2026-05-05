@@ -22,6 +22,20 @@ export function registerErrorHandling(server: FastifyInstance) {
   });
 
   server.setErrorHandler((error, request, reply) => {
+    if (isBodyTooLargeError(error)) {
+      const problem = toProblemDetails(
+        new AppError({
+          code: "payload_too_large",
+          detail:
+            "The request payload is too large. Use a smaller import file and try again.",
+          statusCode: 413,
+          title: "Payload Too Large",
+        }),
+        request,
+      );
+      return reply.status(problem.status).send(problem);
+    }
+
     if (error instanceof AppError) {
       const problem = toProblemDetails(error, request);
       return reply.status(problem.status).send(problem);
@@ -49,4 +63,13 @@ export function registerErrorHandling(server: FastifyInstance) {
     const problem = toUnexpectedProblemDetails(request);
     return reply.status(problem.status).send(problem);
   });
+}
+
+function isBodyTooLargeError(error: unknown): error is { code: string } {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "FST_ERR_CTP_BODY_TOO_LARGE"
+  );
 }

@@ -25,7 +25,7 @@ export function createStockTakeServer(input: {
     request: StockTakeCreateRequest;
     portal: "admin" | "manager";
   }) => void;
-  onDryRun?: (input: { reference: string }) => void;
+  onDryRun?: (input: { reference: string; request: unknown }) => void;
   onGetVarianceReport?: () => void;
   onGetSession?: () => void;
   onListSessions?: (input: {
@@ -134,7 +134,10 @@ export function createStockTakeServer(input: {
       },
       stockTakeImportService: {
         async dryRun(dryRunInput) {
-          input.onDryRun?.({ reference: dryRunInput.reference });
+          input.onDryRun?.({
+            reference: dryRunInput.reference,
+            request: dryRunInput.request,
+          });
           return createDryRunResponse();
         },
       },
