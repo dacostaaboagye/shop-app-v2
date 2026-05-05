@@ -46,6 +46,7 @@ export function StockTakeImportPanel({
   reference,
 }: StockTakeImportPanelProps) {
   const inputId = useId();
+  const [inputKey, setInputKey] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const dryRunMutation = useMutation({
@@ -67,11 +68,11 @@ export function StockTakeImportPanel({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileSearch className="size-4 text-primary" />
-          Import count CSV
+          Upload completed workbook
         </CardTitle>
         <CardDescription>
-          Upload the counted sheet to validate it against this stock-take.
-          Preview only. No stock has changed.
+          Upload the counted workbook or CSV fallback to validate it against
+          this stock-take. Preview only. No stock has changed.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -80,24 +81,27 @@ export function StockTakeImportPanel({
             className="text-sm font-medium text-foreground"
             htmlFor={inputId}
           >
-            CSV file
+            Workbook or CSV file
           </label>
           <Input
-            accept=".csv,text/csv,application/vnd.ms-excel"
+            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.csv,text/csv,application/vnd.ms-excel"
             disabled={dryRunMutation.isPending}
             id={inputId}
+            key={inputKey}
             onChange={(event) => {
               setFileError(null);
               onPreviewReset();
               const file = event.currentTarget.files?.[0] ?? null;
               setSelectedFile(file);
               onFileSignatureChange(file ? getImportFileSignature(file) : null);
+              setInputKey((key) => key + 1);
             }}
             type="file"
           />
           <p className="type-support text-muted-foreground">
-            Use a CSV exported from the stock-take sheet with SKU and counted
-            quantity columns.
+            Use the downloaded `.xlsx` workbook first. Save it after editing in
+            Excel, then select it again before running the preview. CSV remains
+            a fallback for integrations.
           </p>
           {fileError ? (
             <p className="text-sm font-medium text-destructive">{fileError}</p>
@@ -120,7 +124,9 @@ export function StockTakeImportPanel({
           disabled={dryRunMutation.isPending}
           onClick={() => {
             if (!selectedFile) {
-              setFileError("Choose a CSV file before running the preview.");
+              setFileError(
+                "Choose a workbook or CSV file before running the preview.",
+              );
               return;
             }
 
@@ -134,7 +140,7 @@ export function StockTakeImportPanel({
           ) : (
             <Upload data-icon="inline-start" />
           )}
-          Run dry-run
+          Run preview
         </Button>
       </CardFooter>
     </Card>

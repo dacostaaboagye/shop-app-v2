@@ -9,6 +9,7 @@ import type {
 } from "@/lib/react-query/stock-takes";
 
 export const STOCK_TAKE_IMPORT_CONTENT_TYPES = [
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "text/csv",
   "application/vnd.ms-excel",
 ] as const satisfies readonly StockTakeImportContentType[];
@@ -16,6 +17,10 @@ export const STOCK_TAKE_IMPORT_CONTENT_TYPES = [
 export function resolveImportContentType(
   file: File,
 ): StockTakeImportContentType {
+  if (file.name.toLowerCase().endsWith(".xlsx")) {
+    return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  }
+
   if (isStockTakeImportContentType(file.type)) {
     return file.type;
   }
@@ -35,8 +40,20 @@ export function getImportFileSignature(file: File) {
 export async function buildStockTakeImportRequest(
   file: File,
 ): Promise<StockTakeImportDryRunRequest> {
+  const contentType = resolveImportContentType(file);
+  if (
+    contentType ===
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  ) {
+    return {
+      contentType,
+      fileName: file.name,
+      workbookBase64: await fileToBase64(file),
+    };
+  }
+
   return {
-    contentType: resolveImportContentType(file),
+    contentType,
     csv: await file.text(),
     fileName: file.name,
   };
@@ -137,4 +154,16 @@ function isStockTakeImportContentType(
   value: string,
 ): value is StockTakeImportContentType {
   return STOCK_TAKE_IMPORT_CONTENT_TYPES.some((type) => type === value);
+}
+
+async function fileToBase64(file: File) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let binary = "";
+  const chunkSize = 0x8000;
+
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
+  }
+
+  return btoa(binary);
 }

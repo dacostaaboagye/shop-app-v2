@@ -26,7 +26,7 @@ describe("GeneratedSheetActions", () => {
 
     assert.match(markup, /Download workbook \(.xlsx\)/);
     assert.match(markup, /CSV fallback/);
-    assert.match(markup, /Review CSV import/);
+    assert.match(markup, /Review workbook import/);
     assert.ok(
       markup.indexOf("Download workbook (.xlsx)") <
         markup.indexOf("CSV fallback"),

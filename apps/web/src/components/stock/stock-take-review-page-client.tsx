@@ -110,7 +110,7 @@ export function StockTakeReviewPageClient({
         }
         backHref={toRoute(`/${portal}/stock/takes`)}
         backLabel="Stock-take workbooks"
-        description="Dry-run a counted CSV before any stock is adjusted. Preview only. No stock has changed."
+        description="Preview a completed workbook or CSV fallback before any stock is adjusted. No stock has changed."
         eyebrow="Stock-take import review"
         title={reference}
       />

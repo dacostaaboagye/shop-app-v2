@@ -115,7 +115,7 @@ export function GeneratedSheetActions({
             href={toRoute(getReviewUrl(sheet))}
           >
             <FileSearch data-icon="inline-start" />
-            Review CSV import
+            Review workbook import
           </Link>
           <Link
             className={cn(buttonVariants({ variant: "outline" }))}

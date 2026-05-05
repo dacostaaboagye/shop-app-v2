@@ -18,13 +18,14 @@ describe("stock take XLSX workbook", () => {
     );
     assert.equal(worksheet.getCell("B5").value, "May 4, 2026, 10:00 AM");
     assert.equal(worksheet.getCell("A9").value, "Line #");
-    assert.equal(worksheet.getCell("F9").value, "Counted quantity");
-    assert.equal(worksheet.getCell("G9").value, "Notes");
+    assert.equal(worksheet.getCell("B9").value, "Counted quantity");
+    assert.equal(worksheet.getCell("C9").value, "Notes");
     assert.equal(worksheet.getCell("H9").value, null);
-    assert.equal(worksheet.getCell("B10").value, "Rice");
+    assert.equal(worksheet.getCell("D10").value, "Rice");
     assert.notEqual(worksheet.getCell("A10").protection?.locked, false);
-    assert.equal(worksheet.getCell("F10").protection?.locked, false);
-    assert.equal(worksheet.getCell("G10").protection?.locked, false);
+    assert.equal(worksheet.getCell("B10").protection?.locked, false);
+    assert.equal(worksheet.getCell("C10").protection?.locked, false);
+    assert.equal(worksheet.getCell("B10").fill.type, "pattern");
   });
 
   it("adds assisted system quantity columns", async () => {
@@ -63,9 +64,9 @@ describe("stock take XLSX workbook", () => {
       (await toStockTakeXlsxFile(session)).body,
     );
 
-    assert.equal(worksheet.getCell("B10").value, "'=Rice");
-    assert.equal(worksheet.getCell("D10").value, "'+RICE-5KG");
-    assert.equal(worksheet.getCell("G10").value, "'@review");
+    assert.equal(worksheet.getCell("D10").value, "'=Rice");
+    assert.equal(worksheet.getCell("F10").value, "'+RICE-5KG");
+    assert.equal(worksheet.getCell("C10").value, "'@review");
   });
 });
 

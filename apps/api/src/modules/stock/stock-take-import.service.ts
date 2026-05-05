@@ -16,10 +16,8 @@ import {
   buildDryRunSummary,
   normalizeSku,
 } from "./stock-take-import.service-support.js";
-import {
-  type ParsedStockTakeImportRow,
-  parseStockTakeImportCsv,
-} from "./stock-take-import-parser.js";
+import type { ParsedStockTakeImportRow } from "./stock-take-import-parser.js";
+import { parseStockTakeImportRequest } from "./stock-take-import-request.js";
 
 type StockTakeImportRepository = Pick<
   PostgresStockTakeImportRepository,
@@ -42,7 +40,7 @@ export class StockTakeImportService {
       throw stockTakeConflict(input.reference, "cancelled");
     }
 
-    const parsed = parseStockTakeImportCsv(input.request.csv);
+    const parsed = await parseStockTakeImportRequest(input.request);
     const lineBySku = new Map(
       snapshot.lines.map((line) => [normalizeSku(line.sku), line]),
     );

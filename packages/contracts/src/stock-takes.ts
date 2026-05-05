@@ -34,7 +34,7 @@ export const stockTakeReferenceParamsSchema = z.object({
   reference: z.string().trim().min(1).max(40),
 });
 
-export const stockTakeImportDryRunRequestSchema = z
+const stockTakeImportCsvRequestSchema = z
   .object({
     contentType: z.enum(["text/csv", "application/vnd.ms-excel"]),
     csv: z.string().min(1).max(1_000_000),
@@ -42,10 +42,29 @@ export const stockTakeImportDryRunRequestSchema = z
   })
   .strict();
 
-export const stockTakeApplyRequestSchema =
-  stockTakeImportDryRunRequestSchema.extend({
+const stockTakeImportXlsxRequestSchema = z
+  .object({
+    contentType: z.literal(
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ),
+    fileName: z.string().trim().min(1).max(240),
+    workbookBase64: z.string().min(1).max(5_000_000),
+  })
+  .strict();
+
+export const stockTakeImportDryRunRequestSchema = z.discriminatedUnion(
+  "contentType",
+  [stockTakeImportCsvRequestSchema, stockTakeImportXlsxRequestSchema],
+);
+
+export const stockTakeApplyRequestSchema = z.discriminatedUnion("contentType", [
+  stockTakeImportCsvRequestSchema.extend({
     reviewed: z.literal(true),
-  });
+  }),
+  stockTakeImportXlsxRequestSchema.extend({
+    reviewed: z.literal(true),
+  }),
+]);
 
 export const stockTakeSessionSummarySchema = z.object({
   appliedAt: z.iso.datetime().nullable(),
