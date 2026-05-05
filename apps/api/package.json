@@ -5,6 +5,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "pnpm lint && pnpm typecheck && pnpm test",
+    "db:migrate:local": "tsx --env-file ../../.env.local scripts/migrate.ts",
     "db:seed-access-control": "tsx scripts/seed-access-control.ts",
     "db:seed-access-control:local": "tsx --env-file ../../.env.local scripts/seed-access-control.ts",
     "db:seed-admin": "tsx scripts/seed-admin.ts",
