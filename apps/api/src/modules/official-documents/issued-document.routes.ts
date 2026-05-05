@@ -42,6 +42,8 @@ const sendSalesDocumentEmailRoute: RouteDefinition = {
   url: "/api/documents/sales/:reference/send-email",
 };
 
+const sendSalesDocumentEmailRateLimit = { max: 5, timeWindow: "15 minutes" };
+
 const getGtnSnapshotRoute: RouteDefinition = {
   access: { kind: "authenticated" },
   method: "GET",
@@ -120,7 +122,10 @@ export function registerIssuedDocumentRoutes(
   });
 
   server.route({
-    config: { access: sendSalesDocumentEmailRoute.access },
+    config: {
+      access: sendSalesDocumentEmailRoute.access,
+      rateLimit: sendSalesDocumentEmailRateLimit,
+    },
     method: sendSalesDocumentEmailRoute.method,
     url: sendSalesDocumentEmailRoute.url,
     async handler(request) {

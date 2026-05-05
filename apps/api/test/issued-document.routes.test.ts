@@ -94,6 +94,27 @@ describe("issued document routes", () => {
     ]);
   });
 
+  it("limits repeated official sales document email sends", async () => {
+    const calls: IssuedDocumentCall[] = [];
+    const server = createIssuedDocumentServer(calls);
+
+    const responses = await Promise.all(
+      Array.from({ length: 6 }, () =>
+        server.inject({
+          headers: { authorization: bearerToken() },
+          method: "POST",
+          url: "/api/documents/sales/INV%2F2026%2F000001/send-email",
+        }),
+      ),
+    );
+
+    const limitedResponse = responses.at(-1);
+    assert.ok(limitedResponse);
+    assert.equal(limitedResponse.statusCode, 429);
+    assert.equal(limitedResponse.json().code, "rate_limited");
+    assert.equal(calls.length, 5);
+  });
+
   it("downloads the official GTN PDF from the issued snapshot", async () => {
     const calls: IssuedDocumentCall[] = [];
     const server = createIssuedDocumentServer(calls);

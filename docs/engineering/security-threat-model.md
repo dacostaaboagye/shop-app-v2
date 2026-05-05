@@ -46,7 +46,9 @@ Protect inventory, financial documents, operational evidence, user identities, a
 
 1. Add a global API rate-limit backstop while preserving problem-details errors.
 2. Keep the existing API/web CSP, CORS fail-closed behavior, and logger redaction documented as non-regression requirements.
-3. Add follow-up tickets for endpoint-specific rate limits, guessed-reference authorization tests, webhook timestamp replay checks, and stock workflow idempotency tests.
+3. Enforce route-level `config.rateLimit` settings with structured problem-details responses.
+4. Add endpoint-specific outbound-send limits for admin test emails, admin communications, supplier portal invites, and sales document email sends.
+5. Add follow-up tickets for remaining endpoint-specific limits on imports, reports, downloads, and webhooks; guessed-reference authorization tests; webhook timestamp replay checks; and stock workflow idempotency tests.
 
 ## Non-Regression Requirements
 
