@@ -73,6 +73,21 @@ export function registerErrorHandling(server: FastifyInstance) {
       return reply.status(problem.status).send(problem);
     }
 
+    if (isDatabaseConnectivityError(error)) {
+      request.log.error({ err: error }, "Database connectivity failure");
+      const problem = toProblemDetails(
+        new AppError({
+          code: "internal_error",
+          detail:
+            "The service cannot reach the database right now. Please try again shortly.",
+          statusCode: 503,
+          title: "Service Unavailable",
+        }),
+        request,
+      );
+      return reply.status(problem.status).send(problem);
+    }
+
     request.log.error({ err: error }, "Unhandled request failure");
     const problem = toUnexpectedProblemDetails(request);
     return reply.status(problem.status).send(problem);
@@ -95,4 +110,48 @@ function isRateLimitError(error: unknown): error is { statusCode: 429 } {
     "statusCode" in error &&
     error.statusCode === 429
   );
+}
+
+function isDatabaseConnectivityError(error: unknown): boolean {
+  return isDatabaseConnectivityErrorWithDepth(error, 0);
+}
+
+function isDatabaseConnectivityErrorWithDepth(
+  error: unknown,
+  depth: number,
+): boolean {
+  if (depth > 4) {
+    return false;
+  }
+
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+
+  const code = "code" in error ? error.code : undefined;
+  if (
+    code === "ECONNREFUSED" ||
+    code === "ECONNRESET" ||
+    code === "ENOTFOUND" ||
+    code === "ETIMEDOUT"
+  ) {
+    return true;
+  }
+
+  if ("message" in error && typeof error.message === "string") {
+    const message = error.message.toLowerCase();
+    if (
+      message.includes("connection terminated due to connection timeout") ||
+      message.includes("connection terminated unexpectedly") ||
+      message.includes("timeout exceeded when trying to connect")
+    ) {
+      return true;
+    }
+  }
+
+  if ("cause" in error) {
+    return isDatabaseConnectivityErrorWithDepth(error.cause, depth + 1);
+  }
+
+  return false;
 }

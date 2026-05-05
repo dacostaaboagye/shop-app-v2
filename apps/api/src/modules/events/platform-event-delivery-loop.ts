@@ -2,6 +2,9 @@ import type { PlatformEventDeliveryService } from "./platform-event-delivery.ser
 
 type PlatformEventDeliveryLoopOptions = {
   batchSize?: number;
+  logger?: {
+    error: (details: object, message: string) => void;
+  };
   pollIntervalMs?: number;
 };
 
@@ -52,15 +55,22 @@ export class PlatformEventDeliveryLoop {
       this.timer = null;
     }
 
-    this.activeRun = this.runOnce().finally(() => {
-      this.activeRun = null;
-      if (!this.stopped) {
-        this.timer = setTimeout(
-          () => this.scheduleNow(),
-          this.options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS,
+    this.activeRun = this.runOnce()
+      .catch((error: unknown) => {
+        this.options.logger?.error(
+          { err: error },
+          "Platform event delivery loop failed; it will retry on the next poll",
         );
-      }
-    });
+      })
+      .finally(() => {
+        this.activeRun = null;
+        if (!this.stopped) {
+          this.timer = setTimeout(
+            () => this.scheduleNow(),
+            this.options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS,
+          );
+        }
+      });
   }
 
   private async runOnce() {

@@ -92,4 +92,59 @@ describe("error handling", () => {
     assert.equal(payload.title, "Payload Too Large");
     assert.ok(payload.requestId);
   });
+
+  it("returns structured 503 details for database connectivity failures", async () => {
+    const server = createServer();
+
+    server.get(
+      "/db-timeout",
+      { config: { access: { kind: "public" } } },
+      async () => {
+        throw new Error("Connection terminated due to connection timeout");
+      },
+    );
+
+    const response = await server.inject({
+      method: "GET",
+      url: "/db-timeout",
+    });
+
+    const payload = response.json();
+
+    assert.equal(response.statusCode, 503);
+    assert.equal(payload.code, "internal_error");
+    assert.equal(payload.status, 503);
+    assert.equal(payload.title, "Service Unavailable");
+    assert.equal(
+      payload.detail,
+      "The service cannot reach the database right now. Please try again shortly.",
+    );
+    assert.ok(payload.requestId);
+  });
+
+  it("returns structured 503 details for wrapped database connectivity failures", async () => {
+    const server = createServer();
+
+    server.get(
+      "/wrapped-db-timeout",
+      { config: { access: { kind: "public" } } },
+      async () => {
+        throw new Error("Failed query: select * from users", {
+          cause: new Error("Connection terminated unexpectedly"),
+        });
+      },
+    );
+
+    const response = await server.inject({
+      method: "GET",
+      url: "/wrapped-db-timeout",
+    });
+
+    const payload = response.json();
+
+    assert.equal(response.statusCode, 503);
+    assert.equal(payload.code, "internal_error");
+    assert.equal(payload.status, 503);
+    assert.equal(payload.title, "Service Unavailable");
+  });
 });
