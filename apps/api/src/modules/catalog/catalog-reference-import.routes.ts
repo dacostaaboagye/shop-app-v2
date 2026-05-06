@@ -39,6 +39,12 @@ const routes = {
   } satisfies RouteDefinition,
 };
 
+export const catalogReferenceImportUploadRateLimit = {
+  groupId: "catalog-reference-import-upload",
+  max: 5,
+  timeWindow: "15 minutes",
+};
+
 export function registerCatalogReferenceImportRoutes(
   server: FastifyInstance,
   dependencies: CatalogReferenceImportRouteDependencies = createUnavailableDependencies(),
@@ -66,7 +72,10 @@ export function registerCatalogReferenceImportRoutes(
   });
 
   server.route({
-    config: { access: routes.brandUpload.access },
+    config: {
+      access: routes.brandUpload.access,
+      rateLimit: catalogReferenceImportUploadRateLimit,
+    },
     method: routes.brandUpload.method,
     url: routes.brandUpload.url,
     async handler(request) {
@@ -85,7 +94,10 @@ export function registerCatalogReferenceImportRoutes(
   });
 
   server.route({
-    config: { access: routes.categoryUpload.access },
+    config: {
+      access: routes.categoryUpload.access,
+      rateLimit: catalogReferenceImportUploadRateLimit,
+    },
     method: routes.categoryUpload.method,
     url: routes.categoryUpload.url,
     async handler(request) {

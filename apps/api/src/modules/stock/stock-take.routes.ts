@@ -53,6 +53,18 @@ const managerReadRoute: RouteDefinition = {
   url: "/api/manager/stock-takes/:reference",
 };
 
+export const stockTakeCreateRateLimit = {
+  groupId: "stock-take-create",
+  max: 10,
+  timeWindow: "15 minutes",
+};
+
+export const stockTakeSheetDownloadRateLimit = {
+  groupId: "stock-take-sheet-download",
+  max: 30,
+  timeWindow: "1 minute",
+};
+
 export function registerStockTakeRoutes(
   server: FastifyInstance,
   deps: StockTakeRouteDeps = createUnavailableStockTakeDeps(),
@@ -62,7 +74,10 @@ export function registerStockTakeRoutes(
   registerStockTakeXlsxRoutes(server, deps);
 
   server.route({
-    config: { access: adminCreateRoute.access },
+    config: {
+      access: adminCreateRoute.access,
+      rateLimit: stockTakeCreateRateLimit,
+    },
     method: adminCreateRoute.method,
     url: adminCreateRoute.url,
     async handler(request) {
@@ -80,7 +95,10 @@ export function registerStockTakeRoutes(
   });
 
   server.route({
-    config: { access: managerCreateRoute.access },
+    config: {
+      access: managerCreateRoute.access,
+      rateLimit: stockTakeCreateRateLimit,
+    },
     method: managerCreateRoute.method,
     url: managerCreateRoute.url,
     async handler(request) {
@@ -153,7 +171,10 @@ function registerCsvRoutes(
   route: RouteDefinition,
 ) {
   server.route({
-    config: { access: route.access },
+    config: {
+      access: route.access,
+      rateLimit: stockTakeSheetDownloadRateLimit,
+    },
     method: route.method,
     url: route.url,
     async handler(request, reply) {

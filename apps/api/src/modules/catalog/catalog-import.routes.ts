@@ -18,6 +18,18 @@ import {
   buildCatalogImportTemplateCsv,
 } from "./catalog-import-template.js";
 
+export const catalogImportUploadRateLimit = {
+  groupId: "catalog-import-upload",
+  max: 5,
+  timeWindow: "15 minutes",
+};
+
+export const catalogImportReportRateLimit = {
+  groupId: "catalog-import-report",
+  max: 30,
+  timeWindow: "1 minute",
+};
+
 export function registerCatalogImportRoutes(
   server: FastifyInstance,
   dependencies: CatalogImportRouteDependencies = createUnavailableCatalogImportDependencies(),
@@ -35,7 +47,10 @@ export function registerCatalogImportRoutes(
   });
 
   server.route({
-    config: { access: catalogImportRoutes.start.access },
+    config: {
+      access: catalogImportRoutes.start.access,
+      rateLimit: catalogImportUploadRateLimit,
+    },
     method: catalogImportRoutes.start.method,
     url: catalogImportRoutes.start.url,
     async handler(request) {
@@ -64,7 +79,10 @@ export function registerCatalogImportRoutes(
   });
 
   server.route({
-    config: { access: catalogImportRoutes.report.access },
+    config: {
+      access: catalogImportRoutes.report.access,
+      rateLimit: catalogImportReportRateLimit,
+    },
     method: catalogImportRoutes.report.method,
     url: catalogImportRoutes.report.url,
     async handler(request) {

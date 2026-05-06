@@ -42,6 +42,12 @@ const sendSalesDocumentEmailRoute: RouteDefinition = {
   url: "/api/documents/sales/:reference/send-email",
 };
 
+export const issuedDocumentDownloadRateLimit = {
+  groupId: "issued-document-download",
+  max: 30,
+  timeWindow: "1 minute",
+};
+
 const sendSalesDocumentEmailRateLimit = { max: 5, timeWindow: "15 minutes" };
 
 const getGtnSnapshotRoute: RouteDefinition = {
@@ -97,7 +103,10 @@ export function registerIssuedDocumentRoutes(
   });
 
   server.route({
-    config: { access: downloadSalesDocumentRoute.access },
+    config: {
+      access: downloadSalesDocumentRoute.access,
+      rateLimit: issuedDocumentDownloadRateLimit,
+    },
     method: downloadSalesDocumentRoute.method,
     url: downloadSalesDocumentRoute.url,
     async handler(request, reply) {
@@ -142,7 +151,10 @@ export function registerIssuedDocumentRoutes(
   });
 
   server.route({
-    config: { access: downloadGtnDocumentRoute.access },
+    config: {
+      access: downloadGtnDocumentRoute.access,
+      rateLimit: issuedDocumentDownloadRateLimit,
+    },
     method: downloadGtnDocumentRoute.method,
     url: downloadGtnDocumentRoute.url,
     async handler(request, reply) {
