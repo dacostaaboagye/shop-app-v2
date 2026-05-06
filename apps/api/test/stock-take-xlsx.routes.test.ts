@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { stockTakeXlsxDownloadRateLimit } from "../src/modules/stock/stock-take-xlsx.routes.js";
 import {
   authHeaders,
   createStockTakeServer,
@@ -44,5 +45,40 @@ describe("stock take XLSX routes", () => {
 
     assert.equal(response.statusCode, 403);
     assert.equal(state.getSessionCalls, 0);
+  });
+
+  it("limits workbook downloads before rendering more workbooks", async () => {
+    let getSessionCalls = 0;
+    const server = createStockTakeServer({
+      onGetSession() {
+        getSessionCalls += 1;
+      },
+    });
+
+    const responses = await Promise.all(
+      Array.from({ length: stockTakeXlsxDownloadRateLimit.max + 1 }, () =>
+        server.inject({
+          headers: authHeaders(),
+          method: "GET",
+          url: "/api/admin/stock-takes/STKTAKE-2026-0001/sheet.xlsx",
+        }),
+      ),
+    );
+
+    const limitedResponse = responses.find(
+      (response) => response.statusCode === 429,
+    );
+    assert.ok(limitedResponse);
+    assert.equal(limitedResponse.statusCode, 429);
+    assert.equal(limitedResponse.json().code, "rate_limited");
+    assert.equal(getSessionCalls, stockTakeXlsxDownloadRateLimit.max);
+  });
+
+  it("declares a dedicated rate limit for generated workbook downloads", () => {
+    assert.deepEqual(stockTakeXlsxDownloadRateLimit, {
+      groupId: "stock-take-xlsx-download",
+      max: 30,
+      timeWindow: "1 minute",
+    });
   });
 });

@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { AppError } from "../src/modules/_core/errors/app-error.js";
 import { issueAccessToken } from "../src/modules/auth/access-token.js";
+import {
+  catalogImportReportRateLimit,
+  catalogImportUploadRateLimit,
+} from "../src/modules/catalog/catalog-import.routes.js";
 import { createServer } from "../src/server/create-server.js";
 
 describe("catalog import routes", () => {
@@ -56,6 +60,117 @@ describe("catalog import routes", () => {
     assert.equal(response.statusCode, 200);
     assert.equal(response.json().jobReference, "CIMP-00001");
     assert.equal("jobId" in response.json(), false);
+  });
+
+  it("limits import uploads before parsing another catalog file", async () => {
+    let importCalls = 0;
+    const server = createAuthorizedServer({
+      catalogImport: {
+        catalogImportService: {
+          async getJob() {
+            return null;
+          },
+          async getReport() {
+            return null;
+          },
+          async startImport(input) {
+            importCalls += 1;
+            return {
+              acceptedAt: input.now.toISOString(),
+              fileName: input.fileName,
+              jobReference: "CIMP-00001",
+              maxRows: 1000,
+              status: "completed",
+            };
+          },
+        },
+      },
+    });
+
+    const responses = await Promise.all(
+      Array.from({ length: catalogImportUploadRateLimit.max + 1 }, () =>
+        server.inject({
+          headers: authHeaders(),
+          method: "POST",
+          payload: {
+            contentType: "text/csv",
+            csv: "productName,variantName,sku,unitOfMeasure,costPrice,sellingPrice",
+            fileName: "catalog.csv",
+          },
+          url: "/api/admin/catalog/imports",
+        }),
+      ),
+    );
+
+    const limitedResponse = responses.find(
+      (response) => response.statusCode === 429,
+    );
+    assert.ok(limitedResponse);
+    assert.equal(limitedResponse.statusCode, 429);
+    assert.equal(limitedResponse.json().code, "rate_limited");
+    assert.equal(importCalls, catalogImportUploadRateLimit.max);
+  });
+
+  it("limits import report downloads before loading another report", async () => {
+    let reportCalls = 0;
+    const server = createAuthorizedServer({
+      catalogImport: {
+        catalogImportService: {
+          async getJob() {
+            return null;
+          },
+          async getReport(reference) {
+            reportCalls += 1;
+            return {
+              failedRows: [],
+              generatedAt: "2026-05-03T12:00:00.000Z",
+              jobReference: reference,
+              summary: {
+                invalidRows: 0,
+                maxRows: 1000,
+                totalRows: 0,
+                truncated: false,
+                validRows: 0,
+              },
+            };
+          },
+          async startImport() {
+            throw new Error("startImport should not be called.");
+          },
+        },
+      },
+    });
+
+    const responses = await Promise.all(
+      Array.from({ length: catalogImportReportRateLimit.max + 1 }, () =>
+        server.inject({
+          headers: authHeaders(),
+          method: "GET",
+          url: "/api/admin/catalog/imports/CIMP-00001/report",
+        }),
+      ),
+    );
+
+    const limitedResponse = responses.find(
+      (response) => response.statusCode === 429,
+    );
+    assert.ok(limitedResponse);
+    assert.equal(limitedResponse.statusCode, 429);
+    assert.equal(limitedResponse.json().code, "rate_limited");
+    assert.equal(reportCalls, catalogImportReportRateLimit.max);
+  });
+
+  it("declares dedicated rate limits for expensive catalog import routes", () => {
+    assert.deepEqual(catalogImportUploadRateLimit, {
+      groupId: "catalog-import-upload",
+      max: 5,
+      timeWindow: "15 minutes",
+    });
+    assert.deepEqual(catalogImportReportRateLimit, {
+      groupId: "catalog-import-report",
+      max: 30,
+      timeWindow: "1 minute",
+    });
   });
 
   it("returns 404 for missing job status", async () => {

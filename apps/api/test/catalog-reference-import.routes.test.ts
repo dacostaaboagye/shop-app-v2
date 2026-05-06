@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { AppError } from "../src/modules/_core/errors/app-error.js";
 import { issueAccessToken } from "../src/modules/auth/access-token.js";
+import { catalogReferenceImportUploadRateLimit } from "../src/modules/catalog/catalog-reference-import.routes.js";
 import { createServer } from "../src/server/create-server.js";
 
 describe("catalog reference import routes", () => {
@@ -53,6 +54,82 @@ describe("catalog reference import routes", () => {
     assert.equal(category.json().summary.importedRows, 1);
   });
 
+  it("limits reference import uploads before importing more rows", async () => {
+    let importCalls = 0;
+    const server = createAuthorizedServer({
+      onImport() {
+        importCalls += 1;
+      },
+    });
+
+    const responses = await Promise.all(
+      Array.from(
+        { length: catalogReferenceImportUploadRateLimit.max + 1 },
+        () =>
+          server.inject({
+            headers: authHeaders(),
+            method: "POST",
+            payload: {
+              contentType: "text/csv",
+              csv: "name,status\nAtlas Imports,active",
+              fileName: "brands.csv",
+            },
+            url: "/api/admin/catalog/brands/imports",
+          }),
+      ),
+    );
+
+    const limitedResponse = responses.find(
+      (response) => response.statusCode === 429,
+    );
+    assert.ok(limitedResponse);
+    assert.equal(limitedResponse.statusCode, 429);
+    assert.equal(limitedResponse.json().code, "rate_limited");
+    assert.equal(importCalls, catalogReferenceImportUploadRateLimit.max);
+  });
+
+  it("limits category import uploads before importing more rows", async () => {
+    let importCalls = 0;
+    const server = createAuthorizedServer({
+      onImport() {
+        importCalls += 1;
+      },
+    });
+
+    const responses = await Promise.all(
+      Array.from(
+        { length: catalogReferenceImportUploadRateLimit.max + 1 },
+        () =>
+          server.inject({
+            headers: authHeaders(),
+            method: "POST",
+            payload: {
+              contentType: "text/csv",
+              csv: "name,status\nFootwear,active",
+              fileName: "categories.csv",
+            },
+            url: "/api/admin/catalog/categories/imports",
+          }),
+      ),
+    );
+
+    const limitedResponse = responses.find(
+      (response) => response.statusCode === 429,
+    );
+    assert.ok(limitedResponse);
+    assert.equal(limitedResponse.statusCode, 429);
+    assert.equal(limitedResponse.json().code, "rate_limited");
+    assert.equal(importCalls, catalogReferenceImportUploadRateLimit.max);
+  });
+
+  it("declares a dedicated rate limit for reference import uploads", () => {
+    assert.deepEqual(catalogReferenceImportUploadRateLimit, {
+      groupId: "catalog-reference-import-upload",
+      max: 5,
+      timeWindow: "15 minutes",
+    });
+  });
+
   it("enforces separate brand and category permissions", async () => {
     const server = createAuthorizedServer({
       denyPermission: "catalog.brands.manage",
@@ -100,6 +177,7 @@ describe("catalog reference import routes", () => {
 
 type ServerOptions = {
   denyPermission?: string;
+  onImport?: () => void;
 };
 
 function createAuthorizedServer(options: ServerOptions = {}) {
@@ -123,10 +201,12 @@ function createAuthorizedServer(options: ServerOptions = {}) {
         },
         async importBrands(input) {
           assert.equal(input.actor.userSlug, "admin-user");
+          options.onImport?.();
           return response("brand", input.fileName);
         },
         async importCategories(input) {
           assert.equal(input.actor.userSlug, "admin-user");
+          options.onImport?.();
           return response("category", input.fileName);
         },
       },

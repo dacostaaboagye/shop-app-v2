@@ -45,6 +45,12 @@ const managerApplyRoute: RouteDefinition = {
 };
 const stockTakeImportBodyLimitBytes = 5_250_000;
 
+export const stockTakeImportWriteRateLimit = {
+  groupId: "stock-take-import-write",
+  max: 5,
+  timeWindow: "15 minutes",
+};
+
 export function registerStockTakeImportRoutes(
   server: FastifyInstance,
   deps: StockTakeImportRouteDeps = createUnavailableStockTakeImportDeps(),
@@ -63,7 +69,10 @@ function registerDryRunRoute(
 ) {
   server.route({
     bodyLimit: stockTakeImportBodyLimitBytes,
-    config: { access: route.access },
+    config: {
+      access: route.access,
+      rateLimit: stockTakeImportWriteRateLimit,
+    },
     method: route.method,
     url: route.url,
     async handler(request) {
@@ -92,7 +101,10 @@ function registerApplyRoute(
 ) {
   server.route({
     bodyLimit: stockTakeImportBodyLimitBytes,
-    config: { access: route.access },
+    config: {
+      access: route.access,
+      rateLimit: stockTakeImportWriteRateLimit,
+    },
     method: route.method,
     url: route.url,
     async handler(request) {

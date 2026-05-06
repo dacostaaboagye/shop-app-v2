@@ -25,6 +25,12 @@ const managerReadRoute: RouteDefinition = {
   url: "/api/manager/stock-takes/:reference/sheet.xlsx",
 };
 
+export const stockTakeXlsxDownloadRateLimit = {
+  groupId: "stock-take-xlsx-download",
+  max: 30,
+  timeWindow: "1 minute",
+};
+
 export function registerStockTakeXlsxRoutes(
   server: FastifyInstance,
   deps: StockTakeRouteDeps,
@@ -40,7 +46,10 @@ function registerWorkbookRoute(
   route: RouteDefinition,
 ) {
   server.route({
-    config: { access: route.access },
+    config: {
+      access: route.access,
+      rateLimit: stockTakeXlsxDownloadRateLimit,
+    },
     method: route.method,
     url: route.url,
     async handler(request, reply) {

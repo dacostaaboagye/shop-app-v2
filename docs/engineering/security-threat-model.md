@@ -36,7 +36,7 @@ Protect inventory, financial documents, operational evidence, user identities, a
 | P0 | Predictable references used as access keys | Unauthorized document/session download | Public refs are required UX, but must never replace authorization. Sales/GTN issued-document refs and stock-take download/detail refs now have regression coverage. | Continue adding guessed-reference tests as new public-reference endpoints are introduced |
 | P1 | Malicious imports or uploads | Stored XSS, formula injection, bad stock data, partial writes | Catalog/profile media MIME hardening exists; imports need continuing review | Keep exact MIME allowlists, magic-byte checks, transaction tests, and formula neutralization |
 | P1 | Replay or double-apply of stock-taking and stock-adjustment workflows | Inventory corruption | Some lifecycle tests exist; keep expanding | Enforce idempotent apply transitions and append-only adjustment evidence |
-| P1 | Missing or weak rate limits on expensive endpoints | Brute force, scraping, quota exhaustion, DoS | Auth routes had limits; global backstop added in this PR | Add endpoint-specific limits for email test-send, imports, reports, downloads, and webhooks |
+| P1 | Missing or weak rate limits on expensive endpoints | Brute force, scraping, quota exhaustion, DoS | Auth, outbound email, imports, generated reports/downloads, official document downloads, and webhooks have endpoint-specific limits plus the global backstop | Add endpoint-specific limits when introducing future expensive endpoints |
 | P1 | Log/error leakage of secrets, cookies, OAuth codes, PII, or document contents | Credential theft and privacy breach | API logger redaction exists; body-content logging still needs review | Keep redaction tests and remove body/full-error logging in async paths |
 | P1 | Webhook replay or forged provider events | False delivery state, suppression, or event pollution | Resend signature verification exists; timestamp window must remain explicit | Test timestamp window, malformed payload handling, and idempotency |
 | P2 | SSRF via externally fetched branding/media URLs | Internal service probing from API host | PDF logo fetches reject IANA special-purpose targets, pin the validated address, do not follow redirects, enforce byte/size checks, and apply a wall-clock deadline | Prefer R2-uploaded assets and keep network-target tests for document media fetchers |
@@ -49,13 +49,22 @@ Protect inventory, financial documents, operational evidence, user identities, a
 3. Enforce route-level `config.rateLimit` settings with structured problem-details responses.
 4. Add endpoint-specific outbound-send limits for admin test emails, admin communications, supplier portal invites, and sales document email sends.
 5. Reject IANA special-purpose targets before fetching official-document PDF logo images; pin the validated address, do not follow redirects, validate image bytes, enforce size limits, and stop slow-drip responses with a wall-clock deadline.
-6. Add follow-up tickets for remaining endpoint-specific limits on imports, reports, downloads, and webhooks; webhook timestamp replay checks; stock workflow idempotency tests; and guessed-reference authorization tests for future public-reference endpoints.
+6. Add follow-up tickets for webhook timestamp replay checks, stock workflow idempotency tests, guessed-reference authorization tests for future public-reference endpoints, and endpoint-specific limits for future expensive routes.
 
 ## Current Authorization Regression Evidence
 
 - `apps/api/test/issued-document-public-reference-auth.routes.test.ts` verifies guessed sales and GTN document references still delegate to the issued-document services and return `403` when service authorization denies access.
 - `apps/api/test/gtn-issued-document-snapshot.service.test.ts` verifies GTN snapshot access rejects actors without requester, source-location, destination-location, or admin permission, while allowing a source-location manager.
 - Existing stock-take route tests cover manager location-scope enforcement for generated stock-take detail, sheet, booklet PDF, workbook, variance report, dry-run import, and apply routes.
+
+## Current Rate-Limit Regression Evidence
+
+- `apps/api/test/catalog-import.routes.test.ts` verifies product import uploads are route-limited before another CSV is parsed and records dedicated upload/report limits.
+- `apps/api/test/catalog-reference-import.routes.test.ts` verifies brand/category reference import uploads are route-limited before more rows are imported.
+- `apps/api/test/stock-take-rate-limit.routes.test.ts` verifies stock-take generation, import dry-run, and generated CSV downloads stop before additional service execution.
+- `apps/api/test/stock-take-pdf.routes.test.ts` and `apps/api/test/stock-take-xlsx.routes.test.ts` record dedicated limits for generated PDF and workbook downloads.
+- `apps/api/test/issued-document.routes.test.ts` verifies official document PDF downloads are route-limited before additional PDF rendering.
+- `apps/api/test/email-webhook.routes.test.ts` verifies Resend webhook bursts are route-limited before invoking webhook processing.
 
 ## Non-Regression Requirements
 

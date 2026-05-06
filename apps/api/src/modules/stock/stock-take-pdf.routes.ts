@@ -28,6 +28,12 @@ const managerReadRoute: RouteDefinition = {
   url: "/api/manager/stock-takes/:reference/booklet.pdf",
 };
 
+export const stockTakePdfDownloadRateLimit = {
+  groupId: "stock-take-pdf-download",
+  max: 30,
+  timeWindow: "1 minute",
+};
+
 export function registerStockTakePdfRoutes(
   server: FastifyInstance,
   deps: StockTakeRouteDeps,
@@ -51,7 +57,10 @@ function registerBookletRoute(
   route: RouteDefinition,
 ) {
   server.route({
-    config: { access: route.access },
+    config: {
+      access: route.access,
+      rateLimit: stockTakePdfDownloadRateLimit,
+    },
     method: route.method,
     url: route.url,
     async handler(request, reply) {
@@ -77,7 +86,10 @@ function registerVarianceReportRoute(
   route: RouteDefinition,
 ) {
   server.route({
-    config: { access: route.access },
+    config: {
+      access: route.access,
+      rateLimit: stockTakePdfDownloadRateLimit,
+    },
     method: route.method,
     url: route.url,
     async handler(request, reply) {
