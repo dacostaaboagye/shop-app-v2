@@ -33,7 +33,7 @@ Protect inventory, financial documents, operational evidence, user identities, a
 | --- | --- | --- | --- | --- |
 | P0 | Stale or stolen refresh/session credentials after role, location, or user status changes | Account takeover or continued access after revocation | Partially mitigated by server-side user reload and refresh-token revocation | Add explicit logout-all/session inventory and tests for permission revocation on active sessions |
 | P0 | Server-side authorization gap on admin/manager/worker routes or location-scoped resources | Cross-location stock/document access | Route access guard exists; targeted route audits still required | Continue per-domain authorization tests for stock takes, GTNs, invoices, transfers, and assignments |
-| P0 | Predictable references used as access keys | Unauthorized document/session download | Public refs are required UX, but must never replace authorization | Add tests for guessed GTN, invoice, booklet, and stock-take refs across users/locations |
+| P0 | Predictable references used as access keys | Unauthorized document/session download | Public refs are required UX, but must never replace authorization. Sales/GTN issued-document refs and stock-take download/detail refs now have regression coverage. | Continue adding guessed-reference tests as new public-reference endpoints are introduced |
 | P1 | Malicious imports or uploads | Stored XSS, formula injection, bad stock data, partial writes | Catalog/profile media MIME hardening exists; imports need continuing review | Keep exact MIME allowlists, magic-byte checks, transaction tests, and formula neutralization |
 | P1 | Replay or double-apply of stock-taking and stock-adjustment workflows | Inventory corruption | Some lifecycle tests exist; keep expanding | Enforce idempotent apply transitions and append-only adjustment evidence |
 | P1 | Missing or weak rate limits on expensive endpoints | Brute force, scraping, quota exhaustion, DoS | Auth routes had limits; global backstop added in this PR | Add endpoint-specific limits for email test-send, imports, reports, downloads, and webhooks |
@@ -49,7 +49,13 @@ Protect inventory, financial documents, operational evidence, user identities, a
 3. Enforce route-level `config.rateLimit` settings with structured problem-details responses.
 4. Add endpoint-specific outbound-send limits for admin test emails, admin communications, supplier portal invites, and sales document email sends.
 5. Reject IANA special-purpose targets before fetching official-document PDF logo images; pin the validated address, do not follow redirects, validate image bytes, enforce size limits, and stop slow-drip responses with a wall-clock deadline.
-6. Add follow-up tickets for remaining endpoint-specific limits on imports, reports, downloads, and webhooks; guessed-reference authorization tests; webhook timestamp replay checks; and stock workflow idempotency tests.
+6. Add follow-up tickets for remaining endpoint-specific limits on imports, reports, downloads, and webhooks; webhook timestamp replay checks; stock workflow idempotency tests; and guessed-reference authorization tests for future public-reference endpoints.
+
+## Current Authorization Regression Evidence
+
+- `apps/api/test/issued-document-public-reference-auth.routes.test.ts` verifies guessed sales and GTN document references still delegate to the issued-document services and return `403` when service authorization denies access.
+- `apps/api/test/gtn-issued-document-snapshot.service.test.ts` verifies GTN snapshot access rejects actors without requester, source-location, destination-location, or admin permission, while allowing a source-location manager.
+- Existing stock-take route tests cover manager location-scope enforcement for generated stock-take detail, sheet, booklet PDF, workbook, variance report, dry-run import, and apply routes.
 
 ## Non-Regression Requirements
 
