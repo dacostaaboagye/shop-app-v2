@@ -11,42 +11,41 @@ Backlog ticket: `E-01-01`
 
 ## `POST /api/auth/register`
 
-Creates an active user account, assigns the default `basic_user` role, issues an access token, and sets the refresh-token cookie.
+Operations registration is disabled. Workforce accounts are created internally
+by an authorized administrator or manager, then completed through a controlled
+password setup/reset flow.
 
-Request body:
+Customer self-registration belongs to the future ecommerce app and must use a
+separate route namespace, UI surface, and threat model on the same backend.
 
-```json
-{
-  "firstName": "Store",
-  "lastName": "Manager",
-  "email": "manager@example.com",
-  "password": "Password123!"
-}
-```
+Recommended shared-backend namespace direction:
 
-Success response:
-
-```json
-{
-  "accessToken": "<jwt>",
-  "accessTokenExpiresAt": "2026-04-08T13:00:00.000Z",
-  "user": {
-    "slug": "store-manager-ab12",
-    "firstName": "Store",
-    "lastName": "Manager",
-    "email": "manager@example.com",
-    "status": "active",
-    "preferredPortal": null,
-    "lastLoginAt": null,
-    "requiresPasswordChange": false
-  }
-}
-```
+- operations workforce sign-in: `POST /api/auth/login`
+- operations workforce registration: disabled at `POST /api/auth/register`
+- future ecommerce customer registration: `POST /api/customer/auth/register`
+  or equivalent customer-owned namespace
 
 Failure responses:
 
-- `409 conflict`: email already registered or slug allocation exhausted
-- `503 internal_error`: auth runtime misconfigured
+- `403 forbidden`: registration is disabled for the operations portal
+
+## `GET /api/auth/oauth/google`
+
+Operations OAuth is disabled. Workforce accounts use internal account
+credentials provisioned through administrator or manager workflows.
+
+Customer OAuth, if needed, belongs to the future ecommerce app and must use a
+separate route namespace on the same backend.
+
+Recommended shared-backend namespace direction:
+
+- operations workforce OAuth: disabled at `GET /api/auth/oauth/google`
+- future ecommerce customer OAuth: `GET /api/customer/auth/oauth/google` or
+  equivalent customer-owned namespace
+
+Failure responses:
+
+- `403 forbidden`: OAuth is disabled for the operations portal
 
 ## `POST /api/auth/login`
 

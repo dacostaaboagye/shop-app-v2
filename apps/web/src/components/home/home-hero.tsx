@@ -64,7 +64,7 @@ export function HomeHero() {
                         buttonVariants({ variant: "outline", size: "lg" }),
                         "h-16 rounded-xl border-2 px-10 font-heading text-xl font-bold",
                       )}
-                      href={toRoute("/register")}
+                      href="#"
                     >
                       View Docs
                     </Link>

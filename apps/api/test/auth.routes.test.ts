@@ -7,7 +7,8 @@ import { refreshTokenCookieName } from "../src/modules/auth/refresh-token-cookie
 import { createServer } from "../src/server/create-server.js";
 
 describe("auth routes", () => {
-  it("registers through the injected registration service and sets the refresh cookie", async () => {
+  it("blocks public operations registration without issuing a session", async () => {
+    let registrationCalled = false;
     const server = createServer({
       auth: {
         ...createUnavailableAuthDependencies(),
@@ -17,8 +18,9 @@ describe("auth routes", () => {
           },
         },
         registrationService: {
-          async register(command) {
-            return createSession(command.email);
+          async register() {
+            registrationCalled = true;
+            return createSession("manager@example.com");
           },
         },
       },
@@ -35,12 +37,10 @@ describe("auth routes", () => {
       url: "/api/auth/register",
     });
 
-    assert.equal(response.statusCode, 200);
-    assert.equal(response.json().user.email, "manager@example.com");
-    assert.match(
-      String(response.headers["set-cookie"]),
-      new RegExp(`${refreshTokenCookieName}=`),
-    );
+    assert.equal(response.statusCode, 403);
+    assert.equal(response.json().title, "Registration disabled");
+    assert.equal(registrationCalled, false);
+    assert.equal(response.headers["set-cookie"], undefined);
   });
 
   it("logs in through the injected authentication service and sets the refresh cookie", async () => {
@@ -367,20 +367,25 @@ describe("auth routes", () => {
     assert.equal(response.statusCode, 503);
   });
 
-  it("redirects OAuth denial back to login with an explicit callback error", async () => {
+  it("blocks operations OAuth routes", async () => {
     const server = createServer({
       auth: {
         ...createUnavailableAuthDependencies(),
       },
     });
 
-    const response = await server.inject({
-      method: "GET",
-      url: "/api/auth/oauth/google/callback?error=access_denied&state=oauth-state",
-    });
+    for (const url of [
+      "/api/auth/oauth/google",
+      "/api/auth/oauth/google/callback?error=access_denied&state=oauth-state",
+    ]) {
+      const response = await server.inject({
+        method: "GET",
+        url,
+      });
 
-    assert.equal(response.statusCode, 302);
-    assert.equal(response.headers.location, "/login?oauth_error=access_denied");
+      assert.equal(response.statusCode, 403);
+      assert.equal(response.json().title, "OAuth disabled");
+    }
   });
 });
 

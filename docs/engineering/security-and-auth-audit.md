@@ -213,7 +213,10 @@ Password reset already revokes all refresh tokens (good). No user-facing endpoin
 ## Low
 
 - **L1.** Refresh-token cookie has no explicit `Domain` (`apps/api/src/modules/auth/refresh-token-cookie.ts:4-19`). Document the same-site assumption.
-- **L2.** OAuth error redirect — verify the receiver renders `oauthError` as text only. `apps/web/src/app/auth/callback/auth-callback-page-client.tsx`.
+- **L2.** OAuth error redirect — superseded for the operations portal by ADR
+  0021. Operations OAuth routes are blocked and `/auth/callback` redirects to
+  sign-in; future ecommerce OAuth must add its own customer-owned callback
+  review.
 - **L3.** Active-location slug persisted to localStorage. `apps/web/src/store/use-active-location-store.ts:48-62`. Non-sensitive.
 - **L4.** `docker-compose.yml` uses `postgres/postgres` defaults — local dev only.
 - **L5.** Swagger bundle loaded without SRI. Local origin so risk is low.
