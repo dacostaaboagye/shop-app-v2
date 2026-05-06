@@ -39,7 +39,7 @@ Protect inventory, financial documents, operational evidence, user identities, a
 | P1 | Missing or weak rate limits on expensive endpoints | Brute force, scraping, quota exhaustion, DoS | Auth routes had limits; global backstop added in this PR | Add endpoint-specific limits for email test-send, imports, reports, downloads, and webhooks |
 | P1 | Log/error leakage of secrets, cookies, OAuth codes, PII, or document contents | Credential theft and privacy breach | API logger redaction exists; body-content logging still needs review | Keep redaction tests and remove body/full-error logging in async paths |
 | P1 | Webhook replay or forged provider events | False delivery state, suppression, or event pollution | Resend signature verification exists; timestamp window must remain explicit | Test timestamp window, malformed payload handling, and idempotency |
-| P2 | SSRF via externally fetched branding/media URLs | Internal service probing from API host | Open in audit unless constrained to uploaded assets | Prefer R2-uploaded assets; reject private, loopback, link-local, and metadata IPs |
+| P2 | SSRF via externally fetched branding/media URLs | Internal service probing from API host | PDF logo fetches reject IANA special-purpose targets, pin the validated address, do not follow redirects, enforce byte/size checks, and apply a wall-clock deadline | Prefer R2-uploaded assets and keep network-target tests for document media fetchers |
 | P2 | Client-side-only trust in role, location, quantity, price, or hidden fields | Unauthorized or invalid writes | Backend validation exists by pattern; continue route-specific tests | Never trust UI state; validate actor, scope, and business invariants server-side |
 
 ## Current Mitigation Batch
@@ -48,7 +48,8 @@ Protect inventory, financial documents, operational evidence, user identities, a
 2. Keep the existing API/web CSP, CORS fail-closed behavior, and logger redaction documented as non-regression requirements.
 3. Enforce route-level `config.rateLimit` settings with structured problem-details responses.
 4. Add endpoint-specific outbound-send limits for admin test emails, admin communications, supplier portal invites, and sales document email sends.
-5. Add follow-up tickets for remaining endpoint-specific limits on imports, reports, downloads, and webhooks; guessed-reference authorization tests; webhook timestamp replay checks; and stock workflow idempotency tests.
+5. Reject IANA special-purpose targets before fetching official-document PDF logo images; pin the validated address, do not follow redirects, validate image bytes, enforce size limits, and stop slow-drip responses with a wall-clock deadline.
+6. Add follow-up tickets for remaining endpoint-specific limits on imports, reports, downloads, and webhooks; guessed-reference authorization tests; webhook timestamp replay checks; and stock workflow idempotency tests.
 
 ## Non-Regression Requirements
 
