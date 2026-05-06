@@ -143,6 +143,7 @@ export class PasswordResetService {
         .set({
           passwordHash,
           requiresPasswordChange: false,
+          sessionsRevokedAt: now,
           updatedAt: now,
         })
         .where(eq(users.id, record.userId));

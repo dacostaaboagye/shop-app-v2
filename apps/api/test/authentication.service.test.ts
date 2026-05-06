@@ -246,6 +246,7 @@ function createUserRecord(
     primaryImageUrl: null,
     preferredPortal: "admin",
     requiresPasswordChange: false,
+    sessionsRevokedAt: null,
     slug: "store-manager",
     status: "active",
     ...overrides,
