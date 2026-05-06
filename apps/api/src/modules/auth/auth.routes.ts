@@ -2,10 +2,10 @@ import {
   authPermissionSetSchema,
   authUserSchema,
   loginRequestSchema,
-  registerRequestSchema,
   updateProfileRequestSchema,
 } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
+import { AppError } from "../_core/errors/app-error.js";
 import type { RouteDefinition } from "../_core/route-contract.js";
 import { registerOAuthRoutes } from "./auth-oauth.routes.js";
 import { registerRecoveryRoutes } from "./auth-recovery.routes.js";
@@ -75,18 +75,14 @@ export function registerAuthRoutes(
     },
     method: registerRoute.method,
     url: registerRoute.url,
-    async handler(request, reply) {
-      const command = registerRequestSchema.parse(request.body);
-      const session = await dependencies.registrationService.register({
-        ...command,
-        ...getRequestMetadata(request),
+    async handler() {
+      throw new AppError({
+        code: "forbidden",
+        detail:
+          "Operations accounts are created internally by an authorized administrator or manager. Use sign in if you already have an account.",
+        statusCode: 403,
+        title: "Registration disabled",
       });
-      setRefreshTokenCookie(
-        reply,
-        session.refreshToken,
-        session.refreshTokenExpiresAt,
-      );
-      return toPublicSession(session);
     },
   });
 

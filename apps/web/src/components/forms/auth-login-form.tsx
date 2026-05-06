@@ -6,9 +6,7 @@ import { LogIn } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { AppFormField } from "@/components/forms/app-form-field";
-import { AuthGoogleOAuthButton } from "@/components/forms/auth-google-oauth-button";
 import { AppErrorBanner } from "@/components/system/app-error";
-import { AuthSectionDivider } from "@/components/system/auth-surfaces";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -52,9 +50,6 @@ export function AuthLoginForm() {
 
   return (
     <div className="flex flex-col gap-4">
-      <AuthGoogleOAuthButton />
-      <AuthSectionDivider />
-
       <form
         className="flex flex-col gap-4"
         noValidate

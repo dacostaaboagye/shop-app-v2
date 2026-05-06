@@ -83,9 +83,9 @@ export function HomeHeader() {
                   buttonVariants({ size: "sm" }),
                   "rounded-xl px-6 font-bold shadow-md shadow-primary/20",
                 )}
-                href={toRoute("/register")}
+                href={toRoute("/login")}
               >
-                Get Started
+                Launch System
               </Link>
             </div>
           )}

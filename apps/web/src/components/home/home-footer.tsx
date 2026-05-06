@@ -22,13 +22,13 @@ export function HomeCTA() {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            href={toRoute("/register")}
+            href={toRoute("/login")}
             className={cn(
               buttonVariants({ size: "lg" }),
               "h-16 rounded-xl px-12 font-bold text-lg",
             )}
           >
-            Create Enterprise Account
+            Sign In To Operations
           </Link>
           <Link
             href="#"
