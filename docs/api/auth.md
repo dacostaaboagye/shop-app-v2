@@ -29,6 +29,48 @@ Failure responses:
 
 - `403 forbidden`: registration is disabled for the operations portal
 
+## `POST /api/admin/access/users`
+
+Creates a workforce account through the internal operations user-management
+flow. This is the replacement for public operations registration.
+
+Access:
+
+- requires `access.assignments.manage`
+- creates only operations workforce users
+- does not create customer accounts for the future ecommerce app
+
+Request body:
+
+```json
+{
+  "email": "worker@example.com",
+  "firstName": "Aba",
+  "lastName": "Mensah",
+  "reason": "New warehouse assistant",
+  "roleAssignments": [
+    {
+      "roleSlug": "worker",
+      "locationSlug": "ablekuma-warehouse"
+    }
+  ]
+}
+```
+
+Success response:
+
+- `201 Created`
+- includes the public `slug`, profile fields, assigned role/location slugs,
+  `requiresPasswordChange: true`, and a setup instruction
+- does not expose the internal user ID
+
+Failure responses:
+
+- `400 validation_error`: location-scoped roles are missing a location
+- `401 unauthorized`: missing or invalid access token
+- `403 forbidden`: actor lacks `access.assignments.manage`
+- `409 conflict`: email already exists or a unique slug could not be allocated
+
 ## `GET /api/auth/oauth/google`
 
 Operations OAuth is disabled. Workforce accounts use internal account

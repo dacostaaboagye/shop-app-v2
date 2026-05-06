@@ -11,6 +11,7 @@ import { AdminAccessQueryService } from "./admin-access-query.service.js";
 import { AdminAccessWriteService } from "./admin-access-write.service.js";
 import { AdminLocationQueryService } from "./admin-location-query.service.js";
 import { AdminLocationWriteService } from "./admin-location-write.service.js";
+import { AdminStaffProvisioningService } from "./admin-staff-provisioning.service.js";
 import { AdminSupplierQueryService } from "./admin-supplier-query.service.js";
 import { AdminSupplierWriteService } from "./admin-supplier-write.service.js";
 import { AdminUserAccessQueryService } from "./admin-user-access-query.service.js";
@@ -20,6 +21,7 @@ import { PostgresAdminAccessQueryRepository } from "./postgres-admin-access-quer
 import { PostgresAdminAccessWriteRepository } from "./postgres-admin-access-write.repository.js";
 import { PostgresAdminLocationQueryRepository } from "./postgres-admin-location-query.repository.js";
 import { PostgresAdminLocationWriteRepository } from "./postgres-admin-location-write.repository.js";
+import { PostgresAdminStaffProvisioningRepository } from "./postgres-admin-staff-provisioning.repository.js";
 import { PostgresAdminSupplierQueryRepository } from "./postgres-admin-supplier-query.repository.js";
 import { PostgresAdminSupplierWriteRepository } from "./postgres-admin-supplier-write.repository.js";
 import { PostgresAdminUserAccessQueryRepository } from "./postgres-admin-user-access-query.repository.js";
@@ -30,6 +32,7 @@ type AdminDirectoryRuntime = {
   adminDirectory: {
     adminAccessQueryService: AdminAccessQueryService;
     adminAccessWriteService: AdminAccessWriteService;
+    adminStaffProvisioningService: AdminStaffProvisioningService;
     adminLocationQueryService: AdminLocationQueryService;
     adminLocationWriteService: AdminLocationWriteService;
     adminSupplierQueryService: AdminSupplierQueryService;
@@ -78,6 +81,11 @@ export function createAdminDirectoryRuntime(
           slugService,
           accessQueryRepository,
         ),
+        options.platformEventPublisher ?? null,
+      ),
+      adminStaffProvisioningService: new AdminStaffProvisioningService(
+        new PostgresAdminStaffProvisioningRepository(databaseRuntime.db),
+        slugService,
         options.platformEventPublisher ?? null,
       ),
       adminLocationQueryService: new AdminLocationQueryService(

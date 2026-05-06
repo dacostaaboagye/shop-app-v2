@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type {
   AdminAssignUserRoleRequest,
+  AdminCreateUserRequest,
   AdminForceUserPasswordResetRequest,
   AdminRemoveUserPermissionOverrideRequest,
   AdminRevokeUserRoleRequest,
@@ -35,6 +36,27 @@ export function createAdminUserRoleAssignedEvent(input: {
     },
     summary: `Access updated for ${input.userSlug}: assigned ${input.request.roleSlug}${scopeSummary}.`,
     type: "access.user.role_assigned",
+    userSlug: input.userSlug,
+  });
+}
+
+export function createAdminUserCreatedEvent(input: {
+  actor: AccessActor;
+  occurredAt: Date;
+  request: AdminCreateUserRequest;
+  userSlug: string;
+}): PlatformEventRecord {
+  return createAccessEvent({
+    actor: input.actor,
+    occurredAt: input.occurredAt,
+    payload: {
+      email: input.request.email,
+      reason: input.request.reason,
+      roleAssignmentCount: String(input.request.roleAssignments.length),
+      userSlug: input.userSlug,
+    },
+    summary: `User account created for ${input.userSlug}.`,
+    type: "access.user.created",
     userSlug: input.userSlug,
   });
 }

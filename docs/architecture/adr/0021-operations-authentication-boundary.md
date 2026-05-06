@@ -81,19 +81,31 @@ Recommended shared-backend namespace direction:
 - future ecommerce customer OAuth: `GET /api/customer/auth/oauth/google` or
   equivalent customer-owned namespace, only if product requirements justify it
 
-## Follow-Up Direction
+## Internal Provisioning Implementation
 
-The internal staff provisioning flow should be delivered as a separate backlog
-slice:
+The first internal staff provisioning slice adds the backend API path for
+authorized operations account creation:
 
-1. add an authorized `POST /api/admin/access/users` or equivalent staff-invite
-   route
-2. create the user transactionally with role and location scope
-3. require a password setup/reset before first login
-4. record audit events for creator, assigned roles, location scopes, and setup
-   lifecycle
-5. add UAT for admin-created manager, manager-created worker, duplicate email,
-   suspended location, and revoked invitation scenarios
+- `POST /api/admin/access/users` requires `access.assignments.manage`.
+- The route validates the public contract, delegates account creation to an
+  admin service, and returns only public user slugs plus role/location slugs.
+- User creation and initial role assignment are transactional.
+- New users are created without a password hash and with
+  `requiresPasswordChange = true`.
+- The setup path is password recovery from the sign-in page until a dedicated
+  invitation-email UX is delivered.
+- The flow publishes an `access.user.created` platform event for access-audit
+  visibility. If event append fails after the transactional user/role write,
+  account creation still succeeds and the API logs a sanitized operator error
+  so the user is not left in an ambiguous retry/email-conflict state.
+
+Remaining follow-up slices:
+
+1. add the administrator/manager UI for creating workforce users
+2. send a dedicated setup email instead of relying on manual Forgot password
+   instructions
+3. add UAT for admin-created manager, manager-created worker, duplicate email,
+   suspended location, revoked invitation, and role-hierarchy scenarios
 
 ## Consequences
 
