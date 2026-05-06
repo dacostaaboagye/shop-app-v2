@@ -16,10 +16,18 @@ type PermissionAssignmentRow = {
   source: "override" | "role";
 };
 
+type PermissionAssignmentQueryRow = PermissionAssignmentRow & {
+  locationStatus: "active" | "inactive" | null;
+};
+
 type ActiveLocationScopeRow = {
   locationId: string;
   locationName: string;
   locationSlug: string;
+};
+
+type ActiveLocationScopeQueryRow = ActiveLocationScopeRow & {
+  locationStatus: "active" | "inactive";
 };
 
 export class PostgresPermissionRepository
@@ -46,10 +54,12 @@ export class PostgresPermissionRepository
       .select({
         key: permissions.key,
         locationId: userRoles.locationId,
+        locationStatus: locations.status,
         effect: sql<"allow" | "deny" | null>`NULL`.as("effect"),
         source: sql<"role" | "override">`'role'`.as("source"),
       })
       .from(userRoles)
+      .leftJoin(locations, eq(locations.id, userRoles.locationId))
       .innerJoin(rolePermissions, eq(rolePermissions.roleId, userRoles.roleId))
       .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
       .where(and(eq(userRoles.userId, userId), isNull(userRoles.revokedAt)));
@@ -58,10 +68,12 @@ export class PostgresPermissionRepository
       .select({
         key: permissions.key,
         locationId: userPermissionOverrides.locationId,
+        locationStatus: locations.status,
         effect: userPermissionOverrides.effect,
         source: sql<"role" | "override">`'override'`.as("source"),
       })
       .from(userPermissionOverrides)
+      .leftJoin(locations, eq(locations.id, userPermissionOverrides.locationId))
       .innerJoin(
         permissions,
         eq(permissions.id, userPermissionOverrides.permissionId),
@@ -77,18 +89,14 @@ export class PostgresPermissionRepository
       .select({
         key: sql<string>`"key"`,
         locationId: sql<string | null>`"location_id"`,
+        locationStatus: sql<"active" | "inactive" | null>`"status"`,
         effect: sql<"allow" | "deny" | null>`"effect"`,
         source: sql<"role" | "override">`"source"`,
       })
       .from(rolePermissionsQuery.unionAll(overridesQuery).as("assignments"))
       .orderBy(sql`"source"`, sql`"key"`);
 
-    return rows.map((row) => ({
-      effect: row.effect,
-      key: row.key,
-      locationId: row.locationId,
-      source: row.source,
-    }));
+    return filterActiveLocationPermissionAssignments(rows);
   }
 
   async getActiveLocationScopes(
@@ -100,6 +108,7 @@ export class PostgresPermissionRepository
           locationId: locations.id,
           locationName: locations.name,
           locationSlug: locations.slug,
+          locationStatus: locations.status,
         })
         .from(userRoles)
         .innerJoin(locations, eq(locations.id, userRoles.locationId))
@@ -110,6 +119,7 @@ export class PostgresPermissionRepository
           locationId: locations.id,
           locationName: locations.name,
           locationSlug: locations.slug,
+          locationStatus: locations.status,
         })
         .from(userPermissionOverrides)
         .innerJoin(
@@ -127,7 +137,10 @@ export class PostgresPermissionRepository
     const seen = new Set<string>();
     const merged: ActiveLocationScopeRow[] = [];
 
-    for (const row of [...fromRoles, ...fromOverrides]) {
+    for (const row of filterActiveLocationScopes([
+      ...fromRoles,
+      ...fromOverrides,
+    ])) {
       if (!seen.has(row.locationId)) {
         seen.add(row.locationId);
         merged.push(row);
@@ -140,4 +153,29 @@ export class PostgresPermissionRepository
         a.locationSlug.localeCompare(b.locationSlug),
     );
   }
+}
+
+export function filterActiveLocationPermissionAssignments(
+  rows: readonly PermissionAssignmentQueryRow[],
+): PermissionAssignmentRow[] {
+  return rows
+    .filter((row) => row.locationId === null || row.locationStatus === "active")
+    .map((row) => ({
+      effect: row.effect,
+      key: row.key,
+      locationId: row.locationId,
+      source: row.source,
+    }));
+}
+
+export function filterActiveLocationScopes(
+  rows: readonly ActiveLocationScopeQueryRow[],
+): ActiveLocationScopeRow[] {
+  return rows
+    .filter((row) => row.locationStatus === "active")
+    .map((row) => ({
+      locationId: row.locationId,
+      locationName: row.locationName,
+      locationSlug: row.locationSlug,
+    }));
 }

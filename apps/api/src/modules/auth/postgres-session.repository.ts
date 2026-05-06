@@ -1,5 +1,5 @@
 import { refreshTokens } from "@shop/database";
-import { eq } from "drizzle-orm";
+import { and, eq, gt, isNull } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { AuthUserRecord } from "./authentication.service.js";
 import type { PostgresUserRepository } from "./postgres-user.repository.js";
@@ -7,8 +7,14 @@ import type {
   SessionRepository,
   StoredRefreshTokenRecord,
 } from "./session.service.js";
+import type {
+  SessionManagementRepository,
+  StoredSessionRecord,
+} from "./session-management.service.js";
 
-export class PostgresSessionRepository implements SessionRepository {
+export class PostgresSessionRepository
+  implements SessionManagementRepository, SessionRepository
+{
   constructor(
     private readonly db: ApiDatabase,
     private readonly userRepository: PostgresUserRepository,
@@ -49,6 +55,30 @@ export class PostgresSessionRepository implements SessionRepository {
     return (row as StoredRefreshTokenRecord) ?? null;
   }
 
+  async listActiveRefreshTokensForUser(input: {
+    now: Date;
+    userId: string;
+  }): Promise<StoredSessionRecord[]> {
+    return this.db
+      .select({
+        id: refreshTokens.id,
+        tokenHash: refreshTokens.tokenHash,
+        issuedAt: refreshTokens.issuedAt,
+        expiresAt: refreshTokens.expiresAt,
+        ipAddress: refreshTokens.ipAddress,
+        userAgent: refreshTokens.userAgent,
+      })
+      .from(refreshTokens)
+      .where(
+        and(
+          eq(refreshTokens.userId, input.userId),
+          isNull(refreshTokens.revokedAt),
+          gt(refreshTokens.expiresAt, input.now),
+        ),
+      )
+      .orderBy(refreshTokens.issuedAt);
+  }
+
   async findUserById(userId: string): Promise<AuthUserRecord | null> {
     return this.userRepository.findUserById(userId);
   }
@@ -75,5 +105,24 @@ export class PostgresSessionRepository implements SessionRepository {
         revokedReason: input.revokedReason,
       })
       .where(eq(refreshTokens.id, input.tokenId));
+  }
+
+  async revokeRefreshTokensForUser(input: {
+    revokedAt: Date;
+    revokedReason: string;
+    userId: string;
+  }): Promise<void> {
+    await this.db
+      .update(refreshTokens)
+      .set({
+        revokedAt: input.revokedAt,
+        revokedReason: input.revokedReason,
+      })
+      .where(
+        and(
+          eq(refreshTokens.userId, input.userId),
+          isNull(refreshTokens.revokedAt),
+        ),
+      );
   }
 }

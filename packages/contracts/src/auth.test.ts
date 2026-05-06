@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   authNotificationPreferencesSchema,
+  authSessionListResponseSchema,
   authSessionSchema,
   loginRequestSchema,
   registerRequestSchema,
@@ -42,6 +43,24 @@ describe("auth contracts", () => {
     });
 
     assert.equal(parsed.user.slug, "store-manager");
+  });
+
+  it("accepts sanitized auth session inventory without token identifiers", () => {
+    const parsed = authSessionListResponseSchema.parse({
+      sessions: [
+        {
+          current: true,
+          expiresAt: "2026-04-15T12:00:00.000Z",
+          ipAddress: "127.0.0.1",
+          issuedAt: "2026-04-08T12:00:00.000Z",
+          userAgent: "test-agent",
+        },
+      ],
+    });
+
+    assert.equal(parsed.sessions[0]?.current, true);
+    assert.equal("id" in (parsed.sessions[0] ?? {}), false);
+    assert.equal("tokenHash" in (parsed.sessions[0] ?? {}), false);
   });
 
   it("accepts a valid registration request", () => {

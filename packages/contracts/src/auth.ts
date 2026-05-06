@@ -109,7 +109,23 @@ export const authSessionSchema = z.object({
   user: authUserSchema,
 });
 
+export const authSessionRecordSchema = z.object({
+  current: z.boolean(),
+  expiresAt: z.iso.datetime(),
+  ipAddress: z.string().nullable(),
+  issuedAt: z.iso.datetime(),
+  userAgent: z.string().nullable(),
+});
+
+export const authSessionListResponseSchema = z.object({
+  sessions: z.array(authSessionRecordSchema),
+});
+
 export type AuthSession = z.infer<typeof authSessionSchema>;
+export type AuthSessionListResponse = z.infer<
+  typeof authSessionListResponseSchema
+>;
+export type AuthSessionRecord = z.infer<typeof authSessionRecordSchema>;
 export type AuthLocationPermissionScope = z.infer<
   typeof authLocationPermissionScopeSchema
 >;

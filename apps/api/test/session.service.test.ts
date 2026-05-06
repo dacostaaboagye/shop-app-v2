@@ -39,9 +39,53 @@ describe("TokenSessionService", () => {
     });
 
     assert.notEqual(nextSession.refreshToken, initialSession.refreshToken);
-    assert.equal(harness.state.revokedTokenIds.length, 1);
+    assert.equal(harness.state.revocations.length, 1);
     assert.equal(harness.state.events.at(-1)?.eventType, "token_refresh");
   });
+
+  for (const input of [
+    {
+      name: "deactivated users",
+      reason: "user_unavailable",
+      user: createUserRecord({ status: "deactivated" }),
+    },
+    {
+      name: "locked users",
+      reason: "account_locked",
+      user: createUserRecord({
+        lockedUntil: new Date("2026-04-08T12:05:00.000Z"),
+      }),
+    },
+    {
+      name: "users requiring password change",
+      reason: "password_change_required",
+      user: createUserRecord({ requiresPasswordChange: true }),
+    },
+  ] as const) {
+    it(`rejects refresh for ${input.name} and revokes the presented token`, async () => {
+      const harness = createSessionHarness({ user: input.user });
+      const initialSession = await harness.service.issueSession(
+        createUserRecord(),
+        new Date("2026-04-08T12:00:00.000Z"),
+      );
+
+      await assert.rejects(
+        () =>
+          harness.service.refresh({
+            refreshToken: initialSession.refreshToken,
+          }),
+        (error: unknown) => {
+          assert.ok(error instanceof AppError);
+          assert.equal(error.title, "Invalid session");
+          return true;
+        },
+      );
+
+      assert.deepEqual(harness.state.revocations, [
+        { reason: input.reason, tokenId: "rt_1" },
+      ]);
+    });
+  }
 
   it("rejects an invalid refresh token", async () => {
     const harness = createSessionHarness();
@@ -72,7 +116,7 @@ describe("TokenSessionService", () => {
       userAgent: "test-agent",
     });
 
-    assert.equal(harness.state.revokedTokenIds.length, 1);
+    assert.equal(harness.state.revocations.length, 1);
     const logoutEvent = harness.state.events.at(-1);
 
     assert.equal(logoutEvent?.eventType, "logout");
@@ -83,7 +127,7 @@ describe("TokenSessionService", () => {
   });
 });
 
-function createSessionHarness() {
+function createSessionHarness(input: { user?: AuthUserRecord | null } = {}) {
   const state = {
     createdRefreshTokens: [] as Array<{
       expiresAt: Date;
@@ -98,7 +142,7 @@ function createSessionHarness() {
       userAgent?: string;
       userId: string;
     }>,
-    revokedTokenIds: [] as string[],
+    revocations: [] as Array<{ reason: string; tokenId: string }>,
   };
 
   const repository: SessionRepository = {
@@ -119,7 +163,9 @@ function createSessionHarness() {
         ? {
             expiresAt: record.expiresAt,
             id: record.id,
-            revokedAt: state.revokedTokenIds.includes(record.id)
+            revokedAt: state.revocations.some(
+              (revocation) => revocation.tokenId === record.id,
+            )
               ? new Date("2026-04-08T12:30:00.000Z")
               : null,
             userId: record.userId,
@@ -127,13 +173,16 @@ function createSessionHarness() {
         : null;
     },
     async findUserById() {
-      return createUserRecord();
+      return "user" in input ? (input.user ?? null) : createUserRecord();
     },
     async recordAuthEvent(input) {
       state.events.push(input);
     },
     async revokeRefreshToken(input) {
-      state.revokedTokenIds.push(input.tokenId);
+      state.revocations.push({
+        reason: input.revokedReason,
+        tokenId: input.tokenId,
+      });
     },
   };
 
@@ -153,7 +202,9 @@ function createSessionHarness() {
   };
 }
 
-function createUserRecord(): AuthUserRecord {
+function createUserRecord(
+  overrides: Partial<AuthUserRecord> = {},
+): AuthUserRecord {
   return {
     availablePortals: ["admin"],
     email: "manager@example.com",
@@ -174,5 +225,6 @@ function createUserRecord(): AuthUserRecord {
     requiresPasswordChange: false,
     slug: "store-manager",
     status: "active",
+    ...overrides,
   };
 }

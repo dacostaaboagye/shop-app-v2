@@ -19,6 +19,7 @@ import { PostgresSessionRepository } from "./postgres-session.repository.js";
 import { PostgresUserRepository } from "./postgres-user.repository.js";
 import { PasswordRegistrationService } from "./registration.service.js";
 import { TokenSessionService } from "./session.service.js";
+import { SessionManagementService } from "./session-management.service.js";
 import { UserAccessLifecycleService } from "./user-access-lifecycle.service.js";
 
 type AuthRuntime = {
@@ -37,6 +38,7 @@ type AuthRuntime = {
     profileUpdateService: CurrentUserService;
     refreshSessionService: TokenSessionService;
     registrationService: PasswordRegistrationService;
+    sessionManagementService: SessionManagementService;
   };
   userAccessLifecycleService: UserAccessLifecycleService;
 };
@@ -66,8 +68,12 @@ export function createAuthRuntime(
   const slugService = new SlugService(
     new PostgresSlugRepository(databaseRuntime.db),
   );
+  const sessionRepository = new PostgresSessionRepository(
+    databaseRuntime.db,
+    userRepository,
+  );
   const sessionService = new TokenSessionService(
-    new PostgresSessionRepository(databaseRuntime.db, userRepository),
+    sessionRepository,
     {
       accessTokenSecret: env.authAccessTokenSecret,
       accessTokenTtlSeconds: env.authAccessTokenTtlSeconds,
@@ -145,6 +151,7 @@ export function createAuthRuntime(
       ),
       refreshSessionService: sessionService,
       registrationService,
+      sessionManagementService: new SessionManagementService(sessionRepository),
     },
     userAccessLifecycleService: new UserAccessLifecycleService(userRepository),
   };

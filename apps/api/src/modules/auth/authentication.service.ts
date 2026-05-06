@@ -51,6 +51,11 @@ export interface AuthRepository {
   markSuccessfulLogin(userId: string, occurredAt: Date): Promise<void>;
   recordAuthEvent(event: AuthEventRecord): Promise<void>;
   recordLoginAttempt(attempt: LoginAttemptRecord): Promise<void>;
+  revokeRefreshTokensForUser(input: {
+    revokedAt: Date;
+    revokedReason: string;
+    userId: string;
+  }): Promise<void>;
   setLockout(userId: string, lockedUntil: Date): Promise<void>;
 }
 
@@ -194,6 +199,11 @@ export class PasswordAuthenticationService {
     }
 
     await this.repository.setLockout(input.user.id, outcome.lockedUntil);
+    await this.repository.revokeRefreshTokensForUser({
+      revokedAt: input.occurredAt,
+      revokedReason: "account_locked",
+      userId: input.user.id,
+    });
     await this.repository.recordAuthEvent(
       toAuthEventRecord({
         eventType: "lockout",

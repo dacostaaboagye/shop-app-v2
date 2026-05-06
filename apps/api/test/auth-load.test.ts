@@ -26,6 +26,7 @@ describe("auth load evidence", () => {
       async markSuccessfulLogin() {},
       async recordAuthEvent() {},
       async recordLoginAttempt() {},
+      async revokeRefreshTokensForUser() {},
       async setLockout() {},
     };
     const sessionRepository: SessionRepository = {

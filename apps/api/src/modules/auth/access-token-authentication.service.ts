@@ -1,5 +1,6 @@
 import { AppError } from "../_core/errors/app-error.js";
 import { verifyAccessToken } from "./access-token.js";
+import { isLockoutActive } from "./session-policy.js";
 
 export type AuthenticatedActor = {
   userId: string;
@@ -8,6 +9,8 @@ export type AuthenticatedActor = {
 
 export type AuthenticatedUserRecord = {
   id: string;
+  lockedUntil?: Date | null;
+  requiresPasswordChange?: boolean;
   slug: string;
   status: "active" | "deactivated" | "suspended";
 };
@@ -34,6 +37,8 @@ export class AccessTokenAuthenticationService {
     if (
       !user ||
       user.status !== "active" ||
+      isLockoutActive(user.lockedUntil, this.now()) ||
+      user.requiresPasswordChange === true ||
       user.slug !== verifiedToken.userSlug
     ) {
       throw invalidAccessTokenError();

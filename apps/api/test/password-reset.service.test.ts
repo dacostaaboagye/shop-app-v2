@@ -63,6 +63,42 @@ describe("PasswordResetService", () => {
       console.error = originalConsoleError;
     }
   });
+
+  it("clears force-reset state and revokes sessions after password reset", async () => {
+    const calls: Array<{ table: string; values: Record<string, unknown> }> = [];
+    const service = new PasswordResetService(
+      createResetDbStub(calls) as never,
+      {
+        async findPasswordResetUser() {
+          return null;
+        },
+      },
+      {
+        async sendPasswordResetEmail() {},
+      } as never,
+      "https://app.example.com",
+      () => NOW,
+    );
+
+    await service.resetPassword("valid-reset-token", "Password123");
+
+    assert.equal(
+      calls.some(
+        (call) =>
+          call.table === "users" &&
+          call.values.requiresPasswordChange === false,
+      ),
+      true,
+    );
+    assert.equal(
+      calls.some(
+        (call) =>
+          call.table === "refresh_tokens" &&
+          call.values.revokedReason === "password_reset",
+      ),
+      true,
+    );
+  });
 });
 
 function createDbStub(calls: string[]) {
@@ -86,4 +122,57 @@ function createDbStub(calls: string[]) {
       };
     },
   };
+}
+
+function createResetDbStub(
+  calls: Array<{ table: string; values: Record<string, unknown> }>,
+) {
+  return {
+    select() {
+      return {
+        from() {
+          return {
+            where() {
+              return {
+                async limit() {
+                  return [{ id: "reset_1", userId: "usr_123" }];
+                },
+              };
+            },
+          };
+        },
+      };
+    },
+    async transaction(callback: (tx: unknown) => Promise<void>) {
+      await callback(createResetTransactionStub(calls));
+    },
+  };
+}
+
+function createResetTransactionStub(
+  calls: Array<{ table: string; values: Record<string, unknown> }>,
+) {
+  return {
+    update(table: unknown) {
+      return {
+        set(values: Record<string, unknown>) {
+          calls.push({ table: tableName(table), values });
+
+          return {
+            async where() {},
+          };
+        },
+      };
+    },
+  };
+}
+
+function tableName(table: unknown): string {
+  const drizzleName = Symbol.for("drizzle:Name");
+
+  if (typeof table === "object" && table !== null && drizzleName in table) {
+    return String((table as Record<PropertyKey, unknown>)[drizzleName]);
+  }
+
+  return "unknown";
 }

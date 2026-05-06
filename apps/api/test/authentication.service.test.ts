@@ -53,6 +53,9 @@ describe("PasswordAuthenticationService", () => {
     );
 
     assert.equal(harness.state.lockoutsSet.length, 1);
+    assert.deepEqual(harness.state.revokedRefreshTokens, [
+      { reason: "account_locked", userId: "usr_123" },
+    ]);
     assert.equal(
       harness.state.events.filter((event) => event.eventType === "lockout")
         .length,
@@ -157,6 +160,7 @@ function createHarness(input: {
     lockoutsCleared: [] as string[],
     lockoutsSet: [] as Array<{ lockedUntil: Date; userId: string }>,
     loginAttempts: [] as Array<{ email: string; succeeded: boolean }>,
+    revokedRefreshTokens: [] as Array<{ reason: string; userId: string }>,
     successfulLogins: [] as Array<{ occurredAt: Date; userId: string }>,
   };
 
@@ -178,6 +182,12 @@ function createHarness(input: {
     },
     async recordLoginAttempt(attempt) {
       state.loginAttempts.push(attempt);
+    },
+    async revokeRefreshTokensForUser(input) {
+      state.revokedRefreshTokens.push({
+        reason: input.revokedReason,
+        userId: input.userId,
+      });
     },
     async setLockout(userId, lockedUntil) {
       state.lockoutsSet.push({ lockedUntil, userId });

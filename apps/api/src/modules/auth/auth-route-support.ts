@@ -1,6 +1,7 @@
 import {
   type AuthNotificationPreferences,
   type AuthPermissionSet,
+  type AuthSessionListResponse,
   type AuthUser,
   authSessionSchema,
 } from "@shop/contracts";
@@ -14,6 +15,10 @@ import type {
   LogoutSessionCommand,
   RefreshSessionCommand,
 } from "./session.service.js";
+import type {
+  LogoutAllSessionsCommand,
+  SessionInventoryCommand,
+} from "./session-management.service.js";
 
 export type AuthRouteDependencies = {
   authenticationService: {
@@ -39,6 +44,12 @@ export type AuthRouteDependencies = {
   };
   logoutSessionService: {
     logout(command: LogoutSessionCommand): Promise<void>;
+  };
+  sessionManagementService: {
+    listSessions(
+      command: SessionInventoryCommand,
+    ): Promise<AuthSessionListResponse>;
+    logoutAll(command: LogoutAllSessionsCommand): Promise<void>;
   };
   passwordResetService: {
     initiateReset(email: string): Promise<void>;
@@ -98,6 +109,14 @@ export function createUnavailableAuthDependencies(): AuthRouteDependencies {
     },
     logoutSessionService: {
       async logout() {
+        throw unavailableAuthError();
+      },
+    },
+    sessionManagementService: {
+      async listSessions() {
+        throw unavailableAuthError();
+      },
+      async logoutAll() {
         throw unavailableAuthError();
       },
     },

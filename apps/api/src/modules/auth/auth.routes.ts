@@ -1,5 +1,6 @@
 import {
   authPermissionSetSchema,
+  authSessionListResponseSchema,
   authUserSchema,
   loginRequestSchema,
   registerRequestSchema,
@@ -19,6 +20,7 @@ import {
 } from "./auth-route-support.js";
 import {
   clearRefreshTokenCookie,
+  refreshTokenCookieName,
   setRefreshTokenCookie,
 } from "./refresh-token-cookie.js";
 
@@ -44,6 +46,18 @@ const logoutRoute: RouteDefinition = {
   access: { kind: "public" },
   method: "POST",
   url: "/api/auth/logout",
+};
+
+const sessionInventoryRoute: RouteDefinition = {
+  access: { kind: "authenticated" },
+  method: "GET",
+  url: "/api/auth/sessions",
+};
+
+const logoutAllRoute: RouteDefinition = {
+  access: { kind: "authenticated" },
+  method: "POST",
+  url: "/api/auth/logout-all",
 };
 
 const currentUserRoute: RouteDefinition = {
@@ -144,6 +158,40 @@ export function registerAuthRoutes(
       await dependencies.logoutSessionService.logout({
         ...getRequestMetadata(request),
         refreshToken: getRefreshToken(request),
+      });
+      clearRefreshTokenCookie(reply);
+      return reply.status(204).send();
+    },
+  });
+
+  server.route({
+    config: { access: sessionInventoryRoute.access },
+    method: sessionInventoryRoute.method,
+    url: sessionInventoryRoute.url,
+    async handler(request) {
+      const currentRefreshToken = request.cookies[refreshTokenCookieName];
+      const sessions = await dependencies.sessionManagementService.listSessions(
+        {
+          ...(currentRefreshToken ? { currentRefreshToken } : {}),
+          userId: getAuthenticatedUserId(request),
+        },
+      );
+
+      return authSessionListResponseSchema.parse(sessions);
+    },
+  });
+
+  server.route({
+    config: {
+      access: logoutAllRoute.access,
+      rateLimit: { max: 10, timeWindow: "15 minutes" },
+    },
+    method: logoutAllRoute.method,
+    url: logoutAllRoute.url,
+    async handler(request, reply) {
+      await dependencies.sessionManagementService.logoutAll({
+        ...getRequestMetadata(request),
+        userId: getAuthenticatedUserId(request),
       });
       clearRefreshTokenCookie(reply);
       return reply.status(204).send();

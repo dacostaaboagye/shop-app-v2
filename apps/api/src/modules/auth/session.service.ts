@@ -1,6 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { AuthPermissionSet } from "@shop/contracts";
-import { AppError } from "../_core/errors/app-error.js";
 import { issueAccessToken } from "./access-token.js";
 import type {
   AuthUserRecord,
@@ -9,6 +8,10 @@ import type {
   SessionIssuer,
 } from "./authentication.service.js";
 import { normalizePreferredPortal } from "./portal-access.js";
+import {
+  getRefreshDenialReason,
+  invalidSessionError,
+} from "./session-policy.js";
 
 export type RefreshSessionCommand = {
   ipAddress?: string;
@@ -132,8 +135,18 @@ export class TokenSessionService
     );
 
     const user = await this.repository.findUserById(storedToken.userId);
+    const denialReason = getRefreshDenialReason(user, now);
 
-    if (!user || user.status !== "active") {
+    if (denialReason) {
+      await this.repository.revokeRefreshToken({
+        revokedAt: now,
+        revokedReason: denialReason,
+        tokenId: storedToken.id,
+      });
+      throw invalidSessionError();
+    }
+
+    if (!user) {
       throw invalidSessionError();
     }
 
@@ -224,15 +237,6 @@ function mapAuthUser(
     slug: user.slug,
     status: user.status,
   };
-}
-
-function invalidSessionError(): AppError {
-  return new AppError({
-    code: "unauthorized",
-    detail: "The session is invalid or has expired.",
-    statusCode: 401,
-    title: "Invalid session",
-  });
 }
 
 function toSessionContext(

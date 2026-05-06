@@ -31,8 +31,8 @@ Protect inventory, financial documents, operational evidence, user identities, a
 
 | Priority | Exploit path | Impact | Current status | Mitigation path |
 | --- | --- | --- | --- | --- |
-| P0 | Stale or stolen refresh/session credentials after role, location, or user status changes | Account takeover or continued access after revocation | Partially mitigated by server-side user reload and refresh-token revocation | Add explicit logout-all/session inventory and tests for permission revocation on active sessions |
-| P0 | Server-side authorization gap on admin/manager/worker routes or location-scoped resources | Cross-location stock/document access | Route access guard exists; targeted route audits still required | Continue per-domain authorization tests for stock takes, GTNs, invoices, transfers, and assignments |
+| P0 | Stale or stolen refresh/session credentials after role, location, or user status changes | Account takeover or continued access after revocation | Access tokens reload user state, refresh denies inactive/locked/force-reset users, lockout/force-reset/status changes revoke refresh tokens, session inventory/logout-all exists, and inactive locations no longer satisfy location-scoped permission grants | Keep adding revocation regressions when new auth/session lifecycle paths are introduced |
+| P0 | Server-side authorization gap on admin/manager/worker routes or location-scoped resources | Cross-location stock/document access | Route access guard exists; stock-take and document public-reference coverage exists; targeted GTN/invoice/transfer/assignment audits still required | Continue per-domain authorization tests for GTNs, invoices, transfers, and assignments |
 | P0 | Predictable references used as access keys | Unauthorized document/session download | Public refs are required UX, but must never replace authorization. Sales/GTN issued-document refs and stock-take download/detail refs now have regression coverage. | Continue adding guessed-reference tests as new public-reference endpoints are introduced |
 | P1 | Malicious imports or uploads | Stored XSS, formula injection, bad stock data, partial writes | Catalog/profile media MIME hardening exists; imports need continuing review | Keep exact MIME allowlists, magic-byte checks, transaction tests, and formula neutralization |
 | P1 | Replay or double-apply of stock-taking and stock-adjustment workflows | Inventory corruption | Some lifecycle tests exist; keep expanding | Enforce idempotent apply transitions and append-only adjustment evidence |
@@ -56,6 +56,15 @@ Protect inventory, financial documents, operational evidence, user identities, a
 - `apps/api/test/issued-document-public-reference-auth.routes.test.ts` verifies guessed sales and GTN document references still delegate to the issued-document services and return `403` when service authorization denies access.
 - `apps/api/test/gtn-issued-document-snapshot.service.test.ts` verifies GTN snapshot access rejects actors without requester, source-location, destination-location, or admin permission, while allowing a source-location manager.
 - Existing stock-take route tests cover manager location-scope enforcement for generated stock-take detail, sheet, booklet PDF, workbook, variance report, dry-run import, and apply routes.
+
+## Current Session Revocation Evidence
+
+- `apps/api/test/access-token-authentication.service.test.ts` verifies signed access tokens are rejected after user deactivation, lockout, or force-password-reset state.
+- `apps/api/test/session.service.test.ts` verifies refresh denies inactive, locked, and force-reset users while revoking the presented refresh token.
+- `apps/api/test/authentication.service.test.ts` verifies account lockout revokes active refresh tokens.
+- `apps/api/test/password-reset.service.test.ts` verifies successful password reset clears force-reset state and revokes existing refresh tokens.
+- `apps/api/test/session-management.service.test.ts` and `apps/api/test/auth-session-management.routes.test.ts` verify sanitized session inventory and logout-all behavior without exposing refresh token identifiers.
+- `apps/api/test/postgres-permission.repository.test.ts` verifies inactive location-scoped grants are filtered while global grants remain valid.
 
 ## Non-Regression Requirements
 
