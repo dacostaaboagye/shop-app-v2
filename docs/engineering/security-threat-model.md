@@ -33,7 +33,7 @@ Protect inventory, financial documents, operational evidence, user identities, a
 | --- | --- | --- | --- | --- |
 | P0 | Stale or stolen refresh/session credentials after role, location, or user status changes | Account takeover or continued access after revocation | Partially mitigated by server-side user reload and refresh-token revocation | Add explicit logout-all/session inventory and tests for permission revocation on active sessions |
 | P0 | Server-side authorization gap on admin/manager/worker routes or location-scoped resources | Cross-location stock/document access | Route access guard exists; targeted route audits still required | Continue per-domain authorization tests for stock takes, GTNs, invoices, transfers, and assignments |
-| P0 | Public self-registration or OAuth into the operations identity store | Anonymous user creation or external-provider entry inside the workforce auth boundary, increasing future role-escalation and lifecycle-abuse risk | Mitigated for the operations portal by ADR 0021 and API/UI registration/OAuth blocking | Deliver internal staff provisioning with audited role/location assignment and put future ecommerce registration/OAuth under customer-owned route namespaces on the shared backend |
+| P0 | Public self-registration or OAuth into the operations identity store | Anonymous user creation or external-provider entry inside the workforce auth boundary, increasing future role-escalation and lifecycle-abuse risk | Mitigated for the operations portal by ADR 0021, API/UI registration/OAuth blocking, and the protected internal staff-provisioning API | Add the staff-provisioning UI/setup-email follow-up and keep future ecommerce registration/OAuth under customer-owned route namespaces on the shared backend |
 | P0 | Predictable references used as access keys | Unauthorized document/session download | Public refs are required UX, but must never replace authorization. Sales/GTN issued-document refs and stock-take download/detail refs now have regression coverage. | Continue adding guessed-reference tests as new public-reference endpoints are introduced |
 | P1 | Malicious imports or uploads | Stored XSS, formula injection, bad stock data, partial writes | Catalog/profile media MIME hardening exists; imports need continuing review | Keep exact MIME allowlists, magic-byte checks, transaction tests, and formula neutralization |
 | P1 | Replay or double-apply of stock-taking and stock-adjustment workflows | Inventory corruption | Some lifecycle tests exist; keep expanding | Enforce idempotent apply transitions and append-only adjustment evidence |
@@ -51,7 +51,14 @@ Protect inventory, financial documents, operational evidence, user identities, a
 4. Add endpoint-specific outbound-send limits for admin test emails, admin communications, supplier portal invites, and sales document email sends.
 5. Reject IANA special-purpose targets before fetching official-document PDF logo images; pin the validated address, do not follow redirects, validate image bytes, enforce size limits, and stop slow-drip responses with a wall-clock deadline.
 6. Disable public operations self-registration and Google OAuth, then document the operations/customer auth boundary in ADR 0021.
-7. Add follow-up tickets for webhook timestamp replay checks, stock workflow idempotency tests, guessed-reference authorization tests for future public-reference endpoints, internal staff provisioning, and endpoint-specific limits for future expensive routes.
+7. Add the protected internal staff-provisioning API so workforce users are created by authorized access managers with explicit role/location assignment and password setup required before first sign-in.
+8. Add follow-up tickets for webhook timestamp replay checks, stock workflow idempotency tests, guessed-reference authorization tests for future public-reference endpoints, staff-provisioning UI/setup email, and endpoint-specific limits for future expensive routes.
+
+## Current Internal Provisioning Regression Evidence
+
+- `apps/api/test/admin-staff-provisioning.routes.test.ts` verifies `POST /api/admin/access/users` creates an internal workforce account through the protected admin access route without exposing raw internal IDs.
+- `apps/api/test/admin-staff-provisioning.service.test.ts` verifies email/name normalization, password setup required for newly created users, scoped role validation, duplicate-email handling, slug-conflict retry, `access.user.created` audit event publication, and non-blocking sanitized logging if event append fails after the transactional user write.
+- `packages/contracts/src/admin-user-access.test.ts` verifies the staff-provisioning request and response contracts accept role/location slugs and reject raw internal IDs at the public DTO boundary.
 
 ## Current Authorization Regression Evidence
 

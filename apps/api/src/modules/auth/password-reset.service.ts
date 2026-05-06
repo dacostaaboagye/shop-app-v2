@@ -140,7 +140,11 @@ export class PasswordResetService {
       // Update password
       await tx
         .update(users)
-        .set({ passwordHash, updatedAt: now })
+        .set({
+          passwordHash,
+          requiresPasswordChange: false,
+          updatedAt: now,
+        })
         .where(eq(users.id, record.userId));
 
       // Revoke all active refresh tokens — force re-login everywhere

@@ -8,6 +8,7 @@ describe("admin user access routes", () => {
     const state = { lastSlug: "" };
     const server = createAuthorizedServer({
       adminUserAccess: {
+        adminStaffProvisioningService: createNoopStaffProvisioningService(),
         adminUserAccessQueryService: {
           async getUserAccessDetail(slug) {
             state.lastSlug = slug;
@@ -73,6 +74,7 @@ describe("admin user access routes", () => {
     };
     const server = createAuthorizedServer({
       adminUserAccess: {
+        adminStaffProvisioningService: createNoopStaffProvisioningService(),
         adminUserAccessQueryService: {
           async getUserAccessDetail() {
             return null;
@@ -231,6 +233,7 @@ describe("admin user access routes", () => {
     };
     const server = createAuthorizedServer({
       adminUserAccess: {
+        adminStaffProvisioningService: createNoopStaffProvisioningService(),
         adminUserAccessQueryService: {
           async getUserAccessDetail() {
             return null;
@@ -342,6 +345,14 @@ function createNoopWriteService() {
     async setPermissionOverride() {},
     async updateProfile() {},
     async updateStatus() {},
+  };
+}
+
+function createNoopStaffProvisioningService() {
+  return {
+    async createUser() {
+      throw new Error("Unexpected staff provisioning call");
+    },
   };
 }
 
