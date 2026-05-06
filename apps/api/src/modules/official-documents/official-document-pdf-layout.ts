@@ -1,4 +1,5 @@
 import type { OfficialDocumentProfileResponse } from "@shop/contracts";
+import { getOfficialDocumentLogoImage } from "./official-document-logo-fetch.js";
 
 type HeroInput = {
   accent: string;
@@ -9,10 +10,6 @@ type HeroInput = {
   statusSuffix?: string | null;
   title: string;
 };
-
-const LOGO_IMAGE_MAX_BYTES = 2_000_000;
-const LOGO_IMAGE_TIMEOUT_MS = 5_000;
-const logoImageCache = new Map<string, Promise<Buffer | null>>();
 
 export function drawDocumentShell(doc: PDFKit.PDFDocument): void {
   doc.rect(0, 0, doc.page.width, doc.page.height).fill("#f6f7f4");
@@ -93,7 +90,7 @@ async function drawLogoMark(
   const x = 452;
   const y = 58;
   const size = 42;
-  const image = await getLogoImage(profile.logoImageUrl);
+  const image = await getOfficialDocumentLogoImage(profile.logoImageUrl);
 
   if (image) {
     doc.roundedRect(x, y, size, size, 3).fill("#ffffff");
@@ -113,52 +110,6 @@ async function drawLogoMark(
   doc.roundedRect(x, y, size, size, 3).fill(primary);
   doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(12);
   doc.text(profile.logoText, x, y + 14, { align: "center", width: size });
-}
-
-async function getLogoImage(url: string | null): Promise<Buffer | null> {
-  if (!url) return null;
-  if (!isHttpUrl(url)) return null;
-
-  const cached = logoImageCache.get(url);
-  if (cached) return cached;
-
-  const pending = fetchLogoImage(url);
-  logoImageCache.set(url, pending);
-  return pending;
-}
-
-function isHttpUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-async function fetchLogoImage(url: string): Promise<Buffer | null> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), LOGO_IMAGE_TIMEOUT_MS);
-
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    if (!response.ok) return null;
-
-    const contentType = response.headers.get("content-type") ?? "";
-    if (!contentType.toLowerCase().startsWith("image/")) return null;
-
-    const contentLength = Number(response.headers.get("content-length") ?? 0);
-    if (contentLength > LOGO_IMAGE_MAX_BYTES) return null;
-
-    const arrayBuffer = await response.arrayBuffer();
-    if (arrayBuffer.byteLength > LOGO_IMAGE_MAX_BYTES) return null;
-
-    return Buffer.from(arrayBuffer);
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timeout);
-  }
 }
 
 function drawCenteredFitText(
