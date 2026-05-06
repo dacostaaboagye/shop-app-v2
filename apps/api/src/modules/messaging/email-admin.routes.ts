@@ -63,6 +63,8 @@ const sendAdminCommunicationRoute: RouteDefinition = {
   url: "/api/admin/notifications/compose",
 };
 
+const emailSendRouteRateLimit = { max: 5, timeWindow: "15 minutes" };
+
 const listSentAdminCommunicationRoute: RouteDefinition = {
   access: { kind: "permission", permission: "admin.dashboard.view" },
   method: "GET",
@@ -114,7 +116,10 @@ export function registerEmailAdminRoutes(
   });
 
   server.route({
-    config: { access: sendTestEmailRoute.access },
+    config: {
+      access: sendTestEmailRoute.access,
+      rateLimit: emailSendRouteRateLimit,
+    },
     method: sendTestEmailRoute.method,
     url: sendTestEmailRoute.url,
     async handler(request, reply) {
@@ -143,7 +148,10 @@ export function registerEmailAdminRoutes(
   });
 
   server.route({
-    config: { access: sendAdminCommunicationRoute.access },
+    config: {
+      access: sendAdminCommunicationRoute.access,
+      rateLimit: emailSendRouteRateLimit,
+    },
     method: sendAdminCommunicationRoute.method,
     url: sendAdminCommunicationRoute.url,
     async handler(request, reply) {

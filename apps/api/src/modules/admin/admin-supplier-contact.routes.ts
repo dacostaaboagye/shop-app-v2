@@ -15,6 +15,8 @@ import {
   supplierPrimaryContactCannotBeRemoved,
 } from "./admin-supplier-route-support.js";
 
+const supplierInviteRateLimit = { max: 5, timeWindow: "15 minutes" };
+
 export function registerAdminSupplierContactRoutes(
   server: FastifyInstance,
   dependencies: AdminSupplierRouteDependencies,
@@ -88,7 +90,7 @@ export function registerAdminSupplierContactRoutes(
 
   server.post(
     "/api/admin/suppliers/:slug/contacts/:contactReference/portal-invite",
-    { config: { access } },
+    { config: { access, rateLimit: supplierInviteRateLimit } },
     async (request) => {
       const { contactReference, slug } = request.params as {
         contactReference: string;

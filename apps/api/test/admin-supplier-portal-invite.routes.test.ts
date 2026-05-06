@@ -42,6 +42,38 @@ describe("admin supplier portal invite route", () => {
     assert.equal(response.json().code, "conflict");
     assert.equal(response.json().details?.status, "suppressed");
   });
+
+  it("limits repeated supplier portal invite sends before the service is called again", async () => {
+    let inviteCount = 0;
+    const server = createAuthorizedServer({
+      adminSuppliers: {
+        adminSupplierQueryService: unavailableSupplierQueryService(),
+        adminSupplierWriteService: {
+          ...unavailableSupplierWriteService(),
+          async inviteContactPortal() {
+            inviteCount += 1;
+            return supplierDetail();
+          },
+        },
+      },
+    });
+
+    const responses = await Promise.all(
+      Array.from({ length: 6 }, () =>
+        server.inject({
+          headers: { authorization: `Bearer ${issueTestToken()}` },
+          method: "POST",
+          url: "/api/admin/suppliers/acme-distribution/contacts/11111111-1111-4111-8111-111111111111/portal-invite",
+        }),
+      ),
+    );
+
+    const limitedResponse = responses.at(-1);
+    assert.ok(limitedResponse);
+    assert.equal(limitedResponse.statusCode, 429);
+    assert.equal(limitedResponse.json().code, "rate_limited");
+    assert.equal(inviteCount, 5);
+  });
 });
 
 function createAuthorizedServer(options: Parameters<typeof createServer>[0]) {
@@ -147,4 +179,54 @@ function issueTestToken() {
     userId: "usr_123",
     userSlug: "admin-user",
   }).token;
+}
+
+function supplierDetail() {
+  return {
+    contactCount: 1,
+    contacts: [
+      {
+        contactReference: "11111111-1111-4111-8111-111111111111",
+        email: "ama@acme.example",
+        firstName: "Ama",
+        isPrimary: true,
+        jobTitle: "Procurement lead",
+        lastName: "Mensah",
+        latestInvite: {
+          attemptedAt: NOW.toISOString(),
+          deliveryReason: null,
+          deliveryStatus: "sent" as const,
+          expiresAt: "2026-05-05T10:00:00.000Z",
+          recipientEmail: "ama@acme.example",
+        },
+        phone: null,
+        portalStatus: "invited" as const,
+        status: "active" as const,
+        userSlug: null,
+      },
+    ],
+    createdAt: NOW.toISOString(),
+    email: "supplier@example.com",
+    inquiries: [],
+    legalName: "Acme Distribution Limited",
+    linkedUserCount: 0,
+    name: "Acme Distribution",
+    paymentTermsDays: 30,
+    phone: "+233000000000",
+    primaryContact: {
+      email: "ama@acme.example",
+      firstName: "Ama",
+      lastName: "Mensah",
+      phone: null,
+      userSlug: null,
+    },
+    primaryImageUrl: null,
+    procurementOrders: [],
+    products: [],
+    recentTransactions: [],
+    slug: "acme-distribution",
+    status: "active" as const,
+    taxId: null,
+    website: null,
+  };
 }
