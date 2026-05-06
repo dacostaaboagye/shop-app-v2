@@ -60,6 +60,16 @@ export function oauthOnlyAccountError(): AppError {
   });
 }
 
+export function passwordChangeRequiredError(): AppError {
+  return new AppError({
+    code: "forbidden",
+    detail:
+      "Your password must be reset before you can sign in. Use the password reset link or request a new reset email.",
+    statusCode: 403,
+    title: "Password reset required",
+  });
+}
+
 export function toLoginAttemptRecord(input: {
   email: string;
   ipAddress: string | undefined;

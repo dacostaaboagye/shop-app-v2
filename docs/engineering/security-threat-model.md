@@ -60,6 +60,7 @@ Protect inventory, financial documents, operational evidence, user identities, a
 ## Current Session Revocation Evidence
 
 - `apps/api/test/access-token-authentication.service.test.ts` verifies signed access tokens are rejected after user deactivation, lockout, or force-password-reset state.
+- `apps/api/test/authentication.service.test.ts` verifies force-reset users cannot receive a new login session with their old password.
 - `apps/api/test/session.service.test.ts` verifies refresh denies inactive, locked, and force-reset users while revoking the presented refresh token.
 - `apps/api/test/authentication.service.test.ts` verifies account lockout revokes active refresh tokens.
 - `apps/api/test/password-reset.service.test.ts` verifies successful password reset clears force-reset state and revokes existing refresh tokens.

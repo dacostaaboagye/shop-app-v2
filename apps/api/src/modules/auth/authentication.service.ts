@@ -14,6 +14,7 @@ import {
   type LoginAttemptRecord,
   lockedAccountError,
   oauthOnlyAccountError,
+  passwordChangeRequiredError,
   type SessionContext,
   toAuthEventRecord,
   toLoginAttemptRecord,
@@ -97,6 +98,10 @@ export class PasswordAuthenticationService {
       throw lockedAccountError(
         getRemainingLockoutSeconds({ lockedUntil: user.lockedUntil, now }),
       );
+    }
+
+    if (user.requiresPasswordChange) {
+      throw passwordChangeRequiredError();
     }
 
     const recentFailures = await this.repository.getRecentFailedAttemptTimes(

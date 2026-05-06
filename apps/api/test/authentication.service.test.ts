@@ -108,6 +108,29 @@ describe("PasswordAuthenticationService", () => {
     assert.equal(harness.state.issuedSessions.length, 0);
   });
 
+  it("rejects force-reset accounts before issuing a session", async () => {
+    const harness = createHarness({
+      user: createUserRecord({
+        requiresPasswordChange: true,
+      }),
+    });
+
+    await assert.rejects(
+      () =>
+        harness.service.login({
+          email: "manager@example.com",
+          password: "Password123",
+        }),
+      (error: unknown) => {
+        assert.ok(error instanceof AppError);
+        assert.equal(error.title, "Password reset required");
+        return true;
+      },
+    );
+
+    assert.equal(harness.state.issuedSessions.length, 0);
+  });
+
   it("does not record userId on failed_attempt events for known users", async () => {
     // Anti-enumeration: an operator browsing auth_events must not be able
     // to tell whether a failed login hit a real account or an unknown email.
