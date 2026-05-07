@@ -45,6 +45,12 @@ Contains live Neon DATABASE_URL with credentials, Cloudflare R2 access key + sec
 
 **Fix direction:** Rotate all four credential sets. Move secrets to a vault / per-environment store; load via direnv or platform secret injection. Audit `dev-*.log` files in repo root before discarding.
 
+**Architecture update (2026-05-07):** ADR 0022 and
+`docs/engineering/secrets-management.md` define vendor-neutral secret delivery
+with Infisical as the initial vault. Application code remains bound to canonical
+environment names, not to an Infisical SDK. Credential rotation is still
+required before closing C2.
+
 ### C3. CORS falls open when `WEB_BASE_URL` is unset
 
 **File:** `apps/api/src/server/create-server.ts:94-104`

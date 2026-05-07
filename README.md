@@ -40,8 +40,18 @@ pnpm --filter @shop/api dev
 pnpm --filter @shop/web dev
 ```
 
+Vault-backed local commands are available after Infisical CLI setup:
+
+```bash
+pnpm dev:api:infisical
+pnpm dev:web:infisical
+pnpm db:migrate:infisical
+```
+
 Testing-environment deployment guidance lives in
 [docs/engineering/testing-environment-deployment.md](./docs/engineering/testing-environment-deployment.md).
+Secrets-management guidance lives in
+[docs/engineering/secrets-management.md](./docs/engineering/secrets-management.md).
 
 ## Branch naming
 
