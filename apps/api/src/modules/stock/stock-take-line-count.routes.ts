@@ -4,6 +4,7 @@ import {
   stockTakeReferenceParamsSchema,
 } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
+import { AppError } from "../_core/errors/app-error.js";
 import type { RouteDefinition } from "../_core/route-contract.js";
 import { getAuthenticatedActor } from "../auth/auth-route-support.js";
 import {
@@ -60,6 +61,20 @@ function registerLineCountRoute(
       );
       const actor = getAuthenticatedActor(request);
       await assertSessionWriteAllowed(deps, portal, reference, actor);
+      const current = await deps.stockTakeService.getSession({
+        portal,
+        reference,
+      });
+
+      if (current.status === "applied" || current.status === "cancelled") {
+        throw new AppError({
+          code: "conflict",
+          detail: `Stock take "${reference}" is ${current.status} and cannot be edited.`,
+          statusCode: 409,
+          title: "Stock take cannot be edited",
+        });
+      }
+
       const body = stockTakeLineCountUpdateRequestSchema.parse(request.body);
 
       return stockTakeLineCountUpdateResponseSchema.parse(

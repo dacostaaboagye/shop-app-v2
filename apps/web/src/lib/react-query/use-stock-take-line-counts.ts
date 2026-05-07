@@ -1,12 +1,13 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   type StockTakeLineCountEntry,
   type StockTakeLineCountUpdateResponse,
   updateStockTakeLineCounts,
 } from "@/lib/react-query/stock-take-counts";
+import { StockTakeLineCountScheduler } from "@/lib/react-query/stock-take-line-count-scheduler";
 import {
   type StockTakePortal,
   stockTakeQueryKey,
@@ -26,8 +27,6 @@ export type UseStockTakeLineCountsResult = {
   queueEntry: (entry: StockTakeLineCountEntry) => void;
 };
 
-const DEBOUNCE_MS = 500;
-
 export function useUpdateStockTakeLineCounts({
   portal,
   reference,
@@ -36,8 +35,6 @@ export function useUpdateStockTakeLineCounts({
   reference: string;
 }): UseStockTakeLineCountsResult {
   const queryClient = useQueryClient();
-  const pendingRef = useRef<Map<number, StockTakeLineCountEntry>>(new Map());
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [lineStatuses, setLineStatuses] = useState<
     Map<number, LineCountSaveStatus>
   >(new Map());
@@ -54,13 +51,13 @@ export function useUpdateStockTakeLineCounts({
   const setStatusForLines = useCallback(
     (
       lineNumbers: number[],
-      status: LineCountSaveStatus["state"],
+      state: LineCountSaveStatus["state"],
       error: Error | null = null,
     ) => {
       setLineStatuses((current) => {
         const next = new Map(current);
         for (const lineNumber of lineNumbers) {
-          next.set(lineNumber, { error, state: status });
+          next.set(lineNumber, { error, state });
         }
         return next;
       });
@@ -68,49 +65,54 @@ export function useUpdateStockTakeLineCounts({
     [],
   );
 
-  const flushNow = useCallback(async (): Promise<void> => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-    if (pendingRef.current.size === 0) return;
-
-    const entries = [...pendingRef.current.values()];
-    pendingRef.current = new Map();
-    const flushedLineNumbers = entries.map((entry) => entry.lineNumber);
-    setStatusForLines(flushedLineNumbers, "pending");
-
-    try {
-      await mutation.mutateAsync(entries);
-      setStatusForLines(flushedLineNumbers, "saved");
-      setLastError(null);
-      await queryClient.invalidateQueries({
-        queryKey: stockTakeQueryKey(portal, reference),
-      });
-    } catch (error) {
-      const wrapped = error instanceof Error ? error : new Error(String(error));
-      setStatusForLines(flushedLineNumbers, "error", wrapped);
-      setLastError(wrapped);
-    }
+  const schedulerRef = useRef<StockTakeLineCountScheduler | null>(null);
+  const scheduler = useMemo(() => {
+    const created = new StockTakeLineCountScheduler(
+      async (entries) => {
+        try {
+          await mutation.mutateAsync(entries);
+          await queryClient.invalidateQueries({
+            queryKey: stockTakeQueryKey(portal, reference),
+          });
+          return { ok: true };
+        } catch (error) {
+          const wrapped =
+            error instanceof Error ? error : new Error(String(error));
+          setLastError(wrapped);
+          throw wrapped;
+        }
+      },
+      {
+        onFlushBegin: (lineNumbers) =>
+          setStatusForLines(lineNumbers, "pending"),
+        onFlushDone: (lineNumbers) => {
+          setStatusForLines(lineNumbers, "saved");
+          setLastError(null);
+        },
+        onFlushError: (lineNumbers, error) => {
+          const wrapped =
+            error instanceof Error ? error : new Error(String(error));
+          setStatusForLines(lineNumbers, "error", wrapped);
+        },
+      },
+    );
+    schedulerRef.current = created;
+    return created;
   }, [mutation, portal, queryClient, reference, setStatusForLines]);
 
   const queueEntry = useCallback(
     (entry: StockTakeLineCountEntry) => {
-      pendingRef.current.set(entry.lineNumber, entry);
       setStatusForLines([entry.lineNumber], "pending");
-
-      if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => {
-        timerRef.current = null;
-        void flushNow();
-      }, DEBOUNCE_MS);
+      scheduler.queue(entry);
     },
-    [flushNow, setStatusForLines],
+    [scheduler, setStatusForLines],
   );
+
+  const flushNow = useCallback(() => scheduler.flushNow(), [scheduler]);
 
   useEffect(
     () => () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      schedulerRef.current?.dispose();
     },
     [],
   );
