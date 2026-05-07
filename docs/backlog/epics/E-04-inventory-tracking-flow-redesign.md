@@ -429,10 +429,13 @@ Implementation sub-slices:
 - E-04-08B: Shipped in PR #124. Add XLSX workbook generation from
   stock-take session rows with printable layout, readable columns, download
   state cleanup, and read-only system columns.
-- E-04-08C: Next. Add XLSX workbook import by normalizing rows into the existing
-  stock-take dry-run validation path.
-- E-04-08D: Add in-app count entry so paper counts can be entered directly
-  without requiring file conversion.
+- E-04-08C: Shipped in PR #125 on 2026-05-04. Add XLSX workbook import by
+  normalizing rows into the existing stock-take dry-run validation path.
+- E-04-08D: Shipped in PR #137 on 2026-05-07. Add in-app count entry so paper
+  counts can be entered directly without requiring file conversion. The
+  entry path includes a Review counts bridge that builds a synthetic CSV
+  from the persisted line state and reuses the existing dry-run validator
+  so there is one validation surface and one apply path.
 - E-04-08E: Shipped in PR #123. Add stock-take session history on the admin
   and manager stock-taking workspaces, with audited deletion implemented as
   cancellation for non-applied sessions.
@@ -489,3 +492,5 @@ Implementation sub-slices:
 - E-04 stock-take location selector cleanup: PR #122.
 - E-04 stock-take barcode removal and session history: PR #123.
 - E-04 stock-take XLSX workbook generation: PR #124.
+- E-04 stock-take XLSX import: PR #125.
+- E-04 stock-take in-app count entry: PR #137.
