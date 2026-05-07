@@ -22,9 +22,9 @@ import {
 import { toRoute } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import { StockTakeApplyReviewCard } from "./stock-take-apply-review-card";
+import { StockTakeEntryTabs } from "./stock-take-entry-tabs";
 import { StockTakeFinalReportCard } from "./stock-take-final-report-card";
 import { StockTakeImportErrors } from "./stock-take-import-errors";
-import { StockTakeImportPanel } from "./stock-take-import-panel";
 import { StockTakeImportPreview } from "./stock-take-import-preview";
 import { StockTakeImportSummary } from "./stock-take-import-summary";
 
@@ -127,7 +127,8 @@ export function StockTakeReviewPageClient({
       ) : (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
           <div className="flex min-w-0 flex-col gap-6">
-            <StockTakeImportPanel
+            <StockTakeEntryTabs
+              detail={detailQuery.data}
               onDryRun={(input) => {
                 applyMutation.reset();
                 setApplyResult(null);

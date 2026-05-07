@@ -15,7 +15,10 @@ export type StockTakeRouteDeps = {
     | "getSession"
   >;
   stockTakeListService: Pick<StockTakeListService, "listSessions">;
-  stockTakeLifecycleService: Pick<StockTakeLifecycleService, "cancelSession">;
+  stockTakeLifecycleService: Pick<
+    StockTakeLifecycleService,
+    "cancelSession" | "updateLineCounts"
+  >;
 };
 
 export function createUnavailableStockTakeDeps(): StockTakeRouteDeps {
@@ -44,6 +47,9 @@ export function createUnavailableStockTakeDeps(): StockTakeRouteDeps {
     },
     stockTakeLifecycleService: {
       async cancelSession() {
+        throw unavailableStockTakeError();
+      },
+      async updateLineCounts() {
         throw unavailableStockTakeError();
       },
     },

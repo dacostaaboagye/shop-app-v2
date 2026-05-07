@@ -13,6 +13,7 @@ import {
   buildStockTakeCsv,
   createStockTakeCsvFilename,
 } from "./stock-take-csv.js";
+import { registerStockTakeLineCountRoutes } from "./stock-take-line-count.routes.js";
 import { registerStockTakeListRoutes } from "./stock-take-list.routes.js";
 import { registerStockTakePdfRoutes } from "./stock-take-pdf.routes.js";
 import {
@@ -71,6 +72,7 @@ export function registerStockTakeRoutes(
 ) {
   registerStockTakeListRoutes(server, deps);
   registerStockTakeCancelRoutes(server, deps);
+  registerStockTakeLineCountRoutes(server, deps);
   registerStockTakeXlsxRoutes(server, deps);
 
   server.route({
