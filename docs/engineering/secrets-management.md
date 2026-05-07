@@ -86,38 +86,39 @@ Bootstrap `/bootstrap`:
 
 ## Local Setup
 
-Install and authenticate the Infisical CLI using the official Infisical CLI
-docs.
+The repo scripts use `pnpm dlx @infisical/cli`, so a global Infisical install
+is optional. If you prefer a global install, make sure `infisical` is available
+on `PATH`.
 
 Link the local checkout to the Infisical project:
 
 ```powershell
-infisical login
-infisical init
+pnpm dlx @infisical/cli login
+pnpm dlx @infisical/cli init
 ```
 
 Run the API without `.env.local`:
 
 ```powershell
-infisical run --env=dev --path=/api -- pnpm --filter @shop/api exec tsx watch src/index.ts
+pnpm dev:api:infisical
 ```
 
 Run the event worker:
 
 ```powershell
-infisical run --env=dev --path=/api -- pnpm --filter @shop/api exec tsx watch src/workers/platform-event-delivery-worker.ts
+pnpm dev:events:infisical
 ```
 
 Run the web app:
 
 ```powershell
-infisical run --env=dev --path=/web -- pnpm --filter @shop/web dev
+pnpm dev:web:infisical
 ```
 
 Run database migrations with vault-injected values:
 
 ```powershell
-infisical run --env=dev --path=/api -- pnpm --filter @shop/database db:migrate
+pnpm db:migrate:infisical
 ```
 
 ## CI And Deployment
@@ -140,7 +141,7 @@ Target workflow:
 Example export shape:
 
 ```powershell
-infisical export --env=testing --path=/api --format=dotenv --output-file=api.secrets
+pnpm dlx @infisical/cli export --env=testing --path=/api --format=dotenv --output-file=api.secrets
 flyctl secrets import --app $env:FLY_APP_NAME < api.secrets
 ```
 
