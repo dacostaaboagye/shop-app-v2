@@ -226,6 +226,29 @@ export const stockTakeApplyResponseSchema = z
   })
   .strict();
 
+export const stockTakeLineCountEntrySchema = z
+  .object({
+    countedQuantity: z.number().int().nonnegative().nullable(),
+    lineNumber: z.number().int().positive(),
+    note: z.string().max(500).nullable(),
+  })
+  .strict();
+
+export const stockTakeLineCountUpdateRequestSchema = z
+  .object({
+    entries: z.array(stockTakeLineCountEntrySchema).min(1).max(500),
+  })
+  .strict();
+
+export const stockTakeLineCountUpdateResponseSchema = z
+  .object({
+    errors: z.array(stockTakeDryRunRowErrorSchema),
+    status: stockTakeStatusSchema,
+    stockTakeReference: z.string().min(1).max(40),
+    updatedCount: z.number().int().min(0),
+  })
+  .strict();
+
 export type StockTakeCreateRequest = z.infer<
   typeof stockTakeCreateRequestSchema
 >;
@@ -253,6 +276,15 @@ export type StockTakeImportDryRunResponse = z.infer<
   typeof stockTakeImportDryRunResponseSchema
 >;
 export type StockTakeLine = z.infer<typeof stockTakeLineSchema>;
+export type StockTakeLineCountEntry = z.infer<
+  typeof stockTakeLineCountEntrySchema
+>;
+export type StockTakeLineCountUpdateRequest = z.infer<
+  typeof stockTakeLineCountUpdateRequestSchema
+>;
+export type StockTakeLineCountUpdateResponse = z.infer<
+  typeof stockTakeLineCountUpdateResponseSchema
+>;
 export type StockTakeMode = z.infer<typeof stockTakeModeSchema>;
 export type StockTakeSessionDetail = z.infer<
   typeof stockTakeSessionDetailSchema

@@ -6,6 +6,8 @@ import {
   stockTakeCreateRequestSchema,
   stockTakeImportDryRunRequestSchema,
   stockTakeImportDryRunResponseSchema,
+  stockTakeLineCountUpdateRequestSchema,
+  stockTakeLineCountUpdateResponseSchema,
   stockTakeSessionDetailSchema,
 } from "./stock-takes.js";
 import {
@@ -237,6 +239,45 @@ describe("stock take contracts", () => {
     const firstLine = response.lines[0];
     assert.ok(firstLine);
     assert.equal("skuId" in firstLine, false);
+  });
+
+  it("accepts in-app line-count update requests", () => {
+    const request = stockTakeLineCountUpdateRequestSchema.parse({
+      entries: [
+        { countedQuantity: 12, lineNumber: 1, note: "front shelf" },
+        { countedQuantity: null, lineNumber: 2, note: null },
+      ],
+    });
+
+    assert.equal(request.entries.length, 2);
+    assert.equal(request.entries[0]?.countedQuantity, 12);
+    assert.equal(request.entries[1]?.countedQuantity, null);
+  });
+
+  it("rejects negative counted quantities for line-count updates", () => {
+    assert.throws(() =>
+      stockTakeLineCountUpdateRequestSchema.parse({
+        entries: [{ countedQuantity: -1, lineNumber: 1, note: null }],
+      }),
+    );
+  });
+
+  it("rejects empty line-count update payloads", () => {
+    assert.throws(() =>
+      stockTakeLineCountUpdateRequestSchema.parse({ entries: [] }),
+    );
+  });
+
+  it("returns the updated count and structured errors for line-count updates", () => {
+    const response = stockTakeLineCountUpdateResponseSchema.parse({
+      errors: [],
+      status: "generated",
+      stockTakeReference: "STKTAKE-2026-0001",
+      updatedCount: 2,
+    });
+
+    assert.equal(response.updatedCount, 2);
+    assert.equal(response.errors.length, 0);
   });
 
   it("accepts stock-take session list filters and responses", () => {
