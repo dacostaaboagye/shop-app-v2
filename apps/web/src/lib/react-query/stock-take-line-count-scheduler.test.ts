@@ -3,6 +3,10 @@ import { describe, it } from "node:test";
 import type { StockTakeLineCountEntry } from "@/lib/react-query/stock-take-counts";
 import { StockTakeLineCountScheduler } from "./stock-take-line-count-scheduler";
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 describe("StockTakeLineCountScheduler", () => {
   it("coalesces rapid edits into a single flush", async () => {
     const flushed: StockTakeLineCountEntry[][] = [];
@@ -82,6 +86,53 @@ describe("StockTakeLineCountScheduler", () => {
     await scheduler.flushNow();
 
     assert.equal(flushCount, 0);
+  });
+
+  it("flushNow awaits an in-flight debounced flush before resolving", async () => {
+    const events: string[] = [];
+    let resolveFirst: ((value: { ok: boolean }) => void) | null = null;
+    let flushIndex = 0;
+
+    const scheduler = new StockTakeLineCountScheduler(
+      (entries) => {
+        flushIndex += 1;
+        const tag = `flush-${flushIndex}-${entries.map((entry) => entry.lineNumber).join(",")}`;
+        events.push(`${tag}:start`);
+        if (flushIndex === 1) {
+          return new Promise<{ ok: boolean }>((resolve) => {
+            resolveFirst = resolve;
+          });
+        }
+        events.push(`${tag}:done`);
+        return Promise.resolve({ ok: true });
+      },
+      { debounceMs: 5 },
+    );
+
+    // Queue line 1 — debounce fires after 5ms and starts the slow flush.
+    scheduler.queue({ countedQuantity: 1, lineNumber: 1, note: null });
+    await sleep(15);
+    assert.deepEqual(events, ["flush-1-1:start"]);
+
+    // While flush-1 is still running, queue line 2 and immediately call
+    // flushNow. The fix must serialise: flushNow waits for flush-1 to
+    // resolve before sending flush-2.
+    scheduler.queue({ countedQuantity: 2, lineNumber: 2, note: null });
+    const review = scheduler.flushNow();
+
+    // Allow microtasks to run; flush-2 must not have started yet because
+    // flush-1 is still pending.
+    await sleep(5);
+    assert.deepEqual(events, ["flush-1-1:start"]);
+
+    // Resolve flush-1.
+    assert.ok(resolveFirst);
+    resolveFirst({ ok: true });
+    await review;
+
+    // After review resolves, flush-2 must have completed.
+    assert.ok(events.includes("flush-2-2:start"));
+    assert.ok(events.includes("flush-2-2:done"));
   });
 
   it("dispose clears any pending edits without flushing", async () => {
