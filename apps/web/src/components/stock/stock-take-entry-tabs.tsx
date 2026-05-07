@@ -47,7 +47,13 @@ export function StockTakeEntryTabs({
         />
       </TabsContent>
       <TabsContent className="mt-4" value="in-app">
-        <StockTakeCountEntryPanel detail={detail} portal={portal} />
+        <StockTakeCountEntryPanel
+          detail={detail}
+          onDryRun={onDryRun}
+          onFileSignatureChange={onFileSignatureChange}
+          onPreviewReset={onPreviewReset}
+          portal={portal}
+        />
       </TabsContent>
     </Tabs>
   );

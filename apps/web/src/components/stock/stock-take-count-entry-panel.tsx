@@ -1,36 +1,60 @@
 "use client";
 
-import { CheckCircle2, CircleAlert, Loader2, Search } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { FileSearch, Search } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 import { AppEmptyState } from "@/components/system/app-empty-state";
+import { AppErrorBanner } from "@/components/system/app-error";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import type {
-  StockTakeDetailResponse,
-  StockTakeLine,
-  StockTakePortal,
+import { Spinner } from "@/components/ui/spinner";
+import {
+  dryRunStockTakeImport,
+  fetchStockTakeDetail,
+  type StockTakeDetailResponse,
+  type StockTakeImportDryRunRequest,
+  type StockTakeImportDryRunResponse,
+  type StockTakePortal,
+  stockTakeQueryKey,
 } from "@/lib/react-query/stock-takes";
 import {
   type LineCountSaveStatus,
   useUpdateStockTakeLineCounts,
 } from "@/lib/react-query/use-stock-take-line-counts";
+import { CountEntryRow } from "./stock-take-count-entry-row";
+import {
+  buildInAppCountsCsvRequest,
+  getInAppCountsFileSignature,
+} from "./stock-take-in-app-counts.support";
 
 type StockTakeCountEntryPanelProps = {
   detail: StockTakeDetailResponse;
+  onDryRun: (input: {
+    dryRun: StockTakeImportDryRunResponse;
+    fileSignature: string;
+    request: StockTakeImportDryRunRequest;
+  }) => void;
+  onFileSignatureChange: (fileSignature: string | null) => void;
+  onPreviewReset: () => void;
   portal: StockTakePortal;
 };
 
 export function StockTakeCountEntryPanel({
   detail,
+  onDryRun,
+  onFileSignatureChange,
+  onPreviewReset,
   portal,
 }: StockTakeCountEntryPanelProps) {
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const searchId = useId();
   const isLocked = detail.status === "applied" || detail.status === "cancelled";
@@ -43,6 +67,39 @@ export function StockTakeCountEntryPanel({
     [detail.lines, search],
   );
 
+  const reviewMutation = useMutation({
+    mutationFn: async () => {
+      await lineCounts.flushNow();
+      const fresh = await queryClient.fetchQuery({
+        queryFn: () => fetchStockTakeDetail(portal, detail.stockTakeReference),
+        queryKey: stockTakeQueryKey(portal, detail.stockTakeReference),
+      });
+      const request = buildInAppCountsCsvRequest(fresh);
+      const dryRun = await dryRunStockTakeImport(
+        portal,
+        detail.stockTakeReference,
+        request,
+      );
+      return {
+        dryRun,
+        fileSignature: getInAppCountsFileSignature(detail.stockTakeReference),
+        request,
+      };
+    },
+    onSuccess: onDryRun,
+  });
+
+  function handleReview() {
+    onPreviewReset();
+    onFileSignatureChange(
+      getInAppCountsFileSignature(detail.stockTakeReference),
+    );
+    reviewMutation.mutate();
+  }
+
+  const reviewDisabled =
+    isLocked || reviewMutation.isPending || detail.lines.length === 0;
+
   return (
     <Card className="shadow-sm">
       <CardHeader className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -50,7 +107,7 @@ export function StockTakeCountEntryPanel({
           <CardTitle>Enter counts in app</CardTitle>
           <CardDescription>
             Save counted quantities and notes line by line. Each row saves on
-            blur. Review counts when every line is ready.
+            blur. Click review counts when every line is ready.
           </CardDescription>
         </div>
         <div className="flex flex-col gap-1 md:w-72">
@@ -103,130 +160,39 @@ export function StockTakeCountEntryPanel({
             ))}
           </ul>
         )}
+
+        {reviewMutation.error ? (
+          <AppErrorBanner
+            detail="Counts could not be reviewed. Confirm your access and try again."
+            error={reviewMutation.error}
+            title="Unable to review counts"
+          />
+        ) : null}
       </CardContent>
+      <CardFooter className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          {detail.lines.length} line{detail.lines.length === 1 ? "" : "s"} in
+          this session
+        </p>
+        <Button disabled={reviewDisabled} onClick={handleReview} type="button">
+          {reviewMutation.isPending ? (
+            <Spinner data-icon="inline-start" />
+          ) : (
+            <FileSearch data-icon="inline-start" />
+          )}
+          Review counts
+        </Button>
+      </CardFooter>
     </Card>
   );
 }
 
 const IDLE_STATUS: LineCountSaveStatus = { error: null, state: "idle" };
 
-function CountEntryRow({
-  isLocked,
-  line,
-  onCommit,
-  status,
-}: {
-  isLocked: boolean;
-  line: StockTakeLine;
-  onCommit: (entry: {
-    countedQuantity: number | null;
-    lineNumber: number;
-    note: string | null;
-  }) => void;
-  status: LineCountSaveStatus;
-}) {
-  const initialQuantity = line.countedQuantity?.toString() ?? "";
-  const initialNote = line.note ?? "";
-  const [quantity, setQuantity] = useState(initialQuantity);
-  const [note, setNote] = useState(initialNote);
-  const quantityId = useId();
-  const noteId = useId();
-
-  function commitIfChanged() {
-    if (isLocked) return;
-    if (quantity === initialQuantity && note === initialNote) return;
-    const parsedQuantity = parseQuantity(quantity);
-    if (parsedQuantity === "invalid") return;
-    onCommit({
-      countedQuantity: parsedQuantity,
-      lineNumber: line.lineNumber,
-      note: note.trim().length === 0 ? null : note.slice(0, 500),
-    });
-  }
-
-  return (
-    <li className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div className="flex flex-col gap-1">
-          <p className="type-support text-muted-foreground">
-            Line {line.lineNumber} · {line.unitOfMeasure}
-          </p>
-          <p className="font-semibold text-foreground">
-            {line.productName} · {line.variantName}
-          </p>
-          <p className="font-mono text-xs text-muted-foreground">{line.sku}</p>
-        </div>
-        <CountEntryStatusBadge status={status} />
-      </div>
-      <div className="mt-3 grid gap-3 md:grid-cols-[10rem_minmax(0,1fr)]">
-        <div className="flex flex-col gap-1">
-          <label
-            className="type-support text-muted-foreground"
-            htmlFor={quantityId}
-          >
-            Counted quantity
-          </label>
-          <Input
-            disabled={isLocked}
-            id={quantityId}
-            inputMode="numeric"
-            min={0}
-            onBlur={commitIfChanged}
-            onChange={(event) => setQuantity(event.currentTarget.value)}
-            placeholder="0"
-            type="number"
-            value={quantity}
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label
-            className="type-support text-muted-foreground"
-            htmlFor={noteId}
-          >
-            Note
-          </label>
-          <Textarea
-            disabled={isLocked}
-            id={noteId}
-            maxLength={500}
-            onBlur={commitIfChanged}
-            onChange={(event) => setNote(event.currentTarget.value)}
-            placeholder="Optional context for the count"
-            value={note}
-          />
-        </div>
-      </div>
-    </li>
-  );
-}
-
-function CountEntryStatusBadge({ status }: { status: LineCountSaveStatus }) {
-  if (status.state === "pending") {
-    return (
-      <span className="inline-flex items-center gap-1 type-support text-muted-foreground">
-        <Loader2 aria-hidden="true" className="size-3 animate-spin" /> Saving
-      </span>
-    );
-  }
-  if (status.state === "saved") {
-    return (
-      <span className="inline-flex items-center gap-1 type-support text-muted-foreground">
-        <CheckCircle2 aria-hidden="true" className="size-3" /> Saved
-      </span>
-    );
-  }
-  if (status.state === "error") {
-    return (
-      <span className="inline-flex items-center gap-1 type-support text-destructive">
-        <CircleAlert aria-hidden="true" className="size-3" /> Couldn{"’"}t save
-        — retry
-      </span>
-    );
-  }
-  return null;
-}
-
-function filterLines(lines: StockTakeLine[], search: string): StockTakeLine[] {
+function filterLines(
+  lines: StockTakeDetailResponse["lines"],
+  search: string,
+): StockTakeDetailResponse["lines"] {
   const trimmed = search.trim().toLowerCase();
   if (trimmed.length === 0) return lines;
   return lines.filter((line) => {
@@ -236,12 +202,4 @@ function filterLines(lines: StockTakeLine[], search: string): StockTakeLine[] {
       .join(" ");
     return haystack.includes(trimmed);
   });
-}
-
-function parseQuantity(value: string): number | null | "invalid" {
-  const trimmed = value.trim();
-  if (trimmed.length === 0) return null;
-  const parsed = Number.parseInt(trimmed, 10);
-  if (Number.isNaN(parsed) || parsed < 0) return "invalid";
-  return parsed;
 }

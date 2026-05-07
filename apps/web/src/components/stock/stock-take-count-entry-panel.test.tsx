@@ -56,6 +56,21 @@ describe("StockTakeCountEntryPanel", () => {
 
     assert.match(markup, /No lines to count yet/);
   });
+
+  it("offers a review-counts button that is disabled when the session is applied", () => {
+    const generatedMarkup = renderPanel({ status: "generated" });
+    assert.match(generatedMarkup, /Review counts/);
+    const appliedMarkup = renderPanel({ status: "applied" });
+    assert.match(appliedMarkup, /Review counts/);
+    // The applied state must disable every button on the panel — there is no
+    // selective enablement when the session is locked.
+    assert.match(appliedMarkup, /<button[^>]*disabled[^>]*>/);
+  });
+
+  it("disables the review-counts button when the session has no lines", () => {
+    const markup = renderPanel({ lines: [], status: "generated" });
+    assert.match(markup, /<button[^>]*disabled[^>]*>/);
+  });
 });
 
 function renderPanel(input: {
@@ -71,6 +86,9 @@ function renderPanel(input: {
           lines: input.lines ?? defaultLines(),
           status: input.status,
         })}
+        onDryRun={() => {}}
+        onFileSignatureChange={() => {}}
+        onPreviewReset={() => {}}
         portal="admin"
       />
     </QueryClientProvider>,
