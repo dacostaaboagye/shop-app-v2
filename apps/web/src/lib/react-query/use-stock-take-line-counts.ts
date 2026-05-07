@@ -1,10 +1,9 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   type StockTakeLineCountEntry,
-  type StockTakeLineCountUpdateResponse,
   updateStockTakeLineCounts,
 } from "@/lib/react-query/stock-take-counts";
 import { StockTakeLineCountScheduler } from "@/lib/react-query/stock-take-line-count-scheduler";
@@ -39,14 +38,6 @@ export function useUpdateStockTakeLineCounts({
     Map<number, LineCountSaveStatus>
   >(new Map());
   const [lastError, setLastError] = useState<Error | null>(null);
-  const mutation = useMutation<
-    StockTakeLineCountUpdateResponse,
-    Error,
-    StockTakeLineCountEntry[]
-  >({
-    mutationFn: (entries) =>
-      updateStockTakeLineCounts(portal, reference, { entries }),
-  });
 
   const setStatusForLines = useCallback(
     (
@@ -65,12 +56,17 @@ export function useUpdateStockTakeLineCounts({
     [],
   );
 
+  // The scheduler must be stable across renders or rapid edits stop
+  // coalescing and the in-flight serialisation guarding flushNow drops
+  // its reference. We do NOT depend on a `useMutation` object here —
+  // tanstack's mutation hook returns a fresh wrapper every render which
+  // would force the scheduler to be rebuilt.
   const schedulerRef = useRef<StockTakeLineCountScheduler | null>(null);
   const scheduler = useMemo(() => {
     const created = new StockTakeLineCountScheduler(
       async (entries) => {
         try {
-          await mutation.mutateAsync(entries);
+          await updateStockTakeLineCounts(portal, reference, { entries });
           await queryClient.invalidateQueries({
             queryKey: stockTakeQueryKey(portal, reference),
           });
@@ -98,7 +94,7 @@ export function useUpdateStockTakeLineCounts({
     );
     schedulerRef.current = created;
     return created;
-  }, [mutation, portal, queryClient, reference, setStatusForLines]);
+  }, [portal, queryClient, reference, setStatusForLines]);
 
   const queueEntry = useCallback(
     (entry: StockTakeLineCountEntry) => {

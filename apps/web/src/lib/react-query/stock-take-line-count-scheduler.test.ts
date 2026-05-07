@@ -126,8 +126,9 @@ describe("StockTakeLineCountScheduler", () => {
     assert.deepEqual(events, ["flush-1-1:start"]);
 
     // Resolve flush-1.
-    assert.ok(resolveFirst);
-    resolveFirst({ ok: true });
+    const resolver = resolveFirst as ((value: { ok: boolean }) => void) | null;
+    assert.ok(resolver);
+    resolver({ ok: true });
     await review;
 
     // After review resolves, flush-2 must have completed.
