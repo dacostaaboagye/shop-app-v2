@@ -2,6 +2,7 @@ import type {
   StockTakeApplyResponse,
   StockTakeCreateRequest,
   StockTakeImportDryRunResponse,
+  StockTakeLineCountEntry,
   StockTakeSessionDetail,
 } from "@shop/contracts";
 import { AppError } from "../src/modules/_core/errors/app-error.js";
@@ -33,6 +34,10 @@ export function createStockTakeServer(input: {
     portal: "admin" | "manager";
   }) => void;
   onCancel?: (input: { reference: string; userId?: string }) => void;
+  onUpdateLineCounts?: (input: {
+    entries: StockTakeLineCountEntry[];
+    reference: string;
+  }) => void;
   reportStatus?: "generated" | "applied";
 }) {
   const permissionService = {
@@ -69,6 +74,15 @@ export function createStockTakeServer(input: {
           });
           return createSessionSummary("cancelled", cancelInput.portal);
         },
+        async updateLineCounts({ entries, reference }) {
+          input.onUpdateLineCounts?.({ entries, reference });
+          return {
+            errors: [],
+            status: input.detailStatus ?? "generated",
+            stockTakeReference: reference,
+            updatedCount: entries.length,
+          };
+        },
       },
       stockTakeListService: {
         async listSessions(listInput) {
@@ -78,7 +92,12 @@ export function createStockTakeServer(input: {
               : {}),
             portal: listInput.portal,
           });
-          return createSessionListResponse(listInput.portal);
+          return {
+            items: [createSessionSummary("generated", listInput.portal)],
+            page: 1,
+            pageSize: 25,
+            totalCount: 1,
+          };
         },
       },
       stockTakeService: {
@@ -150,20 +169,6 @@ export function createStockTakeServer(input: {
       },
     },
   });
-}
-
-function createSessionListResponse(portal: "admin" | "manager"): {
-  items: ReturnType<typeof createSessionSummary>[];
-  page: number;
-  pageSize: number;
-  totalCount: number;
-} {
-  return {
-    items: [createSessionSummary("generated", portal)],
-    page: 1,
-    pageSize: 25,
-    totalCount: 1,
-  };
 }
 
 function createSessionSummary(
