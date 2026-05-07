@@ -308,7 +308,7 @@ Implementation files:
   durable outbox rows, then notifies the delivery loop after commit.
 - Added a dedicated platform event delivery worker entrypoint. Production can
   now run API instances with `PLATFORM_EVENT_DELIVERY_ENABLED=false` and run
-  `pnpm --filter @shop/api events:worker` locally or
+  `pnpm dev:events:infisical` locally or
   `pnpm --filter @shop/api start:events` after build with delivery enabled.
 
 Implementation files:
