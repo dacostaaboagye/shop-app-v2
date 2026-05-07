@@ -112,6 +112,9 @@ describe("auth routes", () => {
           async logout(command) {
             receivedRefreshToken = command.refreshToken;
           },
+          async logoutAll() {
+            throw new Error("logoutAll should not be called");
+          },
         },
       },
     });
@@ -130,6 +133,92 @@ describe("auth routes", () => {
       String(response.headers["set-cookie"]),
       new RegExp(`${refreshTokenCookieName}=;`),
     );
+  });
+
+  it("logs out all sessions for the authenticated user", async () => {
+    const now = new Date("2026-04-08T12:00:00.000Z");
+    let receivedUserId = "";
+    const server = createServer({
+      accessControl: {
+        accessTokenAuthenticationService: {
+          async authenticate(token) {
+            const { AccessTokenAuthenticationService } = await import(
+              "../src/modules/auth/access-token-authentication.service.js"
+            );
+
+            return new AccessTokenAuthenticationService(
+              {
+                async findUserById() {
+                  return {
+                    id: "usr_123",
+                    slug: "store-manager",
+                    status: "active",
+                  };
+                },
+              },
+              "development-access-secret",
+              () => now,
+            ).authenticate(token);
+          },
+        },
+      },
+      auth: {
+        ...createUnavailableAuthDependencies(),
+        logoutSessionService: {
+          async logout() {
+            throw new Error("logout should not be called");
+          },
+          async logoutAll(command) {
+            receivedUserId = command.userId;
+          },
+        },
+      },
+    });
+
+    const response = await server.inject({
+      headers: { authorization: `Bearer ${issueTestToken(now)}` },
+      method: "POST",
+      url: "/api/auth/logout-all",
+    });
+
+    assert.equal(response.statusCode, 204);
+    assert.equal(receivedUserId, "usr_123");
+    assert.match(
+      String(response.headers["set-cookie"]),
+      new RegExp(`${refreshTokenCookieName}=;`),
+    );
+  });
+
+  it("requires authentication before logout all", async () => {
+    let called = false;
+    const server = createServer({
+      accessControl: {
+        accessTokenAuthenticationService: {
+          async authenticate() {
+            throw new Error("Missing tokens should fail before authenticate");
+          },
+        },
+      },
+      auth: {
+        ...createUnavailableAuthDependencies(),
+        logoutSessionService: {
+          async logout() {
+            throw new Error("logout should not be called");
+          },
+          async logoutAll() {
+            called = true;
+          },
+        },
+      },
+    });
+
+    const response = await server.inject({
+      method: "POST",
+      url: "/api/auth/logout-all",
+    });
+
+    assert.equal(response.statusCode, 401);
+    assert.equal(called, false);
   });
 
   it("returns the current authenticated user for a valid bearer token", async () => {
@@ -388,6 +477,16 @@ describe("auth routes", () => {
     }
   });
 });
+
+function issueTestToken(now: Date) {
+  return issueAccessToken({
+    expiresInSeconds: 900,
+    now,
+    secret: "development-access-secret",
+    userId: "usr_123",
+    userSlug: "store-manager",
+  }).token;
+}
 
 function createSession(email: string): IssuedSession {
   return {

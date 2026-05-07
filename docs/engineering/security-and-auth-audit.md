@@ -200,6 +200,13 @@ If `API_BASE_URL` is forgotten in deployment, the API URL is shipped to the brow
 
 Password reset already revokes all refresh tokens (good). No user-facing endpoint to revoke other sessions; no cap on issued tokens. Incident-response gap, not a vulnerability.
 
+**Status update (2026-05-06):** `POST /api/auth/logout-all` now revokes
+every active refresh token for the authenticated user and clears the current
+browser cookies. The implementation also records a user-level session cutoff so
+access and refresh tokens issued at or before logout-all are rejected even if an
+in-flight refresh attempt races with the bulk revocation. Session inventory
+remains a future UX/operations enhancement.
+
 ### M11. Ad-hoc admin check breaks the CASL pattern
 
 **File:** `apps/api/src/modules/stock/supply-request-access-policy.ts:214-223`

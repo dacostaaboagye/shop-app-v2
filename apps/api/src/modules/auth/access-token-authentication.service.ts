@@ -8,6 +8,7 @@ export type AuthenticatedActor = {
 
 export type AuthenticatedUserRecord = {
   id: string;
+  sessionsRevokedAt?: Date | null;
   slug: string;
   status: "active" | "deactivated" | "suspended";
 };
@@ -34,7 +35,8 @@ export class AccessTokenAuthenticationService {
     if (
       !user ||
       user.status !== "active" ||
-      user.slug !== verifiedToken.userSlug
+      user.slug !== verifiedToken.userSlug ||
+      isBeforeSessionRevocationCutoff(verifiedToken.issuedAt, user)
     ) {
       throw invalidAccessTokenError();
     }
@@ -44,6 +46,13 @@ export class AccessTokenAuthenticationService {
       userSlug: user.slug,
     };
   }
+}
+
+function isBeforeSessionRevocationCutoff(
+  issuedAt: Date,
+  user: AuthenticatedUserRecord,
+): boolean {
+  return Boolean(user.sessionsRevokedAt && issuedAt <= user.sessionsRevokedAt);
 }
 
 function invalidAccessTokenError(): AppError {

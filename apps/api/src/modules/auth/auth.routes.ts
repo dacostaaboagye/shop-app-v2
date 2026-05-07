@@ -46,6 +46,12 @@ const logoutRoute: RouteDefinition = {
   url: "/api/auth/logout",
 };
 
+const logoutAllRoute: RouteDefinition = {
+  access: { kind: "authenticated" },
+  method: "POST",
+  url: "/api/auth/logout-all",
+};
+
 const currentUserRoute: RouteDefinition = {
   access: { kind: "authenticated" },
   method: "GET",
@@ -140,6 +146,23 @@ export function registerAuthRoutes(
       await dependencies.logoutSessionService.logout({
         ...getRequestMetadata(request),
         refreshToken: getRefreshToken(request),
+      });
+      clearRefreshTokenCookie(reply);
+      return reply.status(204).send();
+    },
+  });
+
+  server.route({
+    config: {
+      access: logoutAllRoute.access,
+      rateLimit: { max: 10, timeWindow: "15 minutes" },
+    },
+    method: logoutAllRoute.method,
+    url: logoutAllRoute.url,
+    async handler(request, reply) {
+      await dependencies.logoutSessionService.logoutAll({
+        ...getRequestMetadata(request),
+        userId: getAuthenticatedUserId(request),
       });
       clearRefreshTokenCookie(reply);
       return reply.status(204).send();

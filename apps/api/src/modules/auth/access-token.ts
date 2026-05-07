@@ -106,7 +106,7 @@ export function verifyAccessToken(input: {
 }
 
 function toEpochSeconds(date: Date): number {
-  return Math.floor(date.getTime() / 1000);
+  return date.getTime() / 1000;
 }
 
 function signaturesMatch(actual: string, expected: string): boolean {

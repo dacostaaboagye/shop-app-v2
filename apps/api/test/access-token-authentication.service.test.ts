@@ -94,11 +94,68 @@ describe("AccessTokenAuthenticationService", () => {
       },
     );
   });
+
+  it("rejects an access token issued before the user's session cutoff", async () => {
+    const issuedAt = new Date("2026-04-08T12:00:00.000Z");
+    const service = createService(
+      {
+        id: "usr_123",
+        sessionsRevokedAt: new Date("2026-04-08T12:05:00.000Z"),
+        slug: "store-manager",
+        status: "active",
+      },
+      new Date("2026-04-08T12:06:00.000Z"),
+    );
+
+    await assert.rejects(
+      () =>
+        service.authenticate(
+          issueAccessToken({
+            expiresInSeconds: 900,
+            now: issuedAt,
+            secret: "development-access-secret",
+            userId: "usr_123",
+            userSlug: "store-manager",
+          }).token,
+        ),
+      (error: unknown) => {
+        assert.ok(error instanceof AppError);
+        assert.equal(error.title, "Invalid access token");
+        return true;
+      },
+    );
+  });
+
+  it("accepts an access token issued after a cutoff in the same second", async () => {
+    const issuedAt = new Date("2026-04-08T12:00:00.900Z");
+    const service = createService(
+      {
+        id: "usr_123",
+        sessionsRevokedAt: new Date("2026-04-08T12:00:00.100Z"),
+        slug: "store-manager",
+        status: "active",
+      },
+      new Date("2026-04-08T12:00:01.000Z"),
+    );
+
+    const actor = await service.authenticate(
+      issueAccessToken({
+        expiresInSeconds: 900,
+        now: issuedAt,
+        secret: "development-access-secret",
+        userId: "usr_123",
+        userSlug: "store-manager",
+      }).token,
+    );
+
+    assert.equal(actor.userId, "usr_123");
+  });
 });
 
 function createService(
   user: {
     id: string;
+    sessionsRevokedAt?: Date | null;
     slug: string;
     status: "active" | "deactivated" | "suspended";
   } | null,

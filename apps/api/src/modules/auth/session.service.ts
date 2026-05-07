@@ -22,9 +22,16 @@ export type LogoutSessionCommand = {
   userAgent?: string;
 };
 
+export type LogoutAllSessionsCommand = {
+  ipAddress?: string;
+  userAgent?: string;
+  userId: string;
+};
+
 export type StoredRefreshTokenRecord = {
   expiresAt: Date;
   id: string;
+  issuedAt: Date;
   revokedAt: Date | null;
   userId: string;
 };
@@ -54,6 +61,19 @@ export interface SessionRepository {
     revokedReason: string;
     tokenId: string;
   }): Promise<void>;
+  revokeRefreshTokensForUser(input: {
+    revokedAt: Date;
+    revokedReason: string;
+    userId: string;
+  }): Promise<void>;
+  rotateRefreshToken(input: {
+    expiresAt: Date;
+    ipAddress?: string;
+    issuedAt: Date;
+    newTokenHash: string;
+    refreshTokenHash: string;
+    userAgent?: string;
+  }): Promise<AuthUserRecord | null>;
 }
 
 export type SessionServiceConfig = {
@@ -68,6 +88,7 @@ export interface RefreshSessionService {
 
 export interface LogoutSessionService {
   logout(command: LogoutSessionCommand): Promise<void>;
+  logoutAll(command: LogoutAllSessionsCommand): Promise<void>;
 }
 
 export interface SessionPermissionLookup {
@@ -126,36 +147,26 @@ export class TokenSessionService
 
   async refresh(command: RefreshSessionCommand): Promise<IssuedSession> {
     const now = this.now();
-    const storedToken = await this.getActiveRefreshToken(
-      command.refreshToken,
-      now,
+    const refreshTokenHash = hashRefreshToken(command.refreshToken);
+    const refreshToken = randomBytes(48).toString("base64url");
+    const newTokenHash = hashRefreshToken(refreshToken);
+    const refreshTokenExpiresAt = new Date(
+      now.getTime() + this.config.refreshTokenTtlSeconds * 1000,
     );
+    const user = await this.repository.rotateRefreshToken({
+      expiresAt: refreshTokenExpiresAt,
+      ...(command.ipAddress ? { ipAddress: command.ipAddress } : {}),
+      issuedAt: now,
+      newTokenHash,
+      refreshTokenHash,
+      ...(command.userAgent ? { userAgent: command.userAgent } : {}),
+    });
 
-    const user = await this.repository.findUserById(storedToken.userId);
-
-    if (!user || user.status !== "active") {
+    if (!user) {
       throw invalidSessionError();
     }
 
-    await this.repository.revokeRefreshToken({
-      revokedAt: now,
-      revokedReason: "rotated",
-      tokenId: storedToken.id,
-    });
-
-    await this.repository.recordAuthEvent({
-      eventType: "token_refresh",
-      ...(command.ipAddress ? { ipAddress: command.ipAddress } : {}),
-      occurredAt: now,
-      ...(command.userAgent ? { userAgent: command.userAgent } : {}),
-      userId: storedToken.userId,
-    });
-
-    return this.issueSession(
-      user,
-      now,
-      toSessionContext(command.ipAddress, command.userAgent),
-    );
+    return this.buildSession(user, now, refreshToken, refreshTokenExpiresAt);
   }
 
   async logout(command: LogoutSessionCommand): Promise<void> {
@@ -179,6 +190,23 @@ export class TokenSessionService
     });
   }
 
+  async logoutAll(command: LogoutAllSessionsCommand): Promise<void> {
+    const now = this.now();
+
+    await this.repository.revokeRefreshTokensForUser({
+      revokedAt: now,
+      revokedReason: "logout_all",
+      userId: command.userId,
+    });
+    await this.repository.recordAuthEvent({
+      eventType: "logout",
+      ...(command.ipAddress ? { ipAddress: command.ipAddress } : {}),
+      occurredAt: now,
+      ...(command.userAgent ? { userAgent: command.userAgent } : {}),
+      userId: command.userId,
+    });
+  }
+
   private async getActiveRefreshToken(
     refreshToken: string,
     now: Date,
@@ -192,6 +220,32 @@ export class TokenSessionService
     }
 
     return storedToken;
+  }
+
+  private async buildSession(
+    user: AuthUserRecord,
+    now: Date,
+    refreshToken: string,
+    refreshTokenExpiresAt: Date,
+  ): Promise<IssuedSession> {
+    const issuedAccessToken = issueAccessToken({
+      expiresInSeconds: this.config.accessTokenTtlSeconds,
+      now,
+      secret: this.config.accessTokenSecret,
+      userId: user.id,
+      userSlug: user.slug,
+    });
+    const permissionSet = this.permissionLookup
+      ? await this.permissionLookup.getCurrentPermissions(user.id)
+      : { locationScopes: [], permissions: [] };
+
+    return {
+      accessToken: issuedAccessToken.token,
+      accessTokenExpiresAt: issuedAccessToken.expiresAt.toISOString(),
+      refreshToken,
+      refreshTokenExpiresAt: refreshTokenExpiresAt.toISOString(),
+      user: mapAuthUser(user, permissionSet),
+    };
   }
 }
 
@@ -233,21 +287,4 @@ function invalidSessionError(): AppError {
     statusCode: 401,
     title: "Invalid session",
   });
-}
-
-function toSessionContext(
-  ipAddress: string | undefined,
-  userAgent: string | undefined,
-): SessionContext | undefined {
-  const context: SessionContext = {};
-
-  if (ipAddress) {
-    context.ipAddress = ipAddress;
-  }
-
-  if (userAgent) {
-    context.userAgent = userAgent;
-  }
-
-  return Object.keys(context).length > 0 ? context : undefined;
 }

@@ -14,6 +14,7 @@ export type UserRow = {
   passwordHash: string;
   preferredPortal: PortalKey | null;
   requiresPasswordChange: boolean;
+  sessionsRevokedAt: Date | null;
   slug: string;
   status: "active" | "deactivated" | "suspended";
 };
@@ -44,6 +45,7 @@ export const userSelectSql = `
     notification_sound_enabled AS "notificationSoundEnabled",
     last_login_at AS "lastLoginAt",
     locked_until AS "lockedUntil",
+    sessions_revoked_at AS "sessionsRevokedAt",
     requires_password_change AS "requiresPasswordChange"
   FROM users
 `;

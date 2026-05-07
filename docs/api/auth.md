@@ -134,6 +134,34 @@ Failure responses:
 - `401 unauthorized`: missing or invalid refresh session
 - `503 internal_error`: auth runtime misconfigured
 
+## `POST /api/auth/logout-all`
+
+Revokes every active refresh-token session for the authenticated user and clears
+the browser cookies on the current device. This supports incident response when
+a user suspects a stolen, shared, or abandoned session.
+
+The API also records a user-level session cutoff. Any access token or refresh
+token issued at or before that cutoff is rejected even if a concurrent refresh
+attempt created a new token while logout-all was running.
+
+Authentication:
+
+- requires a valid bearer access token
+- does not accept a request body
+
+Success response:
+
+- `204 No Content`
+
+Failure responses:
+
+- `401 unauthorized`: missing or invalid access token
+- `503 internal_error`: auth runtime misconfigured
+
+Note: the current device must discard its in-memory access token after a
+successful logout-all response. The API rejects pre-cutoff bearer tokens and
+prevents refresh-token reuse/future access-token rotation.
+
 ## Token rules
 
 - Access-token payload fields are limited to `user_id`, `slug`, `issued_at`, and `expires_at`.
