@@ -3,10 +3,13 @@ import { describe, it } from "node:test";
 import {
   buildStockTakeImportRequest,
   buildSummaryStats,
+  formatFileSize,
   getApplyDisabledReason,
   getDryRunReadinessMessage,
   getErrorAnchor,
+  getImportFileKind,
   getImportFileSignature,
+  getImportFileValidationError,
   getRowDisplayName,
   getRowTone,
   resolveImportContentType,
@@ -21,6 +24,32 @@ describe("stock take import review helpers", () => {
 
     assert.equal(resolveImportContentType(file), "text/csv");
     assert.equal(getImportFileSignature(file), "count.csv:19:0:text/csv");
+  });
+
+  it("labels workbook and csv file kinds with their upload limits", () => {
+    const workbook = new File(["x"], "count.xlsx", {
+      type: "application/octet-stream",
+    });
+    const csv = new File(["lineNumber,sku,countedQuantity"], "count.csv", {
+      type: "text/csv",
+    });
+
+    assert.equal(getImportFileKind(workbook).label, "XLSX workbook");
+    assert.equal(getImportFileKind(csv).label, "CSV fallback");
+  });
+
+  it("rejects oversized imports before upload", () => {
+    const workbook = new File([new Uint8Array(3_750_001)], "count.xlsx");
+    const csv = new File([new Uint8Array(1_000_001)], "count.csv");
+
+    assert.match(getImportFileValidationError(workbook) ?? "", /Workbook/);
+    assert.match(getImportFileValidationError(csv) ?? "", /CSV/);
+  });
+
+  it("formats file sizes for import feedback", () => {
+    assert.equal(formatFileSize(999_000), "999 KB");
+    assert.equal(formatFileSize(1_000_000), "1 MB");
+    assert.equal(formatFileSize(3_750_000), "3.8 MB");
   });
 
   it("builds binary-safe workbook import requests", async () => {

@@ -14,6 +14,9 @@ export const STOCK_TAKE_IMPORT_CONTENT_TYPES = [
   "application/vnd.ms-excel",
 ] as const satisfies readonly StockTakeImportContentType[];
 
+export const STOCK_TAKE_CSV_MAX_BYTES = 1_000_000;
+export const STOCK_TAKE_XLSX_MAX_BYTES = 3_750_000;
+
 export function resolveImportContentType(
   file: File,
 ): StockTakeImportContentType {
@@ -26,6 +29,39 @@ export function resolveImportContentType(
   }
 
   return "text/csv";
+}
+
+export function getImportFileKind(file: File) {
+  const contentType = resolveImportContentType(file);
+
+  if (
+    contentType ===
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  ) {
+    return {
+      contentType,
+      label: "XLSX workbook",
+      maxBytes: STOCK_TAKE_XLSX_MAX_BYTES,
+      shortLabel: "Workbook",
+    };
+  }
+
+  return {
+    contentType,
+    label: "CSV fallback",
+    maxBytes: STOCK_TAKE_CSV_MAX_BYTES,
+    shortLabel: "CSV",
+  };
+}
+
+export function getImportFileValidationError(file: File): string | null {
+  const kind = getImportFileKind(file);
+
+  if (file.size > kind.maxBytes) {
+    return `${kind.shortLabel} is too large. Use a file under ${formatFileSize(kind.maxBytes)}.`;
+  }
+
+  return null;
 }
 
 export function getImportFileSignature(file: File) {
@@ -154,6 +190,14 @@ function isStockTakeImportContentType(
   value: string,
 ): value is StockTakeImportContentType {
   return STOCK_TAKE_IMPORT_CONTENT_TYPES.some((type) => type === value);
+}
+
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1_000_000) {
+    return `${Math.round(bytes / 1_000)} KB`;
+  }
+
+  return `${(bytes / 1_000_000).toFixed(bytes % 1_000_000 === 0 ? 0 : 1)} MB`;
 }
 
 async function fileToBase64(file: File) {

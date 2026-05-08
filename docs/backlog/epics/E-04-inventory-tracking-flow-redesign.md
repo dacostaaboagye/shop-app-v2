@@ -411,7 +411,7 @@ Status: pending; depends on stakeholder confirmation of minimum catalog defaults
 
 ### E-04-08: Editable workbook and in-app count entry
 
-Status: in progress; E-04-08A and E-04-08E shipped in PR #123, and E-04-08B shipped in PR #124 on 2026-05-04.
+Status: shipped through E-04-08D. E-04-08A and E-04-08E shipped in PR #123, E-04-08B shipped in PR #124, E-04-08C shipped in PR #125, and E-04-08D shipped in PR #137.
 
 - Generate an XLSX stock-taking workbook from the same stock-take session rows.
 - Make the workbook printable and uploadable without conversion.
@@ -439,6 +439,12 @@ Implementation sub-slices:
 - E-04-08E: Shipped in PR #123. Add stock-take session history on the admin
   and manager stock-taking workspaces, with audited deletion implemented as
   cancellation for non-applied sessions.
+
+Remaining E-04 product gap:
+
+- E-04-07 remains pending and depends on stakeholder confirmation of minimum
+  catalog defaults for converting blank-sheet manual rows into catalog intake
+  drafts.
 
 ## UAT scenarios
 
