@@ -398,8 +398,7 @@ Status: shipped in PR #121 on 2026-05-04.
 
 ### E-04-07: Missing catalog from blank stock take
 
-Status: partially shipped. The catalog-intake draft slice shipped in PR #140
-on 2026-05-09.
+Status: shipped in PR #140 and PR #141 on 2026-05-09.
 
 - Let managers review blank-sheet manual rows that do not map to existing SKUs.
 - Convert manual rows into catalog intake drafts, not live products.
@@ -418,10 +417,9 @@ Implementation notes:
   draft-equivalent because catalog currently supports `active` and `archived`
   states only. Activation and opening-stock/found-stock recording remain
   separate review steps.
-- The follow-up review slice adds an explicit stock action on the catalog
-  intake page. It reuses the existing opening-stock and found-stock count
-  endpoints so ledger writes, permission checks, and reservation safety stay on
-  the audited stock path.
+- PR #141 added an explicit stock action on the catalog intake page. It reuses
+  the existing opening-stock and found-stock count endpoints so ledger writes,
+  permission checks, and reservation safety stay on the audited stock path.
 
 ### E-04-08: Editable workbook and in-app count entry
 
@@ -456,11 +454,10 @@ Implementation sub-slices:
 
 Remaining E-04 product gap:
 
-- E-04-07 catalog-intake draft creation shipped in PR #140. The remaining gap
-  is the separate review step that records the counted quantity as opening
-  stock for new SKU/location baselines or as a reason-coded found-stock
-  movement after the catalog draft is activated. This review action is now in
-  progress on `feature/e-04-07-stock-intake-review`.
+- E-04-07 shipped in PR #140 and PR #141. Manual blank stock-take rows can now
+  create archived catalog drafts and then record reviewed counted quantities
+  through the existing opening-stock or found-stock count paths after catalog
+  activation.
 
 ## UAT scenarios
 
@@ -516,3 +513,5 @@ Remaining E-04 product gap:
 - E-04 stock-take XLSX workbook generation: PR #124.
 - E-04 stock-take XLSX import: PR #125.
 - E-04 stock-take in-app count entry: PR #137.
+- E-04 missing-catalog intake drafts: PR #140.
+- E-04 missing-catalog stock review action: PR #141.
