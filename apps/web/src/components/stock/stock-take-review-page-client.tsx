@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileDown, Printer } from "lucide-react";
+import { FileDown, PackagePlus, Printer } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { useState } from "react";
@@ -98,6 +98,13 @@ export function StockTakeReviewPageClient({
             >
               <FileDown data-icon="inline-start" />
               Workbooks
+            </Link>
+            <Link
+              className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+              href={getCatalogIntakeHref(portal, reference)}
+            >
+              <PackagePlus data-icon="inline-start" />
+              Catalog intake
             </Link>
             <Link
               className={cn(buttonVariants({ size: "sm", variant: "default" }))}
@@ -241,5 +248,14 @@ function ReviewSkeleton() {
 function getBookletHref(portal: StockTakePortal, reference: string): Route {
   return toRoute(
     `/${portal}/stock/takes/${encodeURIComponent(reference)}/booklet`,
+  );
+}
+
+function getCatalogIntakeHref(
+  portal: StockTakePortal,
+  reference: string,
+): Route {
+  return toRoute(
+    `/${portal}/stock/takes/${encodeURIComponent(reference)}/catalog-intake`,
   );
 }
