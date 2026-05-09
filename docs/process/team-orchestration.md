@@ -31,8 +31,14 @@ The integrating contributor is the only role that *holds the keyboard*. Speciali
 
 Detail per stage:
 
+### 0.5. Discovery (when the work isn't ready for refinement)
+Input: a raw opportunity, a vague stakeholder ask, or an epic file at `status: idea`.
+Trigger: the user is exploring rather than naming a feature; the row's acceptance criteria are unknown; the riskiest assumption can't be answered from code; the PO previously refined this row but flagged it as needing user research / prototype validation.
+The orchestrator hands the opportunity + existing evidence to `product-owner-strategist` in **Brainstorming Mode**, asking for a discovery memo (problem framing, 3–5 candidate directions, riskiest assumption, cheapest test).
+Output: an epic file at `status: discovery` with a `## Discovery` section. The orchestrator either runs the cheapest test if it's a research read, or stops and reports back if it requires the user. **An idea that isn't ready for refinement is not a backlog item yet** — don't force a discovery into Stage 1 just because the pipeline expects it.
+
 ### 1. Refine (PO agent)
-Input: a row from the master backlog xlsx at the repo root (`Building and Refining Product Backlog(*).xlsx`, `Next Up` sheet) — or an existing `docs/backlog/epics/<id>-<slug>.md` with `status: idea`.
+Input: a row from the master backlog xlsx at the repo root (`Building and Refining Product Backlog(*).xlsx`, `Next Up` sheet) — or an existing `docs/backlog/epics/<id>-<slug>.md` with `status: idea` or `status: discovery` whose riskiest assumption has been resolved.
 The orchestrator hands the row + project context (CLAUDE.md, AGENTS.md, relevant ADRs, audit notes from the `Backlog Audit` sheet) to `product-owner-strategist`.
 Output: a `docs/backlog/epics/<id>-<slug>.md` file that did not exist before (or a rewrite of the existing one) with `status: refined`, user stories, acceptance criteria, edge cases, UAT scenarios, and dependencies on other xlsx tickets. The PO also flags scope ambiguity.
 
@@ -62,8 +68,9 @@ Status flips to `tested` when both this stage and 5b (when applicable) have retu
 
 ### 5b. UX/UI browser review (when the change touches the UI)
 Input: the built branch + a list of changed routes / pages / components.
-Trigger: `domain ∈ {frontend, full-stack}`, OR `git diff dev..HEAD` touches `apps/web/**`, OR a new route / modal / drawer / token swap landed.
+Trigger (any of): `domain ∈ {frontend, full-stack}`; `git diff dev..HEAD` touches `apps/web/**`; a new route / modal / drawer / layout primitive landed; tokens in `globals.css` changed; a primitive in `components/ui/*` or `components/system/*` changed; `packages/contracts/**` changed AND a frontend consumer exists; a permission key was added or removed from the access-control seed; a new error envelope was added that an existing UI surfaces consumes.
 The orchestrator hands the routes, the dev environment URL, the role(s) to evaluate, and the device matrix to `ux-ui-browser-reviewer`. The agent drives a real browser via Playwright, validates responsive behaviour (worker portal mobile-first 375px is a hard requirement), inspects interaction states, accessibility, and design-system token compliance, and returns a prioritised severity-tagged report.
+**Blast-radius expansion on token / primitive changes**: when the trigger fires because of a token swap, design-system primitive change, or shared layout component change, the brief explicitly requires walking all populated portals (`/admin`, `/manager`, `/worker`, `/supplier`, `/agent`) plus `/login` and `/register` — not just the routes the epic claimed to touch. A `globals.css` edit ripples through every page that reads the changed tokens, and reviewing only the named route hides the regressions on every inheriting surface.
 The orchestrator actions every Critical and High finding before opening the PR. Lower-severity items go in the PR's "Known follow-ups" section with a justification.
 Runs in parallel with stage 5 — they can be spawned in a single message, the surfaces don't overlap.
 

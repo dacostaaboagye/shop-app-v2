@@ -27,12 +27,14 @@ Spinning up the full team for every epic is overkill. Pick the tier from the epi
 | **Full** | Product epics (`E-*`) with `size: medium` or `large`. Anything where the design space is non-trivial (new schema, new module, multi-system change). | All eight: refine (PO) → design (architect) → plan → build → test (QA) → ux-browser-review (when UI changed) → code review → ship. |
 | **Light** | Product epics (`E-*`) with `size: small`. Or a partial epic where the xlsx `Backlog Audit` notes already say what to build (E-03-02 bulk import, E-00D-07 lint guard). | Skip the **PO** when the xlsx row + audit notes are already specific. Run architect → plan → build → QA → ux-browser-review (when UI changed) → code review → ship. |
 | **Minimal** | `ops-*` and `audit-*` ids. The audit doc or ops note is the spec. | Skip PO and architect. Run plan → build → code review → ship. Use QA only if the change is non-trivial or hits production paths. Use ux-browser-review only if the chore actually changes UI (rare for ops, common for audit-led UI fixes). |
+| **Trivial** | One-line copy fixes, single-token color tweaks, doc typos, dependency-only bumps that change no tested behavior. The diff is ≤ 5 lines of source change, doesn't add public surface, doesn't touch tokens or design-system primitives, doesn't change a contract. | Orchestrator → code review → ship. Skip PO, architect, plan, QA, browser-reviewer. Announce the tier in the status update so the user can override if the change has more reach than it looks. |
 
 Override rules:
 
 - The user can ask for a different tier ("just do the minimal pipeline on E-03-02"). Honour it.
 - A `size: small` product epic that introduces a new schema or new public API gets bumped back to **full** — the size field doesn't override the architectural reach.
 - An `audit-*` id that touches auth, payments, or data integrity gets bumped to **light** — security-adjacent work gets the architect.
+- A **Trivial** that turns out to touch a token, a primitive, or a contract gets bumped to **Light**. If you discover this mid-build (e.g., the "small copy fix" turns out to be a localisation pattern change), stop and re-tier — don't muscle through.
 
 When you skip a stage, say so explicitly in your status update so the user can see what wasn't done. The shape of the rule is *"skip this stage because X"*, not *"skipped"*.
 
@@ -43,7 +45,41 @@ Walk these stages in order. Stop and report back to the user at every stage tran
 ### Stage 0: pick the epic
 1. **Existing actionable epics first.** `Glob docs/backlog/epics/*.md` and read frontmatter. An epic is ready if `status` ∈ {refined, designed, planned, built, tested, reviewed} **and** all `parents` ids resolve to `status: shipped`. Among ready epics, prefer the highest `priority` (P0 > P1 > P2 > P3), then the smallest `size`, then alphabetical id.
 2. **Otherwise consult the xlsx.** Read `Building and Refining Product Backlog(*).xlsx` at the repo root, sheet `Next Up`. The sheet is already ordered. Pick the top row whose status is `Not Started` or `Partial`. Cross-reference its `Backlog Audit` row for code-state notes.
-3. Tell the user which epic you picked, the source (existing file vs xlsx row), and why before proceeding.
+3. Tell the user which epic you picked, the source (existing file vs xlsx row), and why before proceeding. State the tier (Full / Light / Minimal / Trivial) and the rationale.
+
+**Re-tier mid-flight when the diff diverges from the announced tier.** If a Trivial fix turns out to touch a token or a contract, stop and re-announce as Light. If a Light epic discovered during build that it needs a new schema, stop and re-announce as Full. The bigger tier costs a few more agent invocations; muscling through with the wrong tier costs a missed regression.
+
+### Stage 0.5: discovery (when the work isn't ready for refinement)
+
+Skip when the epic is already `refined` or further along, or when the user hands you a clear xlsx row + `Backlog Audit` notes.
+
+Run when **any** of these is true:
+
+- The user is exploring an opportunity rather than naming a feature ("our new-user activation feels broken but I'm not sure what to actually build").
+- The epic file exists with `status: idea` and no acceptance criteria.
+- The `parents` chain has unresolved unknowns that no agent can answer from the code (e.g., "we don't know which user segment this hurts most").
+- The PO has previously refined this row but flagged it as needing user research, prototype validation, or stakeholder reconciliation before it can be split into stories.
+
+Spawn `product-owner-strategist` in **Brainstorming Mode** (the agent will route there based on the prompt). Hand it:
+
+1. The raw opportunity statement or xlsx ticket.
+2. Whatever evidence already exists (audit notes, customer feedback, related shipped epics, scope-summary entries).
+3. An explicit ask: explore the problem space, generate alternatives, identify the riskiest assumption, and recommend the cheapest test that would unlock decomposition.
+
+The PO returns a **discovery memo** — not yet a refined epic. The orchestrator persists this memo as `docs/backlog/epics/<id>-<slug>.md` with `status: discovery` and a `## Discovery` section containing:
+
+- The problem framing.
+- 3–5 candidate directions with one-line rationale each.
+- The riskiest assumption + the proposed cheapest test (a spike, a customer interview, a prototype, a research read).
+- Items explicitly set aside (so we don't lose them).
+
+After Stage 0.5 returns:
+
+- **If the cheapest test is a research read or a spike that the orchestrator can run**: do the research, append findings to the discovery memo, then proceed to Stage 1 refinement once the riskiest assumption is resolved.
+- **If the cheapest test requires the user**: stop and report. Don't force the epic into Stage 1 just because the pipeline expects it. An idea that isn't ready for refinement is not a backlog item yet.
+- **If the discovery surfaces that this work is premature**: park the epic at `status: discovery` and move to the next ready epic. Don't write stories against unresolved assumptions.
+
+The honest exit from Stage 0.5 is sometimes "don't build this yet." Honour that.
 
 ### Stage 1: refine (if no epic file exists, or `status: idea`)
 This stage materialises an xlsx row into `docs/backlog/epics/<id>-<slug>.md` and refines it.
@@ -152,12 +188,18 @@ Trigger when **any** of these is true:
 - A new route, page, modal, drawer, or layout primitive landed.
 - Tokens in `apps/web/src/app/globals.css` changed (palette / typography / radii / spacing).
 - A design-system primitive in `apps/web/src/components/ui/*` or `apps/web/src/components/system/*` changed in a way that other consumers will inherit.
+- `packages/contracts/**` changed AND any frontend consumer exists for the touched contract — a contract reshape changes the data the UI renders even when no `apps/web` file was edited. Use `grep` against `apps/web` for the changed export name to confirm consumption.
+- The access-control seed (`apps/api/scripts/lib/access-control-seed.ts`) added or removed a permission key — UI permission gates fork on these, and a new permission either reveals UI nobody has seen against real data or hides UI that used to show.
+- A new error code / problem-detail shape is added to `packages/contracts/**` and that shape is consumed by an existing UI surface — the new error path on the existing surface has never been rendered.
 
 Skip when:
 
-- Backend / infra / contracts only diff.
+- Backend / infra only diff with no contract reshape.
 - Pure docs changes.
 - An ops chore that doesn't render anything (e.g., the neon-serverless driver swap, fly auto-stop config).
+- A pure pnpm-lock bump with no `apps/web` source change AND no new transitively-shipped client code.
+
+### Brief shape for stage 5b
 
 When invoked, **run in parallel with Stage 5 QA** — they don't interfere and the review surfaces are disjoint. Send a single message with both `Agent` calls.
 
@@ -169,6 +211,20 @@ Spawn `ux-ui-browser-reviewer` with:
 4. Authentication context: which roles to evaluate (admin / manager / worker / supplier / agent), and whether the dev server has a seeded super-admin available. If the agent needs credentials it will ask — provide what you can, redirect to user for anything sensitive.
 5. The viewport matrix to test — defaults are fine, but call out **mobile-first 375px is a hard requirement for any worker-portal surface** because workers use the app on phones.
 6. A request for the standard structured report — prioritized findings (Critical → Low), responsive-per-breakpoint summary, design-system token violations, accessibility findings, and a final ship/hold/conditional verdict.
+
+### Scope expansion: blast radius on token / primitive changes
+
+When the trigger fires because of a **token swap, design-system primitive change, or shared layout component change**, the brief must explicitly require an **all-portals walk**, not just the changed routes:
+
+- `/admin` (admin overview, plus at least one densely-used admin page like `/admin/products` or `/admin/stock/balances`)
+- `/manager` (manager landing + at least one operations page like `/manager/stock`)
+- `/worker` (the worker portal at 375 px — non-negotiable)
+- `/supplier` and `/agent` if they are populated for this build
+- `/login` and `/register` (auth pages inherit `--background`, `--primary`, `--ring`)
+
+Reason: a `globals.css` token edit ripples through every page that reads the changed tokens. Reviewing only the route the epic claimed to touch hides regressions on every other surface that inherits the palette. The same applies to `components/system/*` and `components/ui/*` — if a primitive changed, scan the consumer list.
+
+Add this scope expansion as an explicit bullet in the brief when the trigger condition matches. The agent's report should then have a per-portal subsection in addition to the per-breakpoint one.
 
 The reviewer returns:
 
