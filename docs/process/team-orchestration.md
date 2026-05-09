@@ -10,6 +10,7 @@ How a single Claude Code session ships epics by spawning specialist sub-agents f
 | Backend architect | `node-backend-systems-architect` | Designs API surface, data model, transactions, event flows. Reviews changes that touch services, repositories, or schema. |
 | Frontend architect | `frontend-ui-architect` | Designs UI composition, component breakdown, state ownership, accessibility, responsive behaviour, design-token decisions. |
 | QA | `qa-quality-engineer` | Writes the test strategy, edge-case enumeration, regression cases. Runs the release-readiness check before merge. |
+| UX/UI browser reviewer | `ux-ui-browser-reviewer` | Drives the running app via Playwright in real browsers. Reviews UX, responsive behaviour, accessibility, design-system token compliance, and interaction states across the device matrix. Joins the pipeline whenever the change touches the UI. |
 | Code reviewer | `code-review-gatekeeper` | Reviews implementation against acceptance criteria + repo conventions before the PR is ready for human review. |
 | Integrating contributor | Claude (this session) | Coordinates the others, writes the actual code and tests, opens PRs, runs `pnpm verify`, manages the backlog file. |
 
@@ -21,10 +22,11 @@ The integrating contributor is the only role that *holds the keyboard*. Speciali
 ┌──────────┐   ┌────────┐   ┌─────────┐   ┌──────┐   ┌────────┐   ┌──────┐   ┌─────┐
 │ refined  │──▶│design ▼│──▶│ planned │──▶│built │──▶│tested ▼│──▶│review│──▶│ship │
 └──────────┘   └────────┘   └─────────┘   └──────┘   └────────┘   └──────┘   └─────┘
-      ▲              backend + frontend                           gatekeeper
-      │              + UI designer in parallel                    last gate
-      │
-   PO refinement
+      ▲              backend + frontend          QA  ┃             gatekeeper
+      │              architects in parallel          ┃             last gate
+      │                                              ┃
+   PO refinement                  ux-ui-browser-reviewer (parallel,
+                                  triggered by any apps/web/** diff)
 ```
 
 Detail per stage:
@@ -56,7 +58,14 @@ Status flips to `built` when all tasks are done and local gates pass.
 ### 5. Test (QA agent)
 Input: the built branch.
 The orchestrator hands the diff and acceptance criteria to `qa-quality-engineer`. QA enumerates regression cases, edge cases, integration scenarios, manual test plan. The orchestrator turns the QA output into either: more automated tests on the same branch, or a list of manual checks pasted into the PR description.
-Status flips to `tested`.
+Status flips to `tested` when both this stage and 5b (when applicable) have returned.
+
+### 5b. UX/UI browser review (when the change touches the UI)
+Input: the built branch + a list of changed routes / pages / components.
+Trigger: `domain ∈ {frontend, full-stack}`, OR `git diff dev..HEAD` touches `apps/web/**`, OR a new route / modal / drawer / token swap landed.
+The orchestrator hands the routes, the dev environment URL, the role(s) to evaluate, and the device matrix to `ux-ui-browser-reviewer`. The agent drives a real browser via Playwright, validates responsive behaviour (worker portal mobile-first 375px is a hard requirement), inspects interaction states, accessibility, and design-system token compliance, and returns a prioritised severity-tagged report.
+The orchestrator actions every Critical and High finding before opening the PR. Lower-severity items go in the PR's "Known follow-ups" section with a justification.
+Runs in parallel with stage 5 — they can be spawned in a single message, the surfaces don't overlap.
 
 ### 6. Review (code-review-gatekeeper agent)
 Input: the diff vs `dev` and the acceptance criteria.
@@ -78,6 +87,7 @@ Some calls are agent-owned, some are orchestrator-owned, some are user-owned.
 | API contract shape | Backend architect |
 | Component decomposition | Frontend architect |
 | Test coverage threshold for a story | QA agent |
+| UX/responsive/a11y severity calls on a UI change | UX/UI browser reviewer (orchestrator actions Critical + High; lower goes in PR follow-ups) |
 | Scope cuts during build | Orchestrator (escalate to user if blocking) |
 | Architecture-level deviations from ADRs | User (orchestrator drafts, asks for sign-off) |
 | Storage technology choices (Redis vs DB vs in-process) | User (PO + architects propose; user picks) |
