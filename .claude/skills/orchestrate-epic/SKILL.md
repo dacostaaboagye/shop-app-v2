@@ -1,6 +1,6 @@
 ---
 name: orchestrate-epic
-description: Drive an epic through refinement → design → planning → build → test → review → ship using specialist sub-agents (PO, backend architect, frontend architect, QA, code reviewer). Invoke when the user wants the team workflow applied to a backlog item or asks "what's next on the backlog".
+description: Drive an epic through refinement → design → planning → build → test → ux-browser-review (when UI changed) → code review → ship using specialist sub-agents (PO, backend architect, frontend architect, QA, ux-ui-browser-reviewer, code reviewer). Invoke when the user wants the team workflow applied to a backlog item or asks "what's next on the backlog".
 ---
 
 # Orchestrate an epic
@@ -24,9 +24,9 @@ Spinning up the full team for every epic is overkill. Pick the tier from the epi
 
 | Tier | When | Stages run |
 |---|---|---|
-| **Full** | Product epics (`E-*`) with `size: medium` or `large`. Anything where the design space is non-trivial (new schema, new module, multi-system change). | All seven: refine (PO) → design (architect) → plan → build → test (QA) → review → ship. |
-| **Light** | Product epics (`E-*`) with `size: small`. Or a partial epic where the xlsx `Backlog Audit` notes already say what to build (E-03-02 bulk import, E-00D-07 lint guard). | Skip the **PO** when the xlsx row + audit notes are already specific. Run architect → plan → build → QA → review → ship. |
-| **Minimal** | `ops-*` and `audit-*` ids. The audit doc or ops note is the spec. | Skip PO and architect. Run plan → build → review → ship. Use QA only if the change is non-trivial or hits production paths. |
+| **Full** | Product epics (`E-*`) with `size: medium` or `large`. Anything where the design space is non-trivial (new schema, new module, multi-system change). | All eight: refine (PO) → design (architect) → plan → build → test (QA) → ux-browser-review (when UI changed) → code review → ship. |
+| **Light** | Product epics (`E-*`) with `size: small`. Or a partial epic where the xlsx `Backlog Audit` notes already say what to build (E-03-02 bulk import, E-00D-07 lint guard). | Skip the **PO** when the xlsx row + audit notes are already specific. Run architect → plan → build → QA → ux-browser-review (when UI changed) → code review → ship. |
+| **Minimal** | `ops-*` and `audit-*` ids. The audit doc or ops note is the spec. | Skip PO and architect. Run plan → build → code review → ship. Use QA only if the change is non-trivial or hits production paths. Use ux-browser-review only if the chore actually changes UI (rare for ops, common for audit-led UI fixes). |
 
 Override rules:
 
@@ -140,6 +140,48 @@ QA returns a test plan. The orchestrator either:
 - Records the manual-verification items in a section to paste into the PR description.
 
 Bump `status` to `tested`.
+
+### Stage 5b: ux-ui browser review (conditional)
+
+Run **whenever the change touches the rendered UI**. This is a different lens from QA — it's a real-browser, evidence-based UX / responsive / accessibility / design-system audit, not a test-coverage review.
+
+Trigger when **any** of these is true:
+
+- The epic's `domain` is `frontend` or `full-stack`.
+- `git diff dev..HEAD` touches any path under `apps/web/**`.
+- A new route, page, modal, drawer, or layout primitive landed.
+- Tokens in `apps/web/src/app/globals.css` changed (palette / typography / radii / spacing).
+- A design-system primitive in `apps/web/src/components/ui/*` or `apps/web/src/components/system/*` changed in a way that other consumers will inherit.
+
+Skip when:
+
+- Backend / infra / contracts only diff.
+- Pure docs changes.
+- An ops chore that doesn't render anything (e.g., the neon-serverless driver swap, fly auto-stop config).
+
+When invoked, **run in parallel with Stage 5 QA** — they don't interfere and the review surfaces are disjoint. Send a single message with both `Agent` calls.
+
+Spawn `ux-ui-browser-reviewer` with:
+
+1. The refined epic (especially acceptance criteria touching UX).
+2. The list of changed routes / pages / components from the diff.
+3. The dev environment URL — confirm it's reachable; surface `localhost:3000` if running locally.
+4. Authentication context: which roles to evaluate (admin / manager / worker / supplier / agent), and whether the dev server has a seeded super-admin available. If the agent needs credentials it will ask — provide what you can, redirect to user for anything sensitive.
+5. The viewport matrix to test — defaults are fine, but call out **mobile-first 375px is a hard requirement for any worker-portal surface** because workers use the app on phones.
+6. A request for the standard structured report — prioritized findings (Critical → Low), responsive-per-breakpoint summary, design-system token violations, accessibility findings, and a final ship/hold/conditional verdict.
+
+The reviewer returns:
+
+- A structured report.
+- Concrete fix-ups by severity.
+- Evidence (screenshots saved into `.playwright-mcp/` which is gitignored, plus DOM snippets).
+
+The orchestrator either:
+
+- Action every Critical and High finding before opening the PR, OR
+- Document the deferred items in the PR description's "Known follow-ups" section with a justification (cap on follow-ups: never defer Critical without explicit user override).
+
+Bump `status` to `tested` only after both Stage 5 QA and Stage 5b browser review have returned (or if 5b was skipped per the rules above).
 
 ### Stage 6: review (code reviewer agent)
 Spawn `code-review-gatekeeper` with:
