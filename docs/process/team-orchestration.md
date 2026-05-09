@@ -117,6 +117,7 @@ These remain in force from `AGENTS.md` and `CLAUDE.md`:
 - Branch names match the regex in `scripts/git/validate-branch-name.mjs`.
 - Conventional commits with the epic id as scope: `feat(e-04-02): ...`, `fix(e-04-05): ...`. Use `chore(ops): ...` for non-epic work.
 - One epic = one PR if it fits under the file-length and review-bandwidth limits. Otherwise split per the planning stage.
+- **PRs into `dev` use rebase merge** (GitHub's "Rebase and merge" button), not squash. Preserves SHAs so stacked PRs survive their predecessor's merge. See `docs/engineering/git-workflow.md` for the full merge policy and stacked-PR depth rules.
 - `pnpm guard` and `pnpm --filter <pkg> typecheck` + `lint` must pass locally before push.
 - Public APIs expose slugs / reference numbers, never raw DB ids.
 - Append-only ledgers stay append-only.

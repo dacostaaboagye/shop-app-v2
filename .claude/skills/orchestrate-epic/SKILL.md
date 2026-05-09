@@ -96,7 +96,13 @@ Use TaskCreate to track them in the session. Append a `## Tasks` section to the 
 ### Stage 4: build (orchestrator)
 Branch off `dev` per the [git workflow](../../../docs/engineering/git-workflow.md). Branch name pattern: `feature/<id>-<slug>` or `fix/<id>-<slug>` or `chore/ops-<slug>`. Lowercase only — the validator rejects uppercase ids in branch names.
 
-**Stack depth rule: at most one open PR per epic chain.** Do not start the next product epic on top of an unmerged feature branch. Squash-merge collapses history; stacked children below it get content-equivalent-but-SHA-different commits on `dev` and need manual rebase to fix. If the user wants to chain, ship one, wait for merge, then start the next.
+**Stack depth rule: chains up to depth 3 are fine when every PR in the chain uses rebase merge.** GitHub's "Rebase and merge" button preserves SHAs; `dev` ends up with the original commits in order, so a PR-B branched off PR-A keeps working after PR-A merges — no manual rebase, no SHA divergence. Document the dependency in each PR's body ("Stacked on #N — merge after that lands.") so the human reviewer knows the order. See `docs/engineering/git-workflow.md` for the full merge policy.
+
+Beyond depth 3, the review overhead of tracking the chain outweighs the throughput win — start an independent branch off `dev` instead.
+
+**Independent parallel branches are unrestricted.** Two PRs that branch off `dev` and touch disjoint files can run in parallel without any chain considerations. The depth=3 cap only applies to true chains where one PR depends on another's commits.
+
+**If you reach for squash merge** (the fallback for branches with truly noisy commit history), check that no other open PR is stacked on it first. Squash + stacked = manual rebase needed; that's the failure mode the previous depth=1 rule prevented.
 
 **For light tier**, ship the epic as a single PR — refine + design + plan land as commits on the same feature branch as the build, not as a separate `chore/ops-refine-<id>` PR. Avoids doubling the user's review queue.
 
