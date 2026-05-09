@@ -32,7 +32,7 @@ describe("resolveOperatingContext", () => {
     assert.deepEqual(context.selectableLocationScopes, []);
   });
 
-  it("uses the active location before the url location", () => {
+  it("uses the url location before the active location for scoped actions", () => {
     const context = resolveOperatingContext({
       activeLocationSlug: "airport-store",
       locationScopes: LOCATION_SCOPES,
@@ -41,7 +41,7 @@ describe("resolveOperatingContext", () => {
     });
 
     assert.equal(context.kind, "location");
-    assert.equal(context.locationScope?.locationSlug, "airport-store");
+    assert.equal(context.locationScope?.locationSlug, "downtown-store");
     assert.equal(context.selectableLocationScopes.length, 2);
   });
 
@@ -84,7 +84,7 @@ describe("resolveOperatingContext", () => {
 
   it("returns global context with all selectable scopes when manager has multiple locations and no location is selected", () => {
     const context = resolveOperatingContext({
-      activeLocationSlug: null,
+      activeLocationSlug: "airport-store",
       locationScopes: LOCATION_SCOPES,
       policy: { kind: "global-or-location", permission: "stock.view" },
       urlLocationSlug: null,
@@ -95,9 +95,9 @@ describe("resolveOperatingContext", () => {
     assert.equal(context.selectableLocationScopes.length, 2);
   });
 
-  it("returns location context when a multi-location manager selects a specific location", () => {
+  it("uses only the explicit url location for optional list filters", () => {
     const context = resolveOperatingContext({
-      activeLocationSlug: "downtown-store",
+      activeLocationSlug: "airport-store",
       locationScopes: LOCATION_SCOPES,
       policy: { kind: "global-or-location", permission: "stock.view" },
       urlLocationSlug: "downtown-store",
@@ -105,6 +105,19 @@ describe("resolveOperatingContext", () => {
 
     assert.equal(context.kind, "location");
     assert.equal(context.locationScope?.locationSlug, "downtown-store");
+    assert.equal(context.selectableLocationScopes.length, 2);
+  });
+
+  it("keeps optional list contexts global when the url location is unavailable", () => {
+    const context = resolveOperatingContext({
+      activeLocationSlug: "airport-store",
+      locationScopes: LOCATION_SCOPES,
+      policy: { kind: "global-or-location", permission: "stock.view" },
+      urlLocationSlug: "missing-store",
+    });
+
+    assert.equal(context.kind, "global");
+    assert.equal(context.locationScope, null);
     assert.equal(context.selectableLocationScopes.length, 2);
   });
 });
