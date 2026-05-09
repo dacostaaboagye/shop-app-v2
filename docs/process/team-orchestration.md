@@ -84,6 +84,32 @@ Some calls are agent-owned, some are orchestrator-owned, some are user-owned.
 | Pushing to `testing`, `staging`, `main` | User (orchestrator never pushes to a protected branch) |
 | Opening a PR | Orchestrator (no approval needed; PR is reversible) |
 
+## Owner of record
+
+When two reviewers can plausibly catch the same class of defect, ambiguity slows the build. This table names the *primary* owner for each recurring concern — the reviewer who is on the hook if it slips through — and the *secondary* who provides redundant coverage but does not block on it. "Veto" names the role whose objection is binding when there's disagreement.
+
+| Concern | Primary | Secondary | Veto |
+|---|---|---|---|
+| Token violations in `.tsx` (hex colors, raw palette utilities) | `code-review-gatekeeper` (static rule) | `ux-ui-browser-reviewer` (rendered output) | — |
+| Forbidden Tailwind utilities (`space-x-*`, palette classes) | `code-review-gatekeeper` | — | — |
+| Responsive layout breakage at 360 / 768 / 1024 / 1280 | `ux-ui-browser-reviewer` | — | — |
+| Accessibility — keyboard, focus, ARIA, contrast | `ux-ui-browser-reviewer` | `code-review-gatekeeper` (semantic markup) | — |
+| Public-id leakage (raw DB ids on the wire) | `code-review-gatekeeper` | — | — |
+| Permission-gate correctness | `code-review-gatekeeper` (route-level logic) | `ux-ui-browser-reviewer` (UX gating, hidden affordances) | — |
+| Append-only ledger violations | `code-review-gatekeeper` | `node-backend-systems-architect` | architect |
+| API contract shape | `node-backend-systems-architect` | `code-review-gatekeeper` | architect |
+| Schema migration safety (locks, backfills, ordering) | `node-backend-systems-architect` | `code-review-gatekeeper` | architect |
+| Component decomposition + state ownership | `frontend-ui-architect` | `code-review-gatekeeper` | architect |
+| Acceptance-criteria coverage | `qa-quality-engineer` | `product-owner-strategist` | PO |
+| Test depth (regression / edge / integration) | `qa-quality-engineer` | — | QA |
+
+How to use it:
+
+- **Primary owns the call.** If they raise a concrete fix-up, address it on the same branch. If they pass, the lane is green for that concern even if a secondary has a softer comment.
+- **Secondary contributes signal, not blocks.** A secondary's note is a heads-up for the primary to weigh, not an independent gate. If the primary already passed and the secondary objects, the secondary's note becomes a follow-up issue rather than a merge-blocker.
+- **Veto column** is for architecture- or contract-level disagreements where the named role's objection halts the merge. Empty cells mean ordinary review escalation: orchestrator decides; user escalates if needed.
+- **No primary = orchestrator-owned.** If a concern surfaces that isn't in this table, the orchestrator owns it by default. Add a row when the concern recurs.
+
 ## Working agreement carry-overs
 
 These remain in force from `AGENTS.md` and `CLAUDE.md`:
