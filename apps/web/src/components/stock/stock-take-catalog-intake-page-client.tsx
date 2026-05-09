@@ -25,11 +25,13 @@ import {
 import { toRoute } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import {
+  type CatalogIntakeCreatedDraft,
   getDefaultCatalogIntakeDraft,
   getManualStockTakeLines,
 } from "./stock-take-catalog-intake.support";
 import { StockTakeCatalogIntakeForm } from "./stock-take-catalog-intake-form";
 import { ManualLinePicker } from "./stock-take-catalog-intake-line-picker";
+import { StockTakeCatalogStockAction } from "./stock-take-catalog-stock-action";
 
 const ALL_REFERENCE_QUERY = {
   dir: "asc" as const,
@@ -53,6 +55,9 @@ export function StockTakeCatalogIntakePageClient({
   const [selectedLineNumber, setSelectedLineNumber] = useState<number | null>(
     null,
   );
+  const [createdDraftsByLine, setCreatedDraftsByLine] = useState<
+    Record<number, CatalogIntakeCreatedDraft>
+  >({});
   const detailQuery = useQuery({
     queryFn: () => fetchStockTakeDetail(portal, reference),
     queryKey: stockTakeQueryKey(portal, reference),
@@ -101,8 +106,16 @@ export function StockTakeCatalogIntakePageClient({
           canCreate={!getDisabledReason(detailQuery.data.status)}
           categories={categoriesQuery.data?.items ?? []}
           disabledReason={getDisabledReason(detailQuery.data.status)}
+          locationName={detailQuery.data.locationName}
+          locationSlug={detailQuery.data.locationSlug}
           manualLines={getManualStockTakeLines(detailQuery.data.lines)}
           onBack={() => router.push(backHref)}
+          onDraftCreated={(draft) => {
+            setCreatedDraftsByLine((current) => ({
+              ...current,
+              [draft.lineNumber]: draft,
+            }));
+          }}
           referenceError={brandsQuery.error ?? categoriesQuery.error ?? null}
           onRetryReferences={() => {
             void brandsQuery.refetch();
@@ -110,6 +123,9 @@ export function StockTakeCatalogIntakePageClient({
           }}
           selectedLineNumber={selectedLineNumber}
           setSelectedLineNumber={setSelectedLineNumber}
+          createdDraftsByLine={createdDraftsByLine}
+          portal={portal}
+          reference={reference}
         />
       )}
     </PageShell>
@@ -120,10 +136,16 @@ function CatalogIntakeWorkspace({
   brands,
   canCreate,
   categories,
+  createdDraftsByLine,
   disabledReason,
+  locationName,
+  locationSlug,
   manualLines,
   onBack,
+  onDraftCreated,
   onRetryReferences,
+  portal,
+  reference,
   referenceError,
   selectedLineNumber,
   setSelectedLineNumber,
@@ -131,10 +153,16 @@ function CatalogIntakeWorkspace({
   brands: { name: string; slug: string }[];
   canCreate: boolean;
   categories: { name: string; slug: string }[];
+  createdDraftsByLine: Record<number, CatalogIntakeCreatedDraft>;
   disabledReason: string | null;
+  locationName: string;
+  locationSlug: string;
   manualLines: ReturnType<typeof getManualStockTakeLines>;
   onBack: () => void;
+  onDraftCreated: (draft: CatalogIntakeCreatedDraft) => void;
   onRetryReferences: () => void;
+  portal: StockTakePortal;
+  reference: string;
   referenceError: unknown;
   selectedLineNumber: number | null;
   setSelectedLineNumber: (lineNumber: number) => void;
@@ -183,6 +211,18 @@ function CatalogIntakeWorkspace({
             disabledReason={disabledReason}
             draft={getDefaultCatalogIntakeDraft(selectedLine)}
             onCancel={onBack}
+            onDraftCreated={onDraftCreated}
+          />
+        ) : null}
+        {selectedLine ? (
+          <StockTakeCatalogStockAction
+            createdDraft={createdDraftsByLine[selectedLine.lineNumber] ?? null}
+            disabledReason={disabledReason}
+            line={selectedLine}
+            locationName={locationName}
+            locationSlug={locationSlug}
+            portal={portal}
+            reference={reference}
           />
         ) : null}
       </div>
