@@ -398,8 +398,8 @@ Status: shipped in PR #121 on 2026-05-04.
 
 ### E-04-07: Missing catalog from blank stock take
 
-Status: in progress; first catalog-intake draft slice started on
-2026-05-08.
+Status: partially shipped. The catalog-intake draft slice shipped in PR #140
+on 2026-05-09.
 
 - Let managers review blank-sheet manual rows that do not map to existing SKUs.
 - Convert manual rows into catalog intake drafts, not live products.
@@ -414,10 +414,14 @@ Implementation notes:
 
 - Stakeholder confirmed the intake page can require enough fields for catalog
   defaults before a draft is created.
-- First slice uses archived catalog product and variant records as the safe
+- PR #140 uses archived catalog product and variant records as the safe
   draft-equivalent because catalog currently supports `active` and `archived`
   states only. Activation and opening-stock/found-stock recording remain
   separate review steps.
+- The follow-up review slice adds an explicit stock action on the catalog
+  intake page. It reuses the existing opening-stock and found-stock count
+  endpoints so ledger writes, permission checks, and reservation safety stay on
+  the audited stock path.
 
 ### E-04-08: Editable workbook and in-app count entry
 
@@ -452,9 +456,11 @@ Implementation sub-slices:
 
 Remaining E-04 product gap:
 
-- E-04-07 is in progress. The minimum field decision is confirmed; the first
-  implementation slice adds a catalog-intake page that creates archived
-  product/variant drafts from manual blank rows without mutating stock.
+- E-04-07 catalog-intake draft creation shipped in PR #140. The remaining gap
+  is the separate review step that records the counted quantity as opening
+  stock for new SKU/location baselines or as a reason-coded found-stock
+  movement after the catalog draft is activated. This review action is now in
+  progress on `feature/e-04-07-stock-intake-review`.
 
 ## UAT scenarios
 

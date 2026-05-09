@@ -1,6 +1,8 @@
 import type {
   AdminCreateProductRequest,
   AdminCreateVariantRequest,
+  AdminOpeningStockRequest,
+  AdminStockCountRequest,
 } from "@shop/contracts";
 import type { StockTakeLine } from "@/lib/react-query/stock-takes";
 
@@ -23,6 +25,13 @@ export type CatalogIntakeDraftValues = {
 export type CatalogIntakeRequests = {
   product: AdminCreateProductRequest;
   variant: AdminCreateVariantRequest;
+};
+
+export type CatalogIntakeCreatedDraft = {
+  lineNumber: number;
+  productSlug: string;
+  sku: string;
+  variantSlug: string;
 };
 
 export function getManualStockTakeLines(lines: readonly StockTakeLine[]) {
@@ -103,6 +112,77 @@ export function getLineDisplayName(line: StockTakeLine) {
   return `Manual line ${line.lineNumber}`;
 }
 
+export function getCatalogStockIntakeSku(
+  line: StockTakeLine,
+  createdDraft: CatalogIntakeCreatedDraft | null,
+) {
+  return (createdDraft?.sku ?? line.sku).trim();
+}
+
+export function getCatalogStockIntakeDisabledReason({
+  createdDraft,
+  line,
+}: {
+  createdDraft: CatalogIntakeCreatedDraft | null;
+  line: StockTakeLine;
+}) {
+  if (!getCatalogStockIntakeSku(line, createdDraft)) {
+    return "Create or enter a SKU before recording stock.";
+  }
+
+  if (line.countedQuantity === null) {
+    return "Enter a counted quantity before recording stock.";
+  }
+
+  return null;
+}
+
+export function buildCatalogOpeningStockRequest({
+  createdDraft,
+  line,
+  locationSlug,
+  reference,
+}: {
+  createdDraft: CatalogIntakeCreatedDraft | null;
+  line: StockTakeLine;
+  locationSlug: string;
+  reference: string;
+}): AdminOpeningStockRequest {
+  return {
+    lines: [
+      {
+        note: buildCatalogStockNote(line, reference),
+        onHandQuantity: getCountedQuantity(line),
+        sku: getRequiredSku(line, createdDraft),
+      },
+    ],
+    locationSlug,
+    note: buildCatalogStockNote(line, reference),
+    sourceReference: truncateText(reference, 160),
+    sourceType: "physical_count",
+  };
+}
+
+export function buildCatalogFoundStockRequest({
+  createdDraft,
+  line,
+  locationSlug,
+  reference,
+}: {
+  createdDraft: CatalogIntakeCreatedDraft | null;
+  line: StockTakeLine;
+  locationSlug: string;
+  reference: string;
+}): AdminStockCountRequest {
+  return {
+    locationSlug,
+    note: buildCatalogStockNote(line, reference),
+    onHandQuantity: getCountedQuantity(line),
+    reasonCode: "found_stock",
+    sku: getRequiredSku(line, createdDraft),
+  };
+}
+
 function isMoneyValue(value: string) {
   return /^\d+(\.\d{1,2})?$/.test(value.trim());
 }
@@ -119,4 +199,35 @@ function toNullableSlug(value: string) {
 function toNullableText(value: string) {
   const normalized = value.trim();
   return normalized ? normalized : null;
+}
+
+function getRequiredSku(
+  line: StockTakeLine,
+  createdDraft: CatalogIntakeCreatedDraft | null,
+) {
+  const sku = getCatalogStockIntakeSku(line, createdDraft);
+  if (!sku) throw new Error("Create or enter a SKU before recording stock.");
+  return sku;
+}
+
+function getCountedQuantity(line: StockTakeLine) {
+  if (line.countedQuantity === null) {
+    throw new Error("Enter a counted quantity before recording stock.");
+  }
+  return line.countedQuantity;
+}
+
+function buildCatalogStockNote(line: StockTakeLine, reference: string) {
+  const note = line.note?.trim();
+  const text = note
+    ? `Stock-take ${reference}, line ${line.lineNumber}: ${note}`
+    : `Stock-take ${reference}, line ${line.lineNumber}.`;
+  return truncateText(text, 500);
+}
+
+function truncateText(value: string, maxLength: number) {
+  const normalized = value.trim();
+  return normalized.length > maxLength
+    ? normalized.slice(0, maxLength)
+    : normalized;
 }

@@ -18,6 +18,7 @@ import { toRoute } from "@/lib/routes";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
+  type CatalogIntakeCreatedDraft,
   type CatalogIntakeDraftValues,
   getCatalogIntakeDraftValidation,
   toCatalogIntakeRequests,
@@ -30,11 +31,6 @@ type CatalogReferenceItem = {
   slug: string;
 };
 
-type CreatedCatalogDraft = {
-  productSlug: string;
-  variantSlug: string;
-};
-
 type StockTakeCatalogIntakeFormProps = {
   brands: readonly CatalogReferenceItem[];
   canCreate: boolean;
@@ -42,6 +38,7 @@ type StockTakeCatalogIntakeFormProps = {
   disabledReason: string | null;
   draft: CatalogIntakeDraftValues;
   onCancel: () => void;
+  onDraftCreated: (draft: CatalogIntakeCreatedDraft) => void;
 };
 
 export function StockTakeCatalogIntakeForm({
@@ -51,16 +48,17 @@ export function StockTakeCatalogIntakeForm({
   disabledReason,
   draft,
   onCancel,
+  onDraftCreated,
 }: StockTakeCatalogIntakeFormProps) {
   const queryClient = useQueryClient();
   const [wasSubmitted, setWasSubmitted] = useState(false);
-  const [createdDraft, setCreatedDraft] = useState<CreatedCatalogDraft | null>(
-    null,
-  );
+  const [createdDraft, setCreatedDraft] =
+    useState<CatalogIntakeCreatedDraft | null>(null);
   const createMutation = useMutation({
     mutationFn: createCatalogDraft,
     onSuccess: (result) => {
       setCreatedDraft(result);
+      onDraftCreated(result);
       void queryClient.invalidateQueries({
         queryKey: ["admin", "catalog", "products"],
       });
@@ -161,7 +159,12 @@ async function createCatalogDraft(value: CatalogIntakeDraftValues) {
   const requests = toCatalogIntakeRequests(value);
   const product = await createAdminProduct(requests.product);
   const variant = await createAdminVariant(product.slug, requests.variant);
-  return { productSlug: product.slug, variantSlug: variant.slug };
+  return {
+    lineNumber: value.lineNumber,
+    productSlug: product.slug,
+    sku: requests.variant.sku,
+    variantSlug: variant.slug,
+  };
 }
 
 function CatalogDraftSafetyNotice() {
@@ -176,7 +179,7 @@ function CatalogDraftSafetyNotice() {
   );
 }
 
-function CreatedDraftNotice({ draft }: { draft: CreatedCatalogDraft }) {
+function CreatedDraftNotice({ draft }: { draft: CatalogIntakeCreatedDraft }) {
   return (
     <Alert>
       <AlertTitle>Draft created</AlertTitle>
@@ -192,8 +195,10 @@ function CreatedDraftNotice({ draft }: { draft: CreatedCatalogDraft }) {
         href={toRoute(
           `/admin/products/${encodeURIComponent(draft.productSlug)}`,
         )}
+        rel="noreferrer"
+        target="_blank"
       >
-        Open catalog draft
+        Open catalog draft in new tab
       </Link>
     </Alert>
   );
