@@ -64,8 +64,8 @@ let updated = matched.content;
 
 const prLink = `- [PR #${prNumber}](${prUrl}) - \`${prTitle}\``;
 
-if (updated.includes(`/pull/${prNumber})`)) {
-  console.log(`PR #${prNumber} already listed under ## Related PRs — no change`);
+if (updated.includes(prUrl)) {
+  console.log(`PR ${prUrl} already recorded — no change`);
   process.exit(0);
 }
 
