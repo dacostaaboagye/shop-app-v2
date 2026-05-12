@@ -5,7 +5,8 @@
   "scripts": {
     "build": "turbo build",
     "check": "turbo run check",
-    "dev": "turbo dev",
+    "dev": "concurrently --names api,web,events --prefix-colors cyan,magenta,yellow --kill-others-on-fail \"pnpm dev:api:infisical\" \"pnpm dev:web:infisical\" \"pnpm dev:events:infisical\"",
+    "dev:bare": "turbo dev",
     "deploy:testing:bootstrap": "pnpm --filter @shop/database db:migrate && pnpm --filter @shop/api db:seed-core",
     "deploy:testing:seed-admin": "pnpm --filter @shop/api db:seed-admin",
     "deploy:staging:migrate": "pnpm --filter @shop/database db:migrate",
@@ -31,9 +32,10 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.5",
+    "concurrently": "^9.2.1",
     "husky": "^9.1.7",
-    "turbo": "^2.5.0",
     "tsx": "^4.21.0",
+    "turbo": "^2.5.0",
     "typescript": "^5.9.3"
   }
 }

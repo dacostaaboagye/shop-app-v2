@@ -36,17 +36,23 @@ The first implementation accumulated architectural drift. This repo restarts fro
 pnpm install
 pnpm verify
 pnpm deploy:testing:bootstrap
-pnpm --filter @shop/api dev
-pnpm --filter @shop/web dev
+
+# Start every app for local development (api + web + events worker),
+# each with its Infisical secrets injected. Single command, three streams,
+# colour-coded logs, Ctrl+C kills all.
+pnpm dev
 ```
 
-Vault-backed local commands are available after Infisical CLI setup:
+Per-app variants (one terminal each) if you only need one process:
 
 ```bash
 pnpm dev:api:infisical
 pnpm dev:web:infisical
+pnpm dev:events:infisical
 pnpm db:migrate:infisical
 ```
+
+If you need to run without Infisical (raw, no secrets injected — only useful for hacking on something that doesn't touch env), `pnpm dev:bare` invokes `turbo dev` directly.
 
 Testing-environment deployment guidance lives in
 [docs/engineering/testing-environment-deployment.md](./docs/engineering/testing-environment-deployment.md).
