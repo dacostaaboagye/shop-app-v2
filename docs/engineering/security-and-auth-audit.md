@@ -29,13 +29,13 @@ Status: Findings recorded; remediation pending
 
 ## Critical
 
-### C1. OAuth silently links to existing email accounts
+### C1. OAuth silently links to existing email accounts — CLOSED ([PR #38](https://github.com/dacostaaboagye/shop-app-v2/pull/38))
 
-**File:** `apps/api/src/modules/auth/google-oauth.service.ts:185-232` (`findOrCreateUser`)
+**File (at audit time):** `apps/api/src/modules/auth/google-oauth.service.ts:185-232` (`findOrCreateUser`)
 
 If `victim@example.com` exists as a password account and a Google OAuth flow returns the same email, the service auto-links the Google identity to that account without any verification. Pre-account-takeover attack: an attacker registers a target's email with a password they control, then the real owner signs in with Google and is silently redirected into the attacker's account.
 
-**Fix direction:** Require explicit linking. If email matches but no OAuth identity exists, force a password challenge (or send a confirmation email) before linking.
+**Fix shipped:** the find-or-create branch moved to `apps/api/src/modules/auth/google-oauth-user-resolver.ts`. When email matches but no OAuth identity exists, the resolver throws a 409 `AppError` with `details.oauthError = "account_exists"`. The OAuth callback handler catches this and redirects the browser to `/login?oauth_error=account_exists` so the user signs in with their existing credentials. Linking Google from an authenticated session is the future feature path. Operations OAuth was additionally disabled entirely by [PR #132](https://github.com/dacostaaboagye/shop-app-v2/pull/132) as a defence-in-depth layer.
 
 ### C2. Real credentials present in `.env.local` on disk
 
