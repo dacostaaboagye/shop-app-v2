@@ -1,5 +1,10 @@
 #!/usr/bin/env node
-import { appendFileSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 
 const epicsDir = join(process.cwd(), "docs", "backlog", "epics");
@@ -19,7 +24,9 @@ const titleMatch = prTitle.match(conventionalCommit);
 const scope = titleMatch?.[1]?.toLowerCase();
 
 if (!scope) {
-  console.log(`no conventional-commit scope in PR title: "${prTitle}" — skipping`);
+  console.log(
+    `no conventional-commit scope in PR title: "${prTitle}" — skipping`,
+  );
   process.exit(0);
 }
 
@@ -63,8 +70,9 @@ if (!matched) {
 let updated = matched.content;
 
 const prLink = `- [PR #${prNumber}](${prUrl}) - \`${prTitle}\``;
+const existingPrUrlLink = `](${prUrl})`;
 
-if (updated.includes(prUrl)) {
+if (updated.includes(existingPrUrlLink)) {
   console.log(`PR ${prUrl} already recorded — no change`);
   process.exit(0);
 }
