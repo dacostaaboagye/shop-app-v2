@@ -86,15 +86,15 @@ Bootstrap `/bootstrap`:
 
 ## Local Setup
 
-The repo scripts use `pnpm dlx @infisical/cli`, so a global Infisical install
-is optional. If you prefer a global install, make sure `infisical` is available
-on `PATH`.
+The Infisical CLI is installed as a workspace devDependency, so `pnpm install`
+gives you the binary at `node_modules/.bin/infisical`. Repo scripts invoke it
+via `pnpm exec infisical …` — no global install required.
 
 Link the local checkout to the Infisical project:
 
 ```powershell
-pnpm dlx @infisical/cli login
-pnpm dlx @infisical/cli init
+pnpm exec infisical login
+pnpm exec infisical init
 ```
 
 Run the API without `.env.local`:
@@ -141,7 +141,7 @@ Target workflow:
 Example export shape:
 
 ```powershell
-pnpm dlx @infisical/cli export --env=testing --path=/api --format=dotenv --output-file=api.secrets
+pnpm exec infisical export --env=testing --path=/api --format=dotenv --output-file=api.secrets
 flyctl secrets import --app $env:FLY_APP_NAME < api.secrets
 ```
 

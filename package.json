@@ -11,10 +11,10 @@
     "deploy:testing:seed-admin": "pnpm --filter @shop/api db:seed-admin",
     "deploy:staging:migrate": "pnpm --filter @shop/database db:migrate",
     "deploy:production:migrate": "pnpm --filter @shop/database db:migrate",
-    "dev:api:infisical": "pnpm dlx @infisical/cli run --env=dev --path=/api -- pnpm --filter @shop/api dev",
-    "dev:events:infisical": "pnpm dlx @infisical/cli run --env=dev --path=/api -- pnpm --filter @shop/api dev:events",
-    "dev:web:infisical": "pnpm dlx @infisical/cli run --env=dev --path=/web -- pnpm --filter @shop/web dev",
-    "db:migrate:infisical": "pnpm dlx @infisical/cli run --env=dev --path=/api -- pnpm --filter @shop/database db:migrate",
+    "dev:api:infisical": "pnpm exec infisical run --env=dev --path=/api -- pnpm --filter @shop/api dev",
+    "dev:events:infisical": "pnpm exec infisical run --env=dev --path=/api -- pnpm --filter @shop/api dev:events",
+    "dev:web:infisical": "pnpm exec infisical run --env=dev --path=/web -- pnpm --filter @shop/web dev",
+    "db:migrate:infisical": "pnpm exec infisical run --env=dev --path=/api -- pnpm --filter @shop/database db:migrate",
     "enforce:branch-name": "node ./scripts/git/validate-branch-name.mjs",
     "enforce:commit-message": "node ./scripts/git/validate-commit-message.mjs",
     "format": "biome format --write .",
@@ -32,10 +32,16 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.5",
+    "@infisical/cli": "^0.43.84",
     "concurrently": "^9.2.1",
     "husky": "^9.1.7",
     "tsx": "^4.21.0",
     "turbo": "^2.5.0",
     "typescript": "^5.9.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@infisical/cli"
+    ]
   }
 }
