@@ -20,6 +20,12 @@ export const sourceReservationStatusSchema = z.enum([
 export const adminOverrideReasonSchema = z.string().trim().min(8).max(500);
 
 export const gtnStatusSchema = z.enum(["dispatched", "received", "cancelled"]);
+export const receiptDiscrepancyReasonSchema = z.enum([
+  "short_received",
+  "damaged_received",
+  "wrong_item",
+  "other",
+]);
 
 export const createStockSupplyRequestItemSchema = z.object({
   skuId: z.string().uuid(),
@@ -79,7 +85,10 @@ export const cancelStockSupplyRequestSchema = z.object({
 // Worker at destination confirms receipt (updates destination stock)
 export const confirmReceiptSchema = z.object({
   adminOverrideReason: adminOverrideReasonSchema.optional(),
+  discrepancyNotes: z.string().trim().max(500).optional(),
+  discrepancyReason: receiptDiscrepancyReasonSchema.optional(),
   notes: z.string().trim().max(500).optional(),
+  receivedQuantity: z.number().int().min(0).optional(),
 });
 
 export const stockSupplyRequestResponseSchema = z.object({
@@ -118,6 +127,9 @@ export const stockSupplyRequestResponseSchema = z.object({
   dispatchedBy: z.string().uuid().nullable(),
   dispatchedAt: z.iso.datetime().nullable(),
   receivedAt: z.iso.datetime().nullable(),
+  receivedQuantity: z.number().int().min(0).nullable(),
+  receiptDiscrepancyReason: receiptDiscrepancyReasonSchema.nullable(),
+  receiptDiscrepancyNotes: z.string().nullable(),
 
   // GTN reference (available once dispatched)
   gtnReference: z.string().nullable(),
@@ -181,6 +193,9 @@ export const gtnResponseSchema = z.object({
   receivedBy: z.string().uuid().nullable(),
   receivedByName: z.string().nullable(),
   receivedAt: z.iso.datetime().nullable(),
+  receivedQuantity: z.number().int().min(0).nullable(),
+  receiptDiscrepancyReason: receiptDiscrepancyReasonSchema.nullable(),
+  receiptDiscrepancyNotes: z.string().nullable(),
   notes: z.string().nullable(),
   createdAt: z.iso.datetime(),
 });
@@ -190,6 +205,9 @@ export type SourceReservationStatus = z.infer<
   typeof sourceReservationStatusSchema
 >;
 export type GtnStatus = z.infer<typeof gtnStatusSchema>;
+export type ReceiptDiscrepancyReason = z.infer<
+  typeof receiptDiscrepancyReasonSchema
+>;
 export type CreateStockSupplyRequest = z.infer<
   typeof createStockSupplyRequestSchema
 >;

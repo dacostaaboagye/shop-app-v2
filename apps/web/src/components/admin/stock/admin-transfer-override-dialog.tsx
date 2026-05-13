@@ -7,8 +7,16 @@ import type {
 } from "@shop/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { FormEvent } from "react";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
+import {
+  buildConfirmReceiptPayload,
+  createTransferReceiptDefaults,
+  getExpectedTransferQuantity,
+  getReceiptFormError,
+  type TransferReceiptFormValues,
+} from "@/components/stock/transfer-receipt.support";
+import { TransferReceiptFields } from "@/components/stock/transfer-receipt-fields";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -44,13 +52,28 @@ export function AdminTransferOverrideDialog({
   target: OverrideTarget | null;
 }) {
   const [overrideReason, setOverrideReason] = useState("");
-  const [notes, setNotes] = useState("");
+  const [receiptValues, setReceiptValues] = useState<TransferReceiptFormValues>(
+    () => createTransferReceiptDefaults(target?.item ?? null),
+  );
   const queryClient = useQueryClient();
   const overrideReasonId = useId();
-  const notesId = useId();
+  const expectedQuantity = target
+    ? getExpectedTransferQuantity(target.item)
+    : 0;
+  const receiptError =
+    target?.action === "confirm_receipt"
+      ? getReceiptFormError(receiptValues, expectedQuantity)
+      : null;
+
+  useEffect(() => {
+    if (open) {
+      setReceiptValues(createTransferReceiptDefaults(target?.item ?? null));
+      setOverrideReason("");
+    }
+  }, [open, target]);
 
   function resetAndClose() {
-    setNotes("");
+    setReceiptValues(createTransferReceiptDefaults(null));
     setOverrideReason("");
     onOpenChange(false);
   }
@@ -68,8 +91,8 @@ export function AdminTransferOverrideDialog({
       }
 
       const body: ConfirmReceipt = {
+        ...buildConfirmReceiptPayload(receiptValues, expectedQuantity),
         adminOverrideReason: overrideReason.trim(),
-        ...(notes.trim() ? { notes: notes.trim() } : {}),
       };
       return patchWorkerConfirmReceipt(
         currentTarget.item.supplyRequestId,
@@ -97,14 +120,14 @@ export function AdminTransferOverrideDialog({
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (target && overrideReason.trim()) {
+    if (target && overrideReason.trim() && !receiptError) {
       mutation.mutate(target);
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{getTitle(target?.action)}</DialogTitle>
           <DialogDescription>
@@ -126,17 +149,12 @@ export function AdminTransferOverrideDialog({
             />
           </div>
           {target?.action === "confirm_receipt" ? (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor={notesId}>Receipt notes (optional)</Label>
-              <Textarea
-                id={notesId}
-                maxLength={500}
-                onChange={(event) => setNotes(event.target.value)}
-                placeholder="Any operational notes about the received goods."
-                rows={3}
-                value={notes}
-              />
-            </div>
+            <TransferReceiptFields
+              disabled={mutation.isPending}
+              expectedQuantity={expectedQuantity}
+              onChange={setReceiptValues}
+              values={receiptValues}
+            />
           ) : null}
           <DialogFooter>
             <Button
@@ -147,7 +165,11 @@ export function AdminTransferOverrideDialog({
               Cancel
             </Button>
             <Button
-              disabled={mutation.isPending || overrideReason.trim() === ""}
+              disabled={
+                mutation.isPending ||
+                overrideReason.trim() === "" ||
+                !!receiptError
+              }
               type="submit"
             >
               {mutation.isPending
