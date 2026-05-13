@@ -43,6 +43,7 @@ import { registerStockCountRoutes } from "../modules/stock/stock-count-admin.rou
 import { registerStockMovementHistoryRoutes } from "../modules/stock/stock-movement-history.routes.js";
 import { registerStockTakeRoutes } from "../modules/stock/stock-take.routes.js";
 import { registerStockTakeImportRoutes } from "../modules/stock/stock-take-import.routes.js";
+import { registerStockWriteOffRoutes } from "../modules/stock/stock-write-off.routes.js";
 import { registerStockSupplyRoutes } from "../modules/stock/supply-request.routes.js";
 import { registerHealthRoutes } from "../modules/system/health/health.routes.js";
 import {
@@ -105,6 +106,7 @@ type CreateServerOptions = {
   >[1];
   stockCount?: Parameters<typeof registerStockCountRoutes>[1];
   stockMovements?: Parameters<typeof registerStockMovementHistoryRoutes>[1];
+  stockWriteOff?: Parameters<typeof registerStockWriteOffRoutes>[1];
   stockTakeImport?: Parameters<typeof registerStockTakeImportRoutes>[1];
   stockTake?: Parameters<typeof registerStockTakeRoutes>[1];
 };
@@ -209,6 +211,7 @@ export function createServer(options: CreateServerOptions = {}) {
   registerStockBalanceLocationRoutes(server, options.stockBalanceLocation);
   registerStockCountRoutes(server, options.stockCount);
   registerStockMovementHistoryRoutes(server, options.stockMovements);
+  registerStockWriteOffRoutes(server, options.stockWriteOff);
   registerStockTakeRoutes(server, options.stockTake);
   registerStockTakeImportRoutes(server, options.stockTakeImport);
   registerCatalogManagerQueryRoutes(server, options.catalogManagerQuery);

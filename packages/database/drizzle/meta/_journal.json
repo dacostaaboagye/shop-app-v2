@@ -351,6 +351,13 @@
       "when": 1778687217369,
       "tag": "0049_funny_pride",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1778703722361,
+      "tag": "0050_famous_newton_destine",
+      "breakpoints": true
     }
   ]
 }

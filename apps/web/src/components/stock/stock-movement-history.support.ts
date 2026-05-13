@@ -34,6 +34,7 @@ export const STOCK_MOVEMENT_TYPE_OPTIONS: ReadonlyArray<{
 export const STOCK_SOURCE_TYPE_OPTIONS = [
   { label: "Supplier receipts", value: "supplier_procurement_receipt" },
   { label: "Stock takes", value: "stock_take" },
+  { label: "Stock write-offs", value: "stock_write_off" },
   { label: "Opening stock", value: "opening_stock" },
   { label: "Admin counts", value: "admin_count" },
   { label: "POS sales", value: "pos_sale" },

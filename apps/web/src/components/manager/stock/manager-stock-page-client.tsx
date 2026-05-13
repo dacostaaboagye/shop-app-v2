@@ -13,6 +13,7 @@ import {
   ManagerStockTableSection,
 } from "@/components/manager/stock/manager-stock-page-sections";
 import { StockSearchToolbar } from "@/components/stock/stock-workspace-panels";
+import { useStockWriteOffDialog } from "@/components/stock/use-stock-write-off-dialog";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ import {
   postManagerOpeningStock,
   postManagerStockCount,
 } from "@/lib/react-query/stock-admin";
+import { postManagerStockWriteOff } from "@/lib/react-query/stock-write-offs";
 
 export function ManagerStockPageClient() {
   const queryClient = useQueryClient();
@@ -81,6 +83,14 @@ export function ManagerStockPageClient() {
       setOpeningResetKey((key) => key + 1);
     },
   });
+  const { openWriteOffDialog, writeOffDialog } = useStockWriteOffDialog({
+    invalidateQueryKeys: [
+      ["stock", "balances", "manager"],
+      ["stock", "movements"],
+    ],
+    locationSlug: selectedLocationScope?.locationSlug ?? "",
+    mutationFn: postManagerStockWriteOff,
+  });
 
   const openCountDialog = useCallback(
     (row: AdminStockBalanceSummary | null) => {
@@ -96,8 +106,12 @@ export function ManagerStockPageClient() {
   const canRequestSupply =
     selectedLocationScope?.permissions.includes("stock.supply.manage") ?? false;
   const columns = useMemo(
-    () => buildStockBalanceColumns(canCount ? openCountDialog : null),
-    [canCount, openCountDialog],
+    () =>
+      buildStockBalanceColumns(
+        canCount ? openCountDialog : null,
+        canCount ? openWriteOffDialog : null,
+      ),
+    [canCount, openCountDialog, openWriteOffDialog],
   );
   const stockItems = stockQuery.data?.items ?? [];
 
@@ -206,6 +220,7 @@ export function ManagerStockPageClient() {
         open={countOpen}
         row={countTarget}
       />
+      {writeOffDialog}
       <ManagerBulkSupplyDialogSection
         onOpenChange={(open) => {
           setRequestOpen(open);
