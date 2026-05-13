@@ -114,3 +114,7 @@ Implementation shape:
 2. Manager opens `/manager/stock/movements`, selects one managed location, and confirms only that location's stock changes appear.
 3. Manager tries to load a location they do not manage and sees an access-denied state.
 4. Admin searches by SKU and verifies the chronological trail includes opening stock, stock counts, stock takes, transfers, sales, returns, and supplier receipts where data exists.
+
+## Related PRs
+
+- [PR #165](https://github.com/dacostaaboagye/shop-app-v2/pull/165) - `feat(e-05-02): add stock movement history`
