@@ -3,7 +3,7 @@
 A snapshot of the master xlsx so we don't have to parse it every session.
 
 > **Source**: `Building and Refining Product Backlog(2).xlsx` at the repo root.
-> **Last derived**: 2026-05-03. Markdown closure updates were appended after PR #79, PR #107, PR #108, PR #110, PR #111, PR #141, PR #154, and PR #155 merged; re-run the xlsx refresh flow to make the workbook-backed snapshot authoritative again.
+> **Last derived**: 2026-05-03. Markdown closure updates were appended after PR #79, PR #107, PR #108, PR #110, PR #111, PR #141, PR #154, PR #155, PR #159, and PR #161 merged; re-run the xlsx refresh flow to make the workbook-backed snapshot authoritative again.
 > **Authority**: the xlsx is the source of truth. This doc reflects state at the time it was written. **Re-derive from the xlsx whenever priority or status decisions are at stake** — do not trust this doc for current status if any time has passed since the date above.
 >
 > **To refresh**: ask Claude to "refresh the scope summary" (or invoke `/refresh-backlog-summary`). The skill at `.claude/skills/refresh-backlog-summary/SKILL.md` re-reads the xlsx, updates this file, and opens a PR.
@@ -85,6 +85,6 @@ These are oddities in the xlsx itself, not the work — worth noting so they get
 
 Based on what's in the xlsx today, the remaining near-term runway is clear:
 
-1. **E-05-01** - refined in `docs/backlog/epics/E-05-01-stock-receipts.md`. Start with supplier goods receipts updating location stock balances through append-only `goods_receipt` movements.
+1. **E-05-02** - refined in `docs/backlog/epics/E-05-02-stock-movement-history.md`. Expose the append-only stock movement ledger as admin and manager movement history so receipt, count, transfer, sale, and return changes can be traced without database access.
 
-The PO still needs to mirror the shipped E-04 state and new E-05-01 slice into `Backlog Audit` / `Next Up` in the workbook so the rest of phase-2 (E-05..E-15) can be tracked by the authoritative queue.
+The PO still needs to mirror the shipped E-04/E-05-01 state and new E-05-02 slice into `Backlog Audit` / `Next Up` in the workbook so the rest of phase-2 (E-05..E-15) can be tracked by the authoritative queue.
