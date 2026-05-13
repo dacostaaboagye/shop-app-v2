@@ -250,4 +250,11 @@ describe("portal-shell-config", () => {
     assert.equal(supplyRequests?.label, "Supply requests");
     assert.equal(supplyRequests?.requiredPermission, "stock.supply.manage");
   });
+
+  it("resolves getRouteItem for /manager/staff/new to the hidden worker create entry", () => {
+    const item = getRouteItem("/manager/staff/new");
+
+    assert.equal(item?.label, "Add worker");
+    assert.equal(item?.requiredPermission, "access.assignments.manage");
+  });
 });

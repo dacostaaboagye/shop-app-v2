@@ -1,8 +1,10 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { BarChart3, ShieldCheck, UserCheck } from "lucide-react";
+import { BarChart3, Plus, ShieldCheck, UserCheck } from "lucide-react";
+import Link from "next/link";
 import { useMemo } from "react";
+import { useAuthorization } from "@/components/providers/authorization-provider";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import {
@@ -10,6 +12,7 @@ import {
   PageShell,
   StatCard,
 } from "@/components/system/page-shell";
+import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
 import { formatCount } from "@/lib/display/format";
@@ -23,6 +26,7 @@ import {
   fetchOfficialDocumentProfile,
   officialDocumentProfileQueryKey,
 } from "@/lib/react-query/official-documents";
+import { toRoute } from "@/lib/routes";
 import { ManagerStaffList } from "./manager-staff-list";
 
 const STAFF_SKELETON_KEYS = ["staff-1", "staff-2", "staff-3"] as const;
@@ -35,6 +39,7 @@ export function ManagerStaffPageClient() {
     selectedLocationSlug,
     setSelectedLocationSlug,
   } = usePermissionLocationScope("staff.view");
+  const { can } = useAuthorization();
   const staffQuery = useQuery({
     enabled: !!selectedLocationScope,
     queryFn: () => {
@@ -77,6 +82,17 @@ export function ManagerStaffPageClient() {
   return (
     <PageShell>
       <PageHeader
+        action={
+          can("access.assignments.manage") ? (
+            <Link
+              className={buttonVariants({ size: "sm" })}
+              href={toRoute("/manager/staff/new")}
+            >
+              <Plus data-icon="inline-start" />
+              Add worker
+            </Link>
+          ) : null
+        }
         description="View the active managers and workers assigned to a location before assigning stock."
         title="Team at this location"
       />

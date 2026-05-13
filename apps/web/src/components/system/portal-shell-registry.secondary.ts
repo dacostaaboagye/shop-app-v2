@@ -86,6 +86,16 @@ export const SECONDARY_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     section: "Operations",
   },
   {
+    activeMatchers: [{ mode: "exact", path: "/manager/staff/new" }],
+    description: "Add a worker to one of your managed locations.",
+    href: toRoute("/manager/staff/new"),
+    icon: Users,
+    label: "Add worker",
+    requiredPermission: "access.assignments.manage",
+    section: "Operations",
+    sidebar: false,
+  },
+  {
     activeMatchers: [{ mode: "descendants", path: "/manager/staff" }],
     description: "Workers and managers assigned to this location.",
     href: toRoute("/manager/staff"),

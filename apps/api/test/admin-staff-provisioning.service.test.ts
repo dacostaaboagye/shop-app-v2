@@ -64,6 +64,8 @@ describe("AdminStaffProvisioningService", () => {
     assert.equal(response.email, "worker@example.com");
     assert.equal(response.requiresPasswordChange, true);
     assert.equal(events[0]?.type, "access.user.created");
+    assert.equal(events[0]?.payload.actorRole, "admin");
+    assert.equal(events[0]?.payload.actorUserSlug, ACTOR.userSlug);
     assert.deepEqual(calls, [
       {
         actorId: ACTOR.userId,
@@ -113,6 +115,41 @@ describe("AdminStaffProvisioningService", () => {
       {
         name: "AppError",
         message: 'Role "worker" must be assigned to a location.',
+      },
+    );
+  });
+
+  it("rejects roles outside the provisioning policy", async () => {
+    const service = new AdminStaffProvisioningService(
+      {
+        async createStaffUser() {
+          throw new Error("Repository should not be called");
+        },
+      },
+      {
+        async allocateSlug() {
+          throw new Error("Slug allocator should not be called");
+        },
+      },
+    );
+
+    await assert.rejects(
+      () =>
+        service.createUser(
+          ACTOR,
+          {
+            email: "worker@example.com",
+            firstName: "Store",
+            lastName: "Worker",
+            reason: "New hire",
+            roleAssignments: [{ locationSlug: "downtown", roleSlug: "admin" }],
+          },
+          NOW,
+          { allowedRoleSlugs: ["worker"] },
+        ),
+      {
+        name: "AppError",
+        message: 'Role "admin" cannot be provisioned from this route.',
       },
     );
   });

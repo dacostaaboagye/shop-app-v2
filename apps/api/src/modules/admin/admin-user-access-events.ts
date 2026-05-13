@@ -15,6 +15,8 @@ type AccessActor = {
   userSlug: string;
 };
 
+type StaffProvisioningActorRole = "admin" | "manager";
+
 export function createAdminUserRoleAssignedEvent(input: {
   actor: AccessActor;
   occurredAt: Date;
@@ -42,6 +44,7 @@ export function createAdminUserRoleAssignedEvent(input: {
 
 export function createAdminUserCreatedEvent(input: {
   actor: AccessActor;
+  actorRole?: StaffProvisioningActorRole;
   occurredAt: Date;
   request: AdminCreateUserRequest;
   userSlug: string;
@@ -50,6 +53,8 @@ export function createAdminUserCreatedEvent(input: {
     actor: input.actor,
     occurredAt: input.occurredAt,
     payload: {
+      actorRole: input.actorRole ?? "admin",
+      actorUserSlug: input.actor.userSlug,
       email: input.request.email,
       reason: input.request.reason,
       roleAssignmentCount: String(input.request.roleAssignments.length),

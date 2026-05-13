@@ -53,6 +53,11 @@ import { registerErrorHandling } from "./register-error-handling.js";
 const GLOBAL_RATE_LIMIT_MAX = 600;
 const GLOBAL_RATE_LIMIT_WINDOW_MS = 60_000;
 
+type StockAssignmentRouteOptions = Parameters<
+  typeof registerStockAssignmentRoutes
+>[1] &
+  Parameters<typeof registerManagerStaffRoutes>[1];
+
 type CreateServerOptions = {
   accessControl?: Parameters<typeof registerRouteAuthorization>[1];
   adminAccess?: Parameters<typeof registerAdminAccessRoutes>[1];
@@ -91,7 +96,7 @@ type CreateServerOptions = {
   posSales?: Parameters<typeof registerPosSaleRoutes>[1];
   stock?: Parameters<typeof registerStockRoutes>[1];
   stockSupply?: Parameters<typeof registerStockSupplyRoutes>[1];
-  stockAssignments?: Parameters<typeof registerStockAssignmentRoutes>[1];
+  stockAssignments?: StockAssignmentRouteOptions;
   workerDashboard?: Parameters<typeof registerWorkerDashboardRoutes>[1];
   stockBalance?: Parameters<typeof registerStockBalanceRoutes>[1];
   stockBalanceLocation?: Parameters<
