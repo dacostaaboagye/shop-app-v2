@@ -29,6 +29,7 @@ export const stockMovementTypeEnum = pgEnum("stock_movement_type", [
   "delivery_dispatch",
   "transfer_in",
   "transfer_out",
+  "goods_receipt",
   "manual_adjustment",
 ]);
 

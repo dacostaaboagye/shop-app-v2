@@ -31,6 +31,25 @@ describe("StockMovementSyncService", () => {
     assert.equal(harness.state.balance?.onHandQuantity, 8);
   });
 
+  it("records supplier goods receipts as inbound stock movements", async () => {
+    const harness = createHarness();
+
+    const result = await harness.service.syncMovement({
+      locationId: "loc_store_1",
+      movementType: "goods_receipt",
+      now: new Date("2026-05-13T12:00:00.000Z"),
+      occurredAt: new Date("2026-05-13T12:00:00.000Z"),
+      quantityDelta: 6,
+      skuId: "sku_1",
+      sourceKey: "PO-2026-0001:line-1:6",
+      sourceType: "supplier_procurement_receipt",
+    });
+
+    assert.equal(result.status, "created");
+    assert.equal(result.movement.movementType, "goods_receipt");
+    assert.equal(harness.state.balance?.onHandQuantity, 6);
+  });
+
   it("applies an outbound movement to an existing balance", async () => {
     const harness = createHarness({
       balance: createBalance({
