@@ -1,7 +1,6 @@
 import {
   bulkStockSupplyRequestResponseSchema,
   cancelStockSupplyRequestSchema,
-  confirmReceiptSchema,
   createBulkStockSupplyRequestSchema,
   createStockSupplyRequestSchema,
   stockSupplyRequestListQuerySchema,
@@ -22,6 +21,7 @@ import {
   supplyRequestRoutes,
   toRequestResponse,
 } from "./supply-request-route-support.js";
+import { registerConfirmReceiptRoute } from "./supply-request-worker-confirm-receipt.routes.js";
 import { cannotCancelError } from "./supply-request-worker-route-support.js";
 
 export function registerWorkerSupplyRequestRoutes(
@@ -241,59 +241,6 @@ function registerCancelRoute(
         throw cannotCancelError();
       }
       return stockSupplyRequestResponseSchema.parse(toRequestResponse(row));
-    },
-  });
-}
-
-function registerConfirmReceiptRoute(
-  server: FastifyInstance,
-  dependencies: StockSupplyRouteDependencies,
-  accessPolicy: SupplyRequestAccessPolicy,
-) {
-  const route = supplyRequestRoutes.workerConfirmReceipt;
-  server.route({
-    config: { access: route.access },
-    method: route.method,
-    url: route.url,
-    async handler(request) {
-      const userId = getAuthenticatedUserId(request);
-      const actor = getAuthenticatedActor(request);
-      const { id } = request.params as { id: string };
-      const body = confirmReceiptSchema.parse(request.body);
-      const existingRequest =
-        await dependencies.supplyRequestRepository.findById(id);
-      if (!existingRequest) {
-        throw new AppError({
-          code: "not_found",
-          detail:
-            "Supply request not found or goods have not been dispatched yet.",
-          statusCode: 404,
-          title: "Cannot confirm receipt",
-        });
-      }
-
-      await accessPolicy.assertCanConfirmReceipt({
-        actor,
-        supplyRequest: existingRequest,
-        ...(body.adminOverrideReason
-          ? { adminOverrideReason: body.adminOverrideReason }
-          : {}),
-      });
-      const { supplyRequest } = await dependencies.supplyService.confirmReceipt(
-        {
-          actor,
-          notes: body.notes ?? null,
-          now: new Date(),
-          receivedBy: userId,
-          supplyRequestId: id,
-          ...(body.adminOverrideReason
-            ? { adminOverrideReason: body.adminOverrideReason }
-            : {}),
-        },
-      );
-      return stockSupplyRequestResponseSchema.parse(
-        toRequestResponse(supplyRequest),
-      );
     },
   });
 }

@@ -156,13 +156,22 @@ async function appendTransferEvent(
     transferId: string;
   },
 ) {
+  const expectedQuantity =
+    input.supplyRequest.approvedQuantity ??
+    input.supplyRequest.requestedQuantity;
+  const receivedQuantity = input.supplyRequest.receivedQuantity;
+
   await tx.insert(stockTransferEvents).values({
     actorUserId: input.actorUserId,
     eventType: input.eventType,
     occurredAt: input.occurredAt,
     payload: {
       approvedQuantity: input.supplyRequest.approvedQuantity,
+      missingQuantity:
+        receivedQuantity === null ? null : expectedQuantity - receivedQuantity,
       requestedQuantity: input.supplyRequest.requestedQuantity,
+      receivedQuantity,
+      receiptDiscrepancyReason: input.supplyRequest.receiptDiscrepancyReason,
       status: input.supplyRequest.status,
     },
     summary: input.summary,

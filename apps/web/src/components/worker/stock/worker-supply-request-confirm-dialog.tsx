@@ -3,8 +3,16 @@
 import type { StockSupplyRequestResponse } from "@shop/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { FormEvent } from "react";
-import { useId, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import {
+  buildConfirmReceiptPayload,
+  createTransferReceiptDefaults,
+  getExpectedTransferQuantity,
+  getReceiptFormError,
+  type TransferReceiptFormValues,
+} from "@/components/stock/transfer-receipt.support";
+import { TransferReceiptFields } from "@/components/stock/transfer-receipt-fields";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,8 +22,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { getAppErrorMessage } from "@/lib/errors/app-error";
 import { patchWorkerConfirmReceipt } from "@/lib/react-query/stock-supply";
 
@@ -30,14 +36,27 @@ export function ConfirmReceiptDialog({
   open: boolean;
   target: StockSupplyRequestResponse | null;
 }) {
-  const [notes, setNotes] = useState("");
-  const notesId = useId();
+  const [values, setValues] = useState<TransferReceiptFormValues>(() =>
+    createTransferReceiptDefaults(target),
+  );
   const queryClient = useQueryClient();
+  const expectedQuantity = target ? getExpectedTransferQuantity(target) : 0;
+  const formError = target
+    ? getReceiptFormError(values, expectedQuantity)
+    : null;
+
+  useEffect(() => {
+    if (open) {
+      setValues(createTransferReceiptDefaults(target));
+    }
+  }, [open, target]);
+
   const mutation = useMutation({
     mutationFn: (id: string) =>
-      patchWorkerConfirmReceipt(id, {
-        ...(notes.trim() ? { notes: notes.trim() } : {}),
-      }),
+      patchWorkerConfirmReceipt(
+        id,
+        buildConfirmReceiptPayload(values, expectedQuantity),
+      ),
     onError(error) {
       toast.error(
         getAppErrorMessage(error, {
@@ -48,19 +67,19 @@ export function ConfirmReceiptDialog({
     onSuccess() {
       toast.success("Receipt confirmed. Stock updated.");
       void queryClient.invalidateQueries({ queryKey: ["supply-requests"] });
-      setNotes("");
+      setValues(createTransferReceiptDefaults(null));
       onSuccess();
     },
   });
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (target) mutation.mutate(target.supplyRequestId);
+    if (target && !formError) mutation.mutate(target.supplyRequestId);
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Confirm receipt</DialogTitle>
           <DialogDescription>
@@ -68,19 +87,18 @@ export function ConfirmReceiptDialog({
           </DialogDescription>
         </DialogHeader>
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-          <TransferRoute target={target} />
-          <GtnReference target={target} />
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor={notesId}>Notes (optional)</Label>
-            <Textarea
-              id={notesId}
-              maxLength={500}
-              onChange={(event) => setNotes(event.target.value)}
-              placeholder="Any comments about the received goods..."
-              rows={3}
-              value={notes}
-            />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <TransferRoute target={target} />
+            <GtnReference target={target} />
           </div>
+          {target ? (
+            <TransferReceiptFields
+              disabled={mutation.isPending}
+              expectedQuantity={expectedQuantity}
+              onChange={setValues}
+              values={values}
+            />
+          ) : null}
           {mutation.isError ? (
             <p className="text-sm text-destructive">
               {getAppErrorMessage(mutation.error, {
@@ -98,7 +116,7 @@ export function ConfirmReceiptDialog({
             </Button>
             <Button
               aria-disabled={mutation.isPending}
-              disabled={mutation.isPending}
+              disabled={mutation.isPending || !!formError}
               type="submit"
             >
               {mutation.isPending ? "Confirming..." : "Confirm receipt"}
@@ -117,11 +135,13 @@ function TransferRoute({
 }) {
   if (!target?.sourceLocationName && !target?.locationName) return null;
   return (
-    <div className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-      <span className="font-medium text-foreground">Transfer route:</span>{" "}
-      {target.sourceLocationName ?? "Source location"}
-      {" -> "}
-      {target.locationName ?? "Destination location"}
+    <div className="rounded-xl border border-border/60 bg-muted/10 px-3 py-2 text-xs text-muted-foreground">
+      <span className="type-kicker block text-muted-foreground">Route</span>
+      <span className="font-medium text-foreground">
+        {target.sourceLocationName ?? "Source location"}
+        {" -> "}
+        {target.locationName ?? "Destination location"}
+      </span>
     </div>
   );
 }
@@ -133,8 +153,8 @@ function GtnReference({
 }) {
   if (!target?.gtnReference) return null;
   return (
-    <div className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-      GTN:{" "}
+    <div className="rounded-xl border border-border/60 bg-muted/10 px-3 py-2 text-xs text-muted-foreground">
+      <span className="type-kicker block text-muted-foreground">GTN</span>
       <span className="font-mono font-medium text-foreground">
         {target.gtnReference}
       </span>

@@ -470,6 +470,66 @@ describe("stock supply routes", () => {
     assert.equal(response.json().status, "received");
   });
 
+  it("passes receipt discrepancy evidence to the receipt service", async () => {
+    let capturedInput: {
+      discrepancyNotes?: string;
+      discrepancyReason?: string;
+      receivedQuantity?: number;
+    } = {};
+    const server = createStockSupplyServer({
+      allowedLocationPermissions: {
+        "stock.supply.request": [UUIDS.destinationA],
+      },
+      confirmReceiptImpl: async (input) => {
+        capturedInput = input;
+        return {
+          gtn: makeGtnRow({
+            receivedAt: NOW,
+            receivedBy: UUIDS.actor,
+            receivedQuantity: 1,
+            receiptDiscrepancyNotes: "One carton damaged.",
+            receiptDiscrepancyReason: "damaged_received",
+            status: "received",
+          }),
+          supplyRequest: makeSupplyRequestRow({
+            receivedAt: NOW,
+            receivedQuantity: 1,
+            receiptDiscrepancyNotes: "One carton damaged.",
+            receiptDiscrepancyReason: "damaged_received",
+            status: "received",
+          }),
+        };
+      },
+      requestById: makeSupplyRequestRow({
+        locationId: UUIDS.destinationA,
+        requesterId: UUIDS.actor,
+        status: "dispatched",
+      }),
+    });
+
+    const response = await server.inject({
+      headers: {
+        authorization: bearerToken(UUIDS.actor, "worker-a"),
+      },
+      method: "PATCH",
+      payload: {
+        discrepancyNotes: "One carton damaged.",
+        discrepancyReason: "damaged_received",
+        receivedQuantity: 1,
+      },
+      url: `/api/worker/stock/supply-requests/${UUIDS.request}/confirm-receipt`,
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(capturedInput, {
+      discrepancyNotes: "One carton damaged.",
+      discrepancyReason: "damaged_received",
+      receivedQuantity: 1,
+    });
+    assert.equal(response.json().receivedQuantity, 1);
+    assert.equal(response.json().receiptDiscrepancyReason, "damaged_received");
+  });
+
   it("rejects admin cancel without an override reason", async () => {
     const server = createStockSupplyServer({
       allowedLocationPermissions: {
@@ -566,7 +626,12 @@ function createStockSupplyServer(input: {
   cancelByIdImpl?: (input: {
     adminOverrideReason?: string;
   }) => Promise<SupplyRequestRow>;
-  confirmReceiptImpl?: (input: { adminOverrideReason?: string }) => Promise<{
+  confirmReceiptImpl?: (input: {
+    adminOverrideReason?: string;
+    discrepancyNotes?: string;
+    discrepancyReason?: string;
+    receivedQuantity?: number;
+  }) => Promise<{
     gtn: GtnRow;
     supplyRequest: SupplyRequestRow;
   }>;
@@ -698,6 +763,15 @@ function createStockSupplyServer(input: {
             return input.confirmReceiptImpl({
               ...(args.adminOverrideReason
                 ? { adminOverrideReason: args.adminOverrideReason }
+                : {}),
+              ...(args.discrepancyNotes
+                ? { discrepancyNotes: args.discrepancyNotes }
+                : {}),
+              ...(args.discrepancyReason
+                ? { discrepancyReason: args.discrepancyReason }
+                : {}),
+              ...(args.receivedQuantity !== undefined
+                ? { receivedQuantity: args.receivedQuantity }
                 : {}),
             });
           }
@@ -911,8 +985,11 @@ function makeSupplyRequestRowBase(): SupplyRequestRow {
     locationName: "Store A",
     notes: null,
     receivedAt: null,
+    receivedQuantity: null,
     reference: "SUP-0001",
     requestGroupReference: null,
+    receiptDiscrepancyNotes: null,
+    receiptDiscrepancyReason: null,
     sourceReservationStatus: null,
     transferReference: "TRF-0001",
     requesterEmail: "worker@example.com",
@@ -955,7 +1032,10 @@ function makeGtnRowBase(): GtnRow {
     receivedAt: null,
     receivedBy: null,
     receivedByName: null,
+    receivedQuantity: null,
     reference: "GTN-0001",
+    receiptDiscrepancyNotes: null,
+    receiptDiscrepancyReason: null,
     skuId: UUIDS.sku,
     skuSnapshot: {
       productName: "Travel Pack",

@@ -10,7 +10,10 @@ import {
 } from "@/components/stock/transfer-detail-surfaces";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SupplyRequestSummaryCard } from "./supply-request-summary-card";
-import { buildTransferTimeline } from "./transfer-workspace.support";
+import {
+  buildTransferReceiptEvidence,
+  buildTransferTimeline,
+} from "./transfer-workspace.support";
 
 export function TransferDetailPanel({
   actions,
@@ -26,6 +29,7 @@ export function TransferDetailPanel({
   status: SupplyRequestStatusPresentation;
 }) {
   const timeline = buildTransferTimeline(item);
+  const receiptEvidence = buildTransferReceiptEvidence(item);
 
   return (
     <div className="flex flex-col gap-4">
@@ -62,6 +66,16 @@ export function TransferDetailPanel({
 
           <TransferDetailSection title="Transfer timeline">
             {timeline.map((row) => (
+              <TransferDetailRow
+                key={row.label}
+                label={row.label}
+                value={row.value}
+              />
+            ))}
+          </TransferDetailSection>
+
+          <TransferDetailSection title="Receipt evidence">
+            {receiptEvidence.map((row) => (
               <TransferDetailRow
                 key={row.label}
                 label={row.label}
