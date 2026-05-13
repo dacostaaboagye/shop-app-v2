@@ -1,7 +1,7 @@
 ---
 id: E-05-02
 title: Stock movement history for inventory traceability
-status: refined
+status: shipped
 priority: P1
 domain: full-stack
 owner: codex
@@ -87,6 +87,27 @@ Implementation shape:
 - Public responses must not include `stock_movements.id`, `skuId`, `locationId`, `createdBy`, raw `sourceKey`, or procurement line IDs.
 - Since the ledger is append-only, this slice must not add any correction endpoint. Users who find an error must use existing stock count/take/receipt/return workflows.
 
+## Shipped evidence
+
+- Refinement PR: https://github.com/dacostaaboagye/shop-app-v2/pull/163
+- Implementation PR: https://github.com/dacostaaboagye/shop-app-v2/pull/165
+- Merge commit: `3a31c99a2344368279b6027d5d7d773732070177`
+- Implementation:
+  - Added public stock movement history contracts and contract tests.
+  - Added read-only admin and manager API routes with manager location-scope enforcement.
+  - Added a stock-owned query repository that maps source keys to safe public source references.
+  - Added admin and manager movement-history pages with filters, pagination, loading, empty, error, desktop table, and mobile card states.
+  - Added stock movement navigation while preserving admin/manager portal isolation.
+- Verification:
+  - `pnpm guard`
+  - `pnpm --filter @shop/contracts test -- stock-movements.test.ts`
+  - `pnpm --filter @shop/api exec tsx --test test/stock-movement-source-reference.test.ts test/stock-movement-history.routes.test.ts`
+  - `pnpm --filter @shop/web exec tsx --test src/components/stock/stock-movement-history.support.test.ts`
+  - `pnpm --filter @shop/web exec tsx --test src/components/system/portal-shell-config.test.ts`
+  - `pnpm verify`
+  - GitHub CI `validate` passed on PR #165.
+  - Playwright checked `/admin/stock/movements` and `/manager/stock/movements` across desktop and mobile layouts.
+
 ## Tasks
 
 1. Add stock movement history contracts.
@@ -114,3 +135,8 @@ Implementation shape:
 2. Manager opens `/manager/stock/movements`, selects one managed location, and confirms only that location's stock changes appear.
 3. Manager tries to load a location they do not manage and sees an access-denied state.
 4. Admin searches by SKU and verifies the chronological trail includes opening stock, stock counts, stock takes, transfers, sales, returns, and supplier receipts where data exists.
+
+## Related PRs
+
+- [PR #163](https://github.com/dacostaaboagye/shop-app-v2/pull/163) - `docs(e-05-02): refine stock movement history`
+- [PR #165](https://github.com/dacostaaboagye/shop-app-v2/pull/165) - `feat(e-05-02): add stock movement history`
