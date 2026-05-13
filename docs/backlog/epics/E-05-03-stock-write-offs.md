@@ -90,3 +90,7 @@ Today an admin or manager can use a stock count to force the final on-hand numbe
 2. Admin opens stock movement history for the same SKU/location and sees a `manual_adjustment` row with negative delta and the write-off reason.
 3. Manager opens their location stock page, records an `expired` write-off, and sees the table refresh.
 4. Manager attempts to write off more than available quantity and receives a clear blocked-state message.
+
+## Related PRs
+
+- [PR #169](https://github.com/dacostaaboagye/shop-app-v2/pull/169) - `feat(e-05-03): add stock write-offs`
