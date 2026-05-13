@@ -1,7 +1,7 @@
 ---
 id: E-04
 title: Inventory tracking per location
-status: refined
+status: shipped
 priority: P1
 domain: full-stack
 owner: codex
@@ -515,3 +515,10 @@ Remaining E-04 product gap:
 - E-04 stock-take in-app count entry: PR #137.
 - E-04 missing-catalog intake drafts: PR #140.
 - E-04 missing-catalog stock review action: PR #141.
+
+## Shipped evidence
+
+- E-04 is complete in the Markdown working surface as of 2026-05-13.
+- Final dependent slices shipped through PR #141 on `dev`.
+- The delivered scope covers opening stock, reason-coded stock counts, stock-take session generation, CSV/XLSX/PDF artifacts, dry-run validation, reviewed apply, in-app count entry, session history, cancellation, and missing-catalog intake review.
+- Remaining open questions are follow-up product policy refinements, not blockers for the E-04 acceptance criteria.
