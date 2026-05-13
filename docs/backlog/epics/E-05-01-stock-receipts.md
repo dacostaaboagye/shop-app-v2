@@ -1,7 +1,7 @@
 ---
 id: E-05-01
 title: Record supplier stock receipts into location inventory
-status: refined
+status: shipped
 priority: P1
 domain: full-stack
 owner: codex
@@ -34,9 +34,29 @@ Existing foundations:
 - `stockMovementTypeEnum` already includes `goods_receipt`.
 - `PostgresStockMovementSyncRepository` and stock receipt operations provide patterns for transactional balance updates and append-only movement evidence.
 
-Gap:
+Original gap:
 
 - `receiveSupplierProcurementOrder` updates procurement line receipt state and writes a supplier transaction, but it does not currently insert stock movements or increment destination stock balances for the received quantities.
+
+## Shipped evidence
+
+- PR: https://github.com/dacostaaboagye/shop-app-v2/pull/159
+- Merge commit: `c8067e3a584ef579f8a6069a68a58a54bef04767`
+- Implementation:
+  - `receiveSupplierProcurementOrder` now runs the receipt workflow in a serializable transaction.
+  - Receipt deltas are computed from the previous line received total and written to `stock_balances` plus append-only `stock_movements`.
+  - `stock_movement_type` now includes `goods_receipt` through migration `0049_funny_pride.sql`.
+  - Duplicate variant rows, quantity reductions, over-receipts, and missing destination locations are rejected with structured errors.
+- Verification:
+  - `pnpm --dir apps/api exec tsx --test test/supplier-procurement-receipt-rules.test.ts test/stock-movement-sync.service.test.ts`
+  - `pnpm --dir packages/database test`
+  - `pnpm --dir apps/api test`
+  - `pnpm guard`
+  - `pnpm lint`
+  - `pnpm typecheck`
+  - `pnpm test`
+  - `pnpm build`
+  - GitHub CI `validate` passed on PR #159.
 
 ## Out of scope
 
