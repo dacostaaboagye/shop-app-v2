@@ -108,3 +108,7 @@ Implementation shape:
 2. Admin receives 5 of 10 units, later receives the remaining 5, and sees two receipt events without the first 5 being counted twice.
 3. Admin attempts to receive 12 of 10 units and gets a clear rejection before any stock changes.
 4. Admin opens supplier activity and stock movement history and can trace the receipt by procurement reference.
+
+## Related PRs
+
+- [PR #161](https://github.com/dacostaaboagye/shop-app-v2/pull/161) - `docs(e-05-01): mark stock receipts shipped`
