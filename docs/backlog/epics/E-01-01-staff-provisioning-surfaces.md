@@ -1,7 +1,7 @@
 ---
 id: E-01-01
 title: Staff provisioning surfaces (admin + manager-scoped)
-status: designed
+status: shipped
 priority: P1
 domain: full-stack
 owner: codex
@@ -341,3 +341,15 @@ This epic intentionally keeps the current inviter-conveyed setup path. Dedicated
 No new ADR is required. ADR 0021 already says workforce users are created internally by authorized admins or managers and use password setup/reset. This epic is the implementation design for that accepted direction.
 
 Update ADR 0021 only if the product changes the setup model from inviter-conveyed Forgot password to dedicated invitation tokens/emails.
+
+## Related PRs
+
+- [PR #154](https://github.com/dacostaaboagye/shop-app-v2/pull/154) - `feat(e-01-01): complete staff provisioning surfaces`
+
+## Shipped Evidence
+
+- Merged to `dev` on 2026-05-13 at 12:59 UTC.
+- Merge commit: `9baecc18c4d91624d7202470e45fee813b9edfa5`.
+- CI `validate`: passed.
+- Local validation before PR: `pnpm verify`.
+- Acceptance evidence covers admin staff creation, manager location-scoped worker provisioning, optional admin profile upload, staff-surface entry points, safe manager error semantics, and responsive manager staff metrics.
