@@ -149,6 +149,20 @@ describe("portal-shell-config", () => {
     assert.equal(item?.requiredPermission, "locations.create");
   });
 
+  it("resolves getRouteItem for /admin/access/users/new to the hidden New user entry", () => {
+    const item = getRouteItem("/admin/access/users/new");
+
+    assert.equal(item?.label, "New user");
+    assert.equal(item?.requiredPermission, "access.assignments.manage");
+  });
+
+  it("resolves getRouteItem for /admin/staff/new to the hidden staff create entry", () => {
+    const item = getRouteItem("/admin/staff/new");
+
+    assert.equal(item?.label, "Add staff member");
+    assert.equal(item?.requiredPermission, "access.assignments.manage");
+  });
+
   it("resolves getRouteItem for /admin/products/new to the hidden New product entry", () => {
     const item = getRouteItem("/admin/products/new");
 

@@ -2,7 +2,9 @@
 
 import type { AdminUserListQuery } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import type { Route } from "next";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -13,6 +15,8 @@ import { StockWorkspaceTableSkeleton } from "@/components/stock/stock-workspace-
 import { AppErrorBanner } from "@/components/system/app-error";
 import { AppTableWrapper } from "@/components/system/app-table-wrapper";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
+import { PermissionGate } from "@/components/system/permission-gate";
+import { buttonVariants } from "@/components/ui/button";
 import {
   adminUsersQueryKey,
   fetchAdminUsers,
@@ -37,6 +41,9 @@ import {
 } from "./users-page-client.support";
 
 export function UsersPageClient({
+  createHref,
+  createLabel = "Create user",
+  createPermission = "access.assignments.manage",
   description = "Backend-backed directory with URL-synced filters and server pagination.",
   title = "Users",
   userDetailBasePath,
@@ -105,7 +112,23 @@ export function UsersPageClient({
   }, [page, pathname, router, safePage, searchParams, usersQuery.data]);
   return (
     <PageShell>
-      <PageHeader description={description} title={title} />
+      <PageHeader
+        actions={
+          createHref ? (
+            <PermissionGate permission={createPermission}>
+              <Link
+                className={buttonVariants({ size: "sm" })}
+                href={createHref}
+              >
+                <Plus data-icon="inline-start" />
+                {createLabel}
+              </Link>
+            </PermissionGate>
+          ) : null
+        }
+        description={description}
+        title={title}
+      />
       <div className="flex flex-col gap-4">
         <UserFilters
           availableRoles={usersQuery.data?.availableRoles ?? []}
