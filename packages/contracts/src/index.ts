@@ -25,6 +25,7 @@ export * from "./platform-events.js";
 export * from "./sales.js";
 export * from "./shared/public-identifiers.js";
 export * from "./stock.js";
+export * from "./stock-movements.js";
 export * from "./stock-supply.js";
 export * from "./stock-takes.js";
 export * from "./stock-takes-list.js";

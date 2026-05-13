@@ -200,6 +200,7 @@ describe("portal-shell-config", () => {
 
   it("keeps global admin stock pages out of the topbar location selector", () => {
     const stockLevels = getRouteItem("/admin/stock/balances");
+    const stockMovements = getRouteItem("/admin/stock/movements");
     const reservations = getRouteItem("/admin/stock/reservations");
     const stockTakes = getRouteItem("/admin/stock/takes");
     const transfers = getRouteItem("/admin/transfers");
@@ -207,6 +208,9 @@ describe("portal-shell-config", () => {
     assert.equal(stockLevels?.label, "Global stock levels");
     assert.equal(stockLevels?.requiredPermission, "admin.dashboard.view");
     assert.equal(stockLevels?.locationSelectorPermission, null);
+    assert.equal(stockMovements?.label, "Stock movements");
+    assert.equal(stockMovements?.requiredPermission, "admin.dashboard.view");
+    assert.equal(stockMovements?.locationSelectorPermission, null);
     assert.equal(reservations?.label, "Global reservations");
     assert.equal(reservations?.requiredPermission, "admin.dashboard.view");
     assert.equal(reservations?.locationSelectorPermission, null);

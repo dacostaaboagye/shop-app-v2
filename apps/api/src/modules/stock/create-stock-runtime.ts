@@ -13,6 +13,7 @@ import { PostgresAdminReservationQueryRepository } from "./postgres-admin-reserv
 import { AdminStockCountRepository } from "./postgres-admin-stock-count.repository.js";
 import { PostgresOpeningStockRepository } from "./postgres-opening-stock.repository.js";
 import { PostgresStockBalanceQueryRepository } from "./postgres-stock-balance-query.repository.js";
+import { PostgresStockMovementQueryRepository } from "./postgres-stock-movement-query.repository.js";
 import { PostgresStockTakeRepository } from "./postgres-stock-take.repository.js";
 import { PostgresStockTakeApplyRepository } from "./postgres-stock-take-apply.repository.js";
 import { PostgresStockTakeImportRepository } from "./postgres-stock-take-import.repository.js";
@@ -48,6 +49,7 @@ type StockRuntime = {
     openingStockRepo: PostgresOpeningStockRepository;
     reservationQueryRepo: PostgresAdminReservationQueryRepository;
     stockBalanceQueryRepo: PostgresStockBalanceQueryRepository;
+    stockMovementQueryRepo: PostgresStockMovementQueryRepository;
     stockCountRepo: AdminStockCountRepository;
     stockTakeApplyService: StockTakeApplyService;
     stockTakeListService: StockTakeListService;
@@ -125,6 +127,9 @@ export function createStockRuntime(
         databaseRuntime.db,
       ),
       stockBalanceQueryRepo: new PostgresStockBalanceQueryRepository(
+        databaseRuntime.db,
+      ),
+      stockMovementQueryRepo: new PostgresStockMovementQueryRepository(
         databaseRuntime.db,
       ),
       stockCountRepo: new AdminStockCountRepository(
