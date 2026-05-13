@@ -332,6 +332,7 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
     description: "Location manager with manager portal access.",
     permissions: [
       "manager.dashboard.view",
+      "access.assignments.manage",
       "inventory.read",
       "inventory.write",
       "stock.view",

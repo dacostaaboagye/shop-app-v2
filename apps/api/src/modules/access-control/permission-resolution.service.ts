@@ -13,7 +13,7 @@ export type ActiveLocationScope = {
 
 export type PermissionResolutionScope = "any_active" | "contextual";
 
-type PermissionAssignmentRecord = {
+export type PermissionAssignmentRecord = {
   effect: "allow" | "deny" | null;
   key: string;
   locationId: string | null;
@@ -173,7 +173,7 @@ function mergeOperatingLocationScopes(
   );
 }
 
-function resolveEffectivePermissions(
+export function resolveEffectivePermissions(
   assignments: readonly PermissionAssignmentRecord[],
   requestedLocationId: string | undefined,
 ) {

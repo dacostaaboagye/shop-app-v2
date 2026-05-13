@@ -8,6 +8,7 @@ export const errorCodeSchema = z.enum([
   "conflict",
   "payload_too_large",
   "rate_limited",
+  "provisioning_failed",
   "internal_error",
 ]);
 

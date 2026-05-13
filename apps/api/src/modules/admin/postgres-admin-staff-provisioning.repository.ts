@@ -1,5 +1,17 @@
-import { users } from "@shop/database";
+import {
+  locations,
+  permissions,
+  rolePermissions,
+  userPermissionOverrides,
+  userRoles,
+  users,
+} from "@shop/database";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
+import {
+  type PermissionAssignmentRecord,
+  resolveEffectivePermissions,
+} from "../access-control/permission-resolution.service.js";
 import { isUniqueViolation } from "../auth/postgres-auth-user-row.js";
 import type { AdminStaffProvisioningRepository } from "./admin-staff-provisioning.service.js";
 import { assignRoleRecord } from "./postgres-admin-user-access-write-commands.js";
@@ -14,6 +26,12 @@ export class PostgresAdminStaffProvisioningRepository
   ): ReturnType<AdminStaffProvisioningRepository["createStaffUser"]> {
     try {
       return await this.db.transaction(async (tx) => {
+        const policyResult = await validateLocationPolicy(tx, input);
+
+        if (policyResult.status !== "ok") {
+          return policyResult;
+        }
+
         const [created] = await tx
           .insert(users)
           .values({
@@ -63,4 +81,109 @@ export class PostgresAdminStaffProvisioningRepository
       throw error;
     }
   }
+}
+
+async function validateLocationPolicy(
+  tx: ApiDatabase,
+  input: Parameters<AdminStaffProvisioningRepository["createStaffUser"]>[0],
+): Promise<
+  | { status: "ok" }
+  | { status: "location_forbidden" }
+  | { status: "self_provision" }
+> {
+  if (!input.locationPolicy) {
+    return { status: "ok" };
+  }
+
+  const [actor] = await tx
+    .select({ email: users.email })
+    .from(users)
+    .where(eq(users.id, input.actorId))
+    .limit(1);
+
+  if (actor?.email?.toLowerCase() === input.email.toLowerCase()) {
+    return { status: "self_provision" };
+  }
+
+  const requestedSlugs = input.roleAssignments
+    .map((assignment) => assignment.locationSlug)
+    .filter((locationSlug): locationSlug is string => !!locationSlug);
+
+  if (requestedSlugs.length === 0) {
+    return { status: "location_forbidden" };
+  }
+
+  const requestedLocations = await tx
+    .select({ id: locations.id, slug: locations.slug })
+    .from(locations)
+    .where(
+      and(
+        inArray(locations.slug, requestedSlugs),
+        eq(locations.status, "active"),
+      ),
+    );
+
+  if (requestedLocations.length !== new Set(requestedSlugs).size) {
+    return { status: "location_forbidden" };
+  }
+
+  const permissionAssignments = await getActorPermissionAssignments(
+    tx,
+    input.actorId,
+  );
+
+  for (const location of requestedLocations) {
+    const permissionsAtLocation = resolveEffectivePermissions(
+      permissionAssignments,
+      location.id,
+    );
+
+    if (
+      !permissionsAtLocation.some(
+        (permission) => permission.key === input.locationPolicy?.permission,
+      )
+    ) {
+      return { status: "location_forbidden" };
+    }
+  }
+
+  return { status: "ok" };
+}
+
+async function getActorPermissionAssignments(
+  tx: ApiDatabase,
+  actorId: string,
+): Promise<PermissionAssignmentRecord[]> {
+  const roleRows = await tx
+    .select({
+      effect: sql<"allow" | "deny" | null>`NULL`,
+      key: permissions.key,
+      locationId: userRoles.locationId,
+      source: sql<"role" | "override">`'role'`,
+    })
+    .from(userRoles)
+    .innerJoin(rolePermissions, eq(rolePermissions.roleId, userRoles.roleId))
+    .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+    .where(and(eq(userRoles.userId, actorId), isNull(userRoles.revokedAt)));
+
+  const overrideRows = await tx
+    .select({
+      effect: userPermissionOverrides.effect,
+      key: permissions.key,
+      locationId: userPermissionOverrides.locationId,
+      source: sql<"role" | "override">`'override'`,
+    })
+    .from(userPermissionOverrides)
+    .innerJoin(
+      permissions,
+      eq(permissions.id, userPermissionOverrides.permissionId),
+    )
+    .where(
+      and(
+        eq(userPermissionOverrides.userId, actorId),
+        isNull(userPermissionOverrides.removedAt),
+      ),
+    );
+
+  return [...overrideRows, ...roleRows];
 }
