@@ -345,6 +345,7 @@ Update ADR 0021 only if the product changes the setup model from inviter-conveye
 ## Related PRs
 
 - [PR #154](https://github.com/dacostaaboagye/shop-app-v2/pull/154) - `feat(e-01-01): complete staff provisioning surfaces`
+- [PR #155](https://github.com/dacostaaboagye/shop-app-v2/pull/155) - `docs(e-01-01): mark staff provisioning surfaces shipped`
 
 ## Shipped Evidence
 
