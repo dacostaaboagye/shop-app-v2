@@ -19,6 +19,7 @@ import { PostgresStockTakeApplyRepository } from "./postgres-stock-take-apply.re
 import { PostgresStockTakeImportRepository } from "./postgres-stock-take-import.repository.js";
 import { PostgresStockTakeLifecycleRepository } from "./postgres-stock-take-lifecycle.repository.js";
 import { PostgresStockTakeListRepository } from "./postgres-stock-take-list.repository.js";
+import { PostgresStockWriteOffRepository } from "./postgres-stock-write-off.repository.js";
 import { PostgresSupplyRequestRepository } from "./postgres-supply-request.repository.js";
 import { StockSupplyService } from "./stock-supply.service.js";
 import { StockTakeService } from "./stock-take.service.js";
@@ -50,6 +51,7 @@ type StockRuntime = {
     reservationQueryRepo: PostgresAdminReservationQueryRepository;
     stockBalanceQueryRepo: PostgresStockBalanceQueryRepository;
     stockMovementQueryRepo: PostgresStockMovementQueryRepository;
+    stockWriteOffRepo: PostgresStockWriteOffRepository;
     stockCountRepo: AdminStockCountRepository;
     stockTakeApplyService: StockTakeApplyService;
     stockTakeListService: StockTakeListService;
@@ -130,6 +132,9 @@ export function createStockRuntime(
         databaseRuntime.db,
       ),
       stockMovementQueryRepo: new PostgresStockMovementQueryRepository(
+        databaseRuntime.db,
+      ),
+      stockWriteOffRepo: new PostgresStockWriteOffRepository(
         databaseRuntime.db,
       ),
       stockCountRepo: new AdminStockCountRepository(

@@ -15,14 +15,12 @@ import {
 } from "@/components/admin/stock/admin-stock-filter-panel";
 import { OpeningStockSetupWorkspace } from "@/components/admin/stock/opening-stock-setup-workspace";
 import { buildStockBalanceColumns } from "@/components/admin/stock/stock-balance-columns";
+import { StockBalanceTableSection } from "@/components/admin/stock/stock-balance-table-section";
 import { StockCountDialog } from "@/components/admin/stock/stock-count-dialog";
 import { StockCountWorkspace } from "@/components/admin/stock/stock-count-workspace";
-import { AppDataTable } from "@/components/data-table/app-data-table";
 import { useAuthorization } from "@/components/providers/authorization-provider";
-import { StockWorkspaceTableSkeleton } from "@/components/stock/stock-workspace-feedback";
+import { useStockWriteOffDialog } from "@/components/stock/use-stock-write-off-dialog";
 import { AppBanner } from "@/components/system/app-banner";
-import { AppErrorBanner } from "@/components/system/app-error";
-import { AppTableWrapper } from "@/components/system/app-table-wrapper";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import {
   adminBrandsQueryKey,
@@ -40,6 +38,7 @@ import {
   postStockCount,
   stockBalancesQueryKey,
 } from "@/lib/react-query/stock-admin";
+import { postAdminStockWriteOff } from "@/lib/react-query/stock-write-offs";
 
 export function StockBalancesPageClient() {
   const { can } = useAuthorization();
@@ -93,9 +92,18 @@ export function StockBalancesPageClient() {
       setOpeningResetKey((key) => key + 1);
     },
   });
+  const { openWriteOffDialog, writeOffDialog } = useStockWriteOffDialog({
+    invalidateQueryKeys: [
+      ["stock", "balances"],
+      ["stock", "movements"],
+    ],
+    locationSlug: filter.locationSlug,
+    mutationFn: postAdminStockWriteOff,
+  });
 
   const columns = buildStockBalanceColumns(
     canCount && filter.locationSlug ? openCountDialog : null,
+    canCount && filter.locationSlug ? openWriteOffDialog : null,
   );
 
   function openCountDialog(row: AdminStockBalanceSummary | null) {
@@ -190,36 +198,15 @@ export function StockBalancesPageClient() {
         />
       ) : null}
 
-      <AppTableWrapper>
-        {stockQuery.isFetching && !stockQuery.data ? (
-          <StockWorkspaceTableSkeleton
-            keys={["sb-1", "sb-2", "sb-3", "sb-4", "sb-5"]}
-            rowClassName="h-12 w-full rounded-lg"
-          />
-        ) : stockQuery.isError ? (
-          <div className="p-8">
-            <AppErrorBanner
-              detail="Could not load stock levels for the selected filters."
-              error={stockQuery.error}
-              onRetry={() => void stockQuery.refetch()}
-              title="Unable to load stock levels"
-            />
-          </div>
-        ) : (
-          <AppDataTable
-            columns={columns}
-            data={stockQuery.data?.items ?? []}
-            density="compact"
-            emptyDescription={
-              hasFilters
-                ? "No stock matches the selected filters."
-                : "No stock has been entered or dispatched in transit yet."
-            }
-            emptyTitle="No stock data"
-            getRowId={(row) => `${row.locationSlug}:${row.skuId}`}
-          />
-        )}
-      </AppTableWrapper>
+      <StockBalanceTableSection
+        columns={columns}
+        data={stockQuery.data}
+        error={stockQuery.error}
+        hasFilters={hasFilters}
+        isError={stockQuery.isError}
+        isFetching={stockQuery.isFetching}
+        onRetry={() => void stockQuery.refetch()}
+      />
 
       <StockCountDialog
         error={countMutation.error}
@@ -241,6 +228,7 @@ export function StockBalancesPageClient() {
         open={countOpen}
         row={countTarget}
       />
+      {writeOffDialog}
     </PageShell>
   );
 }

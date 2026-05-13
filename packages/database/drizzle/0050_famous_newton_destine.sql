@@ -1,0 +1,2 @@
+ALTER TYPE "public"."stock_adjustment_reason_code" ADD VALUE 'expired' BEFORE 'found_stock';--> statement-breakpoint
+ALTER TYPE "public"."stock_adjustment_reason_code" ADD VALUE 'stolen' BEFORE 'return_restock';

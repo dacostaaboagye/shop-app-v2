@@ -39,9 +39,11 @@ export const stockAdjustmentReasonCodeEnum = pgEnum(
     "opening_count",
     "cycle_count",
     "damaged",
+    "expired",
     "found_stock",
     "correction",
     "shrinkage",
+    "stolen",
     "return_restock",
   ],
 );

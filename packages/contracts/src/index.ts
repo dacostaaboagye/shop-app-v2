@@ -29,5 +29,6 @@ export * from "./stock-movements.js";
 export * from "./stock-supply.js";
 export * from "./stock-takes.js";
 export * from "./stock-takes-list.js";
+export * from "./stock-write-offs.js";
 export * from "./system.js";
 export * from "./worker-dashboard.js";
