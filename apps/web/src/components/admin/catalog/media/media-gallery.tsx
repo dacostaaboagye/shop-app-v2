@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 
 type Props = {
   canManage: boolean;
+  emptyDescription?: string;
   isPendingDelete: boolean;
   isPendingSetPrimary: boolean;
   items: AdminMediaRecord[];
@@ -15,6 +16,7 @@ type Props = {
 
 export function MediaGallery({
   canManage,
+  emptyDescription = "No media yet. Upload an image or video below.",
   isPendingDelete,
   isPendingSetPrimary,
   items,
@@ -22,11 +24,7 @@ export function MediaGallery({
   onSetPrimary,
 }: Props) {
   if (items.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        No media yet. Upload an image or video below.
-      </p>
-    );
+    return <p className="text-sm text-muted-foreground">{emptyDescription}</p>;
   }
 
   return (

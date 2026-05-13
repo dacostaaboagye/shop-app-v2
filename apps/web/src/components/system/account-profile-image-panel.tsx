@@ -1,6 +1,6 @@
 "use client";
 
-import { MAX_IMAGE_BYTES } from "@shop/contracts";
+import { ALLOWED_PROFILE_IMAGE_MIMES, MAX_IMAGE_BYTES } from "@shop/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { MediaGallery } from "@/components/admin/catalog/media/media-gallery";
@@ -161,13 +161,7 @@ export function AccountProfileImagePanel({
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-0 flex-1">
             <MediaUploader
-              accept={[
-                "image/jpeg",
-                "image/png",
-                "image/webp",
-                "image/gif",
-                "image/avif",
-              ]}
+              accept={ALLOWED_PROFILE_IMAGE_MIMES}
               canManage
               entitySlug="self"
               entityType="user"
