@@ -3,7 +3,7 @@
 A snapshot of the master xlsx so we don't have to parse it every session.
 
 > **Source**: `Building and Refining Product Backlog(2).xlsx` at the repo root.
-> **Last derived**: 2026-05-03. Markdown closure updates were appended after PR #79, PR #107, PR #108, PR #110, and PR #111 merged; re-run the xlsx refresh flow to make the workbook-backed snapshot authoritative again.
+> **Last derived**: 2026-05-03. Markdown closure updates were appended after PR #79, PR #107, PR #108, PR #110, PR #111, PR #141, PR #154, and PR #155 merged; re-run the xlsx refresh flow to make the workbook-backed snapshot authoritative again.
 > **Authority**: the xlsx is the source of truth. This doc reflects state at the time it was written. **Re-derive from the xlsx whenever priority or status decisions are at stake** — do not trust this doc for current status if any time has passed since the date above.
 >
 > **To refresh**: ask Claude to "refresh the scope summary" (or invoke `/refresh-backlog-summary`). The skill at `.claude/skills/refresh-backlog-summary/SKILL.md` re-reads the xlsx, updates this file, and opens a PR.
@@ -67,15 +67,15 @@ These live as `EPICn` sheets in the xlsx. They have a title, story bullets, edge
 ## Critical dependency facts
 
 - **E-00C deliveries module is now complete in the Markdown working surface.** E-12, E-14, E-15, E-16 all list E-00C as a dependency, so the downstream online-sales + delivery-agent portal stack is no longer blocked by the delivery foundation.
-- **E-04 is the most-referenced phase-2 epic.** Ten downstream epics name it as a dependency. Now that it's authored as "Inventory tracking per location" (variant + location stock counts, adjustments, stock takes, thresholds), sizing for E-05..E-15 is no longer blocked on PO definition. E-04 itself depends only on E-00B / E-02 / E-03 — all done or near done — so it can start as soon as the PO breaks it into tickets in `Backlog Audit`.
+- **E-04 is shipped in the Markdown working surface.** Ten downstream epics name it as a dependency. The delivered E-04 scope covers opening stock, reason-coded counts, stock takes, CSV/XLSX/PDF artifacts, dry-run validation, reviewed apply, in-app count entry, and missing-catalog intake review. E-05 can now start from stock receipts and movement hardening.
 - **E-09 (invoice management) gates E-07 + E-12 + E-14 + E-16.** Still unticketed. Will need to land before any sales channel is finished.
-- **E-13 -> E-14 -> E-15 -> E-16** is the e-commerce ladder. Storefront -> fulfilment -> delivery -> payments. E-00C is no longer the blocker; E-04 and E-09 still need ticketing/implementation before the full sales-channel ladder can complete.
+- **E-13 -> E-14 -> E-15 -> E-16** is the e-commerce ladder. Storefront -> fulfilment -> delivery -> payments. E-00C is no longer the blocker; E-04 is shipped, while E-09 still needs ticketing/implementation before the full sales-channel ladder can complete.
 
 ## Authoring issues to flag to the PO
 
 These are oddities in the xlsx itself, not the work — worth noting so they get fixed in the next backlog audit.
 
-1. **E-04 still needs ticketing.** The epic is now authored on the `EPIC4` sheet ("Inventory tracking per location") — but it has no rows in `Backlog Audit`. The PO needs to break it into tickets before the orchestrator can run it.
+1. **The xlsx `Next Up` sheet is stale.** It still lists delivery/location/catalog foundation items that are already shipped in the Markdown working surface and on `dev`. Refresh the workbook before using it as the only source for priority ordering.
 2. **EPIC1, EPIC2, EPIC3 sheets are stubs** — they only contain the area headline and a paragraph of intent. The actual stories live as the `E-01-XX` / `E-02-XX` / `E-03-XX` rows in `Backlog Audit` and the right-side columns of the raw `Backlog` sheet.
 3. **EPIC11 sheet duplicates its own body.** The supplier portal stories appear twice in the same sheet — paste artifact.
 4. **EPIC13 sheet has two overlapping headers** ("E-13 E-commerce: Online storefront..." and "E-13 → E-16: E-commerce channel revised v3"). The two need to be reconciled into a single description.
@@ -85,6 +85,6 @@ These are oddities in the xlsx itself, not the work — worth noting so they get
 
 Based on what's in the xlsx today, the remaining near-term runway is clear:
 
-1. **E-04** - refined in `docs/backlog/epics/E-04-inventory-tracking-flow-redesign.md`. Start with reason-coded stock counts/manual adjustments, then opening-stock hardening, thresholds, alerts, stock takes, barcode lookup, and the stock-level workspace UX foundation.
+1. **E-05-01** - refined in `docs/backlog/epics/E-05-01-stock-receipts.md`. Start with supplier goods receipts updating location stock balances through append-only `goods_receipt` movements.
 
-The PO still needs to mirror **E-04** into `Backlog Audit` / `Next Up` in the workbook so the rest of phase-2 (E-05..E-15) can be tracked by the authoritative queue.
+The PO still needs to mirror the shipped E-04 state and new E-05-01 slice into `Backlog Audit` / `Next Up` in the workbook so the rest of phase-2 (E-05..E-15) can be tracked by the authoritative queue.
