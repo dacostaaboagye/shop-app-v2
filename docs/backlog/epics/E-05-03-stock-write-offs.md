@@ -1,7 +1,7 @@
 ---
 id: E-05-03
 title: Record stock write-offs with auditable reasons
-status: refined
+status: shipped
 priority: P1
 domain: full-stack
 owner: codex
@@ -64,6 +64,33 @@ Today an admin or manager can use a stock count to force the final on-hand numbe
 - The write-off is append-only evidence; corrections must be new compensating movements.
 - The backend must treat reserved quantity as protected stock and reject write-offs that would make available stock negative.
 
+## Shipped evidence
+
+- Implementation PR: https://github.com/dacostaaboagye/shop-app-v2/pull/169
+- Merge commit: `edf6992389d443373cd066b2ff23773412c78bdd`
+- Implementation:
+  - Added public stock write-off contracts with mandatory quantity, reason, and evidence note validation.
+  - Added database reason enum support for `expired` and `stolen`.
+  - Added admin and manager write-off API routes with manager location-scope enforcement.
+  - Added row-locked balance mutation that protects reserved stock and writes a negative `manual_adjustment` movement with `sourceType = "stock_write_off"`.
+  - Added admin and manager stock table write-off actions plus a shared dialog/form.
+  - Added stock movement history filtering for stock write-off source rows.
+- Verification:
+  - `pnpm --filter @shop/contracts test -- stock-write-offs.test.ts`
+  - `pnpm --filter @shop/api exec tsx --test test/stock-write-off.routes.test.ts`
+  - `pnpm --filter @shop/web exec tsx --test src/components/stock/stock-write-off-form.support.test.ts`
+  - `pnpm --filter @shop/database test`
+  - `pnpm --filter @shop/web typecheck`
+  - `pnpm --filter @shop/web lint`
+  - `pnpm guard`
+  - `pnpm --filter @shop/api build`
+  - `pnpm --filter @shop/web build`
+  - `pnpm --filter @shop/contracts build`
+  - `pnpm --filter @shop/database build`
+  - Pre-push `pnpm verify` passed.
+  - GitHub CI `validate` passed on PR #169.
+  - Playwright MCP checked `/manager/stock?location=ablekuma-warehouse` on desktop and mobile, including the write-off dialog.
+
 ## Tasks
 
 1. Add write-off reason contract and request/response schemas.
@@ -90,3 +117,7 @@ Today an admin or manager can use a stock count to force the final on-hand numbe
 2. Admin opens stock movement history for the same SKU/location and sees a `manual_adjustment` row with negative delta and the write-off reason.
 3. Manager opens their location stock page, records an `expired` write-off, and sees the table refresh.
 4. Manager attempts to write off more than available quantity and receives a clear blocked-state message.
+
+## Related PRs
+
+- [PR #169](https://github.com/dacostaaboagye/shop-app-v2/pull/169) - `feat(e-05-03): add stock write-offs`
