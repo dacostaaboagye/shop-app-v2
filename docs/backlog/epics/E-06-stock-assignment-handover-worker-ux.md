@@ -1,7 +1,7 @@
 ---
 id: E-06
 title: Stock assignment and handover worker UX layer
-status: refined
+status: in_progress
 priority: P1
 domain: full-stack
 owner: codex
@@ -27,7 +27,7 @@ The current repo already has partial surfaces:
 
 - Manager stock assignment list and new-assignment flow exist under `/manager/assignments`.
 - Worker assignment list exists under `/worker/assignments`.
-- Worker handovers route exists, but it is still a placeholder planned workspace.
+- Worker handovers route now has the E-06-01 operational workspace shipped in PR #181.
 - Backend assignment and handover command endpoints exist for manager and worker portals.
 
 The gap is not the ledger. The gap is the day-to-day custody workflow and the query surfaces that make handovers visible.
@@ -106,16 +106,16 @@ The gap is not the ledger. The gap is the day-to-day custody workflow and the qu
 
 ## Proposed Slices
 
-### E-06-01 Worker Handover Workspace
+### E-06-01 Worker Handover Workspace - shipped
 
-First implementation slice.
+First implementation slice. Shipped in [PR #181](https://github.com/dacostaaboagye/shop-app-v2/pull/181).
 
-- Add backend query support for worker handovers by location and actor.
-- Add `GET /api/worker/handovers` with location scope validation.
-- Add contract types for handover summary rows and lane counts.
-- Add `/worker/handovers` real UI with active received, active given, reverted, and history lanes.
-- Add handover initiation action from `/worker/assignments`.
-- Add focused route, service/query, contract, and UI helper tests.
+- Added backend query support for worker handovers by location and actor.
+- Added `GET /api/worker/handovers` with location scope validation.
+- Added contract types for handover summary rows and lane counts.
+- Added `/worker/handovers` real UI with active received, active given, reverted, and history lanes.
+- Added handover initiation action from `/worker/assignments`.
+- Added focused route, service/query, contract, and UI helper tests.
 
 ### E-06-02 Manager Handover Oversight
 
@@ -168,3 +168,5 @@ First implementation slice.
 - Should active handovers appear inside `/worker/assignments`, `/worker/handovers`, or both? Default recommendation: action entry point in assignments, lifecycle tracking in handovers.
 
 ## Related PRs
+
+- [PR #181](https://github.com/dacostaaboagye/shop-app-v2/pull/181) - `feat(e-06-01): implement worker handover workspace`
