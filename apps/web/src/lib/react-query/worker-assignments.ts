@@ -2,12 +2,14 @@ import type {
   AssignVariantRequest,
   BatchAssignVariantRequest,
   BatchAssignVariantResponse,
+  HandoverRecipientListResponse,
   HandoverResponse,
   InitiateHandoverRequest,
   LocationAssignmentListResponse,
   ReassignVariantRequest,
   RevertHandoverRequest,
   WorkerAssignmentListResponse,
+  WorkerHandoverListResponse,
 } from "@shop/contracts";
 import { fetchJson } from "@/lib/react-query/fetch-json";
 
@@ -16,6 +18,12 @@ export const workerAssignmentsQueryKey = (locationId: string) =>
 
 export const locationAssignmentsQueryKey = (locationId: string) =>
   ["assignments", "manager", locationId] as const;
+
+export const workerHandoversQueryKey = (locationId: string) =>
+  ["handovers", "worker", locationId] as const;
+
+export const workerHandoverRecipientsQueryKey = (locationId: string) =>
+  ["handovers", "worker", "recipients", locationId] as const;
 
 export async function fetchWorkerAssignments(
   locationId: string,
@@ -34,6 +42,28 @@ export async function fetchLocationAssignments(
   const params = new URLSearchParams({ locationId });
   return fetchJson<LocationAssignmentListResponse>(
     `/api/manager/assignments?${params.toString()}`,
+    undefined,
+    { auth: "required" },
+  );
+}
+
+export async function fetchWorkerHandovers(
+  locationId: string,
+): Promise<WorkerHandoverListResponse> {
+  const params = new URLSearchParams({ locationId });
+  return fetchJson<WorkerHandoverListResponse>(
+    `/api/worker/handovers?${params.toString()}`,
+    undefined,
+    { auth: "required" },
+  );
+}
+
+export async function fetchWorkerHandoverRecipients(
+  locationId: string,
+): Promise<HandoverRecipientListResponse> {
+  const params = new URLSearchParams({ locationId });
+  return fetchJson<HandoverRecipientListResponse>(
+    `/api/worker/handovers/recipients?${params.toString()}`,
     undefined,
     { auth: "required" },
   );

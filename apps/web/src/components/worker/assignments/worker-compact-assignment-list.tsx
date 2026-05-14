@@ -1,7 +1,7 @@
 "use client";
 
 import type { CurrentAssignment } from "@shop/contracts";
-import { Check, ShoppingCart } from "lucide-react";
+import { Check, HandCoins, ShoppingCart } from "lucide-react";
 import { ProductThumbnail } from "@/components/system/product-thumbnail";
 import { Button } from "@/components/ui/button";
 import { formatCount } from "@/lib/display/format";
@@ -19,6 +19,7 @@ export function CompactAssignmentList({
   moneyProfile,
   onSelectSupply,
   onRequestSupply,
+  onStartHandover,
   selectedSupplySkuIds = [],
 }: {
   items: CurrentAssignment[];
@@ -27,6 +28,7 @@ export function CompactAssignmentList({
   moneyProfile: MoneyProfile;
   onSelectSupply: ((target: SupplyTarget) => void) | undefined;
   onRequestSupply: (target: SupplyTarget) => void;
+  onStartHandover: (item: CurrentAssignment) => void;
   selectedSupplySkuIds?: string[];
 }) {
   return (
@@ -48,6 +50,7 @@ export function CompactAssignmentList({
             moneyProfile={moneyProfile}
             onSelectSupply={onSelectSupply}
             onRequestSupply={onRequestSupply}
+            onStartHandover={onStartHandover}
             selectedForSupply={selectedSupplySkuIds.includes(item.skuId)}
           />
         ))}
@@ -63,6 +66,7 @@ function CompactAssignmentRow({
   moneyProfile,
   onSelectSupply,
   onRequestSupply,
+  onStartHandover,
   selectedForSupply,
 }: {
   item: CurrentAssignment;
@@ -71,6 +75,7 @@ function CompactAssignmentRow({
   moneyProfile: MoneyProfile;
   onSelectSupply: ((target: SupplyTarget) => void) | undefined;
   onRequestSupply: (target: SupplyTarget) => void;
+  onStartHandover: (item: CurrentAssignment) => void;
   selectedForSupply: boolean;
 }) {
   const status = getStockStatus(item.availableQuantity);
@@ -170,6 +175,15 @@ function CompactAssignmentRow({
               </span>
             </Button>
           ) : null}
+          <Button
+            className="h-8 w-full rounded-lg gap-2 px-3 text-xs font-bold sm:w-auto"
+            onClick={() => onStartHandover(item)}
+            type="button"
+            variant="outline"
+          >
+            <HandCoins className="size-3" />
+            <span className="sm:hidden lg:inline">Handover</span>
+          </Button>
         </div>
       </div>
     </div>

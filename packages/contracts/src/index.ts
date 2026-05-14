@@ -4,6 +4,7 @@ export * from "./admin-location-write.js";
 export * from "./admin-supplier-procurement.js";
 export * from "./admin-suppliers.js";
 export * from "./admin-user-access.js";
+export * from "./assignment-handovers.js";
 export * from "./assignments.js";
 export * from "./auth.js";
 export * from "./catalog.js";
