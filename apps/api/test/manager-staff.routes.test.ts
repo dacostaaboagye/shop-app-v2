@@ -311,6 +311,14 @@ function createStockAssignmentDependencies(
         return null;
       },
     },
+    handoverQueryRepository: {
+      async getWorkerHandoverChain() {
+        return null;
+      },
+      async listWorkerHandovers() {
+        return [];
+      },
+    },
     assignmentCommandService: {
       async assignProduct() {
         throw new Error("not used");
