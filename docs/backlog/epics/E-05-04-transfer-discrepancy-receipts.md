@@ -71,3 +71,7 @@ That inflates destination stock and hides operational loss. A transfer receipt m
 2. Worker receives fewer usable units, selects a discrepancy reason, enters accepted quantity, and confirms.
 3. Admin uses override receipt for an unavailable worker and records a short receipt with an override reason.
 4. Admin opens the transfer workspace and sees the discrepancy in the exception lane and detail panel.
+
+## Related PRs
+
+- [PR #173](https://github.com/dacostaaboagye/shop-app-v2/pull/173) - `feat(e-05-04): record transfer receipt discrepancies`
