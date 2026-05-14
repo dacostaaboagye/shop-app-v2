@@ -42,12 +42,15 @@ export function TransferDetailPanel({
       />
 
       <Card className="border border-border/50 bg-card shadow-sm">
-        <CardHeader>
-          <CardTitle className="type-section-title text-xl text-foreground">
+        <CardHeader className="gap-1">
+          <CardTitle className="type-section-title text-lg text-foreground">
             Transfer detail
           </CardTitle>
+          <p className="type-support">
+            Route, timing, and receipt evidence for the selected transfer.
+          </p>
         </CardHeader>
-        <CardContent className="grid gap-4 lg:grid-cols-2">
+        <CardContent className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
           <TransferDetailSection title="Route and ownership">
             <TransferDetailRow
               label="Source"
