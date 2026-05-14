@@ -12,7 +12,7 @@ export function TransferDetailSection({
   return (
     <section className="flex min-w-0 flex-col gap-3">
       <h3 className="type-data-value text-sm">{title}</h3>
-      <dl className="grid gap-3 rounded-xl border border-border/60 bg-muted/10 p-4">
+      <dl className="grid gap-3 rounded-lg border border-border/60 bg-muted/20 p-4">
         {children}
       </dl>
     </section>
