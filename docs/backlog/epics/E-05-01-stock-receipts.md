@@ -112,4 +112,5 @@ Implementation shape:
 ## Related PRs
 
 - [PR #157](https://github.com/dacostaaboagye/shop-app-v2/pull/157) - `docs(e-05-01): refine stock receipt inventory slice`
+- [PR #159](https://github.com/dacostaaboagye/shop-app-v2/pull/159) - `feat(e-05-01): record supplier receipts into stock`
 - [PR #161](https://github.com/dacostaaboagye/shop-app-v2/pull/161) - `docs(e-05-01): mark stock receipts shipped`
