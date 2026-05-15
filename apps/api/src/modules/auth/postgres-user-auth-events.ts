@@ -1,4 +1,9 @@
-import { authEvents, loginAttempts, refreshTokens } from "@shop/database";
+import {
+  authEvents,
+  loginAttempts,
+  refreshTokens,
+  users,
+} from "@shop/database";
 import { and, eq, isNull } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 
@@ -51,16 +56,26 @@ export async function revokeUserRefreshTokens(
     userId: string;
   },
 ): Promise<void> {
-  await db
-    .update(refreshTokens)
-    .set({
-      revokedAt: input.revokedAt,
-      revokedReason: input.revokedReason,
-    })
-    .where(
-      and(
-        eq(refreshTokens.userId, input.userId),
-        isNull(refreshTokens.revokedAt),
-      ),
-    );
+  await db.transaction(async (tx) => {
+    await tx
+      .update(users)
+      .set({
+        sessionsRevokedAt: input.revokedAt,
+        updatedAt: input.revokedAt,
+      })
+      .where(eq(users.id, input.userId));
+
+    await tx
+      .update(refreshTokens)
+      .set({
+        revokedAt: input.revokedAt,
+        revokedReason: input.revokedReason,
+      })
+      .where(
+        and(
+          eq(refreshTokens.userId, input.userId),
+          isNull(refreshTokens.revokedAt),
+        ),
+      );
+  });
 }

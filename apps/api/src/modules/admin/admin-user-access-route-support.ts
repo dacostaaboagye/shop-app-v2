@@ -1,5 +1,6 @@
 import {
   adminAssignUserRoleRequestSchema,
+  adminCreateUserRequestSchema,
   adminForceUserPasswordResetRequestSchema,
   adminRemoveUserPermissionOverrideRequestSchema,
   adminRevokeUserRoleRequestSchema,
@@ -9,10 +10,15 @@ import {
 } from "@shop/contracts";
 import { AppError } from "../_core/errors/app-error.js";
 import type { RouteDefinition } from "../_core/route-contract.js";
+import type { AdminStaffProvisioningService } from "./admin-staff-provisioning.service.js";
 import type { AdminUserAccessQueryService } from "./admin-user-access-query.service.js";
 import type { AdminUserAccessWriteService } from "./admin-user-access-write.service.js";
 
 export type AdminUserAccessRouteDependencies = {
+  adminStaffProvisioningService: Pick<
+    AdminStaffProvisioningService,
+    "createUser"
+  >;
   adminUserAccessQueryService: Pick<
     AdminUserAccessQueryService,
     "getUserAccessDetail"
@@ -31,6 +37,7 @@ export type AdminUserAccessRouteDependencies = {
 
 export const adminUserAccessSchemas = {
   assignRole: adminAssignUserRoleRequestSchema,
+  createUser: adminCreateUserRequestSchema,
   forcePasswordReset: adminForceUserPasswordResetRequestSchema,
   removeOverride: adminRemoveUserPermissionOverrideRequestSchema,
   revokeRole: adminRevokeUserRoleRequestSchema,
@@ -44,6 +51,11 @@ export const adminUserAccessRoutes = {
     access: { kind: "permission", permission: "access.assignments.manage" },
     method: "POST",
     url: "/api/admin/access/users/:slug/roles",
+  } satisfies RouteDefinition,
+  createUser: {
+    access: { kind: "permission", permission: "access.assignments.manage" },
+    method: "POST",
+    url: "/api/admin/access/users",
   } satisfies RouteDefinition,
   detail: {
     access: { kind: "permission", permission: "users.view" },
@@ -84,6 +96,11 @@ export const adminUserAccessRoutes = {
 
 export function createUnavailableDependencies(): AdminUserAccessRouteDependencies {
   return {
+    adminStaffProvisioningService: {
+      async createUser() {
+        throw unavailableAdminUserAccessError();
+      },
+    },
     adminUserAccessQueryService: {
       async getUserAccessDetail() {
         throw unavailableAdminUserAccessError();

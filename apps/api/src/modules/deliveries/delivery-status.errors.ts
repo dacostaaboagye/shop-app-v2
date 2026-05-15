@@ -78,6 +78,22 @@ export class DeliveryAssignmentRequiredError extends AppError {
   }
 }
 
+export class DeliveryCancellationReasonRequiredError extends AppError {
+  constructor(input: { deliveryId: string }) {
+    super({
+      code: "validation_error",
+      statusCode: 400,
+      title: "Delivery cancellation requires a reason",
+      detail: `Cannot cancel delivery ${input.deliveryId} without a reason.`,
+      details: {
+        deliveryErrorCode: DELIVERY_ERROR_CODES.cancellationReasonRequired,
+        deliveryId: input.deliveryId,
+      },
+    });
+    this.name = "DeliveryCancellationReasonRequiredError";
+  }
+}
+
 export class DeliveryAgentNotEligibleError extends AppError {
   constructor(input: { deliveryId: string; userId: string }) {
     super({

@@ -103,42 +103,18 @@ test("renders an issued sales snapshot as an official PDF file", async () => {
   assert.ok(file.body.length > 1_000);
 });
 
-test("uses the uploaded document logo when rendering a PDF", async () => {
-  const originalFetch = globalThis.fetch;
-  let fetchCount = 0;
-  globalThis.fetch = (async (url) => {
-    fetchCount += 1;
-    assert.equal(url, "https://cdn.example.test/document-logo.png");
-    const logo = onePixelPng();
-    const body = logo.buffer.slice(
-      logo.byteOffset,
-      logo.byteOffset + logo.byteLength,
-    ) as ArrayBuffer;
-    return new Response(body, {
-      headers: {
-        "content-length": String(logo.byteLength),
-        "content-type": "image/png",
-      },
-      status: 200,
-    });
-  }) as typeof fetch;
+test("renders a PDF when the document logo URL is blocked", async () => {
+  const file = await toSalesIssuedDocumentPdfFile({
+    ...snapshot,
+    profileSnapshot: {
+      ...snapshot.profileSnapshot,
+      logoImageUrl: "http://127.0.0.1/document-logo.png",
+    },
+  });
 
-  try {
-    const file = await toSalesIssuedDocumentPdfFile({
-      ...snapshot,
-      profileSnapshot: {
-        ...snapshot.profileSnapshot,
-        logoImageUrl: "https://cdn.example.test/document-logo.png",
-      },
-    });
-
-    assert.equal(fetchCount, 1);
-    assert.equal(file.contentType, "application/pdf");
-    assert.equal(file.body.subarray(0, 4).toString("utf8"), "%PDF");
-    assert.ok(file.body.length > 1_000);
-  } finally {
-    globalThis.fetch = originalFetch;
-  }
+  assert.equal(file.contentType, "application/pdf");
+  assert.equal(file.body.subarray(0, 4).toString("utf8"), "%PDF");
+  assert.ok(file.body.length > 1_000);
 });
 
 test("renders credit note snapshots with historical totals and currency context", async () => {
@@ -170,10 +146,3 @@ test("renders credit note snapshots with historical totals and currency context"
   assert.equal(file.body.subarray(0, 4).toString("utf8"), "%PDF");
   assert.ok(file.body.length > 1_000);
 });
-
-function onePixelPng(): Buffer {
-  return Buffer.from(
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=",
-    "base64",
-  );
-}

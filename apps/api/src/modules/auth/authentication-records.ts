@@ -54,9 +54,9 @@ export function oauthOnlyAccountError(): AppError {
   return new AppError({
     code: "unauthorized",
     detail:
-      "This account was created with Google sign-in. Please use the 'Continue with Google' button to sign in.",
+      "This account does not have password sign-in enabled for the operations portal. Ask an administrator to provision or reset your internal account.",
     statusCode: 401,
-    title: "Use Google sign-in",
+    title: "Password sign-in unavailable",
   });
 }
 

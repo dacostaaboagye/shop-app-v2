@@ -1,10 +1,6 @@
-import { AuthPageShell } from "@/components/system/auth-page-shell";
-import { AuthWorkspace } from "@/components/system/auth-workspace";
+import { redirect } from "next/navigation";
+import { toRoute } from "@/lib/routes";
 
 export default function RegisterPage() {
-  return (
-    <AuthPageShell>
-      <AuthWorkspace mode="register" />
-    </AuthPageShell>
-  );
+  redirect(toRoute("/login"));
 }

@@ -40,6 +40,10 @@ describe("auth load evidence", () => {
       },
       async recordAuthEvent() {},
       async revokeRefreshToken() {},
+      async revokeRefreshTokensForUser() {},
+      async rotateRefreshToken() {
+        return user;
+      },
     };
     const sessionService = new TokenSessionService(sessionRepository, {
       accessTokenSecret: "development-access-secret",
@@ -103,6 +107,7 @@ function createUserRecord(): AuthUserRecord {
     primaryImageUrl: null,
     preferredPortal: null,
     requiresPasswordChange: false,
+    sessionsRevokedAt: null,
     slug: "store-manager-ab12",
     status: "active",
   };

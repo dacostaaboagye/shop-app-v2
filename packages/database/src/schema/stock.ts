@@ -29,8 +29,24 @@ export const stockMovementTypeEnum = pgEnum("stock_movement_type", [
   "delivery_dispatch",
   "transfer_in",
   "transfer_out",
+  "goods_receipt",
   "manual_adjustment",
 ]);
+
+export const stockAdjustmentReasonCodeEnum = pgEnum(
+  "stock_adjustment_reason_code",
+  [
+    "opening_count",
+    "cycle_count",
+    "damaged",
+    "expired",
+    "found_stock",
+    "correction",
+    "shrinkage",
+    "stolen",
+    "return_restock",
+  ],
+);
 
 export const stockBalances = pgTable(
   "stock_balances",
@@ -154,6 +170,8 @@ export const stockMovements = pgTable(
     sourceType: varchar("source_type", { length: 64 }).notNull(),
     sourceKey: varchar("source_key", { length: 160 }).notNull(),
     quantityDelta: integer("quantity_delta").notNull(),
+    reasonCode: stockAdjustmentReasonCodeEnum("reason_code"),
+    note: varchar("note", { length: 500 }),
     occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
     createdBy: uuid("created_by").references(() => users.id),
     createdAt: timestamp("created_at", { withTimezone: true })

@@ -12,15 +12,14 @@ import type { PlatformEventRecord } from "../events/platform-event.types.js";
  * the transition — for system flows the system user uuid.
  */
 export function createDeliveryStatusChangedEvent(input: {
-  deliveryId: string;
+  deliveryReference: string;
   fromStatus: DeliveryStatus;
   toStatus: DeliveryStatus;
   originLocationId: string;
-  actorUserId: string;
   actorUserSlug: string;
   occurredAt: Date;
   cancellationReason?: string | null;
-  assignedUserId?: string | null;
+  assignedUserSlug?: string | null;
 }): PlatformEventRecord {
   return {
     actor: { userSlug: input.actorUserSlug },
@@ -34,16 +33,16 @@ export function createDeliveryStatusChangedEvent(input: {
     id: randomUUID(),
     occurredAt: input.occurredAt.toISOString(),
     payload: {
-      deliveryId: input.deliveryId,
+      deliveryReference: input.deliveryReference,
       fromStatus: input.fromStatus,
       toStatus: input.toStatus,
-      actorUserId: input.actorUserId,
-      assignedUserId: input.assignedUserId ?? null,
+      actorUserSlug: input.actorUserSlug,
+      assignedUserSlug: input.assignedUserSlug ?? null,
       cancellationReason: input.cancellationReason ?? null,
     },
     resource: {
       kind: "delivery",
-      reference: input.deliveryId,
+      reference: input.deliveryReference,
     },
     summary: `Delivery moved from "${input.fromStatus}" to "${input.toStatus}".`,
     type: DELIVERY_STATUS_CHANGED_EVENT_TYPE,

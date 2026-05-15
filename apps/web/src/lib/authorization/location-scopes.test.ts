@@ -55,14 +55,14 @@ describe("location-scopes helpers", () => {
     assert.deepEqual(selectedScope, LOCATION_SCOPES[1]);
   });
 
-  it("uses the active store location before the url location", () => {
+  it("uses the url location before the active store location", () => {
     const selectedScope = resolveActiveLocationScope({
       activeLocationSlug: "airport-store",
       scopes: LOCATION_SCOPES,
       urlLocationSlug: "downtown-store",
     });
 
-    assert.deepEqual(selectedScope, LOCATION_SCOPES[1]);
+    assert.deepEqual(selectedScope, LOCATION_SCOPES[0]);
   });
 
   it("uses the active store location when the url location is unavailable", () => {

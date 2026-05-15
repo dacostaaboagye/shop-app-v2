@@ -10,13 +10,17 @@ import { PostgresOwnershipHandoverRepository } from "../inventory-ownership/post
 import { PostgresOwnershipQueryRepository } from "../inventory-ownership/postgres-ownership-query.repository.js";
 import { AssignmentCommandService } from "./assignment-command.service.js";
 import { PostgresAssignmentEventContextRepository } from "./assignment-event-context.repository.js";
+import { PostgresManagerHandoverQueryRepository } from "./postgres-manager-handover-query.repository.js";
 import { PostgresWorkerAssignmentQueryRepository } from "./postgres-worker-assignment-query.repository.js";
+import { PostgresWorkerHandoverQueryRepository } from "./postgres-worker-handover-query.repository.js";
 
 type AssignmentsRuntime = {
   assignments: {
     assignmentCommandService: AssignmentCommandService;
     assignmentQueryRepository: PostgresWorkerAssignmentQueryRepository;
     handoverRepository: PostgresOwnershipHandoverRepository;
+    handoverQueryRepository: PostgresWorkerHandoverQueryRepository;
+    managerHandoverQueryRepository: PostgresManagerHandoverQueryRepository;
     ownershipEventWriteService: OwnershipEventWriteService;
     ownershipHandoverService: OwnershipHandoverService;
     stockBalanceRepository: {
@@ -61,6 +65,11 @@ export function createAssignmentsRuntime(
         databaseRuntime.db,
       ),
       handoverRepository,
+      handoverQueryRepository: new PostgresWorkerHandoverQueryRepository(
+        databaseRuntime.db,
+      ),
+      managerHandoverQueryRepository:
+        new PostgresManagerHandoverQueryRepository(databaseRuntime.db),
       ownershipEventWriteService,
       ownershipHandoverService,
       stockBalanceRepository: {

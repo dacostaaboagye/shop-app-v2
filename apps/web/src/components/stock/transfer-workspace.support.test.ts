@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { StockSupplyRequestResponse } from "@shop/contracts";
 import {
+  adminTransferLanes,
+  buildTransferReceiptEvidence,
   filterTransfers,
   getLaneCounts,
   managerTransferLanes,
@@ -18,7 +20,10 @@ const baseTransfer: StockSupplyRequestResponse = {
   locationName: "Airport Branch",
   notes: null,
   receivedAt: null,
+  receivedQuantity: null,
   reference: "SUP-001",
+  receiptDiscrepancyNotes: null,
+  receiptDiscrepancyReason: null,
   requestGroupReference: null,
   requesterEmail: "worker@example.com",
   requesterId: "11111111-1111-4111-8111-111111111111",
@@ -82,4 +87,46 @@ test("worker lane filtering finds open and in-transit transfers by search", () =
     filterTransfers(items, workerTransferLanes, "in_transit", "lamp").length,
     1,
   );
+});
+
+test("admin lanes route short receipts to exceptions instead of completed", () => {
+  const counts = getLaneCounts(
+    [
+      {
+        ...baseTransfer,
+        receivedQuantity: 2,
+        receiptDiscrepancyReason: "short_received",
+        status: "received",
+        supplyRequestId: "short-received",
+      },
+      {
+        ...baseTransfer,
+        receivedQuantity: 3,
+        status: "received",
+        supplyRequestId: "fully-received",
+      },
+    ],
+    adminTransferLanes,
+  );
+
+  assert.equal(counts.exceptions, 1);
+  assert.equal(counts.completed, 1);
+});
+
+test("receipt evidence summarizes accepted and missing quantities", () => {
+  const evidence = buildTransferReceiptEvidence({
+    ...baseTransfer,
+    receivedQuantity: 1,
+    receiptDiscrepancyNotes: "Two units damaged.",
+    receiptDiscrepancyReason: "damaged_received",
+    status: "received",
+  });
+
+  assert.deepEqual(evidence, [
+    { label: "Dispatched", value: "3" },
+    { label: "Accepted", value: "1" },
+    { label: "Missing", value: "2" },
+    { label: "Reason", value: "Damaged goods" },
+    { label: "Notes", value: "Two units damaged." },
+  ]);
 });

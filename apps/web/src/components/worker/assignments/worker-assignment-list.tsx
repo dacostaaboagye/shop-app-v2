@@ -1,20 +1,19 @@
 "use client";
 
 import type { CurrentAssignment } from "@shop/contracts";
-import { AlertCircle, Package } from "lucide-react";
+import { Package } from "lucide-react";
 import { AppEmptyState } from "@/components/system/app-empty-state";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCount } from "@/lib/display/format";
 import type { MoneyProfile } from "@/lib/money/format-money";
 import { AssignmentCard } from "./worker-assignment-cards";
+import { AssignmentSummary } from "./worker-assignment-summary";
 import { AssignmentToolbar } from "./worker-assignment-toolbar";
 import type {
   StockFilter,
   SupplyTarget,
   ViewMode,
 } from "./worker-assignments-support";
-import { formatStockSummary } from "./worker-assignments-support";
 import { CompactAssignmentList } from "./worker-compact-assignment-list";
 
 type AssignmentListProps = {
@@ -28,6 +27,7 @@ type AssignmentListProps = {
   onRequestSupply: (target: SupplyTarget) => void;
   onSearchChange: (value: string) => void;
   onSelectSupply: (target: SupplyTarget) => void;
+  onStartHandover: (item: CurrentAssignment) => void;
   onStockFilterChange: (value: StockFilter) => void;
   onViewModeChange: (value: ViewMode) => void;
   onClearSelectedSupply: () => void;
@@ -48,6 +48,7 @@ export function AssignmentList({
   onRequestSupply,
   onSearchChange,
   onSelectSupply,
+  onStartHandover,
   onStockFilterChange,
   onViewModeChange,
   onClearSelectedSupply,
@@ -120,41 +121,11 @@ export function AssignmentList({
         onRequestSupply={onRequestSupply}
         onSearchChange={onSearchChange}
         onSelectSupply={onSelectSupply}
+        onStartHandover={onStartHandover}
         onStockFilterChange={onStockFilterChange}
         viewMode={viewMode}
         selectedSupplySkuIds={selectedSupplySkuIds}
       />
-    </div>
-  );
-}
-
-function AssignmentSummary({
-  counts,
-  itemCount,
-  locationName,
-}: {
-  counts: Record<StockFilter, number>;
-  itemCount: number;
-  locationName: string | undefined;
-}) {
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      {locationName ? (
-        <p className="type-support">
-          <span className="type-data-value text-sm">
-            {formatStockSummary(itemCount, locationName)}
-          </span>
-        </p>
-      ) : null}
-      {counts.out_of_stock > 0 ? (
-        <Badge className="gap-1" variant="destructive">
-          <AlertCircle className="size-3" />
-          {formatCount(counts.out_of_stock)} out
-        </Badge>
-      ) : null}
-      {counts.low_stock > 0 ? (
-        <Badge variant="outline">{formatCount(counts.low_stock)} low</Badge>
-      ) : null}
     </div>
   );
 }
@@ -168,6 +139,7 @@ function AssignmentResults({
   onRequestSupply,
   onSearchChange,
   onSelectSupply,
+  onStartHandover,
   onStockFilterChange,
   viewMode,
   selectedSupplySkuIds,
@@ -180,6 +152,7 @@ function AssignmentResults({
   onRequestSupply: (target: SupplyTarget) => void;
   onSearchChange: (value: string) => void;
   onSelectSupply: (target: SupplyTarget) => void;
+  onStartHandover: (item: CurrentAssignment) => void;
   onStockFilterChange: (value: StockFilter) => void;
   viewMode: ViewMode;
   selectedSupplySkuIds: string[];
@@ -217,6 +190,7 @@ function AssignmentResults({
         moneyProfile={moneyProfile}
         onSelectSupply={onSelectSupply}
         onRequestSupply={onRequestSupply}
+        onStartHandover={onStartHandover}
         selectedSupplySkuIds={selectedSupplySkuIds}
       />
     );
@@ -249,6 +223,7 @@ function AssignmentResults({
               variantName: item.variantName,
             })
           }
+          onStartHandover={() => onStartHandover(item)}
           selectedForSupply={selectedSupplySkuIds.includes(item.skuId)}
         />
       ))}

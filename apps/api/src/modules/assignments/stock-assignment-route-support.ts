@@ -4,7 +4,9 @@ import type { PermissionResolutionService } from "../access-control/permission-r
 import type { AuthenticatedActor } from "../auth/access-token-authentication.service.js";
 import type { PostgresOwnershipHandoverRepository } from "../inventory-ownership/postgres-ownership-handover.repository.js";
 import type { AssignmentCommandService } from "./assignment-command.service.js";
+import type { PostgresManagerHandoverQueryRepository } from "./postgres-manager-handover-query.repository.js";
 import type { PostgresWorkerAssignmentQueryRepository } from "./postgres-worker-assignment-query.repository.js";
+import type { PostgresWorkerHandoverQueryRepository } from "./postgres-worker-handover-query.repository.js";
 
 type StockBalanceRepository = {
   getOnHandQuantity(skuId: string, locationId: string): Promise<number | null>;
@@ -18,6 +20,14 @@ export type StockAssignmentRouteDependencies = {
   handoverRepository: Pick<
     PostgresOwnershipHandoverRepository,
     "getOriginalWorkerForChain"
+  >;
+  handoverQueryRepository: Pick<
+    PostgresWorkerHandoverQueryRepository,
+    "getWorkerHandoverChain" | "listWorkerHandovers"
+  >;
+  managerHandoverQueryRepository: Pick<
+    PostgresManagerHandoverQueryRepository,
+    "getManagerHandoverChain" | "listLocationHandovers"
   >;
   assignmentCommandService: Pick<
     AssignmentCommandService,
@@ -65,6 +75,11 @@ export const assignmentRoutes = {
     "/api/manager/handovers",
     "stock.assignments.manage",
   ),
+  managerHandoverList: assignmentRoute(
+    "GET",
+    "/api/manager/handovers",
+    "stock.assignments.view",
+  ),
   managerList: assignmentRoute(
     "GET",
     "/api/manager/assignments",
@@ -83,6 +98,16 @@ export const assignmentRoutes = {
   workerInitiateHandover: assignmentRoute(
     "POST",
     "/api/worker/handovers",
+    "stock.handovers.manage",
+  ),
+  workerHandoverList: assignmentRoute(
+    "GET",
+    "/api/worker/handovers",
+    "stock.handovers.manage",
+  ),
+  workerHandoverRecipients: assignmentRoute(
+    "GET",
+    "/api/worker/handovers/recipients",
     "stock.handovers.manage",
   ),
   workerList: assignmentRoute(
@@ -164,6 +189,22 @@ export function createUnavailableDependencies(): StockAssignmentRouteDependencie
     },
     handoverRepository: {
       async getOriginalWorkerForChain() {
+        return unavailable();
+      },
+    },
+    handoverQueryRepository: {
+      async getWorkerHandoverChain() {
+        return unavailable();
+      },
+      async listWorkerHandovers() {
+        return unavailable();
+      },
+    },
+    managerHandoverQueryRepository: {
+      async getManagerHandoverChain() {
+        return unavailable();
+      },
+      async listLocationHandovers() {
         return unavailable();
       },
     },

@@ -63,6 +63,35 @@ describe("PasswordResetService", () => {
       console.error = originalConsoleError;
     }
   });
+
+  it("clears forced password change after a successful reset", async () => {
+    const userUpdates: unknown[] = [];
+    const db = createPasswordResetDbStub(userUpdates);
+    const service = new PasswordResetService(
+      db as never,
+      {
+        async findPasswordResetUser() {
+          throw new Error("Not used by resetPassword");
+        },
+      },
+      {
+        async sendPasswordResetEmail() {
+          throw new Error("Not used by resetPassword");
+        },
+      } as never,
+      "https://app.example.com",
+      () => NOW,
+    );
+
+    await service.resetPassword("reset-token", "NewPassword123!");
+
+    assert.equal(userUpdates.length, 1);
+    assert.equal(
+      (userUpdates[0] as { requiresPasswordChange?: boolean })
+        .requiresPasswordChange,
+      false,
+    );
+  });
 });
 
 function createDbStub(calls: string[]) {
@@ -82,6 +111,58 @@ function createDbStub(calls: string[]) {
       return {
         async values() {
           calls.push("insert-reset-token");
+        },
+      };
+    },
+  };
+}
+
+function createPasswordResetDbStub(userUpdates: unknown[]) {
+  const resetRecord = {
+    expiresAt: new Date("2026-04-26T18:00:00.000Z"),
+    id: "token_123",
+    tokenHash: "hashed-token",
+    userId: "usr_123",
+  };
+
+  return {
+    select() {
+      return {
+        from() {
+          return {
+            where() {
+              return {
+                async limit() {
+                  return [resetRecord];
+                },
+              };
+            },
+          };
+        },
+      };
+    },
+    async transaction(callback: (tx: ReturnType<typeof createTxStub>) => void) {
+      await callback(createTxStub(userUpdates));
+    },
+  };
+}
+
+function createTxStub(userUpdates: unknown[]) {
+  let updateIndex = 0;
+
+  return {
+    update() {
+      updateIndex += 1;
+
+      return {
+        set(values: unknown) {
+          if (updateIndex === 2) {
+            userUpdates.push(values);
+          }
+
+          return {
+            async where() {},
+          };
         },
       };
     },

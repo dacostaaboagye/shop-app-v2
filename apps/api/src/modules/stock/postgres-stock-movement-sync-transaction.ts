@@ -8,8 +8,13 @@ import type {
   StockMovementType,
 } from "./stock-movement-sync.contracts.js";
 
+type StockMovementSyncDatabase = Pick<
+  ApiDatabase,
+  "insert" | "select" | "update"
+>;
+
 export function createPostgresStockMovementSyncTransaction(
-  tx: ApiDatabase,
+  tx: StockMovementSyncDatabase,
 ): StockMovementSyncTransaction {
   return new PostgresStockMovementSyncTransaction(tx);
 }
@@ -17,7 +22,7 @@ export function createPostgresStockMovementSyncTransaction(
 class PostgresStockMovementSyncTransaction
   implements StockMovementSyncTransaction
 {
-  constructor(private readonly tx: ApiDatabase) {}
+  constructor(private readonly tx: StockMovementSyncDatabase) {}
 
   async findMovementBySource(input: {
     locationId: string;

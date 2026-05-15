@@ -6,6 +6,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  fromStockFilterSelectValue,
+  toStockFilterSelectValue,
+} from "./stock-filter-select.support";
 
 type StockFilterSelectProps = {
   id: string;
@@ -31,7 +35,12 @@ export function StockFilterSelect({
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1.5 md:min-w-44">
       <Label htmlFor={id}>{label}</Label>
-      <Select onValueChange={onChange} value={value || "all"}>
+      <Select
+        onValueChange={(nextValue) =>
+          onChange(fromStockFilterSelectValue(nextValue))
+        }
+        value={toStockFilterSelectValue(value)}
+      >
         <SelectTrigger id={id}>
           <SelectValue placeholder={isLoading ? loadingLabel : placeholder} />
         </SelectTrigger>

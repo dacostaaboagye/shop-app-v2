@@ -295,6 +295,76 @@
       "when": 1777733577396,
       "tag": "0041_lying_blue_marvel",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1777795200000,
+      "tag": "0042_delivery_lifecycle_constraints",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1777809456323,
+      "tag": "0043_misty_baron_zemo",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1777819371245,
+      "tag": "0044_smiling_quasar",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1777830000000,
+      "tag": "0045_stock_count_reasons",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1777838892870,
+      "tag": "0046_wooden_cardiac",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1777886139665,
+      "tag": "0047_colossal_lyja",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1778100654600,
+      "tag": "0048_tidy_charles_xavier",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1778687217369,
+      "tag": "0049_funny_pride",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1778703722361,
+      "tag": "0050_famous_newton_destine",
+      "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1778710635821,
+      "tag": "0051_short_shadowcat",
+      "breakpoints": true
     }
   ]
 }

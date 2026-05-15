@@ -5,21 +5,23 @@ import type {
   TransferDeliverySourcePort,
 } from "@shop/contracts";
 import type { DatabaseRuntime } from "../../infrastructure/database.js";
-import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import { PostgresReferenceNumberRepository } from "../public-identifiers/postgres-reference-number.repository.js";
 import { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
-import { DeliveryAgentEligibilityStubAdapter } from "./delivery-agent-eligibility-stub.adapter.js";
 import { DeliveryCreationCompose } from "./delivery-creation.compose.js";
 import type {
   DeliveryCreationService,
   DeliveryCreationStockSideEffectsPort,
 } from "./delivery-creation.contracts.js";
 import { DeliveryCreationServiceImpl } from "./delivery-creation.service.js";
+import type { DeliveryPublicIdentifierResolver } from "./delivery-public-identifier.repository.js";
+import { PostgresDeliveryPublicIdentifierRepository } from "./delivery-public-identifier.repository.js";
 import type { DeliveryQueryService } from "./delivery-query.contracts.js";
 import { DeliveryStatusCompose } from "./delivery-status.compose.js";
 import type { DeliveryStatusService } from "./delivery-status.contracts.js";
 import { DeliveryStatusServiceImpl } from "./delivery-status.service.js";
+import type { DeliveryStatusEventPublisher } from "./delivery-status-event-publisher.js";
 import { OnlineOrderDeliverySourceStubAdapter } from "./online-order-delivery-source-stub.adapter.js";
+import { PostgresDeliveryAgentEligibilityAdapter } from "./postgres-delivery-agent-eligibility.adapter.js";
 import { PostgresDeliveryQueryRepository } from "./postgres-delivery-query.repository.js";
 import { PostgresDeliveryStatusWriteRepository } from "./postgres-delivery-status-write.repository.js";
 
@@ -28,6 +30,7 @@ type DeliveriesRuntime = {
     deliveryCreationService: DeliveryCreationService;
     deliveryStatusService: DeliveryStatusService;
     deliveryQueryService: DeliveryQueryService;
+    deliveryPublicIdentifierResolver: DeliveryPublicIdentifierResolver;
     onlineOrderSourcePort: OnlineOrderDeliverySourcePort;
     posSaleSourcePort: PosSaleDeliverySourcePort;
     transferSourcePort: TransferDeliverySourcePort;
@@ -40,8 +43,11 @@ type DeliveriesRuntimeOptions = {
   transferSourcePort: TransferDeliverySourcePort;
   stockSideEffectsPort: DeliveryCreationStockSideEffectsPort;
   agentEligibilityPort?: DeliveryAgentEligibilityPort;
-  platformEventPublisher?: Pick<PlatformEventPublisher, "publish">;
-  logger?: { warn: (message: string, meta?: Record<string, unknown>) => void };
+  platformEventPublisher?: DeliveryStatusEventPublisher;
+  logger?: {
+    error?: (message: string, meta?: Record<string, unknown>) => void;
+    warn: (message: string, meta?: Record<string, unknown>) => void;
+  };
 };
 
 export function createDeliveriesRuntime(
@@ -85,12 +91,16 @@ export function createDeliveriesRuntime(
     databaseRuntime.db,
   );
   const agentEligibilityPort =
-    options.agentEligibilityPort ?? new DeliveryAgentEligibilityStubAdapter();
+    options.agentEligibilityPort ??
+    new PostgresDeliveryAgentEligibilityAdapter(databaseRuntime.db);
   const statusCompose = new DeliveryStatusCompose({
     repository: statusRepository,
     agentEligibilityPort,
     ...(options.platformEventPublisher
       ? { platformEventPublisher: options.platformEventPublisher }
+      : {}),
+    ...(options.logger?.error
+      ? { logger: { error: options.logger.error } }
       : {}),
   });
   const deliveryStatusService = new DeliveryStatusServiceImpl(statusCompose);
@@ -98,12 +108,15 @@ export function createDeliveriesRuntime(
   const deliveryQueryService = new PostgresDeliveryQueryRepository(
     databaseRuntime.db,
   );
+  const deliveryPublicIdentifierResolver =
+    new PostgresDeliveryPublicIdentifierRepository(databaseRuntime.db);
 
   return {
     deliveries: {
       deliveryCreationService,
       deliveryStatusService,
       deliveryQueryService,
+      deliveryPublicIdentifierResolver,
       onlineOrderSourcePort,
       posSaleSourcePort,
       transferSourcePort,

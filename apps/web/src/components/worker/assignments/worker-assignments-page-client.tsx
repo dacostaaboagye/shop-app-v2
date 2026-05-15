@@ -1,6 +1,8 @@
 "use client";
 
+import type { CurrentAssignment } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
@@ -18,6 +20,7 @@ import {
   fetchWorkerAssignments,
   workerAssignmentsQueryKey,
 } from "@/lib/react-query/worker-assignments";
+import { toRoute } from "@/lib/routes";
 import { AssignmentList } from "./worker-assignment-list";
 import {
   filterAssignments,
@@ -28,11 +31,14 @@ import {
   toSupplyTarget,
   type ViewMode,
 } from "./worker-assignments-support";
+import { WorkerHandoverDialog } from "./worker-handover-dialog";
 
 const SKELETON_KEYS = [1, 2, 3, 4, 5];
 
 export function WorkerAssignmentsPageClient() {
   const [bulkRequestOpen, setBulkRequestOpen] = useState(false);
+  const [handoverTarget, setHandoverTarget] =
+    useState<CurrentAssignment | null>(null);
   const [selectedSupplySkuIds, setSelectedSupplySkuIds] = useState<string[]>(
     [],
   );
@@ -40,6 +46,7 @@ export function WorkerAssignmentsPageClient() {
   const [search, setSearch] = useState("");
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("card");
+  const router = useRouter();
 
   const {
     accessibleLocationScopes,
@@ -155,6 +162,7 @@ export function WorkerAssignmentsPageClient() {
               toggleSupplySelection(current, target.skuId),
             )
           }
+          onStartHandover={setHandoverTarget}
           onStockFilterChange={setStockFilter}
           onViewModeChange={setViewMode}
           search={search}
@@ -180,6 +188,26 @@ export function WorkerAssignmentsPageClient() {
         }}
         open={bulkRequestOpen}
         targets={selectedSupplyTargets}
+      />
+      <WorkerHandoverDialog
+        locationName={
+          assignmentsQuery.data?.locationName ??
+          selectedLocationScope?.locationName ??
+          "Assigned location"
+        }
+        onOpenChange={(open) => {
+          if (!open) {
+            setHandoverTarget(null);
+          }
+        }}
+        onSuccess={() => {
+          const query = selectedLocationSlug
+            ? `?location=${selectedLocationSlug}`
+            : "";
+          router.push(toRoute(`/worker/handovers${query}`));
+        }}
+        open={!!handoverTarget}
+        target={handoverTarget}
       />
     </PageShell>
   );

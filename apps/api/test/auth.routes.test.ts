@@ -7,7 +7,8 @@ import { refreshTokenCookieName } from "../src/modules/auth/refresh-token-cookie
 import { createServer } from "../src/server/create-server.js";
 
 describe("auth routes", () => {
-  it("registers through the injected registration service and sets the refresh cookie", async () => {
+  it("blocks public operations registration without issuing a session", async () => {
+    let registrationCalled = false;
     const server = createServer({
       auth: {
         ...createUnavailableAuthDependencies(),
@@ -17,8 +18,9 @@ describe("auth routes", () => {
           },
         },
         registrationService: {
-          async register(command) {
-            return createSession(command.email);
+          async register() {
+            registrationCalled = true;
+            return createSession("manager@example.com");
           },
         },
       },
@@ -35,12 +37,10 @@ describe("auth routes", () => {
       url: "/api/auth/register",
     });
 
-    assert.equal(response.statusCode, 200);
-    assert.equal(response.json().user.email, "manager@example.com");
-    assert.match(
-      String(response.headers["set-cookie"]),
-      new RegExp(`${refreshTokenCookieName}=`),
-    );
+    assert.equal(response.statusCode, 403);
+    assert.equal(response.json().title, "Registration disabled");
+    assert.equal(registrationCalled, false);
+    assert.equal(response.headers["set-cookie"], undefined);
   });
 
   it("logs in through the injected authentication service and sets the refresh cookie", async () => {
@@ -112,6 +112,9 @@ describe("auth routes", () => {
           async logout(command) {
             receivedRefreshToken = command.refreshToken;
           },
+          async logoutAll() {
+            throw new Error("logoutAll should not be called");
+          },
         },
       },
     });
@@ -130,6 +133,92 @@ describe("auth routes", () => {
       String(response.headers["set-cookie"]),
       new RegExp(`${refreshTokenCookieName}=;`),
     );
+  });
+
+  it("logs out all sessions for the authenticated user", async () => {
+    const now = new Date("2026-04-08T12:00:00.000Z");
+    let receivedUserId = "";
+    const server = createServer({
+      accessControl: {
+        accessTokenAuthenticationService: {
+          async authenticate(token) {
+            const { AccessTokenAuthenticationService } = await import(
+              "../src/modules/auth/access-token-authentication.service.js"
+            );
+
+            return new AccessTokenAuthenticationService(
+              {
+                async findUserById() {
+                  return {
+                    id: "usr_123",
+                    slug: "store-manager",
+                    status: "active",
+                  };
+                },
+              },
+              "development-access-secret",
+              () => now,
+            ).authenticate(token);
+          },
+        },
+      },
+      auth: {
+        ...createUnavailableAuthDependencies(),
+        logoutSessionService: {
+          async logout() {
+            throw new Error("logout should not be called");
+          },
+          async logoutAll(command) {
+            receivedUserId = command.userId;
+          },
+        },
+      },
+    });
+
+    const response = await server.inject({
+      headers: { authorization: `Bearer ${issueTestToken(now)}` },
+      method: "POST",
+      url: "/api/auth/logout-all",
+    });
+
+    assert.equal(response.statusCode, 204);
+    assert.equal(receivedUserId, "usr_123");
+    assert.match(
+      String(response.headers["set-cookie"]),
+      new RegExp(`${refreshTokenCookieName}=;`),
+    );
+  });
+
+  it("requires authentication before logout all", async () => {
+    let called = false;
+    const server = createServer({
+      accessControl: {
+        accessTokenAuthenticationService: {
+          async authenticate() {
+            throw new Error("Missing tokens should fail before authenticate");
+          },
+        },
+      },
+      auth: {
+        ...createUnavailableAuthDependencies(),
+        logoutSessionService: {
+          async logout() {
+            throw new Error("logout should not be called");
+          },
+          async logoutAll() {
+            called = true;
+          },
+        },
+      },
+    });
+
+    const response = await server.inject({
+      method: "POST",
+      url: "/api/auth/logout-all",
+    });
+
+    assert.equal(response.statusCode, 401);
+    assert.equal(called, false);
   });
 
   it("returns the current authenticated user for a valid bearer token", async () => {
@@ -367,22 +456,37 @@ describe("auth routes", () => {
     assert.equal(response.statusCode, 503);
   });
 
-  it("redirects OAuth denial back to login with an explicit callback error", async () => {
+  it("blocks operations OAuth routes", async () => {
     const server = createServer({
       auth: {
         ...createUnavailableAuthDependencies(),
       },
     });
 
-    const response = await server.inject({
-      method: "GET",
-      url: "/api/auth/oauth/google/callback?error=access_denied&state=oauth-state",
-    });
+    for (const url of [
+      "/api/auth/oauth/google",
+      "/api/auth/oauth/google/callback?error=access_denied&state=oauth-state",
+    ]) {
+      const response = await server.inject({
+        method: "GET",
+        url,
+      });
 
-    assert.equal(response.statusCode, 302);
-    assert.equal(response.headers.location, "/login?oauth_error=access_denied");
+      assert.equal(response.statusCode, 403);
+      assert.equal(response.json().title, "OAuth disabled");
+    }
   });
 });
+
+function issueTestToken(now: Date) {
+  return issueAccessToken({
+    expiresInSeconds: 900,
+    now,
+    secret: "development-access-secret",
+    userId: "usr_123",
+    userSlug: "store-manager",
+  }).token;
+}
 
 function createSession(email: string): IssuedSession {
   return {

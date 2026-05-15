@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   locationStaffListResponseSchema,
+  managerCreateWorkerRequestSchema,
   workerAssignmentListResponseSchema,
 } from "./assignments.js";
 
@@ -95,5 +96,27 @@ describe("assignment contracts", () => {
 
     assert.equal(parsed.items[0]?.salesCount, 0);
     assert.equal(parsed.items[0]?.lastSaleAt, null);
+  });
+
+  it("accepts manager worker provisioning requests", () => {
+    const parsed = managerCreateWorkerRequestSchema.parse({
+      email: "worker@example.com",
+      firstName: " Ama ",
+      lastName: " Mensah ",
+      locationSlugs: ["downtown-store"],
+      reason: "New floor worker",
+    });
+
+    assert.equal(parsed.firstName, "Ama");
+    assert.deepEqual(parsed.locationSlugs, ["downtown-store"]);
+    assert.throws(() =>
+      managerCreateWorkerRequestSchema.parse({
+        email: "worker@example.com",
+        firstName: "Ama",
+        lastName: "Mensah",
+        locationSlugs: [],
+        reason: "New floor worker",
+      }),
+    );
   });
 });

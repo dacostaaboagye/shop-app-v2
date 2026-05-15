@@ -47,13 +47,36 @@ Before opening a PR:
 2. Run `pnpm verify`.
 3. Fill in the PR template with backlog evidence and architecture checks.
 
-When a PR into `dev` is squash-merged, any other open PR that branched off the merged one will see *content-equivalent but commit-different* history on `dev`. GitHub will mark those PRs as conflicting. The fix is a manual rebase: `git fetch origin && git reset --hard origin/dev && git cherry-pick <unique commits>` then force-push. The simplest way to avoid this is to keep stack depth at 1 (don't start the next epic before the prior one merges).
+### Merge strategy: rebase merge into `dev`
 
-Recommended merge policy:
+Use **rebase merge** (GitHub's "Rebase and merge" button) for every PR into `dev`. Squash merge collapses the PR's commits into one new SHA on `dev`, which breaks any stacked PR that branched off the merged one — every commit below the squash needs manual rebase to a content-equivalent SHA. Rebase merge preserves the original SHAs, so a PR-B branched off PR-A keeps working after PR-A merges. No more stack-depth=1 cap from this constraint.
 
-1. Use squash merge from feature branches into `dev`.
-2. Promote `dev` to `main` through a dedicated release PR.
-3. Keep `main` protected and release-oriented.
+For this to read cleanly on `dev`, every commit on a feature branch must already be a coherent unit:
+
+- Conventional Commits format with the epic id as scope (`feat(e-04-08): ...`, `fix(e-04-05): ...`, `chore(ops): ...`). The `commit-msg` hook enforces this.
+- One logical change per commit — no `wip`, no `fixup`, no `oh sorry` commits.
+- Each commit passes `pnpm verify` independently if possible. If a build is in flight across two commits (rare), make the split obvious in the messages.
+- Rebase your branch onto the latest `dev` before opening the PR (the `pre-push` hook + `pnpm verify` already encourage this).
+
+If a feature branch has accumulated noise (a long iteration, multiple WIP commits), `git rebase -i origin/dev` to squash + reword before opening the PR. Don't ship branch noise to `dev`.
+
+#### Stacked PR rules
+
+With rebase merge, chains up to **depth 3** (`PR-A → PR-B → PR-C`) are acceptable provided:
+
+1. Every PR in the chain uses rebase merge — not squash, not merge-commit.
+2. The PR description explicitly notes the chain: "Stacked on #N — merge after that lands."
+3. Reviewers know which subset of files is the actual delta vs the inherited base.
+
+Beyond depth 3, the cognitive overhead of tracking the stack outweighs the throughput win — split into independent branches off `dev` instead.
+
+#### Squash merge fallback
+
+Squash merge stays available for one specific case: a feature branch with truly noisy commit history that the author hasn't cleaned up. If you reach for squash, ensure no other open PR is stacked on the branch — if there is, ask the author to clean up and use rebase, or coordinate the rebase yourself before merging.
+
+#### Promotion to `main`
+
+Promote `dev` to `main` through a dedicated release PR. Use **merge commit** there (not rebase) so the release boundary is visible in the history as a single point. `main` stays protected and release-oriented.
 
 ## CI
 

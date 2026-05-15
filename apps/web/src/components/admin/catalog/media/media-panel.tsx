@@ -1,6 +1,9 @@
 "use client";
 
-import type { CatalogMediaEntityType } from "@shop/contracts";
+import {
+  ALLOWED_PROFILE_IMAGE_MIMES,
+  type CatalogMediaEntityType,
+} from "@shop/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Card,
@@ -88,18 +91,27 @@ export function MediaPanel({ canManage, entitySlug, entityType }: Props) {
   });
 
   const items = mediaQuery.data?.items ?? [];
+  const isUserProfile = entityType === "user";
 
   return (
     <Card className="border-border/70 bg-card shadow-none">
       <CardHeader>
-        <CardTitle>Media</CardTitle>
+        <CardTitle>{isUserProfile ? "Profile image" : "Media"}</CardTitle>
         <CardDescription>
-          Images and videos associated with this entity.
+          {isUserProfile
+            ? "Upload or replace the staff photo shown in directories, assignments, and audit views."
+            : "Images and videos associated with this entity."}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <MediaGallery
           canManage={canManage}
+          {...(isUserProfile
+            ? {
+                emptyDescription:
+                  "No profile image yet. Upload one below when a staff photo is available.",
+              }
+            : {})}
           isPendingDelete={deleteMutation.isPending}
           isPendingSetPrimary={setPrimaryMutation.isPending}
           items={items}
@@ -107,6 +119,7 @@ export function MediaPanel({ canManage, entitySlug, entityType }: Props) {
           onSetPrimary={(id) => setPrimaryMutation.mutate(id)}
         />
         <MediaUploader
+          {...(isUserProfile ? { accept: ALLOWED_PROFILE_IMAGE_MIMES } : {})}
           canManage={canManage}
           entitySlug={entitySlug}
           entityType={entityType}

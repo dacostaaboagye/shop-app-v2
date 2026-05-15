@@ -10,7 +10,10 @@ import {
 } from "@/components/stock/transfer-detail-surfaces";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SupplyRequestSummaryCard } from "./supply-request-summary-card";
-import { buildTransferTimeline } from "./transfer-workspace.support";
+import {
+  buildTransferReceiptEvidence,
+  buildTransferTimeline,
+} from "./transfer-workspace.support";
 
 export function TransferDetailPanel({
   actions,
@@ -26,6 +29,7 @@ export function TransferDetailPanel({
   status: SupplyRequestStatusPresentation;
 }) {
   const timeline = buildTransferTimeline(item);
+  const receiptEvidence = buildTransferReceiptEvidence(item);
 
   return (
     <div className="flex flex-col gap-4">
@@ -38,12 +42,15 @@ export function TransferDetailPanel({
       />
 
       <Card className="border border-border/50 bg-card shadow-sm">
-        <CardHeader>
-          <CardTitle className="type-section-title text-xl text-foreground">
+        <CardHeader className="gap-1">
+          <CardTitle className="type-section-title text-lg text-foreground">
             Transfer detail
           </CardTitle>
+          <p className="type-support">
+            Route, timing, and receipt evidence for the selected transfer.
+          </p>
         </CardHeader>
-        <CardContent className="grid gap-4 lg:grid-cols-2">
+        <CardContent className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
           <TransferDetailSection title="Route and ownership">
             <TransferDetailRow
               label="Source"
@@ -62,6 +69,16 @@ export function TransferDetailPanel({
 
           <TransferDetailSection title="Transfer timeline">
             {timeline.map((row) => (
+              <TransferDetailRow
+                key={row.label}
+                label={row.label}
+                value={row.value}
+              />
+            ))}
+          </TransferDetailSection>
+
+          <TransferDetailSection title="Receipt evidence">
+            {receiptEvidence.map((row) => (
               <TransferDetailRow
                 key={row.label}
                 label={row.label}

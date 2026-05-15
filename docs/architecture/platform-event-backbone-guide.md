@@ -204,7 +204,7 @@ Recommended production split:
   `PLATFORM_EVENT_DELIVERY_ENABLED=false`
 - Event worker process:
   `PLATFORM_EVENT_DELIVERY_ENABLED=true`
-  running `pnpm --filter @shop/api events:worker` locally or
+  running `pnpm dev:events:infisical` locally or
   `pnpm --filter @shop/api start:events` after a production build
 
 The API still appends event rows transactionally with domain writes. The worker

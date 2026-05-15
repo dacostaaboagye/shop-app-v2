@@ -27,5 +27,9 @@ export function formatStockSupplyEventSummary(input: {
 }
 
 function getActionQuantity(request: SupplyRequestRow): number {
+  if (request.status === "received" && request.receivedQuantity !== null) {
+    return request.receivedQuantity;
+  }
+
   return request.approvedQuantity ?? request.requestedQuantity;
 }

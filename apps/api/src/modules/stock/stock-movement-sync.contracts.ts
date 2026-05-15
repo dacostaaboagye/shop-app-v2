@@ -12,6 +12,7 @@ export type StockMovementType =
   | "delivery_dispatch"
   | "transfer_in"
   | "transfer_out"
+  | "goods_receipt"
   | "manual_adjustment";
 
 export type StockMovementRecord = {

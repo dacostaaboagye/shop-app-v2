@@ -1,6 +1,5 @@
 import {
   catalogProducts,
-  deliveryItems,
   stockBalances,
   stockOwnershipEvents,
   stockReservations,
@@ -8,9 +7,13 @@ import {
 import { and, eq, or, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import { AppError } from "../_core/errors/app-error.js";
+import type { DeliverySkuHistoryService } from "../deliveries/delivery-query.contracts.js";
 
 export class PostgresCatalogProductDeleteGuard {
-  constructor(private readonly db: ApiDatabase) {}
+  constructor(
+    private readonly db: ApiDatabase,
+    private readonly deliverySkuHistoryService: DeliverySkuHistoryService,
+  ) {}
 
   /**
    * Asserts that a product and all its variants can be safely deleted.
@@ -86,12 +89,7 @@ export class PostgresCatalogProductDeleteGuard {
     }
 
     // 3. Check for Delivery History (Historical Order Data)
-    const [delRow] = await this.db
-      .select({ count: sql<number>`cast(count(*) as int)` })
-      .from(deliveryItems)
-      .where(eq(deliveryItems.skuId, variantId));
-
-    if (delRow && delRow.count > 0) {
+    if (await this.deliverySkuHistoryService.hasSkuHistory(variantId)) {
       throw new AppError({
         code: "conflict",
         detail: `Variant "${sku}" is associated with delivery records and cannot be deleted to preserve audit history.`,

@@ -1,4 +1,4 @@
-import pg from "pg";
+import type { PoolClient } from "@neondatabase/serverless";
 import {
   catalogSeedBrands,
   catalogSeedCategories,
@@ -12,7 +12,7 @@ import {
   upsertVariants,
 } from "./catalog-seed-persistence.js";
 
-export async function seedCatalog(client: pg.PoolClient, now: Date): Promise<void> {
+export async function seedCatalog(client: PoolClient, now: Date): Promise<void> {
   const categoryIds = new Map<string, string>();
   const brandIds = new Map<string, string>();
 

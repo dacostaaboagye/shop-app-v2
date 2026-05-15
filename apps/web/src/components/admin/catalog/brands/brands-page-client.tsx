@@ -28,6 +28,7 @@ import {
   readStringParam,
 } from "@/lib/url-state";
 import { createCatalogBulkActions } from "../catalog-bulk-status-actions";
+import { ReferenceImportDialog } from "../reference-import-dialog";
 import { BrandFilters } from "./brand-filters";
 import { brandTableColumns } from "./brand-table-columns";
 import {
@@ -105,6 +106,7 @@ export function BrandsPageClient() {
       <PageHeader
         actions={
           <PermissionGate permission="catalog.brands.manage">
+            <ReferenceImportDialog entity="brand" />
             <Link
               className={buttonVariants({ size: "sm" })}
               href={toRoute("/admin/products/brands/new")}

@@ -4,6 +4,7 @@ import {
   StockBalanceNotFoundError,
   StockMovementSyncConflictError,
   type StockMovementSyncRepository,
+  type StockMovementType,
   type SyncStockMovementResult,
 } from "./stock-movement-sync.contracts.js";
 
@@ -13,13 +14,7 @@ export class StockMovementSyncService {
   async syncMovement(input: {
     createdBy?: string;
     locationId: string;
-    movementType:
-      | "sale"
-      | "delivery_receipt"
-      | "delivery_dispatch"
-      | "transfer_in"
-      | "transfer_out"
-      | "manual_adjustment";
+    movementType: StockMovementType;
     now?: Date;
     occurredAt: Date;
     quantityDelta: number;

@@ -27,6 +27,9 @@ export const USER_TABLE_SKELETON_KEYS = [
 ] as const;
 
 export type UsersPageClientProps = {
+  createHref?: Route;
+  createLabel?: string;
+  createPermission?: string;
   description?: string;
   title?: string;
   userDetailBasePath?: string;
