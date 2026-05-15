@@ -141,4 +141,3 @@ Implementation shape:
 - [PR #163](https://github.com/dacostaaboagye/shop-app-v2/pull/163) - `docs(e-05-02): refine stock movement history`
 - [PR #165](https://github.com/dacostaaboagye/shop-app-v2/pull/165) - `feat(e-05-02): add stock movement history`
 - [PR #167](https://github.com/dacostaaboagye/shop-app-v2/pull/167) - `docs(e-05-02): close stock movement history`
-

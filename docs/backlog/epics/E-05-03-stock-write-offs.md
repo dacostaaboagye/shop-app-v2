@@ -122,4 +122,3 @@ Today an admin or manager can use a stock count to force the final on-hand numbe
 
 - [PR #169](https://github.com/dacostaaboagye/shop-app-v2/pull/169) - `feat(e-05-03): add stock write-offs`
 - [PR #171](https://github.com/dacostaaboagye/shop-app-v2/pull/171) - `docs(e-05-03): close stock write-offs`
-

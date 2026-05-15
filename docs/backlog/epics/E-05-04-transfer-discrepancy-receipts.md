@@ -77,4 +77,3 @@ That inflates destination stock and hides operational loss. A transfer receipt m
 - [PR #173](https://github.com/dacostaaboagye/shop-app-v2/pull/173) - `feat(e-05-04): record transfer receipt discrepancies`
 - [PR #175](https://github.com/dacostaaboagye/shop-app-v2/pull/175) - `fix(e-05-04): polish transfer workspace layout`
 - [PR #178](https://github.com/dacostaaboagye/shop-app-v2/pull/178) - `docs(e-05-04): mark transfer discrepancies shipped`
-
