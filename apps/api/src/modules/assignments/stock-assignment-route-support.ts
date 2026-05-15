@@ -1,12 +1,14 @@
 import { AppError } from "../_core/errors/app-error.js";
-import type { RouteDefinition } from "../_core/route-contract.js";
 import type { PermissionResolutionService } from "../access-control/permission-resolution.service.js";
 import type { AuthenticatedActor } from "../auth/access-token-authentication.service.js";
 import type { PostgresOwnershipHandoverRepository } from "../inventory-ownership/postgres-ownership-handover.repository.js";
 import type { AssignmentCommandService } from "./assignment-command.service.js";
+import type { PostgresAssignmentHistoryQueryRepository } from "./postgres-assignment-history-query.repository.js";
 import type { PostgresManagerHandoverQueryRepository } from "./postgres-manager-handover-query.repository.js";
 import type { PostgresWorkerAssignmentQueryRepository } from "./postgres-worker-assignment-query.repository.js";
 import type { PostgresWorkerHandoverQueryRepository } from "./postgres-worker-handover-query.repository.js";
+
+export { assignmentRoutes } from "./stock-assignment-route-definitions.js";
 
 type StockBalanceRepository = {
   getOnHandQuantity(skuId: string, locationId: string): Promise<number | null>;
@@ -16,6 +18,10 @@ export type StockAssignmentRouteDependencies = {
   assignmentQueryRepository: Pick<
     PostgresWorkerAssignmentQueryRepository,
     "getWorkerAssignments" | "getLocationAssignments" | "getLocationStaff"
+  >;
+  assignmentHistoryQueryRepository: Pick<
+    PostgresAssignmentHistoryQueryRepository,
+    "getAssignmentHistory" | "getWorkerAssignmentHistory"
   >;
   handoverRepository: Pick<
     PostgresOwnershipHandoverRepository,
@@ -58,69 +64,6 @@ export async function assertActorCanAccessLocation(
     user: input.actor,
   });
 }
-
-export const assignmentRoutes = {
-  managerAssign: assignmentRoute(
-    "POST",
-    "/api/manager/assignments",
-    "stock.assignments.manage",
-  ),
-  managerBatchAssign: assignmentRoute(
-    "POST",
-    "/api/manager/assignments/batch",
-    "stock.assignments.manage",
-  ),
-  managerInitiateHandover: assignmentRoute(
-    "POST",
-    "/api/manager/handovers",
-    "stock.assignments.manage",
-  ),
-  managerHandoverList: assignmentRoute(
-    "GET",
-    "/api/manager/handovers",
-    "stock.assignments.view",
-  ),
-  managerList: assignmentRoute(
-    "GET",
-    "/api/manager/assignments",
-    "stock.assignments.view",
-  ),
-  managerReassign: assignmentRoute(
-    "POST",
-    "/api/manager/assignments/reassign",
-    "stock.assignments.manage",
-  ),
-  managerRevertHandover: assignmentRoute(
-    "POST",
-    "/api/manager/handovers/revert",
-    "stock.assignments.manage",
-  ),
-  workerInitiateHandover: assignmentRoute(
-    "POST",
-    "/api/worker/handovers",
-    "stock.handovers.manage",
-  ),
-  workerHandoverList: assignmentRoute(
-    "GET",
-    "/api/worker/handovers",
-    "stock.handovers.manage",
-  ),
-  workerHandoverRecipients: assignmentRoute(
-    "GET",
-    "/api/worker/handovers/recipients",
-    "stock.handovers.manage",
-  ),
-  workerList: assignmentRoute(
-    "GET",
-    "/api/worker/assignments",
-    "stock.assignments.own.view",
-  ),
-  workerRevertHandover: assignmentRoute(
-    "POST",
-    "/api/worker/handovers/revert",
-    "stock.handovers.manage",
-  ),
-} satisfies Record<string, RouteDefinition>;
 
 export async function resolveOriginalWorker(
   dependencies: StockAssignmentRouteDependencies,
@@ -187,6 +130,14 @@ export function createUnavailableDependencies(): StockAssignmentRouteDependencie
         return unavailable();
       },
     },
+    assignmentHistoryQueryRepository: {
+      async getAssignmentHistory() {
+        return unavailable();
+      },
+      async getWorkerAssignmentHistory() {
+        return unavailable();
+      },
+    },
     handoverRepository: {
       async getOriginalWorkerForChain() {
         return unavailable();
@@ -232,17 +183,5 @@ export function createUnavailableDependencies(): StockAssignmentRouteDependencie
         return unavailable();
       },
     },
-  };
-}
-
-function assignmentRoute(
-  method: RouteDefinition["method"],
-  url: string,
-  permission: string,
-): RouteDefinition {
-  return {
-    access: { kind: "permission", permission, scope: "any_active" },
-    method,
-    url,
   };
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { useId, useState } from "react";
 import { StockMovementFilterPanel } from "@/components/stock/stock-movement-filter-panel";
 import {
@@ -21,6 +22,7 @@ import {
 
 export function ManagerStockMovementsPageClient() {
   const filterId = useId();
+  const searchParams = useSearchParams();
   const {
     accessibleLocationScopes,
     isLoading,
@@ -28,11 +30,11 @@ export function ManagerStockMovementsPageClient() {
     selectedLocationSlug,
     setSelectedLocationSlug,
   } = usePermissionLocationScope("stock.view");
-  const [draftFilter, setDraftFilter] = useState<StockMovementFilter>(
-    STOCK_MOVEMENT_DEFAULT_FILTER,
+  const [draftFilter, setDraftFilter] = useState<StockMovementFilter>(() =>
+    initialMovementFilter(searchParams),
   );
-  const [filter, setFilter] = useState<StockMovementFilter>(
-    STOCK_MOVEMENT_DEFAULT_FILTER,
+  const [filter, setFilter] = useState<StockMovementFilter>(() =>
+    initialMovementFilter(searchParams),
   );
   const query = selectedLocationScope
     ? toManagerMovementQuery(filter, selectedLocationScope.locationSlug)
@@ -123,4 +125,13 @@ export function ManagerStockMovementsPageClient() {
       />
     </PageShell>
   );
+}
+
+function initialMovementFilter(searchParams: {
+  get(name: string): string | null;
+}) {
+  return {
+    ...STOCK_MOVEMENT_DEFAULT_FILTER,
+    sku: searchParams.get("sku")?.trim() ?? "",
+  };
 }

@@ -130,6 +130,14 @@ function createWorkerAssignmentServer(input: {
           return [];
         },
       },
+      assignmentHistoryQueryRepository: {
+        async getAssignmentHistory() {
+          return null;
+        },
+        async getWorkerAssignmentHistory() {
+          return null;
+        },
+      },
       handoverRepository: {
         async getOriginalWorkerForChain() {
           return USER_ID;

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  assignmentHistoryResponseSchema,
   locationStaffListResponseSchema,
   managerCreateWorkerRequestSchema,
   workerAssignmentListResponseSchema,
@@ -118,5 +119,46 @@ describe("assignment contracts", () => {
         reason: "New floor worker",
       }),
     );
+  });
+
+  it("accepts chronological assignment history evidence", () => {
+    const parsed = assignmentHistoryResponseSchema.parse({
+      items: [
+        {
+          actorName: "Mina Manager",
+          actorSlug: "mina-manager",
+          createdAt: "2026-04-19T10:01:00.000Z",
+          effectiveFrom: "2026-04-19T10:00:00.000Z",
+          eventType: "assigned",
+          handoverChainId: null,
+          quantity: 2,
+          workerName: "Ama Mensah",
+          workerSlug: "ama-mensah",
+        },
+        {
+          actorName: "Ama Mensah",
+          actorSlug: "ama-mensah",
+          createdAt: "2026-04-20T08:00:00.000Z",
+          effectiveFrom: "2026-04-20T08:00:00.000Z",
+          eventType: "handover_in",
+          handoverChainId: "6181707d-c61e-4c22-995d-335295748060",
+          quantity: 2,
+          workerName: "Kojo Worker",
+          workerSlug: "kojo-worker",
+        },
+      ],
+      locationId: "4181707d-c61e-4c22-995d-335295748060",
+      locationName: "Downtown Store",
+      locationSlug: "downtown-store",
+      productName: "Omaya 1819 Backpack",
+      productSlug: "omaya-1819-backpack",
+      sku: "OMAYA-BLACK",
+      skuId: "3a5e8d69-36cf-4b1f-a5ef-4ad3de7b2111",
+      variantName: "Black",
+      variantSlug: "black",
+    });
+
+    assert.equal(parsed.items[1]?.eventType, "handover_in");
+    assert.equal(parsed.locationSlug, "downtown-store");
   });
 });

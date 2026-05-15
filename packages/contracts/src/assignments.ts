@@ -46,6 +46,36 @@ export const ownershipEventResponseSchema = z.object({
   workerId: z.string().uuid(),
 });
 
+export const assignmentHistoryQuerySchema = z.object({
+  locationId: z.string().uuid(),
+  skuId: z.string().uuid(),
+});
+
+export const assignmentHistoryEventSchema = z.object({
+  actorName: z.string(),
+  actorSlug: z.string(),
+  createdAt: z.iso.datetime(),
+  effectiveFrom: z.iso.datetime(),
+  eventType: ownershipEventResponseSchema.shape.eventType,
+  handoverChainId: z.string().uuid().nullable(),
+  quantity: z.number().int(),
+  workerName: z.string(),
+  workerSlug: z.string(),
+});
+
+export const assignmentHistoryResponseSchema = z.object({
+  items: z.array(assignmentHistoryEventSchema),
+  locationId: z.string().uuid(),
+  locationName: z.string(),
+  locationSlug: z.string(),
+  productName: z.string(),
+  productSlug: z.string(),
+  sku: z.string(),
+  skuId: z.string().uuid(),
+  variantName: z.string(),
+  variantSlug: z.string(),
+});
+
 export const currentAssignmentSchema = z.object({
   availableQuantity: z.number().int(),
   brandName: z.string().nullable().optional(),
@@ -200,6 +230,15 @@ export type InitiateHandoverRequest = z.infer<
 export type RevertHandoverRequest = z.infer<typeof revertHandoverRequestSchema>;
 export type OwnershipEventResponse = z.infer<
   typeof ownershipEventResponseSchema
+>;
+export type AssignmentHistoryQuery = z.infer<
+  typeof assignmentHistoryQuerySchema
+>;
+export type AssignmentHistoryEvent = z.infer<
+  typeof assignmentHistoryEventSchema
+>;
+export type AssignmentHistoryResponse = z.infer<
+  typeof assignmentHistoryResponseSchema
 >;
 export type CurrentAssignment = z.infer<typeof currentAssignmentSchema>;
 export type WorkerAssignmentListResponse = z.infer<
