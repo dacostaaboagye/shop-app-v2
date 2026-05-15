@@ -7,6 +7,12 @@ export const workerHandoverLaneSchema = z.enum([
   "history",
 ]);
 
+export const managerHandoverLaneSchema = z.enum([
+  "active",
+  "reverted",
+  "history",
+]);
+
 export const workerHandoverEventTypeSchema = z.enum([
   "handover_out",
   "handover_in",
@@ -57,6 +63,27 @@ export const workerHandoverListResponseSchema = z.object({
   locationName: z.string(),
 });
 
+export const managerHandoverListQuerySchema = z.object({
+  locationId: z.string().uuid(),
+});
+
+export const managerHandoverSummarySchema = workerHandoverSummarySchema.extend({
+  lane: managerHandoverLaneSchema,
+});
+
+export const managerHandoverLaneCountsSchema = z.object({
+  active: z.number().int().min(0),
+  history: z.number().int().min(0),
+  reverted: z.number().int().min(0),
+});
+
+export const managerHandoverListResponseSchema = z.object({
+  items: z.array(managerHandoverSummarySchema),
+  laneCounts: managerHandoverLaneCountsSchema,
+  locationId: z.string().uuid(),
+  locationName: z.string(),
+});
+
 export const handoverRecipientListQuerySchema = z.object({
   locationId: z.string().uuid(),
 });
@@ -84,6 +111,19 @@ export type HandoverRecipientSummary = z.infer<
 >;
 export type HandoverRecipientListResponse = z.infer<
   typeof handoverRecipientListResponseSchema
+>;
+export type ManagerHandoverLane = z.infer<typeof managerHandoverLaneSchema>;
+export type ManagerHandoverListQuery = z.infer<
+  typeof managerHandoverListQuerySchema
+>;
+export type ManagerHandoverSummary = z.infer<
+  typeof managerHandoverSummarySchema
+>;
+export type ManagerHandoverLaneCounts = z.infer<
+  typeof managerHandoverLaneCountsSchema
+>;
+export type ManagerHandoverListResponse = z.infer<
+  typeof managerHandoverListResponseSchema
 >;
 export type WorkerHandoverLane = z.infer<typeof workerHandoverLaneSchema>;
 export type WorkerHandoverListQuery = z.infer<

@@ -319,6 +319,14 @@ function createStockAssignmentDependencies(
         return [];
       },
     },
+    managerHandoverQueryRepository: {
+      async getManagerHandoverChain() {
+        return null;
+      },
+      async listLocationHandovers() {
+        return [];
+      },
+    },
     assignmentCommandService: {
       async assignProduct() {
         throw new Error("not used");

@@ -83,6 +83,14 @@ describe("stock-assignment any_active routes pin to the supplied locationId", ()
             return [];
           },
         },
+        managerHandoverQueryRepository: {
+          async getManagerHandoverChain() {
+            return null;
+          },
+          async listLocationHandovers() {
+            return [];
+          },
+        },
         assignmentCommandService: {
           async assignProduct() {
             throw new Error(

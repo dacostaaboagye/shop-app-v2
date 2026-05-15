@@ -6,6 +6,7 @@ import type {
   HandoverResponse,
   InitiateHandoverRequest,
   LocationAssignmentListResponse,
+  ManagerHandoverListResponse,
   ReassignVariantRequest,
   RevertHandoverRequest,
   WorkerAssignmentListResponse,
@@ -21,6 +22,9 @@ export const locationAssignmentsQueryKey = (locationId: string) =>
 
 export const workerHandoversQueryKey = (locationId: string) =>
   ["handovers", "worker", locationId] as const;
+
+export const managerHandoversQueryKey = (locationId: string) =>
+  ["handovers", "manager", locationId] as const;
 
 export const workerHandoverRecipientsQueryKey = (locationId: string) =>
   ["handovers", "worker", "recipients", locationId] as const;
@@ -53,6 +57,17 @@ export async function fetchWorkerHandovers(
   const params = new URLSearchParams({ locationId });
   return fetchJson<WorkerHandoverListResponse>(
     `/api/worker/handovers?${params.toString()}`,
+    undefined,
+    { auth: "required" },
+  );
+}
+
+export async function fetchManagerHandovers(
+  locationId: string,
+): Promise<ManagerHandoverListResponse> {
+  const params = new URLSearchParams({ locationId });
+  return fetchJson<ManagerHandoverListResponse>(
+    `/api/manager/handovers?${params.toString()}`,
     undefined,
     { auth: "required" },
   );

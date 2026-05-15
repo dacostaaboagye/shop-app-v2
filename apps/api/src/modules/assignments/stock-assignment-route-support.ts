@@ -4,6 +4,7 @@ import type { PermissionResolutionService } from "../access-control/permission-r
 import type { AuthenticatedActor } from "../auth/access-token-authentication.service.js";
 import type { PostgresOwnershipHandoverRepository } from "../inventory-ownership/postgres-ownership-handover.repository.js";
 import type { AssignmentCommandService } from "./assignment-command.service.js";
+import type { PostgresManagerHandoverQueryRepository } from "./postgres-manager-handover-query.repository.js";
 import type { PostgresWorkerAssignmentQueryRepository } from "./postgres-worker-assignment-query.repository.js";
 import type { PostgresWorkerHandoverQueryRepository } from "./postgres-worker-handover-query.repository.js";
 
@@ -23,6 +24,10 @@ export type StockAssignmentRouteDependencies = {
   handoverQueryRepository: Pick<
     PostgresWorkerHandoverQueryRepository,
     "getWorkerHandoverChain" | "listWorkerHandovers"
+  >;
+  managerHandoverQueryRepository: Pick<
+    PostgresManagerHandoverQueryRepository,
+    "getManagerHandoverChain" | "listLocationHandovers"
   >;
   assignmentCommandService: Pick<
     AssignmentCommandService,
@@ -69,6 +74,11 @@ export const assignmentRoutes = {
     "POST",
     "/api/manager/handovers",
     "stock.assignments.manage",
+  ),
+  managerHandoverList: assignmentRoute(
+    "GET",
+    "/api/manager/handovers",
+    "stock.assignments.view",
   ),
   managerList: assignmentRoute(
     "GET",
@@ -187,6 +197,14 @@ export function createUnavailableDependencies(): StockAssignmentRouteDependencie
         return unavailable();
       },
       async listWorkerHandovers() {
+        return unavailable();
+      },
+    },
+    managerHandoverQueryRepository: {
+      async getManagerHandoverChain() {
+        return unavailable();
+      },
+      async listLocationHandovers() {
         return unavailable();
       },
     },
