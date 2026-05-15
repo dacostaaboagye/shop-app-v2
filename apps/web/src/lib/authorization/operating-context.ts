@@ -2,7 +2,6 @@ import type { AuthLocationPermissionScope } from "@shop/contracts";
 import {
   getPermissionLocationScopes,
   resolvePreferredLocationScope,
-  resolveSelectedLocationScope,
 } from "./location-scopes";
 
 export type OperatingContextPolicy =
@@ -57,12 +56,11 @@ export function resolveOperatingContext(input: {
     input.policy.kind === "global-or-location"
       ? resolveExplicitLocationScope(
           selectableLocationScopes,
-          input.activeLocationSlug,
           input.urlLocationSlug,
         )
       : resolvePreferredLocationScope(selectableLocationScopes, [
-          input.activeLocationSlug,
           input.urlLocationSlug,
+          input.activeLocationSlug,
         ]);
 
   if (selectedScope) {
@@ -97,13 +95,9 @@ function getSelectableLocationScopes(
 
 function resolveExplicitLocationScope(
   scopes: readonly AuthLocationPermissionScope[],
-  activeLocationSlug: string | null,
   urlLocationSlug: string | null,
 ): AuthLocationPermissionScope | null {
-  return (
-    findLocationScope(scopes, activeLocationSlug) ??
-    findLocationScope(scopes, urlLocationSlug)
-  );
+  return findLocationScope(scopes, urlLocationSlug);
 }
 
 function findLocationScope(
@@ -114,5 +108,5 @@ function findLocationScope(
     return null;
   }
 
-  return resolveSelectedLocationScope(scopes, locationSlug);
+  return scopes.find((scope) => scope.locationSlug === locationSlug) ?? null;
 }

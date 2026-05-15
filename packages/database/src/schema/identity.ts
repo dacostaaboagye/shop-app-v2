@@ -50,6 +50,9 @@ export const users = pgTable(
       .notNull(),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     lockedUntil: timestamp("locked_until", { withTimezone: true }),
+    sessionsRevokedAt: timestamp("sessions_revoked_at", {
+      withTimezone: true,
+    }),
     requiresPasswordChange: boolean("requires_password_change")
       .default(false)
       .notNull(),

@@ -8,6 +8,7 @@ import { createAuthRuntime } from "./modules/auth/create-auth-runtime.js";
 import { createCatalogRuntime } from "./modules/catalog/create-catalog-runtime.js";
 import { PostgresVariantSearchRepository } from "./modules/catalog/postgres-variant-search.repository.js";
 import { createDeliveriesRuntime } from "./modules/deliveries/create-deliveries-runtime.js";
+import { PostgresDeliveryQueryRepository } from "./modules/deliveries/postgres-delivery-query.repository.js";
 import { createPlatformEventRuntime } from "./modules/events/create-platform-event-runtime.js";
 import { InMemoryPlatformEventBus } from "./modules/events/in-memory-platform-event-bus.js";
 import {
@@ -72,7 +73,11 @@ const adminDirectoryRuntime = createAdminDirectoryRuntime(databaseRuntime, {
   platformEventPublisher: platformEventRuntime.platformEventPublisher,
   ...(env.webBaseUrl ? { webBaseUrl: env.webBaseUrl } : {}),
 });
+const deliverySkuHistoryService = new PostgresDeliveryQueryRepository(
+  databaseRuntime.db,
+);
 const catalogRuntime = createCatalogRuntime(databaseRuntime, storage, {
+  deliverySkuHistoryService,
   platformEventPublisher: platformEventRuntime.platformEventPublisher,
 });
 const officialDocumentRuntime = createOfficialDocumentSettingsRuntime(
@@ -94,6 +99,7 @@ const stockRuntime = createStockRuntime(databaseRuntime, {
   platformEventPublisher: platformEventRuntime.platformEventPublisher,
 });
 const deliveriesRuntime = createDeliveriesRuntime(databaseRuntime, {
+  logger: console,
   platformEventPublisher: platformEventRuntime.platformEventPublisher,
   posSaleSourcePort: salesRuntime.sales.posSaleDeliverySourcePort,
   stockSideEffectsPort: stockRuntime.stock.deliveryStockSideEffectsPort,
@@ -142,7 +148,9 @@ const server = createServer({
     ),
   },
   catalogBrands: catalogRuntime.catalog,
+  catalogImport: catalogRuntime.catalog,
   catalogMedia: catalogRuntime.catalog,
+  catalogReferenceImport: catalogRuntime.catalog,
   events: {
     eventSubscriber: eventBus,
     permissionService: authRuntime.accessControl.permissionService,
@@ -203,6 +211,8 @@ const server = createServer({
   stockAssignments: {
     ...assignmentsRuntime.assignments,
     permissionService: authRuntime.accessControl.permissionService,
+    staffProvisioningService:
+      adminDirectoryRuntime.adminDirectory.adminStaffProvisioningService,
   },
   workerDashboard: {
     assignmentQueryRepository:
@@ -217,8 +227,29 @@ const server = createServer({
     stockBalanceQueryRepo: stockRuntime.stock.stockBalanceQueryRepo,
   },
   stockCount: {
+    openingStockRepo: stockRuntime.stock.openingStockRepo,
     permissionService: authRuntime.accessControl.permissionService,
     stockCountRepo: stockRuntime.stock.stockCountRepo,
+  },
+  stockMovements: {
+    permissionService: authRuntime.accessControl.permissionService,
+    stockMovementQueryRepo: stockRuntime.stock.stockMovementQueryRepo,
+  },
+  stockWriteOff: {
+    permissionService: authRuntime.accessControl.permissionService,
+    stockWriteOffRepo: stockRuntime.stock.stockWriteOffRepo,
+  },
+  stockTake: {
+    permissionService: authRuntime.accessControl.permissionService,
+    stockTakeLifecycleService: stockRuntime.stock.stockTakeLifecycleService,
+    stockTakeListService: stockRuntime.stock.stockTakeListService,
+    stockTakeService: stockRuntime.stock.stockTakeService,
+  },
+  stockTakeImport: {
+    permissionService: authRuntime.accessControl.permissionService,
+    stockTakeApplyService: stockRuntime.stock.stockTakeApplyService,
+    stockTakeImportService: stockRuntime.stock.stockTakeImportService,
+    stockTakeService: stockRuntime.stock.stockTakeService,
   },
   stockSupply: {
     locationRepository: stockRuntime.stock.locationRepository,

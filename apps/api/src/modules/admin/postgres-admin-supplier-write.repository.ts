@@ -26,9 +26,9 @@ import {
   createSupplierInquiry,
   updateSupplierInquiry,
 } from "./postgres-admin-supplier-inquiry-write.js";
+import { receiveSupplierProcurementOrder } from "./postgres-admin-supplier-procurement-receive.js";
 import {
   createSupplierProcurementOrder,
-  receiveSupplierProcurementOrder,
   transitionSupplierProcurementOrder,
 } from "./postgres-admin-supplier-procurement-write.js";
 import { PostgresAdminSupplierQueryRepository } from "./postgres-admin-supplier-query.repository.js";

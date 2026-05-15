@@ -108,13 +108,20 @@ from event ordering.
 
 - verified complete in code, tests, and guards: `E-01-01`, `E-00D-01` to
   `E-00D-06`, `E-00A-01` to `E-00A-05`, `E-00B-01` to `E-00B-07`, `E-00C-01`
+  to `E-00C-03`
 - partially complete phase-1 surfaces: `E-01-03`, `E-01-04`, `E-01-05`,
   `E-01-06`, `E-02-01`
 - developer enforcement from `E-00D-07` is materially in place through route,
   public-ID, frontend-style, and file-length guards plus CI and PR checklist
-- still open foundation work: `E-00A-06`, `E-00C-02`, `E-00C-03`, `E-00C-04`,
-  `E-00C-05`
+- verified complete in the Markdown working surface, but not re-audited in this
+  foundation snapshot: `E-00A-06`
+- shipped in the Markdown working surface: `E-00C-04` (PR #104)
+- blocked after Codex DoD audit/hardening: `E-00C-05` until delivery REST
+  contracts use public references/slugs instead of raw internal identifiers
+- planned delivery unblocker: `E-00C-06` public delivery references and REST
+  identifier contract cleanup
 - still open auth and portal work: `E-01-02`, `E-01-07`, `E-01-08`,
   `E-01-09`, `E-01-10`
-- current implementation priority shifts next to `E-03-01` product-catalog
-  foundation instead of continuing immediately into delivery runtime
+- current implementation priority remains on delivery foundation; `E-00C-06`
+  is the next delivery-runtime item because it
+  unblocks E-00C-05 DoD and downstream E-12/E-14/E-15/E-16 work

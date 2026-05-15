@@ -130,6 +130,34 @@ export const locationStaffListResponseSchema = z.object({
   locationName: z.string(),
 });
 
+const staffProvisioningNameSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(80)
+  .refine((value) => !/[<>]/.test(value), {
+    message: "Name cannot include angle brackets.",
+  });
+
+export const managerCreateWorkerRequestSchema = z.object({
+  email: z.email().max(254),
+  firstName: staffProvisioningNameSchema,
+  lastName: staffProvisioningNameSchema,
+  locationSlugs: z.array(z.string().trim().min(1).max(120)).min(1).max(10),
+  reason: z.string().trim().min(1).max(500),
+});
+
+export const managerCreateWorkerResponseSchema = z.object({
+  email: z.email(),
+  firstName: z.string().min(1).max(120),
+  lastName: z.string().min(1).max(120),
+  locationSlugs: z.array(z.string().min(1).max(120)).min(1).max(10),
+  requiresPasswordChange: z.boolean(),
+  setupInstruction: z.string().min(1),
+  slug: z.string().min(1).max(120),
+  status: authUserStatusSchema,
+});
+
 export const handoverResponseSchema = z.object({
   handoverChainId: z.string().uuid(),
   handoverInEvent: ownershipEventResponseSchema,
@@ -196,4 +224,10 @@ export type LocationStaffListQuery = z.infer<
 export type LocationStaffSummary = z.infer<typeof locationStaffSummarySchema>;
 export type LocationStaffListResponse = z.infer<
   typeof locationStaffListResponseSchema
+>;
+export type ManagerCreateWorkerRequest = z.infer<
+  typeof managerCreateWorkerRequestSchema
+>;
+export type ManagerCreateWorkerResponse = z.infer<
+  typeof managerCreateWorkerResponseSchema
 >;

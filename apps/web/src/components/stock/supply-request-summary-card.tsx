@@ -10,6 +10,10 @@ import {
 } from "@/lib/display/format";
 import { cn } from "@/lib/utils";
 import { GtnDocumentActions } from "./gtn-document-actions";
+import {
+  getTransferReceiptMissingQuantity,
+  hasTransferReceiptDiscrepancy,
+} from "./transfer-receipt.support";
 
 type StatusAccent = {
   badge: string;
@@ -93,7 +97,12 @@ export function SupplyRequestSummaryCard({
           />
         </div>
 
-        <dl className="grid grid-cols-2 divide-x divide-border/50 rounded-xl border border-border/60 bg-card/70">
+        <dl
+          className={cn(
+            "grid divide-x divide-border/50 rounded-xl border border-border/60 bg-card/70",
+            item.receivedQuantity === null ? "grid-cols-2" : "grid-cols-3",
+          )}
+        >
           <QuantityValue
             label="Requested"
             value={String(item.requestedQuantity)}
@@ -102,6 +111,12 @@ export function SupplyRequestSummaryCard({
             label="Approved"
             value={item.approvedQuantity?.toString() ?? "-"}
           />
+          {item.receivedQuantity !== null ? (
+            <QuantityValue
+              label="Accepted"
+              value={String(item.receivedQuantity)}
+            />
+          ) : null}
         </dl>
 
         {item.gtnReference ? (
@@ -169,6 +184,11 @@ function SummaryBadges({ item }: { item: StockSupplyRequestResponse }) {
       {item.sourceReservationStatus === "active" ? (
         <MetaBadge tone="success">Reserved at source</MetaBadge>
       ) : null}
+      {hasTransferReceiptDiscrepancy(item) ? (
+        <MetaBadge tone="warning">
+          Missing {getTransferReceiptMissingQuantity(item)}
+        </MetaBadge>
+      ) : null}
     </div>
   );
 }
@@ -178,7 +198,7 @@ function MetaBadge({
   tone,
 }: {
   children: ReactNode;
-  tone: "neutral" | "success";
+  tone: "neutral" | "success" | "warning";
 }) {
   return (
     <Badge
@@ -186,6 +206,7 @@ function MetaBadge({
         "h-5 px-1.5 text-[10px] uppercase",
         tone === "neutral" && "font-mono",
         tone === "success" && "border-success/20 bg-success/10 text-success",
+        tone === "warning" && "border-warning/20 bg-warning/10 text-warning",
       )}
       variant="outline"
     >

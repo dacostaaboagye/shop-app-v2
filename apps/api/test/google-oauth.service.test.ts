@@ -58,6 +58,7 @@ const sampleUser: AuthUserRecord = {
     soundEnabled: true,
   },
   requiresPasswordChange: false,
+  sessionsRevokedAt: null,
   emailVerified: true,
 };
 

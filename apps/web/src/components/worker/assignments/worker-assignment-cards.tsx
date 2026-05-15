@@ -1,7 +1,7 @@
 "use client";
 
 import type { CurrentAssignment } from "@shop/contracts";
-import { Check, ShoppingCart } from "lucide-react";
+import { Check, HandCoins, ShoppingCart } from "lucide-react";
 import { ProductThumbnail } from "@/components/system/product-thumbnail";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,12 +15,14 @@ export function AssignmentCard({
   moneyProfile,
   onSelectSupply,
   onRequestSupply,
+  onStartHandover,
   selectedForSupply = false,
 }: {
   item: CurrentAssignment;
   moneyProfile: MoneyProfile;
   onSelectSupply?: () => void;
   onRequestSupply: () => void;
+  onStartHandover: () => void;
   selectedForSupply?: boolean;
 }) {
   const status = getStockStatus(item.availableQuantity);
@@ -82,7 +84,7 @@ export function AssignmentCard({
           />
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2 sm:grid-cols-3">
           <Button
             aria-label={`Request supply for ${item.productName} - ${item.variantName}`}
             className="h-11 w-full rounded-xl gap-2 font-bold transition-all active:scale-[0.98]"
@@ -104,6 +106,15 @@ export function AssignmentCard({
               {selectedForSupply ? "Selected" : "Select"}
             </Button>
           ) : null}
+          <Button
+            className="h-11 w-full rounded-xl gap-2 font-bold"
+            onClick={onStartHandover}
+            type="button"
+            variant="outline"
+          >
+            <HandCoins className="size-4" />
+            Handover
+          </Button>
         </div>
       </div>
     </article>

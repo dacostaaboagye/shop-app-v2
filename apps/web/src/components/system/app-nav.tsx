@@ -81,20 +81,12 @@ export function AppNav() {
               </Button>
             </>
           ) : status !== "refreshing" ? (
-            <>
-              <Link
-                className={buttonVariants({ size: "sm", variant: "ghost" })}
-                href={toRoute("/login")}
-              >
-                Sign in
-              </Link>
-              <Link
-                className={buttonVariants({ size: "sm" })}
-                href={toRoute("/register")}
-              >
-                Create account
-              </Link>
-            </>
+            <Link
+              className={buttonVariants({ size: "sm", variant: "ghost" })}
+              href={toRoute("/login")}
+            >
+              Sign in
+            </Link>
           ) : null}
         </div>
       </div>

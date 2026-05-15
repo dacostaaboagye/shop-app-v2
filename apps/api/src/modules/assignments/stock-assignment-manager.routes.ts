@@ -2,21 +2,17 @@ import {
   assignVariantRequestSchema,
   batchAssignVariantRequestSchema,
   batchAssignVariantResponseSchema,
-  handoverResponseSchema,
-  initiateHandoverRequestSchema,
   locationAssignmentListQuerySchema,
   locationAssignmentListResponseSchema,
   ownershipEventResponseSchema,
   reassignVariantRequestSchema,
-  revertHandoverRequestSchema,
 } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
-import { AppError } from "../_core/errors/app-error.js";
 import { getAuthenticatedActor } from "../auth/auth-route-support.js";
+import { registerManagerHandoverRoutes } from "./stock-assignment-manager-handover.routes.js";
 import {
   assertActorCanAccessLocation,
   assignmentRoutes,
-  resolveOriginalWorker,
   type StockAssignmentRouteDependencies,
   toEventResponse,
 } from "./stock-assignment-route-support.js";
@@ -175,74 +171,6 @@ function registerListRoute(
         locationId: query.locationId,
         locationName: "",
       });
-    },
-  });
-}
-
-function registerManagerHandoverRoutes(
-  server: FastifyInstance,
-  dependencies: StockAssignmentRouteDependencies,
-) {
-  const initiateRoute = assignmentRoutes.managerInitiateHandover;
-  server.route({
-    config: { access: initiateRoute.access },
-    method: initiateRoute.method,
-    url: initiateRoute.url,
-    async handler(request) {
-      const actor = getAuthenticatedActor(request);
-      const body = initiateHandoverRequestSchema.parse(request.body);
-      if (!body.fromWorkerId) {
-        throw new AppError({
-          code: "validation_error",
-          detail: "fromWorkerId is required for manager-initiated handovers.",
-          statusCode: 400,
-          title: "Missing fromWorkerId",
-        });
-      }
-      await assertActorCanAccessLocation(dependencies.permissionService, {
-        actor,
-        locationId: body.locationId,
-        permission: "stock.assignments.manage",
-      });
-      const result =
-        await dependencies.assignmentCommandService.initiateHandover({
-          actor,
-          fromWorkerId: body.fromWorkerId,
-          locationId: body.locationId,
-          skuId: body.skuId,
-          toWorkerId: body.toWorkerId,
-        });
-      return handoverResponseSchema.parse({
-        handoverChainId: result.handoverChainId,
-        handoverInEvent: toEventResponse(result.handoverInEvent),
-        handoverOutEvent: toEventResponse(result.handoverOutEvent),
-      });
-    },
-  });
-
-  const revertRoute = assignmentRoutes.managerRevertHandover;
-  server.route({
-    config: { access: revertRoute.access },
-    method: revertRoute.method,
-    url: revertRoute.url,
-    async handler(request) {
-      const actor = getAuthenticatedActor(request);
-      const body = revertHandoverRequestSchema.parse(request.body);
-      const originalWorkerId = await resolveOriginalWorker(
-        dependencies,
-        body.handoverChainId,
-      );
-      const result = await dependencies.assignmentCommandService.endHandover({
-        actor,
-        handoverChainId: body.handoverChainId,
-        originalWorkerId,
-      });
-      return {
-        event: ownershipEventResponseSchema.parse(
-          toEventResponse(result.event),
-        ),
-        status: result.status,
-      };
     },
   });
 }

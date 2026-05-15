@@ -27,6 +27,13 @@ export const ALLOWED_MEDIA_MIMES = [
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 export const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 export const MAX_DOCUMENT_BYTES = 25 * 1024 * 1024;
+export const ALLOWED_PROFILE_IMAGE_MIMES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+] as const;
 
 export const APPLICATION_BRAND_MEDIA_ENTITY = {
   entitySlug: "application-brand",

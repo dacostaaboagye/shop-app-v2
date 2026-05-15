@@ -4,6 +4,7 @@ import { PermissionResolutionService } from "../access-control/permission-resolu
 import { PostgresPermissionRepository } from "../access-control/postgres-permission.repository.js";
 import type { CatalogChangeLogReadService } from "../catalog-change-log/catalog-change-log-read.service.js";
 import { createCatalogChangeLogRuntime } from "../catalog-change-log/create-catalog-change-log-runtime.js";
+import type { DeliverySkuHistoryService } from "../deliveries/delivery-query.contracts.js";
 import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import { PostgresSlugRepository } from "../public-identifiers/postgres-slug.repository.js";
 import { SlugService } from "../public-identifiers/slug.service.js";
@@ -15,9 +16,13 @@ import {
   type CatalogHistoryEntityLookup,
   PostgresCatalogHistoryEntityLookup,
 } from "./catalog-history-entity-lookup.js";
+import { PostgresCatalogImportRepository } from "./catalog-import.repository.js";
+import { CatalogImportService } from "./catalog-import.service.js";
 import { CatalogMediaService } from "./catalog-media.service.js";
 import { CatalogProductQueryService } from "./catalog-product-query.service.js";
 import { CatalogProductWriteService } from "./catalog-product-write.service.js";
+import { PostgresCatalogReferenceImportRepository } from "./catalog-reference-import.repository.js";
+import { CatalogReferenceImportService } from "./catalog-reference-import.service.js";
 import { PostgresCatalogVariantEventContextRepository } from "./catalog-variant-event-context.repository.js";
 import { PostgresCatalogBrandQueryRepository } from "./postgres-catalog-brand-query.repository.js";
 import { PostgresCatalogBrandWriteRepository } from "./postgres-catalog-brand-write.repository.js";
@@ -39,6 +44,8 @@ type CatalogRuntime = {
     catalogBrandWriteService: CatalogBrandWriteService;
     catalogCategoryQueryService: CatalogCategoryQueryService;
     catalogCategoryWriteService: CatalogCategoryWriteService;
+    catalogImportService: CatalogImportService;
+    catalogReferenceImportService: CatalogReferenceImportService;
     catalogMediaService: CatalogMediaService;
     catalogProductQueryService: CatalogProductQueryService;
     catalogProductWriteService: CatalogProductWriteService;
@@ -51,10 +58,11 @@ type CatalogRuntime = {
 
 export function createCatalogRuntime(
   databaseRuntime: DatabaseRuntime,
-  storage: R2StorageService | null = null,
+  storage: R2StorageService | null,
   options: {
+    deliverySkuHistoryService: DeliverySkuHistoryService;
     platformEventPublisher?: PlatformEventPublisher;
-  } = {},
+  },
 ): CatalogRuntime {
   const slugService = new SlugService(
     new PostgresSlugRepository(databaseRuntime.db),
@@ -65,6 +73,7 @@ export function createCatalogRuntime(
 
   const productDeleteGuard = new PostgresCatalogProductDeleteGuard(
     databaseRuntime.db,
+    options.deliverySkuHistoryService,
   );
   const catalogDeleteGuard = new PostgresCatalogDeleteGuard(databaseRuntime.db);
 
@@ -87,32 +96,52 @@ export function createCatalogRuntime(
     productDeleteGuard,
     changeLogWriter,
   );
+  const catalogBrandWriteService = new CatalogBrandWriteService(
+    new PostgresCatalogBrandWriteRepository(
+      databaseRuntime.db,
+      slugService,
+      catalogDeleteGuard,
+      changeLogWriter,
+    ),
+    options.platformEventPublisher ?? null,
+  );
+  const catalogCategoryWriteService = new CatalogCategoryWriteService(
+    new PostgresCatalogCategoryWriteRepository(
+      databaseRuntime.db,
+      slugService,
+      catalogDeleteGuard,
+      changeLogWriter,
+    ),
+    options.platformEventPublisher ?? null,
+  );
 
   return {
     catalog: {
       catalogBrandQueryService: new CatalogBrandQueryService(
         new PostgresCatalogBrandQueryRepository(databaseRuntime.db),
       ),
-      catalogBrandWriteService: new CatalogBrandWriteService(
-        new PostgresCatalogBrandWriteRepository(
-          databaseRuntime.db,
-          slugService,
-          catalogDeleteGuard,
-          changeLogWriter,
-        ),
-        options.platformEventPublisher ?? null,
-      ),
+      catalogBrandWriteService,
       catalogCategoryQueryService: new CatalogCategoryQueryService(
         new PostgresCatalogCategoryQueryRepository(databaseRuntime.db),
       ),
-      catalogCategoryWriteService: new CatalogCategoryWriteService(
-        new PostgresCatalogCategoryWriteRepository(
-          databaseRuntime.db,
-          slugService,
-          catalogDeleteGuard,
-          changeLogWriter,
+      catalogCategoryWriteService,
+      catalogImportService: new CatalogImportService(
+        new PostgresCatalogImportRepository(databaseRuntime.db),
+        new CatalogProductWriteService(
+          new PostgresCatalogProductWriteRepository(productCommands),
+          new PostgresCatalogVariantWriteRepository(
+            variantCommands,
+            new PostgresCatalogVariantEventContextRepository(
+              databaseRuntime.db,
+            ),
+          ),
+          options.platformEventPublisher ?? null,
         ),
-        options.platformEventPublisher ?? null,
+      ),
+      catalogReferenceImportService: new CatalogReferenceImportService(
+        new PostgresCatalogReferenceImportRepository(databaseRuntime.db),
+        catalogBrandWriteService,
+        catalogCategoryWriteService,
       ),
       catalogMediaService: new CatalogMediaService(
         new PostgresCatalogMediaRepository(databaseRuntime.db),

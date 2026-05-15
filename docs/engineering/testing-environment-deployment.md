@@ -36,6 +36,14 @@ Flow:
 
 Create a GitHub environment named `testing`.
 
+The long-term secret source is documented in
+[`docs/engineering/secrets-management.md`](./secrets-management.md). During the
+Infisical migration, the workflow may continue to use GitHub environment
+secrets directly. Once Infisical machine identity is configured, GitHub should
+hold only vault-auth bootstrap credentials and deployment workflows should
+export target-environment secrets from Infisical before syncing them to Fly or
+Vercel.
+
 ### Required secrets
 
 - `TEST_DATABASE_URL`

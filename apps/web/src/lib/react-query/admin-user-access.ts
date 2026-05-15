@@ -1,5 +1,7 @@
 import type {
   AdminAssignUserRoleRequest,
+  AdminCreateUserRequest,
+  AdminCreateUserResponse,
   AdminForceUserPasswordResetRequest,
   AdminRemoveUserPermissionOverrideRequest,
   AdminRevokeUserRoleRequest,
@@ -19,6 +21,20 @@ export async function fetchAdminUserAccessDetail(
   return fetchJson<AdminUserAccessDetail>(
     `/api/admin/access/users/${encodeURIComponent(slug)}`,
     undefined,
+    { auth: "required" },
+  );
+}
+
+export async function createAdminUser(
+  input: AdminCreateUserRequest,
+): Promise<AdminCreateUserResponse> {
+  return fetchJson<AdminCreateUserResponse>(
+    "/api/admin/access/users",
+    {
+      body: JSON.stringify(input),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
     { auth: "required" },
   );
 }

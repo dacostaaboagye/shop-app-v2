@@ -12,8 +12,8 @@ import {
   TransferQueueItemCard,
 } from "@/components/stock/transfer-workspace-surfaces";
 import { AppEmptyState } from "@/components/system/app-empty-state";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import type { TransferLane } from "./transfer-workspace.support";
 
 export function TransferWorkspaceShell({
@@ -84,53 +84,63 @@ export function TransferWorkspaceShell({
 
   return (
     <div className="flex flex-col gap-4">
-      <Card className="border border-border/50 bg-card shadow-sm">
-        <CardHeader className="gap-3">
-          <CardTitle className="type-section-title text-xl text-foreground">
-            {laneTitle}
-          </CardTitle>
-          {laneDescription ? (
-            <p className="type-support">{laneDescription}</p>
-          ) : null}
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="relative w-full min-w-0 lg:max-w-sm">
-              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="pl-9"
-                onChange={(event) => onSearchChange(event.target.value)}
-                placeholder="Search transfers..."
-                value={search}
-              />
-            </div>
+      <section className="rounded-lg border border-border/60 bg-card p-4 shadow-sm">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-start">
+          <div className="min-w-0">
+            <h2 className="type-section-title text-xl text-foreground">
+              {laneTitle}
+            </h2>
+            {laneDescription ? (
+              <p className="type-support mt-1 max-w-3xl">{laneDescription}</p>
+            ) : null}
           </div>
-        </CardHeader>
-        <CardContent className="pt-0">
+          <div className="relative w-full min-w-0">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="h-11 pl-9"
+              onChange={(event) => onSearchChange(event.target.value)}
+              placeholder="Search transfers..."
+              value={search}
+            />
+          </div>
+        </div>
+        <div className="mt-4">
           <TransferLanePicker
             laneCounts={laneCounts}
             lanes={lanes}
             onLaneChange={onLaneChange}
             selectedLane={selectedLane}
           />
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {items.length === 0 ? (
         <AppEmptyState description={emptyDescription} title={emptyTitle} />
       ) : (
-        <div className="grid gap-4 xl:grid-cols-[minmax(18rem,22.5rem)_minmax(0,1fr)]">
-          <Card className="border border-border/50 bg-card shadow-sm">
-            <CardHeader className="gap-2">
-              <CardTitle className="type-section-title text-xl text-foreground">
-                {queueTitle}
-              </CardTitle>
+        <div className="grid gap-4 xl:grid-cols-[minmax(17rem,20rem)_minmax(0,1fr)] 2xl:grid-cols-[minmax(18rem,22rem)_minmax(0,1fr)]">
+          <aside className="h-fit rounded-lg border border-border/60 bg-card p-4 shadow-sm xl:sticky xl:top-4">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="type-section-title text-lg text-foreground">
+                  {queueTitle}
+                </h2>
+                {queueDescription ? (
+                  <p className="type-support mt-1">{queueDescription}</p>
+                ) : null}
+              </div>
               {queueDescription ? (
-                <p className="type-support">
-                  {queueDescription}{" "}
-                  {items.length > 0 ? `(${items.length})` : ""}
-                </p>
+                <span className="type-inline-metric rounded-lg border border-border/60 bg-muted/25 px-2 py-1 text-xs text-foreground">
+                  {items.length}
+                </span>
               ) : null}
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
+            </div>
+            <div
+              className={cn(
+                "flex flex-col gap-2",
+                items.length > 6 &&
+                  "xl:max-h-[calc(100vh-12rem)] xl:overflow-y-auto xl:pr-1",
+              )}
+            >
               {items.map((item) => (
                 <TransferQueueItemCard
                   isSelected={item.supplyRequestId === selectedTransferId}
@@ -139,8 +149,8 @@ export function TransferWorkspaceShell({
                   onSelect={onSelect}
                 />
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </aside>
 
           <div className="flex flex-col gap-4">{detail}</div>
         </div>

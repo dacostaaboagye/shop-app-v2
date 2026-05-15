@@ -236,9 +236,12 @@ export class StockSupplyService {
   async confirmReceipt(input: {
     adminOverrideReason?: string;
     actor: AuthenticatedActor;
+    discrepancyNotes?: string;
+    discrepancyReason?: string;
     notes: string | null;
     now: Date;
     receivedBy: string;
+    receivedQuantity?: number;
     supplyRequestId: string;
   }): Promise<{ gtn: GtnRow; supplyRequest: SupplyRequestRow }> {
     return confirmStockSupplyReceipt(input, this.operationContext());

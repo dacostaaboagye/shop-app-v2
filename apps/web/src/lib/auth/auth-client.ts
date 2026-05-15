@@ -2,17 +2,12 @@ import {
   type AuthSession,
   authSessionSchema,
   type LoginRequest,
-  type RegisterRequest,
 } from "@shop/contracts";
 import { toNetworkError } from "@/lib/errors/app-error";
 import { parseProblemDetails } from "@/lib/errors/problem-details";
 import { ApiError } from "@/lib/react-query/query-client";
 import { useAuthSessionStore } from "@/store/use-auth-session-store";
 import { resolveApiUrl } from "./resolve-api-url";
-
-export function getGoogleOAuthUrl(): string {
-  return resolveApiUrl("/api/auth/oauth/google");
-}
 
 type JsonRequestInit = Omit<RequestInit, "body"> & {
   auth?: "none" | "required";
@@ -23,17 +18,6 @@ let refreshInFlight: Promise<AuthSession | null> | null = null;
 
 export async function login(input: LoginRequest): Promise<AuthSession> {
   const session = await requestAuthSession("/api/auth/login", {
-    body: input,
-    method: "POST",
-  });
-
-  useAuthSessionStore.getState().setSession(session);
-
-  return session;
-}
-
-export async function register(input: RegisterRequest): Promise<AuthSession> {
-  const session = await requestAuthSession("/api/auth/register", {
     body: input,
     method: "POST",
   });

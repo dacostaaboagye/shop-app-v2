@@ -1,7 +1,7 @@
-import pg from "pg";
+import type { PoolClient } from "@neondatabase/serverless";
 import type { SeedBrand, SeedCategory, SeedOption, SeedProduct, SeedVariant } from "./catalog-seed-types.js";
 
-type PgClient = pg.PoolClient;
+type PgClient = PoolClient;
 export async function upsertCategory(
   client: PgClient,
   category: SeedCategory,

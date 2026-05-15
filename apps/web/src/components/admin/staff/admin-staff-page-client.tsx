@@ -2,7 +2,9 @@
 
 import type { AdminStaffListQuery } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import type { Route } from "next";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { userTableColumns } from "@/components/admin/users/user-table-columns";
@@ -21,6 +23,8 @@ import {
 import { StockWorkspaceTableSkeleton } from "@/components/stock/stock-workspace-feedback";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
+import { PermissionGate } from "@/components/system/permission-gate";
+import { buttonVariants } from "@/components/ui/button";
 import {
   adminLocationsQueryKey,
   adminStaffQueryKey,
@@ -124,6 +128,17 @@ export function AdminStaffPageClient() {
   return (
     <PageShell>
       <PageHeader
+        actions={
+          <PermissionGate permission="access.assignments.manage">
+            <Link
+              className={buttonVariants({ size: "sm" })}
+              href={toRoute("/admin/staff/new")}
+            >
+              <Plus data-icon="inline-start" />
+              Add staff member
+            </Link>
+          </PermissionGate>
+        }
         description="Managers and workers across every location with server-side role, status, and location filters."
         title="Staff"
       />

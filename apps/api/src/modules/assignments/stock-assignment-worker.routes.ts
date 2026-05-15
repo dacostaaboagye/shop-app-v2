@@ -1,12 +1,17 @@
 import {
+  handoverRecipientListQuerySchema,
+  handoverRecipientListResponseSchema,
   handoverResponseSchema,
   initiateHandoverRequestSchema,
   ownershipEventResponseSchema,
   revertHandoverRequestSchema,
   workerAssignmentListQuerySchema,
   workerAssignmentListResponseSchema,
+  workerHandoverListQuerySchema,
+  workerHandoverListResponseSchema,
 } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
+import { AppError } from "../_core/errors/app-error.js";
 import {
   getAuthenticatedActor,
   getAuthenticatedUserId,
@@ -14,10 +19,13 @@ import {
 import {
   assertActorCanAccessLocation,
   assignmentRoutes,
-  resolveOriginalWorker,
   type StockAssignmentRouteDependencies,
   toEventResponse,
 } from "./stock-assignment-route-support.js";
+import {
+  getWorkerHandoverLaneCounts,
+  toHandoverSummaryResponse,
+} from "./stock-assignment-worker-route-mappers.js";
 
 export function registerWorkerStockAssignmentRoutes(
   server: FastifyInstance,
@@ -82,6 +90,76 @@ function registerWorkerHandoverRoutes(
   server: FastifyInstance,
   dependencies: StockAssignmentRouteDependencies,
 ) {
+  const listRoute = assignmentRoutes.workerHandoverList;
+  server.route({
+    config: { access: listRoute.access },
+    method: listRoute.method,
+    url: listRoute.url,
+    async handler(request) {
+      const actor = getAuthenticatedActor(request);
+      const query = workerHandoverListQuerySchema.parse(request.query);
+      await assertActorCanAccessLocation(dependencies.permissionService, {
+        actor,
+        locationId: query.locationId,
+        permission: "stock.handovers.manage",
+      });
+      const handovers =
+        await dependencies.handoverQueryRepository.listWorkerHandovers({
+          locationId: query.locationId,
+          workerId: actor.userId,
+        });
+      const laneCounts = getWorkerHandoverLaneCounts(
+        handovers.map((item) => item.lane),
+      );
+
+      return workerHandoverListResponseSchema.parse({
+        items: handovers.map(toHandoverSummaryResponse),
+        laneCounts,
+        locationId: query.locationId,
+        locationName: handovers[0]?.locationName ?? "",
+      });
+    },
+  });
+
+  const recipientsRoute = assignmentRoutes.workerHandoverRecipients;
+  server.route({
+    config: { access: recipientsRoute.access },
+    method: recipientsRoute.method,
+    url: recipientsRoute.url,
+    async handler(request) {
+      const actor = getAuthenticatedActor(request);
+      const query = handoverRecipientListQuerySchema.parse(request.query);
+      await assertActorCanAccessLocation(dependencies.permissionService, {
+        actor,
+        locationId: query.locationId,
+        permission: "stock.handovers.manage",
+      });
+      const staff =
+        await dependencies.assignmentQueryRepository.getLocationStaff(
+          query.locationId,
+        );
+      const recipients = staff.filter(
+        (member) =>
+          member.roleSlug === "worker" &&
+          member.status === "active" &&
+          member.userId !== actor.userId,
+      );
+
+      return handoverRecipientListResponseSchema.parse({
+        items: recipients.map((member) => ({
+          activeAssignmentCount: member.activeAssignmentCount,
+          firstName: member.firstName,
+          lastName: member.lastName,
+          primaryImageUrl: member.primaryImageUrl,
+          userId: member.userId,
+          userSlug: member.userSlug,
+        })),
+        locationId: query.locationId,
+        locationName: staff[0]?.locationName ?? "",
+      });
+    },
+  });
+
   const initiateRoute = assignmentRoutes.workerInitiateHandover;
   server.route({
     config: { access: initiateRoute.access },
@@ -119,10 +197,38 @@ function registerWorkerHandoverRoutes(
     async handler(request) {
       const actor = getAuthenticatedActor(request);
       const body = revertHandoverRequestSchema.parse(request.body);
-      const originalWorkerId = await resolveOriginalWorker(
-        dependencies,
-        body.handoverChainId,
-      );
+      const handover =
+        await dependencies.handoverQueryRepository.getWorkerHandoverChain({
+          handoverChainId: body.handoverChainId,
+          workerId: actor.userId,
+        });
+
+      if (!handover) {
+        throw new AppError({
+          code: "not_found",
+          detail: "No handover chain is available for the current worker.",
+          statusCode: 404,
+          title: "Handover chain not found",
+        });
+      }
+
+      await assertActorCanAccessLocation(dependencies.permissionService, {
+        actor,
+        locationId: handover.locationId,
+        permission: "stock.handovers.manage",
+      });
+
+      if (!handover.canRevert) {
+        throw new AppError({
+          code: "forbidden",
+          detail:
+            "Only the current or original accountable worker can revert this handover.",
+          statusCode: 403,
+          title: "Handover revert not allowed",
+        });
+      }
+
+      const originalWorkerId = handover.fromWorkerId;
       const result = await dependencies.assignmentCommandService.endHandover({
         actor,
         handoverChainId: body.handoverChainId,

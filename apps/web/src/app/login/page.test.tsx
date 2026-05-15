@@ -14,17 +14,18 @@ describe("LoginPage", () => {
     const markup = renderToStaticMarkup(<AppProviders>{page}</AppProviders>);
 
     assert.match(markup, /Sign In/);
-    assert.match(markup, /No account\?/i);
-    assert.match(markup, /Create Account/);
+    assert.doesNotMatch(markup, /No account\?/i);
+    assert.doesNotMatch(markup, /Create Account/);
+    assert.doesNotMatch(markup, /Continue with Google/);
   });
 
-  it("renders the OAuth denial notice when Google sign-in is cancelled", async () => {
+  it("ignores OAuth callback errors for the operations portal", async () => {
     const page = await LoginPage({
-      searchParams: Promise.resolve({ oauth_error: "access_denied" }),
+      searchParams: Promise.resolve({}),
     });
     const markup = renderToStaticMarkup(<AppProviders>{page}</AppProviders>);
 
-    assert.match(markup, /Google sign-in cancelled/);
-    assert.match(markup, /cancelled or denied/i);
+    assert.doesNotMatch(markup, /Google sign-in cancelled/);
+    assert.doesNotMatch(markup, /cancelled or denied/i);
   });
 });

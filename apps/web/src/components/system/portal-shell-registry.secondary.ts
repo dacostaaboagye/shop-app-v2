@@ -5,6 +5,7 @@ import {
   Boxes,
   ClipboardList,
   Cog,
+  History,
   Package,
   Receipt,
   Route as RouteIcon,
@@ -57,6 +58,15 @@ export const SECONDARY_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     section: "Operations",
   },
   {
+    activeMatchers: [{ mode: "descendants", path: "/manager/stock/movements" }],
+    description: "Trace stock changes for your managed locations.",
+    href: toRoute("/manager/stock/movements"),
+    icon: History,
+    label: "Stock movements",
+    requiredPermission: "stock.view",
+    section: "Operations",
+  },
+  {
     activeMatchers: [
       { mode: "descendants", path: "/manager/stock/reservations" },
     ],
@@ -68,6 +78,15 @@ export const SECONDARY_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     section: "Operations",
   },
   {
+    activeMatchers: [{ mode: "descendants", path: "/manager/stock/takes" }],
+    description: "Generate printable stock-take sheets for this location.",
+    href: toRoute("/manager/stock/takes"),
+    icon: ClipboardList,
+    label: "Stock-take sheets",
+    requiredPermission: "inventory.write",
+    section: "Operations",
+  },
+  {
     activeMatchers: [{ mode: "descendants", path: "/manager/transfers" }],
     description: "Inbound and outbound stock transfers for this location.",
     href: toRoute("/manager/transfers"),
@@ -75,6 +94,16 @@ export const SECONDARY_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     label: "Transfers",
     requiredPermission: "transfers.view",
     section: "Operations",
+  },
+  {
+    activeMatchers: [{ mode: "exact", path: "/manager/staff/new" }],
+    description: "Add a worker to one of your managed locations.",
+    href: toRoute("/manager/staff/new"),
+    icon: Users,
+    label: "Add worker",
+    requiredPermission: "access.assignments.manage",
+    section: "Operations",
+    sidebar: false,
   },
   {
     activeMatchers: [{ mode: "descendants", path: "/manager/staff" }],

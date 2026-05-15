@@ -38,7 +38,10 @@ export function registerRecoveryRoutes(
   dependencies: AuthRouteDependencies,
 ) {
   server.route({
-    config: { access: verifyEmailRoute.access },
+    config: {
+      access: verifyEmailRoute.access,
+      rateLimit: { max: 10, timeWindow: "1 hour" },
+    },
     method: verifyEmailRoute.method,
     url: verifyEmailRoute.url,
     async handler(request, reply) {
@@ -49,7 +52,10 @@ export function registerRecoveryRoutes(
   });
 
   server.route({
-    config: { access: resendVerificationRoute.access },
+    config: {
+      access: resendVerificationRoute.access,
+      rateLimit: { max: 5, timeWindow: "1 hour" },
+    },
     method: resendVerificationRoute.method,
     url: resendVerificationRoute.url,
     async handler(request, reply) {
@@ -76,7 +82,10 @@ export function registerRecoveryRoutes(
   });
 
   server.route({
-    config: { access: resetPasswordRoute.access },
+    config: {
+      access: resetPasswordRoute.access,
+      rateLimit: { max: 5, timeWindow: "1 hour" },
+    },
     method: resetPasswordRoute.method,
     url: resetPasswordRoute.url,
     async handler(request, reply) {

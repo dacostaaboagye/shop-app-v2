@@ -4,6 +4,7 @@ import type {
   ManagerDashboardTransferSummary,
   StockSupplyRequestResponse,
 } from "@shop/contracts";
+import { stockSupplyRequestResponseSchema } from "@shop/contracts";
 import { toInvoiceResponse } from "../sales/invoice-response.mapper.js";
 import type { InvoiceRecord } from "../sales/sales.contracts.js";
 import { toRequestResponse } from "../stock/supply-request-route-support.js";
@@ -208,10 +209,5 @@ export function toTodayStart(today = new Date()) {
 function toTransferResponse(
   row: Parameters<typeof toRequestResponse>[0],
 ): StockSupplyRequestResponse {
-  const response = toRequestResponse(row);
-
-  return {
-    ...response,
-    status: response.status as StockSupplyRequestResponse["status"],
-  };
+  return stockSupplyRequestResponseSchema.parse(toRequestResponse(row));
 }

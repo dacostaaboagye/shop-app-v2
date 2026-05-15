@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { IssuedDocumentSnapshotResponse } from "@shop/contracts";
 import { issueAccessToken } from "../src/modules/auth/access-token.js";
+import { issuedDocumentDownloadRateLimit } from "../src/modules/official-documents/issued-document.routes.js";
 import { createServer } from "../src/server/create-server.js";
 
 const NOW = new Date("2026-04-20T00:00:00.000Z");
@@ -70,6 +71,37 @@ describe("issued document routes", () => {
     ]);
   });
 
+  it("limits repeated official document downloads before rendering PDFs", async () => {
+    const calls: IssuedDocumentCall[] = [];
+    const server = createIssuedDocumentServer(calls);
+
+    const responses = await Promise.all(
+      Array.from({ length: issuedDocumentDownloadRateLimit.max + 1 }, () =>
+        server.inject({
+          headers: { authorization: bearerToken() },
+          method: "GET",
+          url: "/api/documents/sales/INV%2F2026%2F000001/download",
+        }),
+      ),
+    );
+
+    const limitedResponse = responses.find(
+      (response) => response.statusCode === 429,
+    );
+    assert.ok(limitedResponse);
+    assert.equal(limitedResponse.statusCode, 429);
+    assert.equal(limitedResponse.json().code, "rate_limited");
+    assert.equal(calls.length, issuedDocumentDownloadRateLimit.max);
+  });
+
+  it("declares a dedicated rate limit for official document downloads", () => {
+    assert.deepEqual(issuedDocumentDownloadRateLimit, {
+      groupId: "issued-document-download",
+      max: 30,
+      timeWindow: "1 minute",
+    });
+  });
+
   it("emails the official sales document to the stored buyer email", async () => {
     const calls: IssuedDocumentCall[] = [];
     const server = createIssuedDocumentServer(calls);
@@ -92,6 +124,27 @@ describe("issued document routes", () => {
         reference: "INV/2026/000001",
       },
     ]);
+  });
+
+  it("limits repeated official sales document email sends", async () => {
+    const calls: IssuedDocumentCall[] = [];
+    const server = createIssuedDocumentServer(calls);
+
+    const responses = await Promise.all(
+      Array.from({ length: 6 }, () =>
+        server.inject({
+          headers: { authorization: bearerToken() },
+          method: "POST",
+          url: "/api/documents/sales/INV%2F2026%2F000001/send-email",
+        }),
+      ),
+    );
+
+    const limitedResponse = responses.at(-1);
+    assert.ok(limitedResponse);
+    assert.equal(limitedResponse.statusCode, 429);
+    assert.equal(limitedResponse.json().code, "rate_limited");
+    assert.equal(calls.length, 5);
   });
 
   it("downloads the official GTN PDF from the issued snapshot", async () => {
@@ -117,6 +170,29 @@ describe("issued document routes", () => {
         reference: "GTN-00001",
       },
     ]);
+  });
+
+  it("limits repeated GTN document downloads before rendering PDFs", async () => {
+    const calls: IssuedDocumentCall[] = [];
+    const server = createIssuedDocumentServer(calls);
+
+    const responses = await Promise.all(
+      Array.from({ length: issuedDocumentDownloadRateLimit.max + 1 }, () =>
+        server.inject({
+          headers: { authorization: bearerToken() },
+          method: "GET",
+          url: "/api/documents/gtns/GTN-00001/download",
+        }),
+      ),
+    );
+
+    const limitedResponse = responses.find(
+      (response) => response.statusCode === 429,
+    );
+    assert.ok(limitedResponse);
+    assert.equal(limitedResponse.statusCode, 429);
+    assert.equal(limitedResponse.json().code, "rate_limited");
+    assert.equal(calls.length, issuedDocumentDownloadRateLimit.max);
   });
 });
 

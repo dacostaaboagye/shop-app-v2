@@ -227,6 +227,7 @@ function createUserRecord(overrides: Partial<AuthUserRecord>): AuthUserRecord {
     primaryImageUrl: null,
     preferredPortal: null,
     requiresPasswordChange: false,
+    sessionsRevokedAt: null,
     slug: "store-manager-ab12",
     status: "active",
     ...overrides,

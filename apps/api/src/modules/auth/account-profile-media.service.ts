@@ -3,19 +3,16 @@ import type {
   AdminMediaListResponse,
   AdminMediaRecord,
 } from "@shop/contracts";
+import { ALLOWED_PROFILE_IMAGE_MIMES } from "@shop/contracts";
 import { AppError } from "../_core/errors/app-error.js";
 import type { CurrentUserService } from "./current-user.service.js";
 
 // Explicit allowlist: rasterized image formats only. SVG is excluded because
 // it can carry inline scripts and execute when rendered same-origin. Set
 // must match the `accept` list in apps/web's profile-image picker.
-const ALLOWED_PROFILE_MEDIA_MIME_TYPES = new Set<string>([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "image/avif",
-]);
+const ALLOWED_PROFILE_MEDIA_MIME_TYPES = new Set<string>(
+  ALLOWED_PROFILE_IMAGE_MIMES,
+);
 
 function assertAllowedProfileMediaMimeType(mimeType: string): void {
   if (ALLOWED_PROFILE_MEDIA_MIME_TYPES.has(mimeType)) {

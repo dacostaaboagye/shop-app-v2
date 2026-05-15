@@ -1,4 +1,4 @@
-import type { Pool, PoolClient } from "pg";
+import type { Pool, PoolClient } from "@neondatabase/serverless";
 import type { StockBalanceRecord } from "./stock-balance-adjustment.contracts.js";
 import {
   requireStockBalance,

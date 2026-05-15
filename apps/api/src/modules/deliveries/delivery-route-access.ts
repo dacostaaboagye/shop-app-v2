@@ -31,39 +31,63 @@ export const createFromTransferRoute: RouteDefinition = {
 };
 
 export const assignDeliveryRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "deliveries.assign" },
+  access: {
+    kind: "permission",
+    permission: "deliveries.assign",
+    scope: "any_active",
+  },
   method: "POST",
-  url: "/api/deliveries/:deliveryId/assign",
+  url: "/api/deliveries/:deliveryReference/assign",
 };
 
 export const reassignDeliveryRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "deliveries.reassign" },
+  access: {
+    kind: "permission",
+    permission: "deliveries.reassign",
+    scope: "any_active",
+  },
   method: "POST",
-  url: "/api/deliveries/:deliveryId/reassign",
+  url: "/api/deliveries/:deliveryReference/reassign",
 };
 
 export const dispatchDeliveryRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "deliveries.dispatch" },
+  access: {
+    kind: "permission",
+    permission: "deliveries.dispatch",
+    scope: "any_active",
+  },
   method: "POST",
-  url: "/api/deliveries/:deliveryId/dispatch",
+  url: "/api/deliveries/:deliveryReference/dispatch",
 };
 
 export const completeDeliveryRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "deliveries.complete" },
+  access: {
+    kind: "permission",
+    permission: "deliveries.complete",
+    scope: "any_active",
+  },
   method: "POST",
-  url: "/api/deliveries/:deliveryId/complete",
+  url: "/api/deliveries/:deliveryReference/complete",
 };
 
 export const cancelDeliveryRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "deliveries.cancel" },
+  access: {
+    kind: "permission",
+    permission: "deliveries.cancel",
+    scope: "any_active",
+  },
   method: "POST",
-  url: "/api/deliveries/:deliveryId/cancel",
+  url: "/api/deliveries/:deliveryReference/cancel",
 };
 
 export const findDeliveryRoute: RouteDefinition = {
-  access: { kind: "permission", permission: "deliveries.view" },
+  access: {
+    kind: "permission",
+    permission: "deliveries.view",
+    scope: "any_active",
+  },
   method: "GET",
-  url: "/api/deliveries/:deliveryId",
+  url: "/api/deliveries/:deliveryReference",
 };
 
 export const listDeliveriesRoute: RouteDefinition = {

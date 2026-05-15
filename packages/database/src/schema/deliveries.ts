@@ -33,6 +33,7 @@ export const deliveries = pgTable(
   "deliveries",
   {
     id: publicUuidColumn(),
+    reference: varchar("reference", { length: 40 }).notNull(),
     sourceType: deliverySourceTypeEnum("source_type").notNull(),
     sourceReference: varchar("source_reference", { length: 64 }).notNull(),
     originLocationId: uuid("origin_location_id")
@@ -64,6 +65,7 @@ export const deliveries = pgTable(
       table.sourceType,
       table.sourceReference,
     ),
+    uniqueIndex("deliveries_reference_unique").on(table.reference),
     index("deliveries_origin_location_idx").on(table.originLocationId),
     index("deliveries_destination_location_idx").on(
       table.destinationLocationId,
@@ -85,6 +87,22 @@ export const deliveries = pgTable(
     check(
       "deliveries_cancellation_reason_consistent",
       sql`(${table.status} = 'cancelled') = (${table.cancellationReason} IS NOT NULL)`,
+    ),
+    check(
+      "deliveries_assigned_state_consistent",
+      sql`${table.status} NOT IN ('assigned', 'in_transit', 'completed') OR (${table.assignedUserId} IS NOT NULL AND ${table.assignedAt} IS NOT NULL AND ${table.assignedBy} IS NOT NULL)`,
+    ),
+    check(
+      "deliveries_in_transit_state_consistent",
+      sql`${table.status} NOT IN ('in_transit', 'completed') OR (${table.dispatchedAt} IS NOT NULL AND ${table.dispatchedBy} IS NOT NULL)`,
+    ),
+    check(
+      "deliveries_completed_state_consistent",
+      sql`${table.status} <> 'completed' OR (${table.completedAt} IS NOT NULL AND ${table.completedBy} IS NOT NULL)`,
+    ),
+    check(
+      "deliveries_cancelled_state_consistent",
+      sql`${table.status} <> 'cancelled' OR (${table.cancelledAt} IS NOT NULL AND ${table.cancelledBy} IS NOT NULL)`,
     ),
   ],
 );

@@ -2,10 +2,10 @@ import {
   authPermissionSetSchema,
   authUserSchema,
   loginRequestSchema,
-  registerRequestSchema,
   updateProfileRequestSchema,
 } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
+import { AppError } from "../_core/errors/app-error.js";
 import type { RouteDefinition } from "../_core/route-contract.js";
 import { registerOAuthRoutes } from "./auth-oauth.routes.js";
 import { registerRecoveryRoutes } from "./auth-recovery.routes.js";
@@ -46,6 +46,12 @@ const logoutRoute: RouteDefinition = {
   url: "/api/auth/logout",
 };
 
+const logoutAllRoute: RouteDefinition = {
+  access: { kind: "authenticated" },
+  method: "POST",
+  url: "/api/auth/logout-all",
+};
+
 const currentUserRoute: RouteDefinition = {
   access: { kind: "authenticated" },
   method: "GET",
@@ -75,18 +81,14 @@ export function registerAuthRoutes(
     },
     method: registerRoute.method,
     url: registerRoute.url,
-    async handler(request, reply) {
-      const command = registerRequestSchema.parse(request.body);
-      const session = await dependencies.registrationService.register({
-        ...command,
-        ...getRequestMetadata(request),
+    async handler() {
+      throw new AppError({
+        code: "forbidden",
+        detail:
+          "Operations accounts are created internally by an authorized administrator or manager. Use sign in if you already have an account.",
+        statusCode: 403,
+        title: "Registration disabled",
       });
-      setRefreshTokenCookie(
-        reply,
-        session.refreshToken,
-        session.refreshTokenExpiresAt,
-      );
-      return toPublicSession(session);
     },
   });
 
@@ -113,7 +115,10 @@ export function registerAuthRoutes(
   });
 
   server.route({
-    config: { access: refreshRoute.access },
+    config: {
+      access: refreshRoute.access,
+      rateLimit: { max: 60, timeWindow: "15 minutes" },
+    },
     method: refreshRoute.method,
     url: refreshRoute.url,
     async handler(request, reply) {
@@ -131,13 +136,33 @@ export function registerAuthRoutes(
   });
 
   server.route({
-    config: { access: logoutRoute.access },
+    config: {
+      access: logoutRoute.access,
+      rateLimit: { max: 60, timeWindow: "15 minutes" },
+    },
     method: logoutRoute.method,
     url: logoutRoute.url,
     async handler(request, reply) {
       await dependencies.logoutSessionService.logout({
         ...getRequestMetadata(request),
         refreshToken: getRefreshToken(request),
+      });
+      clearRefreshTokenCookie(reply);
+      return reply.status(204).send();
+    },
+  });
+
+  server.route({
+    config: {
+      access: logoutAllRoute.access,
+      rateLimit: { max: 10, timeWindow: "15 minutes" },
+    },
+    method: logoutAllRoute.method,
+    url: logoutAllRoute.url,
+    async handler(request, reply) {
+      await dependencies.logoutSessionService.logoutAll({
+        ...getRequestMetadata(request),
+        userId: getAuthenticatedUserId(request),
       });
       clearRefreshTokenCookie(reply);
       return reply.status(204).send();

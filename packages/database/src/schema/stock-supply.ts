@@ -71,6 +71,11 @@ export const stockSupplyRequests = pgTable(
 
     // Receipt fields (set when worker confirms receipt, stock added to destination)
     receivedAt: timestamp("received_at", { withTimezone: true }),
+    receivedQuantity: integer("received_quantity"),
+    receiptDiscrepancyReason: varchar("receipt_discrepancy_reason", {
+      length: 32,
+    }),
+    receiptDiscrepancyNotes: text("receipt_discrepancy_notes"),
 
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -92,6 +97,14 @@ export const stockSupplyRequests = pgTable(
     check(
       "supply_requests_status_check",
       sql`${table.status} IN ('pending', 'approved', 'dispatched', 'received', 'rejected', 'cancelled')`,
+    ),
+    check(
+      "supply_requests_received_qty_nonnegative",
+      sql`${table.receivedQuantity} IS NULL OR ${table.receivedQuantity} >= 0`,
+    ),
+    check(
+      "supply_requests_discrepancy_reason_check",
+      sql`${table.receiptDiscrepancyReason} IS NULL OR ${table.receiptDiscrepancyReason} IN ('short_received', 'damaged_received', 'wrong_item', 'other')`,
     ),
     index("supply_requests_requester_idx").on(table.requesterId),
     index("supply_requests_location_idx").on(table.locationId),
