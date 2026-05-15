@@ -1,115 +1,134 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { AppError } from "../src/modules/_core/errors/app-error.js";
-import type { LocationStaffRow } from "../src/modules/assignments/postgres-location-staff-query.js";
-import type { WorkerHandoverRow } from "../src/modules/assignments/postgres-worker-handover-query.repository.js";
+import type { ManagerHandoverRow } from "../src/modules/assignments/postgres-manager-handover-query.repository.js";
 import { issueAccessToken } from "../src/modules/auth/access-token.js";
 import { createServer } from "../src/server/create-server.js";
 
 const NOW = new Date("2026-05-14T12:00:00.000Z");
 const USER_ID = "11111111-1111-4111-8111-111111111111";
 const LOCATION_ID = "22222222-2222-4222-8222-222222222222";
+const FOREIGN_LOCATION_ID = "99999999-9999-4999-8999-999999999999";
 const SKU_ID = "33333333-3333-4333-8333-333333333333";
 const CHAIN_ID = "44444444-4444-4444-8444-444444444444";
+const ORIGINAL_WORKER_ID = "77777777-7777-4777-8777-777777777777";
 
-describe("worker stock assignment handover routes", () => {
-  it("lists worker handovers for an authorized location", async () => {
+describe("manager handover oversight routes", () => {
+  it("lists handovers for a manager-visible location", async () => {
     const routePermissionCalls: string[] = [];
-    const server = createWorkerAssignmentServer({
+    const server = createManagerAssignmentServer({
+      handovers: [handoverRow({}), handoverRow({ lane: "reverted" })],
       routePermissionCalls,
-      handovers: [handoverRow({})],
     });
 
     const response = await server.inject({
       headers: { authorization: bearerToken() },
       method: "GET",
       query: { locationId: LOCATION_ID },
-      url: "/api/worker/handovers",
+      url: "/api/manager/handovers",
     });
 
     assert.equal(response.statusCode, 200);
     assert.equal(response.json().items[0].handoverChainId, CHAIN_ID);
-    assert.equal(response.json().items[0].lane, "active_received");
-    assert.equal(response.json().laneCounts.active_received, 1);
+    assert.equal(response.json().items[0].lane, "active");
+    assert.deepEqual(response.json().laneCounts, {
+      active: 1,
+      history: 0,
+      reverted: 1,
+    });
     assert.deepEqual(routePermissionCalls, [
-      "stock.handovers.manage:22222222-2222-4222-8222-222222222222",
+      "stock.assignments.view:22222222-2222-4222-8222-222222222222",
     ]);
   });
 
-  it("returns eligible active worker recipients without exposing managers", async () => {
-    const server = createWorkerAssignmentServer({
-      staffRows: [
-        staffRow({
-          firstName: "Self",
-          lastName: "Worker",
-          userId: USER_ID,
-        }),
-        staffRow({ firstName: "Ama", lastName: "Receiver" }),
-        staffRow({
-          firstName: "Mina",
-          lastName: "Manager",
-          roleSlug: "manager",
-          userId: "55555555-5555-4555-8555-555555555555",
-        }),
-        staffRow({
-          firstName: "Kojo",
-          lastName: "Suspended",
-          status: "suspended",
-          userId: "66666666-6666-4666-8666-666666666666",
-        }),
-      ],
-    });
-
-    const response = await server.inject({
-      headers: { authorization: bearerToken() },
-      method: "GET",
-      query: { locationId: LOCATION_ID },
-      url: "/api/worker/handovers/recipients",
-    });
-
-    assert.equal(response.statusCode, 200);
-    assert.deepEqual(
-      response
-        .json()
-        .items.map((item: { firstName: string }) => item.firstName),
-      ["Ama"],
-    );
-  });
-
-  it("rejects worker handover revert when the actor is not accountable", async () => {
+  it("rejects revert when the chain is outside the manager location scope", async () => {
     let endHandoverCalls = 0;
-    const server = createWorkerAssignmentServer({
+    const routePermissionCalls: string[] = [];
+    const server = createManagerAssignmentServer({
       endHandover: async () => {
         endHandoverCalls += 1;
         throw new Error("endHandover should not run");
       },
-      handoverForChain: handoverRow({ canRevert: false }),
+      handoverForChain: handoverRow({ locationId: FOREIGN_LOCATION_ID }),
+      routePermissionCalls,
     });
 
     const response = await server.inject({
       headers: { authorization: bearerToken() },
       method: "POST",
       payload: { handoverChainId: CHAIN_ID },
-      url: "/api/worker/handovers/revert",
+      url: "/api/manager/handovers/revert",
     });
 
     assert.equal(response.statusCode, 403);
     assert.equal(endHandoverCalls, 0);
+    assert.deepEqual(routePermissionCalls, [
+      "stock.assignments.manage:99999999-9999-4999-8999-999999999999",
+    ]);
+  });
+
+  it("rejects revert when the handover is no longer active", async () => {
+    let endHandoverCalls = 0;
+    const server = createManagerAssignmentServer({
+      endHandover: async () => {
+        endHandoverCalls += 1;
+        throw new Error("endHandover should not run");
+      },
+      handoverForChain: handoverRow({
+        canRevert: false,
+        latestEventType: "reverted",
+        lane: "reverted",
+      }),
+    });
+
+    const response = await server.inject({
+      headers: { authorization: bearerToken() },
+      method: "POST",
+      payload: { handoverChainId: CHAIN_ID },
+      url: "/api/manager/handovers/revert",
+    });
+
+    assert.equal(response.statusCode, 409);
+    assert.equal(response.json().code, "conflict");
+    assert.equal(endHandoverCalls, 0);
+  });
+
+  it("reverts an active handover back to the original worker", async () => {
+    let originalWorkerId = "";
+    const server = createManagerAssignmentServer({
+      endHandover: async (input) => {
+        originalWorkerId = input.originalWorkerId;
+        return revertResult();
+      },
+      handoverForChain: handoverRow({}),
+    });
+
+    const response = await server.inject({
+      headers: { authorization: bearerToken() },
+      method: "POST",
+      payload: { handoverChainId: CHAIN_ID },
+      url: "/api/manager/handovers/revert",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().status, "created");
+    assert.equal(originalWorkerId, ORIGINAL_WORKER_ID);
   });
 });
 
-function createWorkerAssignmentServer(input: {
-  endHandover?: () => Promise<never>;
-  handoverForChain?: WorkerHandoverRow | null;
-  handovers?: WorkerHandoverRow[];
+function createManagerAssignmentServer(input: {
+  endHandover?: (args: {
+    originalWorkerId: string;
+  }) => Promise<ReturnType<typeof revertResult>>;
+  handoverForChain?: ManagerHandoverRow | null;
+  handovers?: ManagerHandoverRow[];
   routePermissionCalls?: string[];
-  staffRows?: LocationStaffRow[];
 }) {
   return createServer({
     accessControl: {
       accessTokenAuthenticationService: {
         async authenticate() {
-          return { userId: USER_ID, userSlug: "worker-a" };
+          return { userId: USER_ID, userSlug: "manager-a" };
         },
       },
       permissionService: {
@@ -124,7 +143,7 @@ function createWorkerAssignmentServer(input: {
           return [];
         },
         async getLocationStaff() {
-          return input.staffRows ?? [];
+          return [];
         },
         async getWorkerAssignments() {
           return [];
@@ -132,31 +151,31 @@ function createWorkerAssignmentServer(input: {
       },
       handoverRepository: {
         async getOriginalWorkerForChain() {
-          return USER_ID;
+          return null;
         },
       },
       handoverQueryRepository: {
         async getWorkerHandoverChain() {
-          return input.handoverForChain ?? null;
+          return null;
         },
         async listWorkerHandovers() {
-          return input.handovers ?? [];
+          return [];
         },
       },
       managerHandoverQueryRepository: {
         async getManagerHandoverChain() {
-          return null;
+          return input.handoverForChain ?? null;
         },
         async listLocationHandovers() {
-          return [];
+          return input.handovers ?? [];
         },
       },
       assignmentCommandService: {
         async assignProduct() {
           throw new Error("not used");
         },
-        async endHandover() {
-          return input.endHandover?.() ?? revertResult();
+        async endHandover(args) {
+          return input.endHandover?.(args) ?? revertResult();
         },
         async initiateHandover() {
           throw new Error("not used");
@@ -191,16 +210,18 @@ function createWorkerAssignmentServer(input: {
   });
 }
 
-function handoverRow(overrides: Partial<WorkerHandoverRow>): WorkerHandoverRow {
+function handoverRow(
+  overrides: Partial<ManagerHandoverRow>,
+): ManagerHandoverRow {
   return {
     canRevert: true,
-    currentWorkerName: "Worker A",
-    currentWorkerSlug: "worker-a",
-    fromWorkerId: "77777777-7777-4777-8777-777777777777",
+    currentWorkerName: "Receiver Worker",
+    currentWorkerSlug: "receiver-worker",
+    fromWorkerId: ORIGINAL_WORKER_ID,
     fromWorkerName: "Source Worker",
     fromWorkerSlug: "source-worker",
     handoverChainId: CHAIN_ID,
-    lane: "active_received",
+    lane: "active",
     latestEventType: "handover_in",
     locationId: LOCATION_ID,
     locationName: "East Legon",
@@ -211,39 +232,12 @@ function handoverRow(overrides: Partial<WorkerHandoverRow>): WorkerHandoverRow {
     sku: "UNI-SHIRT-M",
     skuId: SKU_ID,
     startedAt: NOW,
-    toWorkerName: "Worker A",
-    toWorkerSlug: "worker-a",
+    toWorkerName: "Receiver Worker",
+    toWorkerSlug: "receiver-worker",
     updatedAt: NOW,
     variantName: "Medium",
     variantSlug: "medium",
     ...overrides,
-  };
-}
-
-function staffRow(overrides: Partial<ReturnType<typeof baseStaffRow>>) {
-  return { ...baseStaffRow(), ...overrides };
-}
-
-function baseStaffRow(): LocationStaffRow {
-  return {
-    activeAssignmentCount: 1,
-    assignedAt: NOW,
-    email: "ama@example.com",
-    firstName: "Ama",
-    lastName: "Receiver",
-    lastSaleAt: null,
-    locationName: "East Legon",
-    netSalesAmount: "0.00",
-    primaryImageUrl: null,
-    returnsCount: 0,
-    returnsTotalAmount: "0.00",
-    roleName: "Worker",
-    roleSlug: "worker" as const,
-    salesCount: 0,
-    salesTotalAmount: "0.00",
-    status: "active" as const,
-    userId: "88888888-8888-4888-8888-888888888888",
-    userSlug: "ama-receiver",
   };
 }
 
@@ -254,11 +248,11 @@ function revertResult() {
       effectiveFrom: NOW,
       eventType: "reverted" as const,
       handoverChainId: CHAIN_ID,
-      id: "99999999-9999-4999-8999-999999999999",
+      id: "88888888-8888-4888-8888-888888888888",
       locationId: LOCATION_ID,
       quantity: 3,
       skuId: SKU_ID,
-      workerId: USER_ID,
+      workerId: ORIGINAL_WORKER_ID,
     },
     status: "created" as const,
   };
@@ -271,7 +265,7 @@ function bearerToken() {
       now: NOW,
       secret: "development-access-secret",
       userId: USER_ID,
-      userSlug: "worker-a",
+      userSlug: "manager-a",
     }).token
   }`;
 }

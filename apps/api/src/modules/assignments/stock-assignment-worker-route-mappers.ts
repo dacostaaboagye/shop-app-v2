@@ -1,7 +1,12 @@
-import type { WorkerHandoverLane } from "@shop/contracts";
+import type { ManagerHandoverLane, WorkerHandoverLane } from "@shop/contracts";
+import type { ManagerHandoverRow } from "./postgres-manager-handover-query.repository.js";
 import type { WorkerHandoverRow } from "./postgres-worker-handover-query.repository.js";
 
-export function toHandoverSummaryResponse(handover: WorkerHandoverRow) {
+type HandoverResponseRow = Omit<WorkerHandoverRow, "lane"> & {
+  lane: string;
+};
+
+export function toHandoverSummaryResponse(handover: HandoverResponseRow) {
   return {
     canRevert: handover.canRevert,
     currentWorkerName: handover.currentWorkerName,
@@ -41,4 +46,25 @@ export function getWorkerHandoverLaneCounts(lanes: WorkerHandoverLane[]) {
       reverted: 0,
     } satisfies Record<WorkerHandoverLane, number>,
   );
+}
+
+export function getManagerHandoverLaneCounts(lanes: ManagerHandoverLane[]) {
+  return lanes.reduce(
+    (counts, lane) => {
+      counts[lane] += 1;
+      return counts;
+    },
+    {
+      active: 0,
+      history: 0,
+      reverted: 0,
+    } satisfies Record<ManagerHandoverLane, number>,
+  );
+}
+
+export function toManagerHandoverSummaryResponse(handover: ManagerHandoverRow) {
+  return {
+    ...toHandoverSummaryResponse(handover),
+    lane: handover.lane,
+  };
 }

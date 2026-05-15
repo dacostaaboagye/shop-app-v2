@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   handoverRecipientListResponseSchema,
+  managerHandoverListResponseSchema,
   workerHandoverListResponseSchema,
 } from "./assignment-handovers.js";
 
@@ -70,5 +71,46 @@ describe("assignment handover contracts", () => {
     });
 
     assert.equal(parsed.items[0]?.userSlug, "ama-worker");
+  });
+
+  it("accepts manager handover oversight rows", () => {
+    const parsed = managerHandoverListResponseSchema.parse({
+      items: [
+        {
+          canRevert: true,
+          currentWorkerName: "Receiving Worker",
+          currentWorkerSlug: "receiving-worker",
+          fromWorkerName: "Source Worker",
+          fromWorkerSlug: "source-worker",
+          handoverChainId: CHAIN_ID,
+          lane: "active",
+          latestEventType: "handover_in",
+          locationId: LOCATION_ID,
+          locationName: "East Legon",
+          primaryImageUrl: null,
+          productName: "Uniform Shirt",
+          productSlug: "uniform-shirt",
+          quantity: 3,
+          sku: "UNI-SHIRT-M",
+          skuId: SKU_ID,
+          startedAt: "2026-05-14T10:00:00.000Z",
+          toWorkerName: "Receiving Worker",
+          toWorkerSlug: "receiving-worker",
+          updatedAt: "2026-05-14T10:01:00.000Z",
+          variantName: "Medium",
+          variantSlug: "medium",
+        },
+      ],
+      laneCounts: {
+        active: 1,
+        history: 0,
+        reverted: 0,
+      },
+      locationId: LOCATION_ID,
+      locationName: "East Legon",
+    });
+
+    assert.equal(parsed.items[0]?.lane, "active");
+    assert.equal(parsed.laneCounts.active, 1);
   });
 });
