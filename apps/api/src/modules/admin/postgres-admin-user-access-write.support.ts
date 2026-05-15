@@ -1,4 +1,4 @@
-import { permissionAuditLog, refreshTokens } from "@shop/database";
+import { permissionAuditLog, refreshTokens, users } from "@shop/database";
 import { and, eq, isNull } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import { AppError } from "../_core/errors/app-error.js";
@@ -114,6 +114,14 @@ export async function revokeRefreshTokens(
     userId: string;
   },
 ) {
+  await tx
+    .update(users)
+    .set({
+      sessionsRevokedAt: input.revokedAt,
+      updatedAt: input.revokedAt,
+    })
+    .where(eq(users.id, input.userId));
+
   await tx
     .update(refreshTokens)
     .set({

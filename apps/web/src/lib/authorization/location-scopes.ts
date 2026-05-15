@@ -41,7 +41,7 @@ export function resolveActiveLocationScope(input: {
   urlLocationSlug: string | null;
 }): AuthLocationPermissionScope | null {
   return resolvePreferredLocationScope(input.scopes, [
-    input.activeLocationSlug,
     input.urlLocationSlug,
+    input.activeLocationSlug,
   ]);
 }

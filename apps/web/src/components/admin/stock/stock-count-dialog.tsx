@@ -4,12 +4,10 @@ import type {
   AdminStockBalanceSummary,
   AdminStockCountRequest,
 } from "@shop/contracts";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -52,22 +50,14 @@ export function StockCountDialog({
         </DialogHeader>
 
         <StockCountForm
+          key={`${locationSlug}:${row?.sku ?? "new"}`}
           error={error}
           isPending={isPending}
           locationSlug={locationSlug}
+          onCancel={() => onOpenChange(false)}
           onSubmit={onSubmit}
-          open={open}
           row={row}
         />
-
-        <DialogFooter>
-          <Button onClick={() => onOpenChange(false)} variant="ghost">
-            Cancel
-          </Button>
-          <Button form="count-form" disabled={isPending} type="submit">
-            {isPending ? "Saving..." : "Save count"}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

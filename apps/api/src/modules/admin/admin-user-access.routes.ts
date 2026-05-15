@@ -1,4 +1,7 @@
-import { adminUserAccessDetailSchema } from "@shop/contracts";
+import {
+  adminCreateUserResponseSchema,
+  adminUserAccessDetailSchema,
+} from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
 import { getAuthenticatedActor } from "../auth/auth-route-support.js";
 import {
@@ -13,6 +16,27 @@ export function registerAdminUserAccessRoutes(
   server: FastifyInstance,
   dependencies: AdminUserAccessRouteDependencies = createUnavailableDependencies(),
 ) {
+  server.route({
+    config: {
+      access: adminUserAccessRoutes.createUser.access,
+      rateLimit: { max: 20, timeWindow: "15 minutes" },
+    },
+    method: adminUserAccessRoutes.createUser.method,
+    url: adminUserAccessRoutes.createUser.url,
+    async handler(request, reply) {
+      const created =
+        await dependencies.adminStaffProvisioningService.createUser(
+          getAuthenticatedActor(request),
+          adminUserAccessSchemas.createUser.parse(request.body),
+          new Date(),
+        );
+
+      return reply
+        .status(201)
+        .send(adminCreateUserResponseSchema.parse(created));
+    },
+  });
+
   server.route({
     config: { access: adminUserAccessRoutes.detail.access },
     method: adminUserAccessRoutes.detail.method,

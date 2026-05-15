@@ -32,6 +32,7 @@ import {
   DeliverySourceNotFoundError,
 } from "./delivery-errors.js";
 import { findExistingDeliveryBySource } from "./delivery-existing-source-reader.js";
+import { loadDeliveryRecordById } from "./delivery-record-hydration.js";
 import { createPostgresDeliveryWriteTransaction } from "./postgres-delivery-write.repository.js";
 
 const MAX_ITEM_REFERENCE_COMPOSE_ATTEMPTS = 3;
@@ -161,7 +162,13 @@ export class DeliveryCreationCompose {
         return { delivery: existing, status: "noop" } as const;
       }
 
+      const reference =
+        await this.deps.referenceNumberService.generateReference({
+          now,
+          sequenceKey: "delivery",
+        });
       const delivery = await writeTx.insertDelivery({
+        reference,
         sourceType: input.sourceType,
         sourceReference: input.sourceReference,
         originLocationId: input.originLocationId,
@@ -194,8 +201,16 @@ export class DeliveryCreationCompose {
         },
       );
 
+      const hydratedDelivery = await loadDeliveryRecordById(
+        tx,
+        delivery.deliveryId,
+      );
+      if (!hydratedDelivery) {
+        throw new Error("Failed to reload created delivery.");
+      }
+
       return {
-        delivery: { ...delivery, items },
+        delivery: hydratedDelivery,
         status: "created" as const,
       };
     });

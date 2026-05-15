@@ -7,20 +7,32 @@ import type {
 
 type DeliveryRow = typeof deliveries.$inferSelect;
 type DeliveryItemRow = typeof deliveryItems.$inferSelect;
+type DeliveryPublicFields = {
+  assignedUserSlug?: string | null;
+  createdBySlug?: string;
+  destinationLocationSlug?: string | null;
+  originLocationSlug?: string;
+};
+type DeliveryItemPublicFields = {
+  sku?: string;
+};
 
 export function mapDeliveryRow(
-  row: DeliveryRow,
+  row: DeliveryRow & DeliveryPublicFields,
   items: DeliveryItemRecord[],
 ): DeliveryRecord {
   return {
     deliveryId: row.id,
+    deliveryReference: row.reference,
     sourceType: row.sourceType,
     sourceReference: row.sourceReference,
     status: row.status,
     originLocationId: row.originLocationId,
+    originLocationSlug: row.originLocationSlug ?? "",
     destination: mapDestination(row),
     items,
     assignedUserId: row.assignedUserId,
+    assignedUserSlug: row.assignedUserSlug ?? null,
     assignedAt: row.assignedAt,
     assignedBy: row.assignedBy,
     dispatchedAt: row.dispatchedAt,
@@ -32,21 +44,31 @@ export function mapDeliveryRow(
     cancellationReason: row.cancellationReason,
     createdAt: row.createdAt,
     createdBy: row.createdBy,
+    createdBySlug: row.createdBySlug ?? "",
   };
 }
 
-export function mapDeliveryItemRow(row: DeliveryItemRow): DeliveryItemRecord {
+export function mapDeliveryItemRow(
+  row: DeliveryItemRow & DeliveryItemPublicFields,
+): DeliveryItemRecord {
   return {
     deliveryItemId: row.id,
     itemReference: row.itemReference,
     skuId: row.skuId,
+    sku: row.sku ?? "",
     quantity: row.quantity,
   };
 }
 
-function mapDestination(row: DeliveryRow): DeliveryDestinationRecord {
+function mapDestination(
+  row: DeliveryRow & DeliveryPublicFields,
+): DeliveryDestinationRecord {
   if (row.destinationKind === "location" && row.destinationLocationId) {
-    return { kind: "location", locationId: row.destinationLocationId };
+    return {
+      kind: "location",
+      locationId: row.destinationLocationId,
+      locationSlug: row.destinationLocationSlug ?? "",
+    };
   }
   if (row.destinationKind === "external" && row.destinationSnapshot) {
     return {

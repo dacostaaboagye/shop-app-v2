@@ -1,7 +1,4 @@
-import type {
-  AdminCreateSupplierProcurementOrderRequest,
-  AdminSupplierProcurementReceiveRequest,
-} from "@shop/contracts";
+import type { AdminCreateSupplierProcurementOrderRequest } from "@shop/contracts";
 import {
   supplierProcurementOrderLines,
   supplierProcurementOrders,
@@ -12,13 +9,11 @@ import {
   assertTransitionAllowed,
   findSupplier,
   insertSupplierTransaction,
-  invalidProcurementTransition,
   missingVariant,
   procurementStatusDescription,
   requestedQuantitySql,
   resolveLinkedSupplierVariants,
   resolveLocationId,
-  resolveReceivedStatus,
 } from "./postgres-admin-supplier-procurement-write.support.js";
 import type { PostgresAdminSupplierQueryRepository } from "./postgres-admin-supplier-query.repository.js";
 
@@ -140,71 +135,6 @@ export async function transitionSupplierProcurementOrder(input: {
       status: input.status,
       supplierId: supplier.id,
       transactionType: "purchase_order",
-    });
-  });
-
-  return input.reader.getSupplier(input.supplierSlug);
-}
-
-export async function receiveSupplierProcurementOrder(input: {
-  actorId: string;
-  db: ApiDatabase;
-  lines: AdminSupplierProcurementReceiveRequest["lines"];
-  notes: string | null;
-  now: Date;
-  reader: PostgresAdminSupplierQueryRepository;
-  reference: string;
-  supplierSlug: string;
-}) {
-  const supplier = await findSupplier(input.db, input.supplierSlug);
-  if (!supplier) return null;
-  const order = await findOrder(input.db, supplier.id, input.reference);
-  if (!order) return null;
-  if (!["ordered", "partially_received"].includes(order.status)) {
-    throw invalidProcurementTransition(order.status, "receive");
-  }
-  const variantIds = await resolveLinkedSupplierVariants(input.db, {
-    supplierId: supplier.id,
-    variantSlugs: input.lines.map((line) => line.variantSlug),
-  });
-
-  await input.db.transaction(async (tx) => {
-    for (const line of input.lines) {
-      await tx
-        .update(supplierProcurementOrderLines)
-        .set({
-          receivedQuantity: line.receivedQuantity,
-          updatedAt: input.now,
-        })
-        .where(
-          and(
-            eq(supplierProcurementOrderLines.orderId, order.id),
-            eq(
-              supplierProcurementOrderLines.skuId,
-              variantIds.get(line.variantSlug) ??
-                missingVariant(line.variantSlug),
-            ),
-          ),
-        );
-    }
-    const status = await resolveReceivedStatus(tx, order.id);
-    await tx
-      .update(supplierProcurementOrders)
-      .set({
-        notes: input.notes ?? order.notes,
-        receivedAt: status === "received" ? input.now : order.receivedAt,
-        status,
-        updatedAt: input.now,
-      })
-      .where(eq(supplierProcurementOrders.id, order.id));
-    await insertSupplierTransaction(tx, {
-      actorId: input.actorId,
-      description: "Supplier goods receipt recorded.",
-      now: input.now,
-      reference: input.reference,
-      status,
-      supplierId: supplier.id,
-      transactionType: "goods_receipt",
     });
   });
 

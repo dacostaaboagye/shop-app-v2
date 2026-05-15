@@ -58,6 +58,11 @@ export const goodsTransferNotes = pgTable(
 
     receivedBy: uuid("received_by").references(() => users.id),
     receivedAt: timestamp("received_at", { withTimezone: true }),
+    receivedQuantity: integer("received_quantity"),
+    receiptDiscrepancyReason: varchar("receipt_discrepancy_reason", {
+      length: 32,
+    }),
+    receiptDiscrepancyNotes: text("receipt_discrepancy_notes"),
 
     notes: text("notes"),
 
@@ -75,6 +80,14 @@ export const goodsTransferNotes = pgTable(
     check(
       "gtn_status_check",
       sql`${table.status} IN ('dispatched', 'received', 'cancelled')`,
+    ),
+    check(
+      "gtn_received_qty_nonnegative",
+      sql`${table.receivedQuantity} IS NULL OR ${table.receivedQuantity} >= 0`,
+    ),
+    check(
+      "gtn_discrepancy_reason_check",
+      sql`${table.receiptDiscrepancyReason} IS NULL OR ${table.receiptDiscrepancyReason} IN ('short_received', 'damaged_received', 'wrong_item', 'other')`,
     ),
     index("gtn_source_location_idx").on(table.sourceLocationId),
     index("gtn_destination_location_idx").on(table.destinationLocationId),

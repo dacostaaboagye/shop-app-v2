@@ -13,21 +13,28 @@ import type {
   DeliveryStatusWriteTransaction,
   TransitionStatusInput,
 } from "../src/modules/deliveries/postgres-delivery-status-write.repository.js";
+import type { PlatformEventRecord } from "../src/modules/events/platform-event.types.js";
 
 const ACTOR = "00000000-0000-4000-8000-000000000099";
 const DELIVERY_ID = "00000000-0000-4000-8000-000000000001";
+const DELIVERY_REFERENCE = "DLV-00001";
 const ALICE = "00000000-0000-4000-8000-000000000010";
+const ALICE_SLUG = "alice-agent";
 const BOB = "00000000-0000-4000-8000-000000000011";
+const BOB_SLUG = "bob-agent";
+const REASSIGNED_AT = new Date("2026-05-03T10:30:00.000Z");
 
 function buildDelivery(
   overrides: Partial<DeliveryRecord> = {},
 ): DeliveryRecord {
   return {
     deliveryId: DELIVERY_ID,
+    deliveryReference: DELIVERY_REFERENCE,
     sourceType: "transfer",
     sourceReference: "TRF-0001",
     status: "assigned",
     originLocationId: "00000000-0000-4000-8000-000000000020",
+    originLocationSlug: "main-store",
     destination: {
       kind: "location",
       locationId: "00000000-0000-4000-8000-000000000021",
@@ -41,6 +48,7 @@ function buildDelivery(
       },
     ],
     assignedUserId: ALICE,
+    assignedUserSlug: ALICE_SLUG,
     assignedAt: new Date("2026-05-01T10:00:00Z"),
     assignedBy: ACTOR,
     dispatchedAt: null,
@@ -52,6 +60,7 @@ function buildDelivery(
     cancellationReason: null,
     createdAt: new Date("2026-05-01T09:00:00Z"),
     createdBy: ACTOR,
+    createdBySlug: "actor-slug",
     ...overrides,
   };
 }
@@ -65,6 +74,7 @@ class FakeTransaction implements DeliveryStatusWriteTransaction {
   async findById(): Promise<DeliveryRecord | null> {
     return this.initial;
   }
+  async appendPlatformEvent(_event: PlatformEventRecord): Promise<void> {}
   async transitionStatus(
     input: TransitionStatusInput,
   ): Promise<DeliveryRecord | null> {
@@ -110,7 +120,12 @@ describe("DeliveryStatusService.reassign", () => {
   it("transitions assigned -> assigned with the new user", async () => {
     const tx = new FakeTransaction(
       buildDelivery({ assignedUserId: ALICE }),
-      buildDelivery({ assignedUserId: BOB }),
+      buildDelivery({
+        assignedAt: REASSIGNED_AT,
+        assignedBy: ACTOR,
+        assignedUserId: BOB,
+        assignedUserSlug: BOB_SLUG,
+      }),
     );
     const service = buildService(tx);
     const result = await service.reassign({
@@ -118,10 +133,19 @@ describe("DeliveryStatusService.reassign", () => {
       assignedUserId: BOB,
       actorUserId: ACTOR,
       actorUserSlug: "actor-slug",
+      now: REASSIGNED_AT,
     });
     assert.equal(result.status, "transitioned");
     assert.equal(result.toStatus, "assigned");
+    assert.equal(result.delivery.assignedAt, REASSIGNED_AT);
+    assert.equal(result.delivery.assignedBy, ACTOR);
     assert.equal(tx.transitionCalls[0]?.assignedUserId, BOB);
+    assert.equal(
+      tx.transitionCalls[0]?.eligibleAgentLocationId,
+      tx.initial?.originLocationId,
+    );
+    assert.equal(tx.transitionCalls[0]?.actorUserId, ACTOR);
+    assert.equal(tx.transitionCalls[0]?.now, REASSIGNED_AT);
   });
 
   it("noop when reassigning to the same user", async () => {
@@ -157,6 +181,25 @@ describe("DeliveryStatusService.reassign", () => {
   it("rejects reassign to an ineligible agent", async () => {
     const tx = new FakeTransaction(buildDelivery({ assignedUserId: ALICE }));
     const service = buildService(tx, new NeverEligiblePort());
+    await assert.rejects(
+      () =>
+        service.reassign({
+          deliveryId: DELIVERY_ID,
+          assignedUserId: BOB,
+          actorUserId: ACTOR,
+          actorUserSlug: "actor-slug",
+        }),
+      DeliveryAgentNotEligibleError,
+    );
+  });
+
+  it("rejects reassign when the repository eligibility predicate blocks the write", async () => {
+    const tx = new FakeTransaction(
+      buildDelivery({ assignedUserId: ALICE }),
+      null,
+    );
+    const service = buildService(tx);
+
     await assert.rejects(
       () =>
         service.reassign({

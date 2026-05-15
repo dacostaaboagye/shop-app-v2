@@ -169,7 +169,10 @@ function buildCompose(
         ): Promise<DeliveryEligiblePosSale | null>;
       }),
     referenceNumberService: {
-      async generateReference() {
+      async generateReference(input: { sequenceKey: string }) {
+        if (input.sequenceKey === "delivery") {
+          return "DLV-00001";
+        }
         const reference = references.shift() ?? "DLI-20260501-0001";
         return reference;
       },

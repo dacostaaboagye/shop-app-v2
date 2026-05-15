@@ -65,6 +65,33 @@ export const adminUserAccessDetailSchema = z.object({
   userOverrides: z.array(adminUserPermissionOverrideSchema).default([]),
 });
 
+export const adminCreateUserRoleAssignmentRequestSchema = z.object({
+  locationSlug: z.string().trim().min(1).max(120).nullable().default(null),
+  roleSlug: z.string().trim().min(1).max(120),
+});
+
+export const adminCreateUserRequestSchema = z.object({
+  email: z.email(),
+  firstName: z.string().trim().min(1).max(120),
+  lastName: z.string().trim().min(1).max(120),
+  reason: z.string().trim().min(1).max(500),
+  roleAssignments: z
+    .array(adminCreateUserRoleAssignmentRequestSchema)
+    .min(1)
+    .max(10),
+});
+
+export const adminCreateUserResponseSchema = z.object({
+  email: z.email(),
+  firstName: z.string().min(1).max(120),
+  lastName: z.string().min(1).max(120),
+  requiresPasswordChange: z.boolean(),
+  roleAssignments: z.array(adminCreateUserRoleAssignmentRequestSchema),
+  setupInstruction: z.string().min(1),
+  slug: z.string().min(1).max(120),
+  status: authUserStatusSchema,
+});
+
 export const adminAssignUserRoleRequestSchema = z.object({
   locationSlug: z.string().trim().min(1).max(120).nullable().default(null),
   reason: z.string().trim().min(1).max(500),
@@ -105,6 +132,15 @@ export const adminForceUserPasswordResetRequestSchema = z.object({
 
 export type AdminAssignUserRoleRequest = z.infer<
   typeof adminAssignUserRoleRequestSchema
+>;
+export type AdminCreateUserRequest = z.infer<
+  typeof adminCreateUserRequestSchema
+>;
+export type AdminCreateUserResponse = z.infer<
+  typeof adminCreateUserResponseSchema
+>;
+export type AdminCreateUserRoleAssignmentRequest = z.infer<
+  typeof adminCreateUserRoleAssignmentRequestSchema
 >;
 export type AdminForceUserPasswordResetRequest = z.infer<
   typeof adminForceUserPasswordResetRequestSchema

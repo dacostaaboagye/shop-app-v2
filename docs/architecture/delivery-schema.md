@@ -7,6 +7,9 @@
 Operational delivery header row.
 
 - `origin_location_id`: required physical source location
+- `reference`: required public delivery reference generated from the `delivery`
+  sequence using the `DLV-00001` format; public delivery routes and events use
+  this value instead of the internal UUID
 - `destination_location_id`: optional in-network destination location
 - `destination_snapshot`: optional external destination payload for customer or
   other non-location deliveries
@@ -24,8 +27,8 @@ Quantity-bearing items attached to one delivery.
 
 - `sku_id`: stock-bearing identity for delivery quantity
 - `quantity`: positive item quantity
-- `item_reference`: optional later public reference field aligned with the
-  `DEL-*` reference-number format
+- `item_reference`: required public line reference aligned with the `DEL-*`
+  reference-number format
 
 This foundation keeps delivery quantity keyed by SKU so delivery work composes
 with ownership, stock balances, reservations, and stock movement sync.

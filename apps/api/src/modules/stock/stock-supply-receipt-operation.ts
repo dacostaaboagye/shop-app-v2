@@ -18,15 +18,19 @@ import {
   notifyStockSupplyEventsCommitted,
   type StockSupplyOperationContext,
 } from "./stock-supply-operation-context.js";
+import { normalizeReceiptInput } from "./stock-supply-receipt-support.js";
 import { syncTransferLifecycle } from "./stock-transfer-lifecycle.js";
 
 export async function confirmStockSupplyReceipt(
   input: {
     adminOverrideReason?: string;
     actor: AuthenticatedActor;
+    discrepancyNotes?: string;
+    discrepancyReason?: string;
     notes: string | null;
     now: Date;
     receivedBy: string;
+    receivedQuantity?: number;
     supplyRequestId: string;
   },
   context: StockSupplyOperationContext,
@@ -34,92 +38,110 @@ export async function confirmStockSupplyReceipt(
   gtn: GtnRow;
   supplyRequest: SupplyRequestRow;
 }> {
-  const received = await context.db.transaction(async (tx) => {
-    const [request] = await tx
-      .select()
-      .from(stockSupplyRequests)
-      .where(
-        and(
-          eq(stockSupplyRequests.id, input.supplyRequestId),
-          eq(stockSupplyRequests.status, "dispatched"),
-        ),
-      )
-      .for("update")
-      .limit(1);
+  const received = await context.db.transaction(
+    async (tx) => {
+      const [request] = await tx
+        .select()
+        .from(stockSupplyRequests)
+        .where(
+          and(
+            eq(stockSupplyRequests.id, input.supplyRequestId),
+            eq(stockSupplyRequests.status, "dispatched"),
+          ),
+        )
+        .for("update")
+        .limit(1);
 
-    if (!request) {
-      throw new AppError({
-        code: "not_found",
-        detail:
-          "Supply request not found or goods have not been dispatched yet.",
-        statusCode: 404,
-        title: "Cannot confirm receipt",
+      if (!request) {
+        throw new AppError({
+          code: "not_found",
+          detail:
+            "Supply request not found or goods have not been dispatched yet.",
+          statusCode: 404,
+          title: "Cannot confirm receipt",
+        });
+      }
+
+      const receipt = normalizeReceiptInput({
+        approvedQuantity: request.approvedQuantity ?? 0,
+        discrepancyNotes: input.discrepancyNotes,
+        discrepancyReason: input.discrepancyReason,
+        receivedQuantity: input.receivedQuantity,
       });
-    }
+      await receiveDestinationStock(tx, {
+        now: input.now,
+        quantity: receipt.receivedQuantity,
+        receivedBy: input.receivedBy,
+        request,
+      });
+      const existingGtn = await markGtnReceived(tx, {
+        discrepancyNotes: receipt.discrepancyNotes,
+        discrepancyReason: receipt.discrepancyReason,
+        notes: input.notes,
+        now: input.now,
+        receivedBy: input.receivedBy,
+        receivedQuantity: receipt.receivedQuantity,
+        requestId: request.id,
+      });
 
-    const quantity = request.approvedQuantity ?? 0;
-    await receiveDestinationStock(tx, {
-      now: input.now,
-      quantity,
-      receivedBy: input.receivedBy,
-      request,
-    });
-    const existingGtn = await markGtnReceived(tx, {
-      notes: input.notes,
-      now: input.now,
-      receivedBy: input.receivedBy,
-      requestId: request.id,
-    });
+      const [updatedRequest] = await tx
+        .update(stockSupplyRequests)
+        .set({
+          receivedAt: input.now,
+          receivedQuantity: receipt.receivedQuantity,
+          receiptDiscrepancyNotes: receipt.discrepancyNotes,
+          receiptDiscrepancyReason: receipt.discrepancyReason,
+          status: "received",
+          updatedAt: input.now,
+        })
+        .where(eq(stockSupplyRequests.id, request.id))
+        .returning();
+      if (!updatedRequest) throw new Error("Failed to update supply request.");
 
-    const [updatedRequest] = await tx
-      .update(stockSupplyRequests)
-      .set({
-        receivedAt: input.now,
-        status: "received",
-        updatedAt: input.now,
-      })
-      .where(eq(stockSupplyRequests.id, request.id))
-      .returning();
-    if (!updatedRequest) throw new Error("Failed to update supply request.");
-
-    const supplyRequest = toSupplyRequestRow(
-      updatedRequest,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "confirmed",
-      null,
-    );
-    const transferReference = await syncTransferLifecycle(tx, {
-      actorUserId: input.actor.userId,
-      eventType: "received",
-      occurredAt: input.now,
-      supplyRequest,
-    });
-    const updatedSupplyRequest = {
-      ...supplyRequest,
-      transferReference,
-    };
-    await appendStockSupplyEventWithinTransaction(context, tx, {
-      actor: input.actor,
-      payload: {
-        adminOverrideReason: input.adminOverrideReason ?? null,
-        gtnReference: existingGtn?.reference ?? null,
-      },
-      supplyRequest: updatedSupplyRequest,
-      summary: formatStockSupplyEventSummary({
-        action: "received",
-        adminOverrideReason: input.adminOverrideReason ?? null,
-        gtnReference: existingGtn?.reference ?? null,
+      const supplyRequest = toSupplyRequestRow(
+        updatedRequest,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "confirmed",
+        null,
+      );
+      const transferReference = await syncTransferLifecycle(tx, {
+        actorUserId: input.actor.userId,
+        eventType: "received",
+        occurredAt: input.now,
+        supplyRequest,
+      });
+      const updatedSupplyRequest = {
+        ...supplyRequest,
+        transferReference,
+      };
+      await appendStockSupplyEventWithinTransaction(context, tx, {
+        actor: input.actor,
+        payload: {
+          adminOverrideReason: input.adminOverrideReason ?? null,
+          expectedQuantity: receipt.expectedQuantity,
+          gtnReference: existingGtn?.reference ?? null,
+          missingQuantity: receipt.missingQuantity,
+          receivedQuantity: receipt.receivedQuantity,
+          receiptDiscrepancyReason: receipt.discrepancyReason,
+        },
         supplyRequest: updatedSupplyRequest,
-      }),
-      type: "transfer.received",
-    });
+        summary: formatStockSupplyEventSummary({
+          action: "received",
+          adminOverrideReason: input.adminOverrideReason ?? null,
+          gtnReference: existingGtn?.reference ?? null,
+          supplyRequest: updatedSupplyRequest,
+        }),
+        type: "transfer.received",
+      });
 
-    return { requestId: request.id, transferReference, updatedRequest };
-  });
+      return { requestId: request.id, transferReference, updatedRequest };
+    },
+    { isolationLevel: "serializable" },
+  );
 
   await notifyStockSupplyEventsCommitted(context);
   const gtnRow = await context.repository.findGtnBySupplyRequest(
@@ -153,6 +175,10 @@ async function receiveDestinationStock(
     request: typeof stockSupplyRequests.$inferSelect;
   },
 ) {
+  if (input.quantity === 0) {
+    return;
+  }
+
   const [existingBalance] = await tx
     .select()
     .from(stockBalances)
@@ -204,9 +230,12 @@ async function markGtnReceived(
     Parameters<StockSupplyOperationContext["db"]["transaction"]>[0]
   >[0],
   input: {
+    discrepancyNotes: string | null;
+    discrepancyReason: string | null;
     notes: string | null;
     now: Date;
     receivedBy: string;
+    receivedQuantity: number;
     requestId: string;
   },
 ) {
@@ -229,6 +258,9 @@ async function markGtnReceived(
       notes: input.notes ?? undefined,
       receivedAt: input.now,
       receivedBy: input.receivedBy,
+      receivedQuantity: input.receivedQuantity,
+      receiptDiscrepancyNotes: input.discrepancyNotes,
+      receiptDiscrepancyReason: input.discrepancyReason,
       status: "received",
       updatedAt: input.now,
     })

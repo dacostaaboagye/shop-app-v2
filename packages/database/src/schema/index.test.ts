@@ -166,6 +166,7 @@ assert.deepEqual(stockMovementTypeEnum.enumValues, [
   "delivery_dispatch",
   "transfer_in",
   "transfer_out",
+  "goods_receipt",
   "manual_adjustment",
 ]);
 assert.deepEqual(platformEventAudienceKindEnum.enumValues, [
@@ -264,7 +265,6 @@ assert.equal(
 assert.equal(supplierProcurementOrderLines.skuId.name, "sku_id");
 
 const migrationSql = readAllMigrationSql();
-
 assert.match(migrationSql, /permission_override_effect/);
 assert.match(migrationSql, /permission_audit_action/);
 assert.match(migrationSql, /role_permissions_role_permission_idx/);

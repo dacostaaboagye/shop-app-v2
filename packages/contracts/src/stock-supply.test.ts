@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  confirmReceiptSchema,
   createBulkStockSupplyRequestSchema,
+  gtnResponseSchema,
   stockSupplyRequestResponseSchema,
 } from "./stock-supply.js";
 
@@ -58,7 +60,10 @@ describe("stock supply contracts", () => {
       locationName: "Store A",
       notes: "Need multiple items",
       receivedAt: null,
+      receivedQuantity: null,
       reference: "SUP-0001",
+      receiptDiscrepancyNotes: null,
+      receiptDiscrepancyReason: null,
       requestGroupReference: "SUPB-0001",
       requestedQuantity: 3,
       requesterEmail: "worker@example.com",
@@ -82,5 +87,52 @@ describe("stock supply contracts", () => {
     });
 
     assert.equal(parsed.requestGroupReference, "SUPB-0001");
+  });
+
+  it("accepts receipt discrepancy evidence", () => {
+    const parsed = confirmReceiptSchema.parse({
+      discrepancyNotes: "Two units were damaged in transit.",
+      discrepancyReason: "damaged_received",
+      notes: "Accepted eight usable units.",
+      receivedQuantity: 8,
+    });
+
+    assert.equal(parsed.receivedQuantity, 8);
+    assert.equal(parsed.discrepancyReason, "damaged_received");
+  });
+
+  it("accepts GTN receipt discrepancy fields", () => {
+    const parsed = gtnResponseSchema.parse({
+      createdAt: "2026-04-19T19:30:00.000Z",
+      destinationLocationId: "22222222-2222-4222-8222-222222222221",
+      destinationLocationName: "Store A",
+      dispatchedAt: "2026-04-19T19:30:00.000Z",
+      dispatchedBy: "11111111-1111-4111-8111-111111111111",
+      dispatchedByName: "Manager One",
+      gtnId: "66666666-6666-4666-8666-666666666666",
+      notes: "Accepted eight units.",
+      quantity: 10,
+      receiptDiscrepancyNotes: "Two damaged.",
+      receiptDiscrepancyReason: "damaged_received",
+      receivedAt: "2026-04-19T20:30:00.000Z",
+      receivedBy: "11111111-1111-4111-8111-111111111112",
+      receivedByName: "Worker One",
+      receivedQuantity: 8,
+      reference: "GTN-0001",
+      skuId: "77777777-7777-4777-8777-777777777777",
+      skuSnapshot: {
+        productName: "Travel Pack",
+        sku: "TRAVEL-PACK-001",
+        variantName: "Standard",
+      },
+      sourceLocationId: "44444444-4444-4444-8444-444444444441",
+      sourceLocationName: "Warehouse A",
+      status: "received",
+      supplyRequestId: "66666666-6666-4666-8666-666666666667",
+      supplyRequestReference: "SUP-0001",
+    });
+
+    assert.equal(parsed.receivedQuantity, 8);
+    assert.equal(parsed.receiptDiscrepancyReason, "damaged_received");
   });
 });

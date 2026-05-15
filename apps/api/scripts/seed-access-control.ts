@@ -1,4 +1,4 @@
-import pg from "pg";
+import { Pool } from "@neondatabase/serverless";
 import { seedAccessControlCatalog } from "./lib/access-control-seed.js";
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -7,7 +7,7 @@ if (!DATABASE_URL) {
   throw new Error("DATABASE_URL is required.");
 }
 
-const pool = new pg.Pool({ connectionString: DATABASE_URL });
+const pool = new Pool({ connectionString: DATABASE_URL });
 
 async function main() {
   const client = await pool.connect();

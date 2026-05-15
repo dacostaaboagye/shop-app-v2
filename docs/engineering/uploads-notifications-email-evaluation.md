@@ -35,14 +35,14 @@ INFO — documented behavior worth knowing.
 
 This compounds with M7/M8 from the May security audit. **A single Pino `redact` config plus a rule that body content never enters logs closes it across all four files.**
 
-### T2. No outbound rate limits on email or per-user invite flows
+### T2. No outbound rate limits on email or per-user invite flows — PARTIALLY CLOSED
 
 - No retry policy on transient send failures (`email-send-execution.ts:43-78`)
 - No per-user cap on verification / password-reset / supplier-invite sends
-- No concurrency limit on bulk supplier invites — `Promise.all` over an unbounded array (`admin-communication.service.ts:129-138`)
+- ~~No concurrency limit on bulk supplier invites — `Promise.all` over an unbounded array (`admin-communication.service.ts:129-138`)~~ **CLOSED** by [PR #51](https://github.com/dacostaaboagye/shop-app-v2/pull/51): `admin-communication` now uses `mapWithConcurrency` from `apps/api/src/modules/_core/async-concurrency.ts` with a cap of 10 parallel requests.
 - Test-send admin endpoint (`email-admin.routes.ts:38-105`) is permissioned but rate-unlimited
 
-Pairs with M5 from the May security audit. Worth shipping together.
+Pairs with M5 from the May security audit. The retry, per-user cap, and test-send rate limit remain open and worth shipping together.
 
 ### T3. Magic-byte / actual-content verification still deferred
 

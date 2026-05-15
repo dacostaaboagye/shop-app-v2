@@ -7,11 +7,13 @@ export const referenceSequenceKeys = [
   "invoice-manual",
   "portal-order",
   "web-order",
+  "delivery",
   "delivery-item",
   "purchase-order",
   "supplier-inquiry",
   "supply-request",
   "supply-request-group",
+  "stock-take",
   "stock-transfer",
   "gtn",
 ] as const;
@@ -36,6 +38,7 @@ export const referenceSequenceProfiles: Record<
   ReferenceSequenceKey,
   SequenceProfile
 > = {
+  delivery: createInvoiceProfile("delivery", "DLV"),
   "delivery-item": createDateProfile("delivery-item", "DEL"),
   "invoice-manual": createInvoiceProfile("invoice-manual", "INV-MAN"),
   "invoice-portal": createInvoiceProfile("invoice-portal", "INV-CPO"),
@@ -46,6 +49,7 @@ export const referenceSequenceProfiles: Record<
   "supplier-inquiry": createDateProfile("supplier-inquiry", "SINQ"),
   "supply-request": createInvoiceProfile("supply-request", "SUP"),
   "supply-request-group": createInvoiceProfile("supply-request-group", "SUPB"),
+  "stock-take": createYearProfile("stock-take", "STKTAKE"),
   "stock-transfer": createInvoiceProfile("stock-transfer", "TRF"),
   gtn: createInvoiceProfile("gtn", "GTN"),
   "web-order": createDateProfile("web-order", "WEB"),
@@ -127,6 +131,21 @@ function createInvoiceProfile(
     formatReference: ({ sequenceValue }) =>
       `${prefix}-${sequenceValue.toString().padStart(5, "0")}`,
     resolveStorageKey: () => sequenceKey,
+    startsAt: 1,
+  };
+}
+
+function createYearProfile(
+  sequenceKey: ReferenceSequenceKey,
+  prefix: string,
+): SequenceProfile {
+  return {
+    description: `${prefix} references generated from UTC year + counter`,
+    formatReference: ({ now, sequenceValue }) =>
+      `${prefix}-${now.getUTCFullYear()}-${sequenceValue
+        .toString()
+        .padStart(4, "0")}`,
+    resolveStorageKey: (now) => `${sequenceKey}:${now.getUTCFullYear()}`,
     startsAt: 1,
   };
 }

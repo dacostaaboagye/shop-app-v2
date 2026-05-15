@@ -5,6 +5,7 @@ import { DeliverySourceNotFoundError } from "../src/modules/deliveries/delivery-
 import { DeliveryStatusCompose } from "../src/modules/deliveries/delivery-status.compose.js";
 import {
   DeliveryAssignmentRequiredError,
+  DeliveryCancellationReasonRequiredError,
   DeliveryIllegalStatusTransitionError,
   DeliveryStatusConflictError,
   DeliveryTerminalStatusError,
@@ -18,6 +19,7 @@ import type {
 
 const ACTOR = "00000000-0000-4000-8000-000000000099";
 const DELIVERY_ID = "00000000-0000-4000-8000-000000000001";
+const DELIVERY_REFERENCE = "DLV-00001";
 const ASSIGNEE = "00000000-0000-4000-8000-000000000010";
 
 function buildDelivery(
@@ -25,10 +27,12 @@ function buildDelivery(
 ): DeliveryRecord {
   return {
     deliveryId: DELIVERY_ID,
+    deliveryReference: DELIVERY_REFERENCE,
     sourceType: "transfer",
     sourceReference: "TRF-0001",
     status: "draft",
     originLocationId: "00000000-0000-4000-8000-000000000020",
+    originLocationSlug: "main-store",
     destination: {
       kind: "location",
       locationId: "00000000-0000-4000-8000-000000000021",
@@ -42,6 +46,7 @@ function buildDelivery(
       },
     ],
     assignedUserId: null,
+    assignedUserSlug: null,
     assignedAt: null,
     assignedBy: null,
     dispatchedAt: null,
@@ -53,6 +58,7 @@ function buildDelivery(
     cancellationReason: null,
     createdAt: new Date("2026-05-01T10:00:00Z"),
     createdBy: ACTOR,
+    createdBySlug: "actor-slug",
     ...overrides,
   };
 }
@@ -66,6 +72,7 @@ class FakeTransaction implements DeliveryStatusWriteTransaction {
   async findById(): Promise<DeliveryRecord | null> {
     return this.initial;
   }
+  async appendPlatformEvent(): Promise<void> {}
   async transitionStatus(
     input: TransitionStatusInput,
   ): Promise<DeliveryRecord | null> {
@@ -233,7 +240,49 @@ describe("DeliveryStatusService.dispatch", () => {
   });
 });
 
+describe("DeliveryStatusService.complete", () => {
+  it("transitions in_transit to completed", async () => {
+    const tx = new FakeTransaction(
+      buildDelivery({
+        status: "in_transit",
+        assignedUserId: ASSIGNEE,
+        assignedAt: new Date("2026-05-03T09:00:00Z"),
+        dispatchedAt: new Date("2026-05-03T10:00:00Z"),
+      }),
+      buildDelivery({
+        status: "completed",
+        assignedUserId: ASSIGNEE,
+        completedAt: new Date("2026-05-03T11:00:00Z"),
+      }),
+    );
+    const service = buildService(tx);
+    const result = await service.complete({
+      deliveryId: DELIVERY_ID,
+      actorUserId: ACTOR,
+      actorUserSlug: "actor-slug",
+    });
+
+    assert.equal(result.status, "transitioned");
+    assert.equal(result.toStatus, "completed");
+    assert.equal(tx.transitionCalls[0]?.nextStatus, "completed");
+  });
+});
+
 describe("DeliveryStatusService.cancel", () => {
+  it("rejects cancel without a non-empty reason", async () => {
+    const service = buildService(new FakeTransaction(buildDelivery()));
+    await assert.rejects(
+      () =>
+        service.cancel({
+          deliveryId: DELIVERY_ID,
+          reason: "   ",
+          actorUserId: ACTOR,
+          actorUserSlug: "actor-slug",
+        }),
+      DeliveryCancellationReasonRequiredError,
+    );
+  });
+
   it("transitions any non-terminal state to cancelled with reason persisted", async () => {
     const tx = new FakeTransaction(
       buildDelivery({ status: "assigned", assignedUserId: ASSIGNEE }),

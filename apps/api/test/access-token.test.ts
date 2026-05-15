@@ -15,7 +15,7 @@ function decodePayload(token: string): Record<string, unknown> {
 
 describe("access token NumericDate compliance", () => {
   it("encodes issued_at and expires_at as seconds since epoch (RFC 7519)", () => {
-    const now = new Date("2026-04-08T12:00:00.000Z");
+    const now = new Date("2026-04-08T12:00:00.123Z");
     const issued = issueAccessToken({
       expiresInSeconds: 900,
       now,
@@ -25,14 +25,14 @@ describe("access token NumericDate compliance", () => {
     });
 
     const payload = decodePayload(issued.token);
-    const issuedAtSeconds = Math.floor(now.getTime() / 1000);
+    const issuedAtSeconds = now.getTime() / 1000;
 
     assert.equal(payload.issued_at, issuedAtSeconds);
     assert.equal(payload.expires_at, issuedAtSeconds + 900);
   });
 
   it("verifies a fresh token and round-trips the timestamps", () => {
-    const now = new Date("2026-04-08T12:00:00.000Z");
+    const now = new Date("2026-04-08T12:00:00.123Z");
     const issued = issueAccessToken({
       expiresInSeconds: 900,
       now,
@@ -49,15 +49,8 @@ describe("access token NumericDate compliance", () => {
 
     assert.equal(verified.userId, "usr_1");
     assert.equal(verified.userSlug, "user-one");
-    // The Date returned should match the floor-second issuance instant.
-    assert.equal(
-      verified.issuedAt.getTime(),
-      Math.floor(now.getTime() / 1000) * 1000,
-    );
-    assert.equal(
-      verified.expiresAt.getTime(),
-      (Math.floor(now.getTime() / 1000) + 900) * 1000,
-    );
+    assert.equal(verified.issuedAt.getTime(), now.getTime());
+    assert.equal(verified.expiresAt.getTime(), now.getTime() + 900000);
   });
 
   it("rejects a token whose expiry is in the past", () => {

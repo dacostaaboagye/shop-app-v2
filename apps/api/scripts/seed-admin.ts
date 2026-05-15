@@ -1,5 +1,5 @@
 import { hash } from "bcryptjs";
-import pg from "pg";
+import { Pool } from "@neondatabase/serverless";
 import {
   ensureActiveUserRoleAssignment,
   seedAccessControlCatalog,
@@ -23,7 +23,7 @@ if (!email || !password || !firstName || !lastName) {
   );
 }
 
-const pool = new pg.Pool({ connectionString: DATABASE_URL });
+const pool = new Pool({ connectionString: DATABASE_URL });
 
 async function main() {
   const client = await pool.connect();

@@ -1,0 +1,524 @@
+---
+id: E-04
+title: Inventory tracking per location
+status: shipped
+priority: P1
+domain: full-stack
+owner: codex
+parents: [E-00B, E-02, E-03]
+acceptance:
+  - Inventory is tracked by SKU/variant and location, not product alone.
+  - Managers can establish opening stock for a location without allowing duplicate opening baselines.
+  - Managers can perform reason-coded stock counts and adjustments after opening stock exists.
+  - Managers can generate a physical stock-take sheet or booklet for periodic counts.
+  - Stock-take sheets work even when no products exist yet by producing a controlled blank count sheet.
+  - Applying a stock take is transactional, permissioned, auditable, and preserves append-only stock movement evidence.
+  - Stock workflows support mobile-first manager usage and clear review before irreversible stock updates.
+size: large
+---
+
+## Why
+
+The business operates physical stores and warehouses. Stock accuracy depends on
+being able to establish a trusted starting quantity, periodically verify what is
+physically present, and reconcile differences without losing audit evidence.
+
+E-04 is the inventory-control layer that downstream sales, transfers,
+procurement, reporting, and accountability flows depend on. It must protect
+stock correctness by location and SKU while keeping the operational workflow
+simple enough for real store and warehouse staff.
+
+## Product intent
+
+E-04 is not a generic stock table. It is the operational control point for:
+
+- location-specific stock visibility
+- opening stock baselines
+- reason-coded counts and adjustments
+- periodic physical stock takes
+- variance review before stock changes are applied
+- append-only movement evidence
+- manager accountability for who counted, when, where, and why
+
+## Current implementation context
+
+The current codebase already has useful foundations:
+
+- SKU is the stock-bearing identity per ADR 0010.
+- Stock balances are tracked per `sku_id` and `location_id`.
+- Opening stock setup exists as a one-time batch baseline path.
+- Reason-coded stock counts exist as exact on-hand corrections.
+- Stock movements are append-only evidence for non-zero quantity changes.
+- Admin and manager stock pages already provide location-scoped stock entry points.
+
+The missing piece is a formal **periodic stock take** workflow that supports
+offline paper counting, review, and controlled application of physical counts.
+
+## Out of scope
+
+- Product descriptions, long catalog metadata, images, pricing, supplier data, and merchandising attributes on the stock-take sheet.
+- Silently creating full catalog products from a stock-take sheet without an explicit catalog review step.
+- Applying stock changes directly from a downloaded sheet without dry-run validation and manager review.
+- Replacing catalog bulk import. Catalog import remains the correct path for creating complete catalog records.
+- Replacing opening stock. Opening stock remains the first baseline for a SKU/location; stock takes are repeatable periodic audits.
+- Exposing raw internal database IDs in stock-take documents, URLs, or public DTOs.
+
+## Design decisions
+
+### Stock take is separate from opening stock
+
+Opening stock answers: "What is the first trusted quantity for this SKU at this
+location?"
+
+Stock take answers: "What did we physically count during this audit period, and
+what variance should be applied to the current system balance?"
+
+Keeping them separate avoids weakening the one-time opening-stock guard and
+keeps periodic stock counts repeatable and auditable.
+
+### Stock take is a persisted session
+
+A periodic stock take should create a durable session reference such as
+`STKTAKE-2026-0001`. The session captures the sheet that was generated and the
+state of each line at generation time.
+
+This is necessary because:
+
+- no-change lines are still audit evidence
+- uncounted lines must be visible during review
+- the final applied result needs traceability
+- retries should be idempotent
+- managers need a stable reference between paper, import, review, and apply
+
+### Booklet content is intentionally minimal
+
+The sheet should optimize for counting, not catalog review. Minimum columns:
+
+- line number
+- product name
+- variant name
+- SKU
+- unit of measure
+- counted quantity
+- notes
+
+Optional columns:
+
+- current system on-hand
+- reserved quantity
+- available quantity
+- variance
+- counted by
+
+System quantity should be a generation option:
+
+- **Blind count** hides system quantity to reduce counting bias.
+- **Assisted count** includes system quantity for faster reconciliation when bias is acceptable.
+
+The default should be blind count for periodic audits.
+
+### Blank-sheet behavior is supported
+
+If no active products or variants exist yet, the user should still be able to
+download a blank physical stock-take sheet.
+
+The blank sheet must include:
+
+- stock-take reference
+- location name
+- generated timestamp
+- generated by
+- clear instructions that no active SKUs were found
+- 20 blank manual rows
+- columns for product name, variant name, SKU, unit, counted quantity, and notes
+
+This allows staff to perform a real-world physical count even before the system
+catalog is fully populated.
+
+Applying blank-sheet rows is a separate follow-up capability because creating a
+catalog product requires more than the stock-take minimum fields. The safe first
+release should allow the blank sheet to collect physical evidence, then route
+catalog creation through catalog import or a deliberate "create missing catalog
+from stock take" review flow later.
+
+## Proposed data model
+
+Add tables under the stock schema.
+
+### `stock_take_sessions`
+
+Suggested columns:
+
+- `id`
+- `reference`
+- `location_id`
+- `status`: `draft`, `generated`, `counted`, `reviewed`, `applied`, `cancelled`
+- `mode`: `blind`, `assisted`
+- `scope_json`: filters used to generate the sheet
+- `generated_at`
+- `generated_by`
+- `applied_at`
+- `applied_by`
+- `cancelled_at`
+- `cancelled_by`
+- `source_file_name`
+- `created_at`
+- `updated_at`
+
+### `stock_take_lines`
+
+Suggested columns:
+
+- `id`
+- `session_id`
+- `line_number`
+- `sku_id`, nullable for manual blank rows
+- `sku_snapshot`
+- `product_name_snapshot`
+- `product_slug_snapshot`
+- `variant_name_snapshot`
+- `variant_slug_snapshot`
+- `barcode_snapshot`, internal compatibility only and not exposed on
+  stock-taking artifacts
+- `unit_of_measure_snapshot`
+- `expected_on_hand_snapshot`
+- `expected_reserved_snapshot`
+- `expected_available_snapshot`
+- `counted_quantity`
+- `note`
+- `applied_delta`
+- `row_status`
+
+Constraints and indexes:
+
+- unique `stock_take_sessions.reference`
+- index sessions by `location_id`, `status`, `generated_at`
+- unique line number per session
+- unique SKU per session when `sku_id` is not null
+- counted quantity must be non-negative when present
+
+## Proposed API
+
+Admin routes:
+
+- `POST /api/admin/stock-takes`
+- `GET /api/admin/stock-takes/:reference`
+- `GET /api/admin/stock-takes/:reference/sheet.csv`
+- `GET /api/admin/stock-takes/:reference/sheet.pdf`
+- `POST /api/admin/stock-takes/:reference/imports/dry-run`
+- `POST /api/admin/stock-takes/:reference/apply`
+- `POST /api/admin/stock-takes/:reference/cancel`
+
+Manager routes should mirror the same capability for scoped locations:
+
+- `POST /api/manager/stock-takes`
+- `GET /api/manager/stock-takes/:reference`
+- `GET /api/manager/stock-takes/:reference/sheet.csv`
+- `GET /api/manager/stock-takes/:reference/sheet.pdf`
+- `POST /api/manager/stock-takes/:reference/imports/dry-run`
+- `POST /api/manager/stock-takes/:reference/apply`
+- `POST /api/manager/stock-takes/:reference/cancel`
+
+Permissions:
+
+- create, import, apply, cancel: `inventory.write`
+- view and download: `inventory.read` or the manager's location-scoped stock view permission
+- manager routes must assert the selected location after resolving the session or requested location
+
+Public DTOs should use:
+
+- `stockTakeReference`
+- `locationSlug`
+- `locationName`
+- `productSlug`
+- `variantSlug`
+- `sku`
+- `lineNumber`
+- `countedQuantity`
+- `status`
+- row-level validation errors
+
+Do not expose raw internal IDs.
+
+## Apply rules
+
+Applying a stock take must be a separate reviewed step after import or manual
+entry.
+
+Apply should:
+
+1. lock the stock-take session
+2. lock affected stock balance rows in deterministic order
+3. recompute current on-hand and reserved quantities
+4. reject counted quantities below reserved quantity
+5. update each stock balance to the exact counted quantity
+6. insert stock movement rows for non-zero deltas
+7. preserve no-change line evidence without movement rows
+8. mark the session applied in the same transaction
+
+Movement identity:
+
+- `sourceType = "stock_take"`
+- `sourceKey = "{stockTakeReference}:{lineNumber}"`
+
+This gives idempotency and traceability.
+
+## Stock-take booklet slice
+
+### Story
+
+As a manager,
+I want to download a physical stock-take sheet or booklet for a selected
+location,
+so that staff can count stock offline and return a controlled sheet for review
+and reconciliation.
+
+### Acceptance criteria
+
+- Given a location with active SKUs, when a manager generates a stock-take sheet, then the sheet contains one line per SKU/variant in scope.
+- Given a SKU has zero current balance, when it is active in the catalog and in scope, then it is still eligible for the sheet.
+- Given the manager selects blind count mode, when the sheet is generated, then system quantity columns are omitted.
+- Given the manager selects assisted count mode, when the sheet is generated, then current on-hand, reserved, and available quantities are included.
+- Given no products exist, when the manager downloads a sheet, then a blank stock-take sheet with manual rows is generated instead of blocking the flow.
+- Given a user lacks access to the location, when they request a stock-take sheet, then the API denies the request.
+- Given a completed stock-take workbook or CSV is uploaded for dry run, when rows contain invalid quantities, duplicate SKUs, or unknown SKUs, then row-level validation errors are returned and no stock is mutated.
+- Given staff counted stock on paper, when a manager opens the stock-take session in the app, then they can enter counted quantities directly without converting the paper sheet into a CSV.
+- Given the dry run is valid, when the manager applies the stock take, then balances are updated transactionally and stock movements are appended for non-zero variances.
+- Given a counted quantity is below reserved quantity, when the manager applies the stock take, then the line is rejected with an actionable conflict message.
+
+### Stock-taking workbook
+
+The primary offline artifact should be an editable XLSX workbook that is also
+printable. PDF remains optional print evidence, not the primary import format.
+CSV remains a technical fallback for integrations and power users.
+
+Workbook rules:
+
+- one stock-take session per workbook
+- one location per workbook
+- system-owned columns are locked or clearly marked read-only
+- user-editable columns are limited to counted quantity and notes
+- no barcode or QR columns in the stock-taking workflow
+- no product descriptions, prices, supplier data, tax data, or internal IDs
+- assisted mode may show system quantity columns
+- blind mode must hide system quantity columns
+- blank/manual rows are allowed but become review drafts, not products
+
+Generated populated sheet minimum columns:
+
+```csv
+lineNumber,productName,variantName,sku,unitOfMeasure,countedQuantity,notes
+```
+
+Assisted mode adds:
+
+```csv
+systemOnHand,reservedQuantity,availableQuantity,variance
+```
+
+Blank sheet:
+
+```csv
+lineNumber,productName,variantName,sku,unitOfMeasure,countedQuantity,notes
+```
+
+### In-app count entry
+
+The system should also support direct count entry inside the stock-take session.
+This is the recovery path for teams that prefer paper counting but do not want
+to prepare an import file afterward.
+
+- The screen shows the same ordered rows as the workbook.
+- Users can search by product name, variant, or SKU.
+- Users can save counted quantities and notes incrementally.
+- The app validates missing counts, invalid quantities, duplicates, and unknown
+  manual rows before review.
+- Applying stock still requires the reviewed stock-take apply flow.
+
+### PDF/booklet layout
+
+The PDF should be optimized for paper counting:
+
+- one location per booklet
+- stock-take reference in the header and footer
+- generated timestamp
+- generated-by name or slug
+- compact table rows
+- page numbers
+- signature area for counted by and reviewed by
+- no barcode or QR columns
+- no product descriptions
+- no prices
+- no internal IDs
+
+## Implementation slices
+
+### E-04-03: Stock-take sheet generation
+
+Status: shipped in PR #118 on 2026-05-04.
+
+- Add stock-take session and line schemas.
+- Add contracts for session creation and sheet download metadata.
+- Generate CSV sheet from active catalog variants and selected location.
+- Generate a browser-printable booklet view for physical stock taking.
+- Support blank-sheet generation when no active SKUs exist.
+- Add admin and manager entry points from stock pages.
+- Do not apply stock changes in this slice.
+
+### E-04-04: Stock-take import and dry run
+
+Status: shipped in PR #119 on 2026-05-04.
+
+- Upload completed CSV.
+- Parse counted quantities.
+- Validate duplicate SKUs, unknown SKUs, missing counts, invalid quantities, and location scope.
+- Show variance preview.
+- Return row-level error report.
+- Do not mutate stock during dry run.
+
+### E-04-05: Apply reviewed stock take
+
+Status: shipped in PR #120 on 2026-05-04.
+
+- Apply valid reviewed counts transactionally.
+- Lock balances and session rows.
+- Reject conflicts where counted quantity is below reserved quantity.
+- Insert append-only stock movements for non-zero variances.
+- Preserve no-change line evidence.
+- Mark stock-take session applied.
+
+### E-04-06: PDF booklet and variance report
+
+Status: shipped in PR #121 on 2026-05-04.
+
+- Generate downloadable PDF booklet after the browser-printable booklet proves the workflow.
+- Generate final variance report after apply.
+- Align with official document settings where practical.
+- Preserve issued/applied evidence for audit and reporting.
+
+### E-04-07: Missing catalog from blank stock take
+
+Status: shipped in PR #140 and PR #141 on 2026-05-09.
+
+- Let managers review blank-sheet manual rows that do not map to existing SKUs.
+- Convert manual rows into catalog intake drafts, not live products.
+- Create missing catalog records only after explicit review and completion of
+  required product/variant defaults.
+- Require minimum catalog defaults such as unit, cost price, and selling price.
+- After draft approval, record the counted quantity as opening stock during
+  setup or as found-stock movement in a live system.
+- Keep automatic product creation out of scope.
+
+Implementation notes:
+
+- Stakeholder confirmed the intake page can require enough fields for catalog
+  defaults before a draft is created.
+- PR #140 uses archived catalog product and variant records as the safe
+  draft-equivalent because catalog currently supports `active` and `archived`
+  states only. Activation and opening-stock/found-stock recording remain
+  separate review steps.
+- PR #141 added an explicit stock action on the catalog intake page. It reuses
+  the existing opening-stock and found-stock count endpoints so ledger writes,
+  permission checks, and reservation safety stay on the audited stock path.
+
+### E-04-08: Editable workbook and in-app count entry
+
+Status: shipped through E-04-08D. E-04-08A and E-04-08E shipped in PR #123, E-04-08B shipped in PR #124, E-04-08C shipped in PR #125, and E-04-08D shipped in PR #137.
+
+- Generate an XLSX stock-taking workbook from the same stock-take session rows.
+- Make the workbook printable and uploadable without conversion.
+- Keep CSV import/export as a secondary technical format.
+- Add in-app counted quantity entry for users who counted on paper.
+- Preserve dry-run review, variance review, manager location scope, and
+  structured row-level validation.
+- Do not add barcode or QR columns to the stock-taking workflow.
+
+Implementation sub-slices:
+
+- E-04-08A: Shipped in PR #123. Remove barcode and QR fields from
+  stock-taking sheets, imports, PDFs, public DTOs, and tests while preserving
+  any internal legacy snapshots.
+- E-04-08B: Shipped in PR #124. Add XLSX workbook generation from
+  stock-take session rows with printable layout, readable columns, download
+  state cleanup, and read-only system columns.
+- E-04-08C: Shipped in PR #125 on 2026-05-04. Add XLSX workbook import by
+  normalizing rows into the existing stock-take dry-run validation path.
+- E-04-08D: Shipped in PR #137 on 2026-05-07. Add in-app count entry so paper
+  counts can be entered directly without requiring file conversion. The
+  entry path includes a Review counts bridge that builds a synthetic CSV
+  from the persisted line state and reuses the existing dry-run validator
+  so there is one validation surface and one apply path.
+- E-04-08E: Shipped in PR #123. Add stock-take session history on the admin
+  and manager stock-taking workspaces, with audited deletion implemented as
+  cancellation for non-applied sessions.
+
+Remaining E-04 product gap:
+
+- E-04-07 shipped in PR #140 and PR #141. Manual blank stock-take rows can now
+  create archived catalog drafts and then record reviewed counted quantities
+  through the existing opening-stock or found-stock count paths after catalog
+  activation.
+
+## UAT scenarios
+
+1. Manager generates a blind count sheet for a location with 500 active SKUs; the file downloads quickly and contains SKU, product, variant, unit, and blank counted quantity fields.
+2. Manager generates an assisted count sheet; system on-hand, reserved, available, and variance columns are present.
+3. Manager generates a sheet for a location with no products; the downloaded file contains 20 blank manual rows and no error.
+4. Manager without access to the selected location cannot generate or download its stock-take sheet.
+5. Staff download the XLSX workbook, print or edit it, enter counts, upload the same file, and dry run shows expected variances without mutating stock.
+6. Staff count on paper, manager enters counts directly in the stock-take session, and dry run shows expected variances without requiring an import file.
+7. Staff upload a sheet with duplicate SKUs, invalid quantities, and unknown SKUs; row-level errors are shown and no stock changes occur.
+8. Manual rows for unknown products become catalog intake drafts that require review before any product is created.
+9. Manager applies a valid reviewed stock take; balances update and stock movements are appended for non-zero differences.
+10. A counted quantity below reserved quantity is rejected with a safe actionable message.
+11. Re-applying an already applied stock take is rejected or idempotently returns the applied result without duplicate movements.
+12. A no-change line is retained as session evidence but does not create a movement row.
+13. Admins and managers can find previous stock-take sessions from the
+    stock-taking workspace, open the review page, print the booklet, and cancel
+    only non-applied sessions while applied evidence remains retained.
+
+## Definition of Done
+
+- E-04 stock-take contracts avoid raw internal IDs.
+- Backend route handlers validate input, enforce permissions, and delegate workflows to services/repositories.
+- Stock-take apply is transactional and preserves append-only movement evidence.
+- XLSX and CSV generation/parsing have unit tests for populated, assisted, blind, and blank-sheet modes.
+- In-app count entry uses the same validation and review path as file import.
+- API tests cover admin access, manager location-scope denial, dry-run non-mutation, apply mutation, conflict handling, and structured problem details.
+- Database tests cover session reference uniqueness, line uniqueness, non-negative quantities, status enum, and indexes.
+- Frontend handles loading, empty, error, pending, review, and success states.
+- Mobile manager workflow is usable without horizontal table dependency for critical actions.
+- `pnpm guard` passes before PR.
+
+## Open questions
+
+- Should blind count be the default for all stock takes, or only for audit-led stock takes?
+- How many blank manual rows should the blank sheet include by default: 20, 50, or configurable?
+- Should managers be allowed to apply partial stock takes, or must every generated line be counted or deliberately skipped?
+- Which role owns final approval: location manager only, admin only, or either with `inventory.write`?
+- Should the workbook protect read-only columns with Excel sheet protection, or
+  should validation alone enforce system-owned fields after upload?
+
+## Related PRs
+
+- E-04 reason-coded stock count workspace: PR #114.
+- E-04 opening stock setup and hardening: PR #115.
+- E-04 opening stock setup UI rearrangement: PR #116.
+- E-04 stock-take sheet generation and printable booklet: PR #118.
+- E-04 stock-take import and dry run: PR #119.
+- E-04 apply reviewed stock take: PR #120.
+- E-04 stock-take PDF reports: PR #121.
+- E-04 stock-take location selector cleanup: PR #122.
+- E-04 stock-take barcode removal and session history: PR #123.
+- E-04 stock-take XLSX workbook generation: PR #124.
+- E-04 stock-take XLSX import: PR #125.
+- E-04 stock-take in-app count entry: PR #137.
+- E-04 missing-catalog intake drafts: PR #140.
+- E-04 missing-catalog stock review action: PR #141.
+
+## Shipped evidence
+
+- E-04 is complete in the Markdown working surface as of 2026-05-13.
+- Final dependent slices shipped through PR #141 on `dev`.
+- The delivered scope covers opening stock, reason-coded stock counts, stock-take session generation, CSV/XLSX/PDF artifacts, dry-run validation, reviewed apply, in-app count entry, session history, cancellation, and missing-catalog intake review.
+- Remaining open questions are follow-up product policy refinements, not blockers for the E-04 acceptance criteria.

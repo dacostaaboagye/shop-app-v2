@@ -74,13 +74,15 @@ export class DeliveryInsufficientOriginStockError extends AppError {
       code: "conflict",
       statusCode: 409,
       title: "Insufficient origin stock for delivery",
-      detail: `Origin location ${input.locationId} cannot satisfy ${input.shortfalls.length} item(s) for ${input.sourceType} ${input.sourceReference}.`,
+      detail: `Origin location cannot satisfy ${input.shortfalls.length} item(s) for ${input.sourceType} ${input.sourceReference}.`,
       details: {
         deliveryErrorCode: DELIVERY_ERROR_CODES.insufficientOriginStock,
         sourceType: input.sourceType,
         sourceReference: input.sourceReference,
-        locationId: input.locationId,
-        shortfalls: input.shortfalls,
+        shortfalls: input.shortfalls.map(({ available, requested }) => ({
+          available,
+          requested,
+        })),
       },
     });
     this.name = "DeliveryInsufficientOriginStockError";
@@ -115,12 +117,11 @@ export class DeliveryInvalidSourceQuantityError extends AppError {
       code: "validation_error",
       statusCode: 400,
       title: "Invalid delivery source quantity",
-      detail: `${input.sourceType} ${input.sourceReference} has an invalid quantity for SKU ${input.skuId}. Delivery source quantities must be positive integers.`,
+      detail: `${input.sourceType} ${input.sourceReference} has an invalid delivery source quantity. Delivery source quantities must be positive integers.`,
       details: {
         deliveryErrorCode: DELIVERY_ERROR_CODES.invalidSourceQuantity,
         sourceType: input.sourceType,
         sourceReference: input.sourceReference,
-        skuId: input.skuId,
         quantity: input.quantity,
       },
     });

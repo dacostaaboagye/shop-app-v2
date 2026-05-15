@@ -19,4 +19,5 @@ Additional supporting documents:
 - `public-identifier-schema.md`: slug allocation and redirect retention for `E-00D-03`
 - `stock-schema.md`: stock balance and reservation tables for `E-00B-01`
 - `adr/0020-sales-document-revision-lifecycle.md`: sales invoice, credit-note, and adjusted-invoice lifecycle for `UAT-01E`
+- `adr/0021-operations-authentication-boundary.md`: sign-in-only workforce auth boundary and future ecommerce registration split
 - `adr/0016-dedicated-messaging-module-and-email-runtime.md`: email and messaging architecture direction for `E-03-05B`

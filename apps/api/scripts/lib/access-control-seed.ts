@@ -1,4 +1,4 @@
-import type { PoolClient } from "pg";
+import type { PoolClient } from "@neondatabase/serverless";
 
 type SystemPermission = {
   description: string;
@@ -293,6 +293,14 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
       "inventory.write",
       "orders.view",
       "deliveries.view",
+      "deliveries.create_from_sale",
+      "deliveries.create_from_online_order",
+      "deliveries.create_from_transfer",
+      "deliveries.assign",
+      "deliveries.reassign",
+      "deliveries.dispatch",
+      "deliveries.complete",
+      "deliveries.cancel",
       "suppliers.view",
       "suppliers.manage",
       "settings.documents.view",
@@ -324,6 +332,7 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
     description: "Location manager with manager portal access.",
     permissions: [
       "manager.dashboard.view",
+      "access.assignments.manage",
       "inventory.read",
       "inventory.write",
       "stock.view",
@@ -333,6 +342,9 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
       "worker.handovers.view",
       "worker.stock.view",
       "worker.transfers.view",
+      "deliveries.view",
+      "deliveries.assign",
+      "deliveries.reassign",
       "pos.sales.process",
       "pos.sales.view",
       "pos.sales.manage",
@@ -376,7 +388,11 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
     slug: "agent",
     name: "Agent",
     description: "Delivery agent with delivery portal access.",
-    permissions: ["agent.dashboard.view", "agent.routes.view"],
+    permissions: [
+      "agent.dashboard.view",
+      "agent.routes.view",
+      "deliveries.view",
+    ],
   },
   {
     slug: "developer",

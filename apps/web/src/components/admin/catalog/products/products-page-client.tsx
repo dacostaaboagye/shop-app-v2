@@ -27,6 +27,7 @@ import {
   readStringParam,
 } from "@/lib/url-state";
 import { createCatalogBulkActions } from "../catalog-bulk-status-actions";
+import { CatalogImportDialog } from "./catalog-import-dialog";
 import { ProductFilters } from "./product-filters";
 import { productTableColumns } from "./product-table-columns";
 import {
@@ -109,12 +110,15 @@ export function ProductsPageClient() {
       <PageHeader
         actions={
           <PermissionGate permission="catalog.products.manage">
-            <Link
-              className={buttonVariants({ size: "sm" })}
-              href={toRoute("/admin/products/new")}
-            >
-              New product
-            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              <CatalogImportDialog />
+              <Link
+                className={buttonVariants({ size: "sm" })}
+                href={toRoute("/admin/products/new")}
+              >
+                New product
+              </Link>
+            </div>
           </PermissionGate>
         }
         description="Browse and manage products and their variants across the catalogue."

@@ -81,6 +81,7 @@ function activeUser(): AuthUserRecord {
     primaryImageUrl: null,
     preferredPortal: "admin" as const,
     requiresPasswordChange: false,
+    sessionsRevokedAt: null,
     slug: "store-manager",
     status: "active" as const,
   };

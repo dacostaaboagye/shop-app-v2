@@ -75,9 +75,11 @@ Hooks live in `.husky/` and run `pnpm enforce:branch-name`, `pnpm guard`, `pnpm 
 
 ```bash
 pnpm install
-pnpm dev                          # turbo dev (api + web)
-pnpm --filter @shop/api dev
-pnpm --filter @shop/web dev
+pnpm dev                          # api + web + events, each Infisical-wrapped, in parallel
+pnpm dev:api:infisical            # single-app variant (api only)
+pnpm dev:web:infisical            # single-app variant (web only)
+pnpm dev:events:infisical         # single-app variant (events worker only)
+pnpm dev:bare                     # turbo dev without Infisical — rare
 pnpm guard                        # architecture guards
 pnpm verify                       # validate + build
 pnpm deploy:testing:bootstrap     # migrate + seed core

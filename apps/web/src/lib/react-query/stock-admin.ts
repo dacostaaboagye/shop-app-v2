@@ -1,12 +1,14 @@
 import type {
   ActiveReservationListQuery,
   ActiveReservationListResponse,
+  AdminOpeningStockRequest,
+  AdminOpeningStockResponse,
   AdminReservationListQuery,
   AdminReservationListResponse,
   AdminStockBalanceListQuery,
   AdminStockBalanceListResponse,
-  AdminStockBalanceSummary,
   AdminStockCountRequest,
+  AdminStockCountResponse,
   LocationReservationQuery,
   LocationStockBalanceQuery,
 } from "@shop/contracts";
@@ -164,9 +166,37 @@ export async function fetchManagerStockBalances(
 
 export async function postStockCount(
   body: AdminStockCountRequest,
-): Promise<AdminStockBalanceSummary> {
-  return fetchJson<AdminStockBalanceSummary>(
+): Promise<AdminStockCountResponse> {
+  return fetchJson<AdminStockCountResponse>(
     "/api/admin/stock/balances/count",
+    {
+      body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+    { auth: "required" },
+  );
+}
+
+export async function postOpeningStock(
+  body: AdminOpeningStockRequest,
+): Promise<AdminOpeningStockResponse> {
+  return fetchJson<AdminOpeningStockResponse>(
+    "/api/admin/stock/balances/opening",
+    {
+      body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+    { auth: "required" },
+  );
+}
+
+export async function postManagerOpeningStock(
+  body: AdminOpeningStockRequest,
+): Promise<AdminOpeningStockResponse> {
+  return fetchJson<AdminOpeningStockResponse>(
+    "/api/manager/stock/balances/opening",
     {
       body: JSON.stringify(body),
       headers: { "Content-Type": "application/json" },
@@ -178,8 +208,8 @@ export async function postStockCount(
 
 export async function postManagerStockCount(
   body: AdminStockCountRequest,
-): Promise<AdminStockBalanceSummary> {
-  return fetchJson<AdminStockBalanceSummary>(
+): Promise<AdminStockCountResponse> {
+  return fetchJson<AdminStockCountResponse>(
     "/api/manager/stock/balances/count",
     {
       body: JSON.stringify(body),

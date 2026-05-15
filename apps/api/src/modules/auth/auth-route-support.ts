@@ -11,6 +11,7 @@ import type { IssuedSession, LoginCommand } from "./authentication.service.js";
 import { refreshTokenCookieName } from "./refresh-token-cookie.js";
 import type { RegisterCommand } from "./registration.service.js";
 import type {
+  LogoutAllSessionsCommand,
   LogoutSessionCommand,
   RefreshSessionCommand,
 } from "./session.service.js";
@@ -39,6 +40,7 @@ export type AuthRouteDependencies = {
   };
   logoutSessionService: {
     logout(command: LogoutSessionCommand): Promise<void>;
+    logoutAll(command: LogoutAllSessionsCommand): Promise<void>;
   };
   passwordResetService: {
     initiateReset(email: string): Promise<void>;
@@ -98,6 +100,9 @@ export function createUnavailableAuthDependencies(): AuthRouteDependencies {
     },
     logoutSessionService: {
       async logout() {
+        throw unavailableAuthError();
+      },
+      async logoutAll() {
         throw unavailableAuthError();
       },
     },

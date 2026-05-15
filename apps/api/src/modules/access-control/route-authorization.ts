@@ -73,14 +73,21 @@ export function registerRouteAuthorization(
 function getRouteAccess(request: FastifyRequest): RouteAccess | null {
   const config = request.routeOptions.config;
 
-  if (!config || typeof config !== "object" || !("access" in config)) {
+  if (!config || typeof config !== "object") {
+    return null;
+  }
+
+  if (!("access" in config)) {
+    if ("method" in config || "url" in config) {
+      throw missingRouteAccessMetadataError();
+    }
     return null;
   }
 
   const access = config.access;
 
   if (!access || typeof access !== "object" || !("kind" in access)) {
-    return null;
+    throw missingRouteAccessMetadataError();
   }
 
   return access as RouteAccess;
@@ -117,5 +124,14 @@ function unavailableAuthorizationError(): AppError {
     detail: "Authorization services are not configured for this environment.",
     statusCode: 503,
     title: "Authorization unavailable",
+  });
+}
+
+function missingRouteAccessMetadataError(): AppError {
+  return new AppError({
+    code: "internal_error",
+    detail: "Route access metadata is missing or invalid.",
+    statusCode: 500,
+    title: "Route access metadata missing",
   });
 }

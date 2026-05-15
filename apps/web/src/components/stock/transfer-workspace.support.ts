@@ -1,5 +1,11 @@
 import type { StockSupplyRequestResponse } from "@shop/contracts";
 import { formatDateTime, formatPublicReference } from "@/lib/display/format";
+import {
+  formatReceiptDiscrepancyReason,
+  getExpectedTransferQuantity,
+  getTransferReceiptMissingQuantity,
+  hasTransferReceiptDiscrepancy,
+} from "./transfer-receipt.support";
 
 export type TransferLane = {
   description: string;
@@ -86,21 +92,24 @@ export const adminTransferLanes: readonly TransferLane[] = [
     matches: (item) => item.status === "dispatched",
   },
   {
-    description: "Rejected, cancelled, or structurally inconsistent transfers.",
+    description:
+      "Rejected, cancelled, short-received, or structurally inconsistent transfers.",
     key: "exceptions",
     label: "Exceptions",
     matches: (item) =>
       item.status === "rejected" ||
       item.status === "cancelled" ||
+      hasTransferReceiptDiscrepancy(item) ||
       (item.status === "approved" &&
         item.sourceReservationStatus !== "active" &&
         item.sourceReservationStatus !== "confirmed"),
   },
   {
-    description: "Transfers already confirmed at the destination.",
+    description: "Transfers fully confirmed at the destination.",
     key: "completed",
     label: "Completed",
-    matches: (item) => item.status === "received",
+    matches: (item) =>
+      item.status === "received" && !hasTransferReceiptDiscrepancy(item),
   },
 ];
 
@@ -158,6 +167,9 @@ export function countAgeingTransfers(
 }
 
 export function buildTransferTimeline(item: StockSupplyRequestResponse) {
+  const expectedQuantity = getExpectedTransferQuantity(item);
+  const missingQuantity = getTransferReceiptMissingQuantity(item);
+
   return [
     {
       label: "Requested",
@@ -184,6 +196,48 @@ export function buildTransferTimeline(item: StockSupplyRequestResponse) {
       value: item.receivedAt
         ? formatDateTime(item.receivedAt)
         : "Awaiting receipt",
+    },
+    {
+      label: "Accepted",
+      value:
+        item.receivedQuantity === null
+          ? "Not confirmed"
+          : `${item.receivedQuantity} of ${expectedQuantity}`,
+    },
+    {
+      label: "Missing",
+      value: missingQuantity > 0 ? String(missingQuantity) : "None",
+    },
+  ];
+}
+
+export function buildTransferReceiptEvidence(item: StockSupplyRequestResponse) {
+  const expectedQuantity = getExpectedTransferQuantity(item);
+  const missingQuantity = getTransferReceiptMissingQuantity(item);
+
+  return [
+    { label: "Dispatched", value: String(expectedQuantity) },
+    {
+      label: "Accepted",
+      value:
+        item.receivedQuantity === null
+          ? "Not confirmed"
+          : String(item.receivedQuantity),
+    },
+    {
+      label: "Missing",
+      value: missingQuantity > 0 ? String(missingQuantity) : "None",
+    },
+    {
+      label: "Reason",
+      value:
+        missingQuantity > 0
+          ? formatReceiptDiscrepancyReason(item.receiptDiscrepancyReason)
+          : "None",
+    },
+    {
+      label: "Notes",
+      value: item.receiptDiscrepancyNotes ?? "None",
     },
   ];
 }

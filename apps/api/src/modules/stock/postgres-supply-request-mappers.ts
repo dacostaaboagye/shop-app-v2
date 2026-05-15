@@ -29,6 +29,9 @@ export type SupplyRequestRow = {
   dispatchedBy: string | null;
   dispatchedAt: Date | null;
   receivedAt: Date | null;
+  receivedQuantity: number | null;
+  receiptDiscrepancyReason: string | null;
+  receiptDiscrepancyNotes: string | null;
   gtnReference: string | null;
   createdAt: Date;
 };
@@ -52,6 +55,9 @@ export type GtnRow = {
   receivedBy: string | null;
   receivedByName: string | null;
   receivedAt: Date | null;
+  receivedQuantity: number | null;
+  receiptDiscrepancyReason: string | null;
+  receiptDiscrepancyNotes: string | null;
   notes: string | null;
   createdAt: Date;
 };
@@ -78,6 +84,9 @@ export function toSupplyRequestRow(
     dispatchedBy?: string | null;
     dispatchedAt?: Date | null;
     receivedAt?: Date | null;
+    receivedQuantity?: number | null;
+    receiptDiscrepancyReason?: string | null;
+    receiptDiscrepancyNotes?: string | null;
     createdAt: Date;
   },
   requesterName: string | null,
@@ -105,7 +114,10 @@ export function toSupplyRequestRow(
     locationName,
     notes: row.notes,
     receivedAt: row.receivedAt ?? null,
+    receivedQuantity: row.receivedQuantity ?? null,
     reference: row.reference,
+    receiptDiscrepancyNotes: row.receiptDiscrepancyNotes ?? null,
+    receiptDiscrepancyReason: row.receiptDiscrepancyReason ?? null,
     requestGroupReference: row.requestGroupReference ?? null,
     sourceReservationStatus,
     transferReference,
@@ -136,6 +148,9 @@ export function toGtnRow(gtn: {
   dispatchedAt: Date;
   receivedBy: string | null;
   receivedAt: Date | null;
+  receivedQuantity: number | null;
+  receiptDiscrepancyReason: string | null;
+  receiptDiscrepancyNotes: string | null;
   notes: string | null;
   createdAt: Date;
   sourceLocationId: string;
@@ -163,7 +178,10 @@ export function toGtnRow(gtn: {
     receivedByName: gtn.receivedByUser
       ? `${gtn.receivedByUser.firstName} ${gtn.receivedByUser.lastName}`.trim()
       : null,
+    receivedQuantity: gtn.receivedQuantity,
     reference: gtn.reference,
+    receiptDiscrepancyNotes: gtn.receiptDiscrepancyNotes,
+    receiptDiscrepancyReason: gtn.receiptDiscrepancyReason,
     skuId: gtn.skuId,
     skuSnapshot: gtn.skuSnapshot as SkuSnapshot,
     sourceLocationId: gtn.sourceLocationId,

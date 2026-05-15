@@ -29,13 +29,13 @@ Status: Findings recorded; remediation pending
 
 ## Critical
 
-### C1. OAuth silently links to existing email accounts
+### C1. OAuth silently links to existing email accounts — CLOSED ([PR #38](https://github.com/dacostaaboagye/shop-app-v2/pull/38))
 
-**File:** `apps/api/src/modules/auth/google-oauth.service.ts:185-232` (`findOrCreateUser`)
+**File (at audit time):** `apps/api/src/modules/auth/google-oauth.service.ts:185-232` (`findOrCreateUser`)
 
 If `victim@example.com` exists as a password account and a Google OAuth flow returns the same email, the service auto-links the Google identity to that account without any verification. Pre-account-takeover attack: an attacker registers a target's email with a password they control, then the real owner signs in with Google and is silently redirected into the attacker's account.
 
-**Fix direction:** Require explicit linking. If email matches but no OAuth identity exists, force a password challenge (or send a confirmation email) before linking.
+**Fix shipped:** the find-or-create branch moved to `apps/api/src/modules/auth/google-oauth-user-resolver.ts`. When email matches but no OAuth identity exists, the resolver throws a 409 `AppError` with `details.oauthError = "account_exists"`. The OAuth callback handler catches this and redirects the browser to `/login?oauth_error=account_exists` so the user signs in with their existing credentials. Linking Google from an authenticated session is the future feature path. Operations OAuth was additionally disabled entirely by [PR #132](https://github.com/dacostaaboagye/shop-app-v2/pull/132) as a defence-in-depth layer.
 
 ### C2. Real credentials present in `.env.local` on disk
 
@@ -44,6 +44,12 @@ If `victim@example.com` exists as a password account and a Google OAuth flow ret
 Contains live Neon DATABASE_URL with credentials, Cloudflare R2 access key + secret, Google OAuth client secret, and a Resend API key. Gitignored, so not in history — but workstation access, log-snapshots, or backup tooling can extract them.
 
 **Fix direction:** Rotate all four credential sets. Move secrets to a vault / per-environment store; load via direnv or platform secret injection. Audit `dev-*.log` files in repo root before discarding.
+
+**Architecture update (2026-05-07):** ADR 0022 and
+`docs/engineering/secrets-management.md` define vendor-neutral secret delivery
+with Infisical as the initial vault. Application code remains bound to canonical
+environment names, not to an Infisical SDK. Credential rotation is still
+required before closing C2.
 
 ### C3. CORS falls open when `WEB_BASE_URL` is unset
 
@@ -200,6 +206,13 @@ If `API_BASE_URL` is forgotten in deployment, the API URL is shipped to the brow
 
 Password reset already revokes all refresh tokens (good). No user-facing endpoint to revoke other sessions; no cap on issued tokens. Incident-response gap, not a vulnerability.
 
+**Status update (2026-05-06):** `POST /api/auth/logout-all` now revokes
+every active refresh token for the authenticated user and clears the current
+browser cookies. The implementation also records a user-level session cutoff so
+access and refresh tokens issued at or before logout-all are rejected even if an
+in-flight refresh attempt races with the bulk revocation. Session inventory
+remains a future UX/operations enhancement.
+
 ### M11. Ad-hoc admin check breaks the CASL pattern
 
 **File:** `apps/api/src/modules/stock/supply-request-access-policy.ts:214-223`
@@ -213,7 +226,10 @@ Password reset already revokes all refresh tokens (good). No user-facing endpoin
 ## Low
 
 - **L1.** Refresh-token cookie has no explicit `Domain` (`apps/api/src/modules/auth/refresh-token-cookie.ts:4-19`). Document the same-site assumption.
-- **L2.** OAuth error redirect — verify the receiver renders `oauthError` as text only. `apps/web/src/app/auth/callback/auth-callback-page-client.tsx`.
+- **L2.** OAuth error redirect — superseded for the operations portal by ADR
+  0021. Operations OAuth routes are blocked and `/auth/callback` redirects to
+  sign-in; future ecommerce OAuth must add its own customer-owned callback
+  review.
 - **L3.** Active-location slug persisted to localStorage. `apps/web/src/store/use-active-location-store.ts:48-62`. Non-sensitive.
 - **L4.** `docker-compose.yml` uses `postgres/postgres` defaults — local dev only.
 - **L5.** Swagger bundle loaded without SRI. Local origin so risk is low.

@@ -54,6 +54,7 @@ export function createPlatformEventRuntime(
     platformEventDeliveryService,
     {
       batchSize: dependencies.env.platformEventDeliveryBatchSize,
+      logger: console,
       pollIntervalMs: dependencies.env.platformEventDeliveryPollIntervalMs,
     },
   );

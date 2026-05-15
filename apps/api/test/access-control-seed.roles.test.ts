@@ -17,4 +17,39 @@ describe("access control seeded roles", () => {
     assert.ok(adminRole);
     assert.ok(adminRole.permissions.includes("catalog.history.view"));
   });
+
+  it("grants the admin role delivery lifecycle permissions", () => {
+    const adminRole = SYSTEM_ROLES.find((role) => role.slug === "admin");
+
+    assert.ok(adminRole);
+    for (const permission of [
+      "deliveries.create_from_sale",
+      "deliveries.create_from_online_order",
+      "deliveries.create_from_transfer",
+      "deliveries.assign",
+      "deliveries.reassign",
+      "deliveries.dispatch",
+      "deliveries.complete",
+      "deliveries.cancel",
+    ]) {
+      assert.ok(adminRole.permissions.includes(permission), permission);
+    }
+  });
+
+  it("grants managers delivery assignment permissions for their location", () => {
+    const managerRole = SYSTEM_ROLES.find((role) => role.slug === "manager");
+
+    assert.ok(managerRole);
+    assert.ok(managerRole.permissions.includes("deliveries.view"));
+    assert.ok(managerRole.permissions.includes("deliveries.assign"));
+    assert.ok(managerRole.permissions.includes("deliveries.reassign"));
+  });
+
+  it("grants delivery agents read access for their assigned routes", () => {
+    const agentRole = SYSTEM_ROLES.find((role) => role.slug === "agent");
+
+    assert.ok(agentRole);
+    assert.ok(agentRole.permissions.includes("agent.routes.view"));
+    assert.ok(agentRole.permissions.includes("deliveries.view"));
+  });
 });

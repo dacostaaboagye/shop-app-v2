@@ -8,8 +8,10 @@ export function createStockCountEvent(input: {
   locationName: string;
   locationSlug: string;
   nextOnHandQuantity: number;
+  note: string | null;
   previousOnHandQuantity: number;
   productName: string;
+  reasonCode: string;
   sku: string;
   skuId: string;
   variantName: string;
@@ -34,7 +36,9 @@ export function createStockCountEvent(input: {
       locationId: input.locationId,
       locationName: input.locationName,
       nextOnHandQuantity: input.nextOnHandQuantity,
+      note: input.note,
       previousOnHandQuantity: input.previousOnHandQuantity,
+      reasonCode: input.reasonCode,
       sku: input.sku,
       skuId: input.skuId,
     },
@@ -42,7 +46,11 @@ export function createStockCountEvent(input: {
       kind: "stock_balance",
       reference: `${input.locationSlug}:${input.sku}`,
     },
-    summary: `Stock count updated for ${input.productName} ${input.variantName} (${input.sku}) at ${input.locationName}: ${input.previousOnHandQuantity} to ${input.nextOnHandQuantity} (${signedDelta}).`,
+    summary: `Stock count updated for ${input.productName} ${input.variantName} (${input.sku}) at ${input.locationName}: ${input.previousOnHandQuantity} to ${input.nextOnHandQuantity} (${signedDelta}) for ${formatReasonCode(input.reasonCode)}.`,
     type: "stock.count.updated",
   };
+}
+
+function formatReasonCode(reasonCode: string): string {
+  return reasonCode.replaceAll("_", " ");
 }

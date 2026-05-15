@@ -119,6 +119,29 @@ describe("CatalogMediaService.confirm MIME allowlist", () => {
 });
 
 describe("CatalogMediaService.confirm magic-byte verification", () => {
+  it("rejects a key outside the expected entity prefix", async () => {
+    const service = createService();
+
+    await assert.rejects(
+      () =>
+        service.confirm("actor-1", {
+          entitySlug: "shoes",
+          entityType: "product",
+          isPrimary: false,
+          key: "catalog/product/other-product/borrowed.png",
+          mimeType: "image/png",
+          position: 0,
+        }),
+      (error: unknown) => {
+        assert.ok(error instanceof AppError);
+        assert.equal(error.statusCode, 422);
+        assert.equal(error.code, "validation_error");
+        assert.match(error.message, /does not match the catalog entity/i);
+        return true;
+      },
+    );
+  });
+
   it("rejects SVG bytes uploaded under a claimed image/jpeg", async () => {
     // Hostile path: client presigns image/jpeg, uploads SVG bytes (which
     // would render as inline SVG with script execution if served same-

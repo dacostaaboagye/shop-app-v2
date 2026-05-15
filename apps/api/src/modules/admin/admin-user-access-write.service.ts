@@ -9,6 +9,7 @@ import type {
 } from "@shop/contracts";
 import { AppError } from "../_core/errors/app-error.js";
 import type { PlatformEventPublisher } from "../events/platform-event.types.js";
+import { roleRequiresLocationScope } from "./admin-role-scope-policy.js";
 import {
   createAdminUserOverrideRemovedEvent,
   createAdminUserOverrideSetEvent,
@@ -247,8 +248,4 @@ export class AdminUserAccessWriteService {
       }),
     );
   }
-}
-
-function roleRequiresLocationScope(roleSlug: string) {
-  return roleSlug === "manager" || roleSlug === "worker";
 }

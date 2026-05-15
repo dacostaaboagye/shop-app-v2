@@ -1,192 +1,221 @@
 "use client";
 
-import type {
-  AdminStockBalanceSummary,
-  AdminStockCountRequest,
-} from "@shop/contracts";
-import { useQuery } from "@tanstack/react-query";
-import { useId, useState } from "react";
+import { useForm } from "@tanstack/react-form";
+import { useState } from "react";
+import { AppErrorBanner } from "@/components/system/app-error";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FieldGroup } from "@/components/ui/field";
+import { Spinner } from "@/components/ui/spinner";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  buildStockCountRequest,
+  createStockCountFormDefaults,
+  type StockCountFormProps,
+  validateStockCountNote,
+  validateStockCountQuantity,
+  validateStockCountSku,
+} from "./stock-count-form.support";
 import {
-  adminProductQueryKey,
-  adminProductsQueryKey,
-  fetchAdminProduct,
-  fetchAdminProducts,
-} from "@/lib/react-query/admin-catalog-products";
-
-const PRODUCTS_QUERY = {
-  brandSlug: "",
-  categorySlug: "",
-  dir: "asc" as const,
-  page: 1,
-  pageSize: 100,
-  q: "",
-  sort: "name" as const,
-  status: "active" as const,
-};
+  NoteTextareaField,
+  QuantityInputField,
+  ReasonSelectField,
+  SkuInputField,
+} from "./stock-count-form-fields";
 
 export function StockCountForm({
   error,
+  initialTarget = null,
   isPending,
   locationSlug,
+  onCancel,
   onSubmit,
   row,
-  open,
-}: {
-  error: unknown;
-  isPending: boolean;
-  locationSlug: string;
-  onSubmit: (req: AdminStockCountRequest) => void;
-  row: AdminStockBalanceSummary | null;
-  open: boolean;
-}) {
-  const productSelectId = useId();
-  const variantSelectId = useId();
-  const qtyInputId = useId();
-  const [productSlug, setProductSlug] = useState("");
-  const [variantSku, setVariantSku] = useState("");
-  const [qty, setQty] = useState("");
+}: StockCountFormProps) {
+  const [wasSubmitted, setWasSubmitted] = useState(false);
 
-  const productsQuery = useQuery({
-    enabled: open && !row,
-    queryFn: () => fetchAdminProducts(PRODUCTS_QUERY),
-    queryKey: adminProductsQueryKey(PRODUCTS_QUERY),
-    staleTime: 60_000,
+  const form = useForm({
+    defaultValues: createStockCountFormDefaults(row, initialTarget),
+    onSubmit: async ({ value }) => {
+      onSubmit(buildStockCountRequest({ locationSlug, row, values: value }));
+    },
   });
 
-  const productQuery = useQuery({
-    enabled: !!productSlug,
-    queryFn: () => fetchAdminProduct(productSlug),
-    queryKey: adminProductQueryKey(productSlug),
-    staleTime: 30_000,
-  });
-
-  const activeVariants = (productQuery.data?.variants ?? []).filter(
-    (v) => v.status === "active",
-  );
-
-  function handleProductChange(slug: string) {
-    setProductSlug(slug);
-    setVariantSku("");
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const parsed = Number.parseInt(qty, 10);
-    if (Number.isNaN(parsed) || parsed < 0) return;
-    const sku = row ? row.sku : variantSku;
-    if (!sku) return;
-    onSubmit({ locationSlug, onHandQuantity: parsed, sku });
-  }
-
-  const parsedQty = Number.parseInt(qty, 10);
-  const isValid = !Number.isNaN(parsedQty) && parsedQty >= 0;
-  const belowReserved =
-    isValid && row != null && parsedQty < row.reservedQuantity;
-  const canSubmit =
-    isValid && !belowReserved && !isPending && (row ? true : !!variantSku);
-
-  const errorMessage =
-    error instanceof Error
-      ? error.message
-      : error
-        ? "Failed to save stock count."
-        : null;
+  const reservedQuantity =
+    row?.reservedQuantity ?? initialTarget?.reservedQuantity ?? 0;
+  const currentOnHandQuantity =
+    row?.onHandQuantity ?? initialTarget?.onHandQuantity ?? null;
+  const selectedSku = row?.sku ?? initialTarget?.sku ?? "";
 
   return (
     <form
       className="flex flex-col gap-4"
-      id="count-form"
-      onSubmit={handleSubmit}
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setWasSubmitted(true);
+        void form.handleSubmit();
+      }}
     >
-      {!row ? (
-        <>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor={productSelectId}>Product</Label>
-            <Select onValueChange={handleProductChange} value={productSlug}>
-              <SelectTrigger id={productSelectId}>
-                <SelectValue
-                  placeholder={
-                    productsQuery.isPending
-                      ? "Loading products…"
-                      : "Select a product"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {productsQuery.data?.items.map((p) => (
-                  <SelectItem key={p.slug} value={p.slug}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor={variantSelectId}>Variant / SKU</Label>
-            <Select
-              disabled={!productSlug}
-              onValueChange={setVariantSku}
-              value={variantSku}
-            >
-              <SelectTrigger id={variantSelectId}>
-                <SelectValue
-                  placeholder={
-                    productQuery.isPending
-                      ? "Loading variants…"
-                      : "Select a variant"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {activeVariants.map((v) => (
-                  <SelectItem key={v.slug} value={v.sku}>
-                    {v.name} — {v.sku}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </>
-      ) : null}
+      <FieldGroup>
+        {!row && !initialTarget ? (
+          <form.Field
+            name="sku"
+            validators={{
+              onBlur: ({ value }) =>
+                value.trim() ? validateStockCountSku(value) : undefined,
+              onSubmit: ({ value }) => validateStockCountSku(value),
+            }}
+          >
+            {(field) => (
+              <SkuInputField
+                errors={field.state.meta.errors}
+                onBlur={field.handleBlur}
+                onChange={field.handleChange}
+                showErrors={
+                  wasSubmitted ||
+                  (field.state.meta.isDirty && field.state.meta.isBlurred)
+                }
+                value={field.state.value}
+              />
+            )}
+          </form.Field>
+        ) : null}
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor={qtyInputId}>On-hand quantity</Label>
-        <Input
-          id={qtyInputId}
-          min={0}
-          onChange={(e) => setQty(e.target.value)}
-          placeholder="0"
-          required
-          type="number"
-          value={qty}
+        {!row && initialTarget ? (
+          <div className="rounded-lg border border-border/60 bg-muted/30 p-3">
+            <p className="type-data-label text-muted-foreground">
+              Selected SKU
+            </p>
+            <p className="mt-1 font-mono text-sm">{selectedSku}</p>
+            <p className="type-support mt-1 text-xs">
+              {initialTarget.productName} - {initialTarget.variantName}
+            </p>
+          </div>
+        ) : null}
+
+        <form.Field
+          name="quantity"
+          validators={{
+            onBlur: ({ value }) =>
+              value.trim() ? validateStockCountQuantity(value) : undefined,
+            onSubmit: ({ value }) => validateStockCountQuantity(value),
+          }}
+        >
+          {(field) => {
+            const parsedQuantity = Number.parseInt(field.state.value, 10);
+            const belowReserved =
+              !Number.isNaN(parsedQuantity) &&
+              parsedQuantity < reservedQuantity;
+            const errors = belowReserved
+              ? [
+                  `Quantity cannot be below reserved stock (${reservedQuantity}).`,
+                  ...field.state.meta.errors,
+                ]
+              : field.state.meta.errors;
+
+            return (
+              <QuantityInputField
+                description={
+                  row
+                    ? `Current on-hand: ${row.onHandQuantity}. Reserved: ${row.reservedQuantity}.`
+                    : currentOnHandQuantity !== null
+                      ? `Current on-hand: ${currentOnHandQuantity}. Reserved: ${reservedQuantity}.`
+                      : "Enter the physical quantity counted at this location."
+                }
+                errors={errors}
+                onBlur={field.handleBlur}
+                onChange={field.handleChange}
+                showErrors={
+                  wasSubmitted ||
+                  (field.state.meta.isDirty && field.state.meta.isBlurred)
+                }
+                value={field.state.value}
+              />
+            );
+          }}
+        </form.Field>
+
+        <form.Field name="reasonCode">
+          {(field) => (
+            <ReasonSelectField
+              onChange={field.handleChange}
+              value={field.state.value}
+            />
+          )}
+        </form.Field>
+
+        <form.Field
+          name="note"
+          validators={{
+            onBlur: ({ value }) => validateStockCountNote(value),
+            onSubmit: ({ value }) => validateStockCountNote(value),
+          }}
+        >
+          {(field) => (
+            <NoteTextareaField
+              errors={field.state.meta.errors}
+              onBlur={field.handleBlur}
+              onChange={field.handleChange}
+              showErrors={
+                wasSubmitted ||
+                (field.state.meta.isDirty && field.state.meta.isBlurred)
+              }
+              value={field.state.value}
+            />
+          )}
+        </form.Field>
+      </FieldGroup>
+
+      {error ? (
+        <AppErrorBanner
+          detail="Could not save this stock count. Check the quantity and try again."
+          error={error}
+          title="Unable to save stock count"
         />
-      </div>
-
-      {belowReserved ? (
-        <p className="rounded-md border border-warning/40 bg-warning/5 p-2 text-xs text-warning">
-          This quantity is below the reserved amount ({row?.reservedQuantity}).
-          Available stock would go negative.
-        </p>
       ) : null}
 
-      {errorMessage ? (
-        <p className="rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
-          {errorMessage}
-        </p>
-      ) : null}
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <Button onClick={onCancel} type="button" variant="ghost">
+          Cancel
+        </Button>
+        <form.Subscribe
+          selector={(state) => ({
+            canSubmit: state.canSubmit,
+            isSubmitting: state.isSubmitting,
+            values: state.values,
+          })}
+        >
+          {({ canSubmit, isSubmitting, values }) => {
+            const parsedQuantity = Number.parseInt(values.quantity, 10);
+            const invalidQuantity = validateStockCountQuantity(values.quantity);
+            const belowReserved =
+              !Number.isNaN(parsedQuantity) &&
+              parsedQuantity < reservedQuantity;
+            const invalidSku = row
+              ? undefined
+              : validateStockCountSku(values.sku);
+            const disabled =
+              !canSubmit ||
+              isSubmitting ||
+              isPending ||
+              !!invalidQuantity ||
+              !!invalidSku ||
+              belowReserved;
 
-      <div className="hidden">
-        <Button id="submit-button" disabled={!canSubmit} type="submit" />
+            return (
+              <Button disabled={disabled} type="submit">
+                {isPending || isSubmitting ? (
+                  <>
+                    <Spinner data-icon="inline-start" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save count"
+                )}
+              </Button>
+            );
+          }}
+        </form.Subscribe>
       </div>
     </form>
   );

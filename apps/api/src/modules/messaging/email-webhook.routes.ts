@@ -13,6 +13,12 @@ const resendWebhookRoute: RouteDefinition = {
   url: "/resend",
 };
 
+export const resendWebhookRateLimit = {
+  groupId: "resend-webhook",
+  max: 120,
+  timeWindow: "1 minute",
+};
+
 export function registerEmailWebhookRoutes(
   server: FastifyInstance,
   dependencies: EmailWebhookRouteDependencies = createUnavailableDependencies(),
@@ -26,7 +32,10 @@ export function registerEmailWebhookRoutes(
       );
 
       scope.route({
-        config: { access: resendWebhookRoute.access },
+        config: {
+          access: resendWebhookRoute.access,
+          rateLimit: resendWebhookRateLimit,
+        },
         method: resendWebhookRoute.method,
         url: resendWebhookRoute.url,
         async handler(request, reply) {

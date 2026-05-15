@@ -43,6 +43,46 @@ describe("TokenSessionService", () => {
     assert.equal(harness.state.events.at(-1)?.eventType, "token_refresh");
   });
 
+  it("delegates refresh rotation to the repository's atomic rotate operation", async () => {
+    const harness = createSessionHarness();
+    const initialSession = await harness.service.issueSession(
+      createUserRecord(),
+      new Date("2026-04-08T12:00:00.000Z"),
+    );
+
+    await harness.service.refresh({
+      ipAddress: "127.0.0.1",
+      refreshToken: initialSession.refreshToken,
+      userAgent: "test-agent",
+    });
+
+    assert.equal(harness.state.rotateCalls.length, 1);
+    assert.equal(harness.state.rotateCalls[0]?.ipAddress, "127.0.0.1");
+    assert.equal(harness.state.rotateCalls[0]?.userAgent, "test-agent");
+  });
+
+  it("rejects refresh when the repository detects a rotation race", async () => {
+    const harness = createSessionHarness();
+    const initialSession = await harness.service.issueSession(
+      createUserRecord(),
+      new Date("2026-04-08T12:00:00.000Z"),
+    );
+    harness.state.forceRotateRace = true;
+
+    await assert.rejects(
+      () =>
+        harness.service.refresh({
+          refreshToken: initialSession.refreshToken,
+        }),
+      (error: unknown) => {
+        assert.ok(error instanceof AppError);
+        assert.equal(error.title, "Invalid session");
+        return true;
+      },
+    );
+    assert.equal(harness.state.createdRefreshTokens.length, 1);
+  });
+
   it("rejects an invalid refresh token", async () => {
     const harness = createSessionHarness();
 
@@ -81,6 +121,62 @@ describe("TokenSessionService", () => {
     assert.equal(logoutEvent?.userId, "usr_123");
     assert.ok(logoutEvent?.occurredAt instanceof Date);
   });
+
+  it("revokes every active refresh token for the user on logout all", async () => {
+    const harness = createSessionHarness();
+    await harness.service.issueSession(
+      createUserRecord(),
+      new Date("2026-04-08T12:00:00.000Z"),
+    );
+    await harness.service.issueSession(
+      createUserRecord(),
+      new Date("2026-04-08T12:01:00.000Z"),
+    );
+
+    await harness.service.logoutAll({
+      ipAddress: "127.0.0.1",
+      userAgent: "test-agent",
+      userId: "usr_123",
+    });
+
+    assert.deepEqual(harness.state.revokedUsers, [
+      {
+        reason: "logout_all",
+        userId: "usr_123",
+      },
+    ]);
+    const logoutEvent = harness.state.events.at(-1);
+
+    assert.equal(logoutEvent?.eventType, "logout");
+    assert.equal(logoutEvent?.ipAddress, "127.0.0.1");
+    assert.equal(logoutEvent?.userAgent, "test-agent");
+    assert.equal(logoutEvent?.userId, "usr_123");
+  });
+
+  it("rejects refresh tokens issued before the user's session cutoff", async () => {
+    const harness = createSessionHarness();
+    const session = await harness.service.issueSession(
+      createUserRecord(),
+      new Date("2026-04-08T12:00:00.000Z"),
+    );
+
+    harness.state.user = createUserRecord({
+      sessionsRevokedAt: new Date("2026-04-08T12:05:00.000Z"),
+    });
+
+    await assert.rejects(
+      () =>
+        harness.service.refresh({
+          refreshToken: session.refreshToken,
+        }),
+      (error: unknown) => {
+        assert.ok(error instanceof AppError);
+        assert.equal(error.title, "Invalid session");
+        return true;
+      },
+    );
+    assert.equal(harness.state.revokedTokenIds.length, 0);
+  });
 });
 
 function createSessionHarness() {
@@ -88,6 +184,7 @@ function createSessionHarness() {
     createdRefreshTokens: [] as Array<{
       expiresAt: Date;
       id: string;
+      issuedAt: Date;
       tokenHash: string;
       userId: string;
     }>,
@@ -99,6 +196,14 @@ function createSessionHarness() {
       userId: string;
     }>,
     revokedTokenIds: [] as string[],
+    revokedUsers: [] as Array<{ reason: string; userId: string }>,
+    forceRotateRace: false,
+    rotateCalls: [] as Array<{
+      ipAddress?: string;
+      refreshTokenHash: string;
+      userAgent?: string;
+    }>,
+    user: createUserRecord(),
   };
 
   const repository: SessionRepository = {
@@ -106,6 +211,7 @@ function createSessionHarness() {
       state.createdRefreshTokens.push({
         expiresAt: input.expiresAt,
         id: `rt_${state.createdRefreshTokens.length + 1}`,
+        issuedAt: input.issuedAt,
         tokenHash: input.tokenHash,
         userId: input.userId,
       });
@@ -119,6 +225,7 @@ function createSessionHarness() {
         ? {
             expiresAt: record.expiresAt,
             id: record.id,
+            issuedAt: record.issuedAt,
             revokedAt: state.revokedTokenIds.includes(record.id)
               ? new Date("2026-04-08T12:30:00.000Z")
               : null,
@@ -127,13 +234,58 @@ function createSessionHarness() {
         : null;
     },
     async findUserById() {
-      return createUserRecord();
+      return state.user;
     },
     async recordAuthEvent(input) {
       state.events.push(input);
     },
     async revokeRefreshToken(input) {
       state.revokedTokenIds.push(input.tokenId);
+    },
+    async revokeRefreshTokensForUser(input) {
+      state.revokedUsers.push({
+        reason: input.revokedReason,
+        userId: input.userId,
+      });
+    },
+    async rotateRefreshToken(input) {
+      state.rotateCalls.push({
+        ...(input.ipAddress ? { ipAddress: input.ipAddress } : {}),
+        refreshTokenHash: input.refreshTokenHash,
+        ...(input.userAgent ? { userAgent: input.userAgent } : {}),
+      });
+      const record = state.createdRefreshTokens.find(
+        (candidate) => candidate.tokenHash === input.refreshTokenHash,
+      );
+
+      if (
+        state.forceRotateRace ||
+        !record ||
+        state.revokedTokenIds.includes(record.id) ||
+        record.expiresAt <= input.issuedAt ||
+        (state.user.sessionsRevokedAt &&
+          record.issuedAt <= state.user.sessionsRevokedAt)
+      ) {
+        return null;
+      }
+
+      state.revokedTokenIds.push(record.id);
+      state.createdRefreshTokens.push({
+        expiresAt: input.expiresAt,
+        id: `rt_${state.createdRefreshTokens.length + 1}`,
+        issuedAt: input.issuedAt,
+        tokenHash: input.newTokenHash,
+        userId: record.userId,
+      });
+      state.events.push({
+        eventType: "token_refresh",
+        ...(input.ipAddress ? { ipAddress: input.ipAddress } : {}),
+        occurredAt: input.issuedAt,
+        ...(input.userAgent ? { userAgent: input.userAgent } : {}),
+        userId: record.userId,
+      });
+
+      return state.user;
     },
   };
 
@@ -153,7 +305,9 @@ function createSessionHarness() {
   };
 }
 
-function createUserRecord(): AuthUserRecord {
+function createUserRecord(
+  overrides: Partial<AuthUserRecord> = {},
+): AuthUserRecord {
   return {
     availablePortals: ["admin"],
     email: "manager@example.com",
@@ -172,7 +326,9 @@ function createUserRecord(): AuthUserRecord {
     primaryImageUrl: null,
     preferredPortal: "admin",
     requiresPasswordChange: false,
+    sessionsRevokedAt: null,
     slug: "store-manager",
     status: "active",
+    ...overrides,
   };
 }

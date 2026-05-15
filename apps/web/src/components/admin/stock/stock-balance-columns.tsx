@@ -1,11 +1,12 @@
 import type { AdminStockBalanceSummary } from "@shop/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 export function buildStockBalanceColumns(
   onCount: ((row: AdminStockBalanceSummary) => void) | null,
+  onWriteOff: ((row: AdminStockBalanceSummary) => void) | null = null,
 ): ColumnDef<AdminStockBalanceSummary>[] {
   const base: ColumnDef<AdminStockBalanceSummary>[] = [
     {
@@ -18,6 +19,11 @@ export function buildStockBalanceColumns(
           <p className="mt-0.5 text-xs text-muted-foreground">
             {row.original.variantName}
           </p>
+          <StockRowActions
+            onCount={onCount}
+            onWriteOff={onWriteOff}
+            row={row.original}
+          />
         </div>
       ),
     },
@@ -84,25 +90,45 @@ export function buildStockBalanceColumns(
     },
   ];
 
-  if (!onCount) return base;
+  return base;
+}
 
-  return [
-    ...base,
-    {
-      id: "actions",
-      header: "",
-      meta: { align: "right" },
-      cell: ({ row }) => (
+function StockRowActions({
+  onCount,
+  onWriteOff,
+  row,
+}: {
+  onCount: ((row: AdminStockBalanceSummary) => void) | null;
+  onWriteOff: ((row: AdminStockBalanceSummary) => void) | null;
+  row: AdminStockBalanceSummary;
+}) {
+  if (!onCount && !onWriteOff) return null;
+
+  return (
+    <div className="mt-2 flex flex-wrap gap-1">
+      {onCount ? (
         <Button
-          onClick={() => onCount(row.original)}
+          onClick={() => onCount(row)}
           size="sm"
           type="button"
-          variant="ghost"
+          variant="outline"
         >
           <ClipboardList className="size-3.5" />
           Count
         </Button>
-      ),
-    },
-  ];
+      ) : null}
+      {onWriteOff ? (
+        <Button
+          disabled={row.availableQuantity <= 0}
+          onClick={() => onWriteOff(row)}
+          size="sm"
+          type="button"
+          variant="ghost"
+        >
+          <Trash2 className="size-3.5" />
+          Write off
+        </Button>
+      ) : null}
+    </div>
+  );
 }

@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   adminAssignUserRoleRequestSchema,
+  adminCreateUserRequestSchema,
+  adminCreateUserResponseSchema,
   adminSetUserPermissionOverrideRequestSchema,
   adminUpdateUserStatusRequestSchema,
   adminUserAccessDetailSchema,
@@ -88,5 +90,35 @@ describe("admin user access contracts", () => {
     assert.equal(roleRequest.roleSlug, "manager");
     assert.equal(overrideRequest.effect, "deny");
     assert.equal(statusRequest.status, "suspended");
+  });
+
+  it("accepts internal staff provisioning requests and responses", () => {
+    const request = adminCreateUserRequestSchema.parse({
+      email: "worker@example.com",
+      firstName: "Store",
+      lastName: "Worker",
+      reason: "New warehouse hire",
+      roleAssignments: [
+        {
+          locationSlug: "downtown-store",
+          roleSlug: "worker",
+        },
+      ],
+    });
+    const response = adminCreateUserResponseSchema.parse({
+      email: "worker@example.com",
+      firstName: "Store",
+      lastName: "Worker",
+      requiresPasswordChange: true,
+      roleAssignments: request.roleAssignments,
+      setupInstruction:
+        "Ask the user to complete password setup from the sign-in page.",
+      slug: "store-worker",
+      status: "active",
+    });
+
+    assert.equal(request.roleAssignments[0]?.roleSlug, "worker");
+    assert.equal(response.requiresPasswordChange, true);
+    assert.equal("id" in response, false);
   });
 });

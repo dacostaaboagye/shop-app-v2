@@ -1,13 +1,6 @@
-import { AuthCallbackPageClient } from "./auth-callback-page-client";
+import { redirect } from "next/navigation";
+import { toRoute } from "@/lib/routes";
 
-type AuthCallbackPageProps = {
-  searchParams: Promise<{ oauth_error?: string }>;
-};
-
-export default async function AuthCallbackPage({
-  searchParams,
-}: AuthCallbackPageProps) {
-  const { oauth_error: oauthError } = await searchParams;
-
-  return <AuthCallbackPageClient oauthError={oauthError ?? null} />;
+export default function AuthCallbackPage() {
+  redirect(toRoute("/login"));
 }
