@@ -1,6 +1,7 @@
 "use client";
 
 import type {
+  LocationAssignmentSummary,
   ManagerHandoverLane,
   ManagerHandoverSummary,
 } from "@shop/contracts";
@@ -9,6 +10,10 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+  AssignmentHistoryDialog,
+  type AssignmentHistoryTarget,
+} from "@/components/stock/assignment-history-dialog";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
@@ -34,6 +39,8 @@ export function ManagerAssignmentsPageClient() {
   const queryClient = useQueryClient();
   const [selectedHandoverLane, setSelectedHandoverLane] =
     useState<ManagerHandoverLane>(DEFAULT_HANDOVER_LANE);
+  const [historyTarget, setHistoryTarget] =
+    useState<AssignmentHistoryTarget | null>(null);
   const {
     accessibleLocationScopes,
     isLoading,
@@ -140,6 +147,14 @@ export function ManagerAssignmentsPageClient() {
                 assignmentsQuery.data?.locationName ||
                 selectedLocationScope.locationName
               }
+              onViewHistory={(item) =>
+                setHistoryTarget(
+                  toHistoryTarget(item, {
+                    locationId: selectedLocationScope.locationId,
+                    locationSlug: selectedLocationScope.locationSlug,
+                  }),
+                )
+              }
             />
           )}
 
@@ -175,8 +190,32 @@ export function ManagerAssignmentsPageClient() {
           )}
         </div>
       ) : null}
+      <AssignmentHistoryDialog
+        onOpenChange={(open) => {
+          if (!open) {
+            setHistoryTarget(null);
+          }
+        }}
+        open={!!historyTarget}
+        scope="manager"
+        target={historyTarget}
+      />
     </PageShell>
   );
+}
+
+function toHistoryTarget(
+  item: LocationAssignmentSummary,
+  location: { locationId: string; locationSlug: string },
+): AssignmentHistoryTarget {
+  return {
+    locationId: location.locationId,
+    locationSlug: location.locationSlug,
+    productName: item.productName,
+    sku: item.sku,
+    skuId: item.skuId,
+    variantName: item.variantName,
+  };
 }
 
 function AssignmentListSkeleton() {

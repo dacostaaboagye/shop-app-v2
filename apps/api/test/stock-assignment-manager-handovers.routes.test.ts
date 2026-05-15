@@ -149,6 +149,14 @@ function createManagerAssignmentServer(input: {
           return [];
         },
       },
+      assignmentHistoryQueryRepository: {
+        async getAssignmentHistory() {
+          return null;
+        },
+        async getWorkerAssignmentHistory() {
+          return null;
+        },
+      },
       handoverRepository: {
         async getOriginalWorkerForChain() {
           return null;
