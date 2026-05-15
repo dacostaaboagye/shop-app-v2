@@ -28,6 +28,7 @@ The current repo already has partial surfaces:
 - Manager stock assignment list and new-assignment flow exist under `/manager/assignments`.
 - Worker assignment list exists under `/worker/assignments`.
 - Worker handovers route now has the E-06-01 operational workspace shipped in PR #181.
+- Manager handover oversight is shipped in PR #183 and is visible from `/manager/assignments`.
 - Backend assignment and handover command endpoints exist for manager and worker portals.
 
 The gap is not the ledger. The gap is the day-to-day custody workflow and the query surfaces that make handovers visible.
@@ -55,9 +56,10 @@ The gap is not the ledger. The gap is the day-to-day custody workflow and the qu
 ### Frontend
 
 - `/manager/assignments` shows current location assignments.
+- `/manager/assignments` includes active handover oversight for managed locations.
 - `/manager/assignments/new` supports assigning multiple variants to one worker.
 - `/worker/assignments` shows current worker assignments and supports supply-request actions.
-- `/worker/handovers` is a placeholder and has no operational workflow yet.
+- `/worker/handovers` shows active received, active given, reverted, and historical handover chains.
 
 ## User Journeys
 
@@ -117,12 +119,15 @@ First implementation slice. Shipped in [PR #181](https://github.com/dacostaaboag
 - Added handover initiation action from `/worker/assignments`.
 - Added focused route, service/query, contract, and UI helper tests.
 
-### E-06-02 Manager Handover Oversight
+### E-06-02 Manager Handover Oversight - shipped
 
-- Add manager handover list query for managed locations.
-- Surface active handovers from `/manager/assignments` or a dedicated manager handover tab.
-- Add manager revert/intervention action with reason capture if the current backend contract needs audit reason support.
-- Add tests for manager location scoping and stuck-handover intervention.
+Second implementation slice. Shipped in [PR #183](https://github.com/dacostaaboagye/shop-app-v2/pull/183).
+
+- Added manager handover list query support for managed locations.
+- Added manager handover oversight API routing under the assignments module.
+- Surfaced active handovers from `/manager/assignments`.
+- Reused the existing append-only handover revert path for manager intervention.
+- Added focused manager route, location-scope, contract, query, and UI helper tests.
 
 ### E-06-03 Assignment History Polish
 
@@ -170,3 +175,4 @@ First implementation slice. Shipped in [PR #181](https://github.com/dacostaaboag
 ## Related PRs
 
 - [PR #181](https://github.com/dacostaaboagye/shop-app-v2/pull/181) - `feat(e-06-01): implement worker handover workspace`
+- [PR #183](https://github.com/dacostaaboagye/shop-app-v2/pull/183) - `feat(e-06-02): add manager handover oversight`
