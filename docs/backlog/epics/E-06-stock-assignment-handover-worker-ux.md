@@ -1,7 +1,7 @@
 ---
 id: E-06
 title: Stock assignment and handover worker UX layer
-status: in_progress
+status: shipped
 priority: P1
 domain: full-stack
 owner: codex
@@ -111,6 +111,8 @@ The gap is not the ledger. The gap is the day-to-day custody workflow and the qu
 - New handover list DTOs should include display-ready names, slugs where available, and the existing `handoverChainId` UUID. Do not introduce raw database surrogate IDs beyond the already-exposed UUID contract.
 
 ## Proposed Slices
+
+E-06 is shipped. The implementation landed across the three slices below:
 
 ### E-06-01 Worker Handover Workspace - shipped
 
