@@ -250,7 +250,7 @@ export class PostgresInvoiceQueryRepository {
   }
 }
 
-function mapInvoiceWithRelations(
+export function mapInvoiceWithRelations(
   row: Parameters<typeof mapInvoice>[0] & {
     parentInvoice?: { reference: string } | null;
     replacementInvoice?: { reference: string } | null;

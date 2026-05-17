@@ -60,6 +60,29 @@ export type InvoiceWithLines = InvoiceRecord & {
   lines: InvoiceLineItemRecord[];
 };
 
+export type AdminInvoiceReportingTotals = {
+  adjustedInvoiceCount: number;
+  creditedAmount: string;
+  creditNoteCount: number;
+  currentPayableAmount: string;
+  grossOriginalSalesAmount: string;
+  supersededAmount: string;
+  voidedAmount: string;
+};
+
+export type AdminInvoiceRecord = InvoiceRecord & {
+  locationName: string;
+  locationSlug: string;
+};
+
+export type AdminInvoiceListResult = {
+  items: AdminInvoiceRecord[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totals: AdminInvoiceReportingTotals;
+};
+
 export type SaleLineInput = {
   invoiceId?: string;
   locationId: string;
