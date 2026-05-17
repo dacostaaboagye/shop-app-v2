@@ -17,6 +17,13 @@ export interface ReferenceNumberRepository {
 }
 
 type ReferenceNumberServiceOptions = {
+  onReferenceReserved?: (event: {
+    occurredAt: Date;
+    reference: string;
+    sequenceKey: ReferenceSequenceKey;
+    sequenceStorageKey: string;
+    sequenceValue: number;
+  }) => Promise<void> | void;
   startsAt?: Partial<Record<ReferenceSequenceKey, number>>;
 };
 
@@ -31,27 +38,56 @@ export class ReferenceNumberService {
     sequenceKey: ReferenceSequenceKey;
   }): Promise<string> {
     const now = input.now ?? new Date();
+    const sequenceStorageKey = resolveSequenceStorageKey({
+      now,
+      sequenceKey: input.sequenceKey,
+    });
     const sequenceValue = await this.repository.reserveNextSequenceValue({
       description: getSequenceDescription(input.sequenceKey),
       now,
-      sequenceKey: resolveSequenceStorageKey({
-        now,
-        sequenceKey: input.sequenceKey,
-      }),
+      sequenceKey: sequenceStorageKey,
       startsAt: getSequenceStartAt(
         input.sequenceKey,
         this.options.startsAt?.[input.sequenceKey],
       ),
     });
 
-    return formatReferenceNumber({
+    const reference = formatReferenceNumber({
       now,
       sequenceKey: input.sequenceKey,
       sequenceValue,
     });
+
+    this.notifyReferenceReserved({
+      occurredAt: now,
+      reference,
+      sequenceKey: input.sequenceKey,
+      sequenceStorageKey,
+      sequenceValue,
+    });
+
+    return reference;
   }
 
   generateCreditNoteReference(parentReference: string): string {
     return deriveCreditNoteReference(parentReference);
+  }
+
+  private notifyReferenceReserved(event: {
+    occurredAt: Date;
+    reference: string;
+    sequenceKey: ReferenceSequenceKey;
+    sequenceStorageKey: string;
+    sequenceValue: number;
+  }): void {
+    try {
+      const result = this.options.onReferenceReserved?.(event);
+      if (result) {
+        void result.catch(() => {});
+      }
+    } catch {
+      // Reservation visibility must never make a successfully reserved
+      // reference fail after the counter has advanced.
+    }
   }
 }

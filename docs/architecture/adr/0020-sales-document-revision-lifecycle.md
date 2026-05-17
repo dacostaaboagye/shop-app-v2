@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed.
+Accepted.
 
 ## Context
 
@@ -159,6 +159,22 @@ Tradeoffs:
 - reporting must explicitly choose between original, credited, and adjusted
   measures
 - official-document generation must label revised and adjusted relationships
+
+## Public DTO Decision
+
+Workforce-facing invoice contracts may continue to expose the UUID fields that
+already existed before this ADR was accepted while E-09 hardens the current POS
+surface. Those UUIDs are treated as accepted public UUIDs for the workforce API
+only.
+
+Customer-facing invoice contracts must not reuse the workforce DTO as-is. The
+customer portal and ecommerce slices must introduce customer-safe responses that
+use invoice references, order references, location display names, SKU strings,
+and document-chain references instead of worker ids, location ids, sku ids, or
+stock movement ids.
+
+This keeps existing POS/admin/manager/worker behavior stable while preventing
+future customer surfaces from inheriting internal operational identifiers.
 
 ## Initial Implementation Direction
 

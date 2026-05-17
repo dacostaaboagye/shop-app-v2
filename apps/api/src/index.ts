@@ -90,6 +90,7 @@ const officialDocumentRuntime = createOfficialDocumentSettingsRuntime(
 const salesRuntime = createSalesRuntime(databaseRuntime, {
   documentProfileResolver:
     officialDocumentRuntime.officialDocuments.settingsService,
+  logger: console,
   platformEventPublisher: platformEventRuntime.platformEventPublisher,
 });
 const assignmentsRuntime = createAssignmentsRuntime(databaseRuntime, {

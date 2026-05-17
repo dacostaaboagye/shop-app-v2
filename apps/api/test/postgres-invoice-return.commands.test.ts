@@ -12,6 +12,68 @@ import type { CreateReturnTransactionInput } from "../src/modules/sales/sales.co
 const NOW = new Date("2026-04-29T12:00:00.000Z");
 
 describe("createReturnTransaction", () => {
+  it("supersedes a fully returned invoice without creating an adjusted invoice", async () => {
+    const db = new FakeApiDatabase({
+      invoiceRows: [
+        {
+          attributedWorkerId: "worker-1",
+          classification: "outgoing",
+          confirmedAt: NOW,
+          createdBy: "user-1",
+          currencyCode: "GHS",
+          currencyScale: 2,
+          id: "invoice-1",
+          locationId: "location-1",
+          notes: "Original sale",
+          parentInvoiceId: null,
+          paymentMethod: "cash",
+          reference: "INV-POS-00001",
+          replacementInvoiceId: null,
+          revisionCreditNoteId: null,
+          revisionRootInvoiceId: null,
+          status: "confirmed",
+          subtotalAmount: "10.00",
+          taxAmount: "0.00",
+          totalAmount: "10.00",
+          type: "pos",
+          updatedAt: NOW,
+        },
+      ],
+      stockBalanceRows: [
+        {
+          locationId: "location-1",
+          onHandQuantity: 0,
+          skuId: "sku-1",
+          updatedAt: NOW,
+          updatedBy: "user-1",
+        },
+      ],
+    });
+
+    const creditNote = await createReturnTransaction(
+      db as never,
+      returnInput({
+        adjustedInvoice: null,
+        lines: [returnLine({ lineTotal: "10.00", quantity: 1 })],
+        parentInvoiceId: "invoice-1",
+        reference: "CRN-INV-POS-00001",
+        revisionRootInvoiceId: "invoice-1",
+      }),
+    );
+
+    const originalInvoice = db.findInvoiceByReference("INV-POS-00001");
+    const persistedCreditNote = db.findInvoiceByReference("CRN-INV-POS-00001");
+
+    assert.ok(originalInvoice);
+    assert.ok(persistedCreditNote);
+    assert.equal(originalInvoice.status, "superseded");
+    assert.equal(originalInvoice.replacementInvoiceId, null);
+    assert.equal(persistedCreditNote.parentInvoiceId, "invoice-1");
+    assert.equal(persistedCreditNote.replacementInvoiceId ?? null, null);
+    assert.equal(persistedCreditNote.revisionRootInvoiceId, "invoice-1");
+    assert.equal(creditNote.replacementInvoiceReference, null);
+  });
+
   it("persists coherent revision links across repeated partial returns", async () => {
     const db = new FakeApiDatabase({
       invoiceRows: [

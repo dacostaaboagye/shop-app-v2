@@ -136,9 +136,65 @@ describe("ReferenceNumberService", () => {
       ),
     );
   });
+
+  it("emits non-blocking reservation metadata for gap reconciliation", async () => {
+    const reservedReferences: Array<{
+      reference: string;
+      sequenceKey: string;
+      sequenceStorageKey: string;
+      sequenceValue: number;
+    }> = [];
+    const harness = createHarness({
+      onReferenceReserved(event) {
+        reservedReferences.push({
+          reference: event.reference,
+          sequenceKey: event.sequenceKey,
+          sequenceStorageKey: event.sequenceStorageKey,
+          sequenceValue: event.sequenceValue,
+        });
+      },
+    });
+
+    const reference = await harness.service.generateReference({
+      now: new Date("2026-04-08T10:00:00.000Z"),
+      sequenceKey: "invoice-pos",
+    });
+
+    assert.equal(reference, "INV-POS-00001");
+    assert.deepEqual(reservedReferences, [
+      {
+        reference: "INV-POS-00001",
+        sequenceKey: "invoice-pos",
+        sequenceStorageKey: "invoice-pos",
+        sequenceValue: 1,
+      },
+    ]);
+  });
+
+  it("keeps a reserved reference valid when reservation logging fails", async () => {
+    const harness = createHarness({
+      onReferenceReserved() {
+        throw new Error("logger unavailable");
+      },
+    });
+
+    const reference = await harness.service.generateReference({
+      now: new Date("2026-04-08T10:00:00.000Z"),
+      sequenceKey: "invoice-pos",
+    });
+
+    assert.equal(reference, "INV-POS-00001");
+  });
 });
 
 function createHarness(input?: {
+  onReferenceReserved?: (event: {
+    occurredAt: Date;
+    reference: string;
+    sequenceKey: ReferenceSequenceKey;
+    sequenceStorageKey: string;
+    sequenceValue: number;
+  }) => Promise<void> | void;
   startsAt?: Partial<Record<ReferenceSequenceKey, number>>;
 }) {
   const state = {
@@ -162,6 +218,9 @@ function createHarness(input?: {
 
   return {
     service: new ReferenceNumberService(repository, {
+      ...(input?.onReferenceReserved
+        ? { onReferenceReserved: input.onReferenceReserved }
+        : {}),
       ...(input?.startsAt ? { startsAt: input.startsAt } : {}),
     }),
     state,
