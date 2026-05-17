@@ -65,16 +65,13 @@ Implemented foundations:
 
 Important gaps:
 
-- E-09 has no backlog epic file or ticket slices yet.
-- ADR 0020 is still `Proposed`; implementation should either accept it or revise it before downstream channels depend on it.
 - Admin sales currently aggregates manager/location-scoped calls in the frontend instead of using a dedicated admin invoice API.
 - Portal, ecommerce, and manual invoice issuance are not implemented.
 - Customer invoice access is not implemented.
 - Export is not implemented.
 - Manual exceptional invoices and approval workflow are not implemented.
-- Public sales contracts still carry several UUID fields (`locationId`, `skuId`, `stockMovementId`, worker ids). E-09 must either explicitly approve those as public UUIDs for this contract or add slug/reference alternatives and deprecate raw internals before customer-facing channels use them.
 - Handover context is not surfaced on invoice documents yet.
-- Numbering gaps are technically possible and acceptable, but there is no operator-visible sequence-gap log or report.
+- Numbering gaps are technically possible and acceptable. E-09-01 adds operator-visible logging whenever sales invoice references are reserved so gaps can be reconciled without renumbering.
 
 ## Out of Scope
 
@@ -172,7 +169,7 @@ Scope:
 - Verify immutable issued snapshots are created from the document state at issue time and do not drift after later revisions.
 - Add an explicit backend helper for "latest payable invoice" so reports, details, and future channels do not duplicate chain traversal.
 - Add sequence-gap logging or an operator-visible sequence reservation event when an invoice number is reserved but the transaction does not issue a document.
-- Decide and document whether invoice DTO UUID fields are approved public UUIDs or must move to slug/reference alternatives.
+- Document the DTO decision from ADR 0020: existing workforce invoice UUID fields remain accepted for workforce APIs; future customer invoice DTOs must be reference/slug based and must not reuse the workforce DTO as-is.
 
 ### E-09-02 Admin Invoice API And Export
 
@@ -300,12 +297,9 @@ Exports and dashboards must choose one of these measures explicitly. They must n
 
 ## ADR Impact
 
-No new ADR is required before implementation. E-09 should implement ADR 0020 and ADR 0014.
+No new ADR is required before implementation. E-09 implements ADR 0020 and ADR 0014.
 
-First implementation slice must resolve ADR 0020 status:
-
-- mark ADR 0020 accepted if the documented lifecycle remains correct
-- or revise ADR 0020 if the implementation discovers a better model for document chains
+E-09-01 accepts ADR 0020 and adds the public DTO decision that separates existing workforce invoice DTOs from future customer-safe invoice DTOs.
 
 ## Open Questions
 

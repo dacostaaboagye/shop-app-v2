@@ -30,6 +30,9 @@ export function createSalesRuntime(
       OfficialDocumentSettingsService,
       "resolveDocumentProfile"
     >;
+    logger?: {
+      info?: (fields: Record<string, unknown>, message: string) => void;
+    };
     platformEventPublisher?: PlatformEventPublisher;
   },
 ): SalesRuntime {
@@ -41,6 +44,21 @@ export function createSalesRuntime(
   );
   const referenceNumberService = new ReferenceNumberService(
     new PostgresReferenceNumberRepository(databaseRuntime.db),
+    {
+      onReferenceReserved(event) {
+        if (!event.sequenceKey.startsWith("invoice-")) return;
+
+        options.logger?.info?.(
+          {
+            reference: event.reference,
+            sequenceKey: event.sequenceKey,
+            sequenceStorageKey: event.sequenceStorageKey,
+            sequenceValue: event.sequenceValue,
+          },
+          "Sales invoice reference reserved.",
+        );
+      },
+    },
   );
   const catalogVariantRepository = new PostgresPosCatalogVariantRepository(
     databaseRuntime.db,

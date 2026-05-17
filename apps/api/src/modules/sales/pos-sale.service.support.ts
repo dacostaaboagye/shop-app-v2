@@ -5,6 +5,8 @@ import {
   SaleVariantNotFoundError,
 } from "./sales.contracts.js";
 
+export { resolveCurrentPayableInvoice } from "./invoice-lifecycle.js";
+
 export function aggregateReturnQuantities(
   lines: Array<{ quantity: number; skuId: string }>,
 ): Map<string, number> {
@@ -148,13 +150,6 @@ export function resolveAttributedWorkerId(
   return attributedWorkerId;
 }
 
-export function resolveCurrentPayableInvoice(input: {
-  findByReference: (reference: string) => Promise<InvoiceWithLines | null>;
-  invoice: InvoiceWithLines;
-}) {
-  return resolveCurrentPayableInvoiceInternal(input);
-}
-
 export function roundCurrency(value: number): number {
   return Math.round(value * 100) / 100;
 }
@@ -189,64 +184,4 @@ export function validateReturnQuantities(input: {
   }
 
   return originalLineMap;
-}
-
-async function resolveCurrentPayableInvoiceInternal(input: {
-  findByReference: (reference: string) => Promise<InvoiceWithLines | null>;
-  invoice: InvoiceWithLines;
-}): Promise<InvoiceWithLines> {
-  const currentPayableReference = input.invoice.currentPayableReference;
-
-  if (
-    currentPayableReference &&
-    currentPayableReference !== input.invoice.reference
-  ) {
-    const currentPayableInvoice = await input.findByReference(
-      currentPayableReference,
-    );
-
-    if (!currentPayableInvoice) {
-      throw new InvalidReturnError(
-        "The latest payable invoice revision could not be resolved.",
-        {
-          currentPayableReference,
-          reference: input.invoice.reference,
-        },
-      );
-    }
-
-    return currentPayableInvoice;
-  }
-
-  let currentInvoice = input.invoice;
-  const seenReferences = new Set<string>();
-
-  while (currentInvoice.replacementInvoiceReference) {
-    if (seenReferences.has(currentInvoice.reference)) {
-      throw new InvalidReturnError(
-        "Invoice revision chain contains a cycle and cannot be processed.",
-        { reference: currentInvoice.reference },
-      );
-    }
-
-    seenReferences.add(currentInvoice.reference);
-
-    const replacementInvoice = await input.findByReference(
-      currentInvoice.replacementInvoiceReference,
-    );
-
-    if (!replacementInvoice) {
-      throw new InvalidReturnError(
-        "The latest payable invoice revision could not be resolved.",
-        {
-          reference: currentInvoice.reference,
-          replacementReference: currentInvoice.replacementInvoiceReference,
-        },
-      );
-    }
-
-    currentInvoice = replacementInvoice;
-  }
-
-  return currentInvoice;
 }
