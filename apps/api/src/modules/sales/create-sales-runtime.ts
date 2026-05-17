@@ -9,6 +9,7 @@ import { PostgresReferenceNumberRepository } from "../public-identifiers/postgre
 import { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
 import { PosSaleService } from "./pos-sale.service.js";
 import { PosSaleDeliverySourceAdapter } from "./pos-sale-delivery-source.adapter.js";
+import { PostgresAdminInvoiceQueryRepository } from "./postgres-admin-invoice-query.repository.js";
 import { PostgresInvoiceRepository } from "./postgres-invoice.repository.js";
 import { PostgresInvoiceQueryRepository } from "./postgres-invoice-query.repository.js";
 import { PostgresPosCatalogVariantRepository } from "./postgres-pos-catalog.repository.js";
@@ -17,6 +18,7 @@ import { PostgresSalesEventContextRepository } from "./sales-event-context.repos
 type SalesRuntime = {
   sales: {
     invoiceQueryRepository: PostgresInvoiceQueryRepository;
+    adminInvoiceQueryRepository: PostgresAdminInvoiceQueryRepository;
     invoiceRepository: PostgresInvoiceRepository;
     posSaleDeliverySourcePort: PosSaleDeliverySourcePort;
     posSaleService: PosSaleService;
@@ -67,6 +69,9 @@ export function createSalesRuntime(
   const invoiceQueryRepository = new PostgresInvoiceQueryRepository(
     databaseRuntime.db,
   );
+  const adminInvoiceQueryRepository = new PostgresAdminInvoiceQueryRepository(
+    databaseRuntime.db,
+  );
 
   const combinedInvoiceRepository = {
     createSaleTransaction:
@@ -106,6 +111,7 @@ export function createSalesRuntime(
 
   return {
     sales: {
+      adminInvoiceQueryRepository,
       invoiceQueryRepository,
       invoiceRepository,
       posSaleDeliverySourcePort: new PosSaleDeliverySourceAdapter(

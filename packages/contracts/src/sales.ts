@@ -14,12 +14,27 @@ export const invoiceDocumentTypeFilterSchema = z.enum([
   "adjusted",
 ]);
 
+export const invoiceChannelFilterSchema = z.enum([
+  "all",
+  "pos",
+  "portal",
+  "ecommerce",
+  "manual",
+]);
+
 export const invoiceClassificationSchema = z.enum(["outgoing", "internal"]);
 
 export const invoiceClassificationFilterSchema = z.enum([
   "all",
   "outgoing",
   "internal",
+]);
+
+export const invoiceStatusFilterSchema = z.enum([
+  "all",
+  "confirmed",
+  "superseded",
+  "voided",
 ]);
 
 export const invoiceDocumentRoleSchema = z.enum([
@@ -144,14 +159,50 @@ export const invoiceListResponseSchema = z.object({
   total: z.number().int(),
 });
 
+const queryBooleanSchema = z.preprocess((value) => {
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return value;
+}, z.boolean());
+
+export const adminInvoiceListQuerySchema = invoiceListQuerySchema.extend({
+  channel: invoiceChannelFilterSchema.default("all"),
+  currentPayableOnly: queryBooleanSchema.default(false),
+  status: invoiceStatusFilterSchema.default("all"),
+});
+
+export const adminInvoiceReportingTotalsSchema = z.object({
+  adjustedInvoiceCount: z.number().int(),
+  creditedAmount: z.string(),
+  creditNoteCount: z.number().int(),
+  currentPayableAmount: z.string(),
+  grossOriginalSalesAmount: z.string(),
+  supersededAmount: z.string(),
+  voidedAmount: z.string(),
+});
+
+export const adminInvoiceListItemResponseSchema = invoiceResponseSchema
+  .omit({ lines: true })
+  .extend({
+    locationName: z.string(),
+    locationSlug: z.string(),
+  });
+
+export const adminInvoiceListResponseSchema = invoiceListResponseSchema.extend({
+  items: z.array(adminInvoiceListItemResponseSchema),
+  totals: adminInvoiceReportingTotalsSchema,
+});
+
 export type PosPaymentMethod = z.infer<typeof posPaymentMethodSchema>;
 export type InvoiceDocumentTypeFilter = z.infer<
   typeof invoiceDocumentTypeFilterSchema
 >;
+export type InvoiceChannelFilter = z.infer<typeof invoiceChannelFilterSchema>;
 export type InvoiceClassification = z.infer<typeof invoiceClassificationSchema>;
 export type InvoiceClassificationFilter = z.infer<
   typeof invoiceClassificationFilterSchema
 >;
+export type InvoiceStatusFilter = z.infer<typeof invoiceStatusFilterSchema>;
 export type InvoiceDocumentRole = z.infer<typeof invoiceDocumentRoleSchema>;
 export type PosLineItemRequest = z.infer<typeof posLineItemRequestSchema>;
 export type ProcessPosPaymentRequest = z.infer<
@@ -166,3 +217,13 @@ export type InvoiceLineItemResponse = z.infer<
 export type InvoiceResponse = z.infer<typeof invoiceResponseSchema>;
 export type InvoiceListQuery = z.infer<typeof invoiceListQuerySchema>;
 export type InvoiceListResponse = z.infer<typeof invoiceListResponseSchema>;
+export type AdminInvoiceListQuery = z.infer<typeof adminInvoiceListQuerySchema>;
+export type AdminInvoiceReportingTotals = z.infer<
+  typeof adminInvoiceReportingTotalsSchema
+>;
+export type AdminInvoiceListItemResponse = z.infer<
+  typeof adminInvoiceListItemResponseSchema
+>;
+export type AdminInvoiceListResponse = z.infer<
+  typeof adminInvoiceListResponseSchema
+>;

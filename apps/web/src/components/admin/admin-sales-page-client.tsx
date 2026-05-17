@@ -1,34 +1,51 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { useAuthorization } from "@/components/providers/authorization-provider";
-import type { SalesLedgerRecord } from "@/components/sales/sales-ledger-support";
-import { createDefaultSalesLedgerDateRange } from "@/components/sales/sales-ledger-support";
 import { SalesLedgerWorkspace } from "@/components/sales/sales-ledger-workspace";
+import { replaceSalesQuery } from "@/components/sales/sales-page-query.support";
 import { AppErrorBanner } from "@/components/system/app-error";
-import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useActiveLocationScopeOptional } from "@/lib/authorization/use-active-location-scope";
 import { DEFAULT_OFFICIAL_DOCUMENT_PROFILE } from "@/lib/documents/official-document-profile";
 import {
   fetchOfficialDocumentProfile,
   officialDocumentProfileQueryKey,
 } from "@/lib/react-query/official-documents";
-import { fetchAllManagerSales } from "@/lib/react-query/pos-sales";
-
-const DEFAULT_DATE_RANGE = createDefaultSalesLedgerDateRange();
+import {
+  adminInvoicesQueryKey,
+  fetchAdminInvoices,
+} from "@/lib/react-query/pos-sales";
+import { getPageCount, readStringParam } from "@/lib/url-state";
+import { AdminInvoiceExportButton } from "./admin-invoice-export-button";
+import { AdminSalesLoadingState } from "./admin-sales-loading-state";
+import {
+  ADMIN_SALES_DEFAULT_DATE_RANGE,
+  readAdminSalesQueryState,
+} from "./admin-sales-page-client.support";
+import { AdminSalesScopePanel } from "./admin-sales-scope-panel";
 
 export function AdminSalesPageClient() {
-  const [classification, setClassification] = useState<
-    "all" | "internal" | "outgoing"
-  >("all");
-  const [dateFrom, setDateFrom] = useState(DEFAULT_DATE_RANGE.dateFrom);
-  const [dateTo, setDateTo] = useState(DEFAULT_DATE_RANGE.dateTo);
-  const [documentType, setDocumentType] = useState<
-    "adjusted" | "all" | "credit_note" | "invoice"
-  >("all");
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [draftSearch, setDraftSearch] = useState(
+    readStringParam(searchParams, "q"),
+  );
+  const {
+    channel,
+    classification,
+    currentPayableOnly,
+    dateFrom,
+    dateTo,
+    documentType,
+    page,
+    pageSize,
+    querySearch,
+    status,
+  } = readAdminSalesQueryState(searchParams);
   const { can } = useAuthorization();
   const salesScopePermission = can("pos.sales.manage")
     ? "pos.sales.manage"
@@ -40,110 +57,187 @@ export function AdminSalesPageClient() {
     selectedLocationSlug,
     setSelectedLocationSlug,
   } = useActiveLocationScopeOptional(salesScopePermission);
+  useEffect(() => {
+    setDraftSearch(querySearch);
+  }, [querySearch]);
+  useEffect(() => {
+    if (draftSearch === querySearch) return;
 
-  const selectedScopes = useMemo(
+    const timeoutId = window.setTimeout(() => {
+      replaceSalesQuery(router, pathname, searchParams, {
+        page: null,
+        q: draftSearch || null,
+      });
+    }, 350);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [draftSearch, pathname, querySearch, router, searchParams]);
+  const query = useMemo(
     () =>
-      selectedLocationScope
-        ? [selectedLocationScope]
-        : accessibleLocationScopes,
-    [accessibleLocationScopes, selectedLocationScope],
-  );
-  const salesQuery = useQuery({
-    enabled: selectedScopes.length > 0,
-    queryFn: async () => {
-      const results = await Promise.all(
-        selectedScopes.map(async (scope) => {
-          const items = await fetchAllManagerSales({
-            classification,
-            dateFrom,
-            dateTo,
-            documentType,
-            locationId: scope.locationId,
-            pageSize: 100,
-          });
-
-          return items.map<SalesLedgerRecord>((item) => ({
-            ...item,
-            locationName: scope.locationName,
-            locationSlug: scope.locationSlug,
-          }));
-        }),
-      );
-
-      return results.flat();
-    },
-    queryKey: [
-      "sales",
-      "admin-ledger",
-      selectedScopes.map((scope) => scope.locationId),
+      ({
+        channel,
+        classification,
+        currentPayableOnly,
+        dateFrom,
+        dateTo,
+        documentType,
+        ...(selectedLocationScope
+          ? { locationId: selectedLocationScope.locationId }
+          : {}),
+        page,
+        pageSize,
+        ...(querySearch ? { q: querySearch } : {}),
+        status,
+      }) as const,
+    [
+      channel,
       classification,
+      currentPayableOnly,
       dateFrom,
       dateTo,
       documentType,
+      page,
+      pageSize,
+      querySearch,
+      selectedLocationScope,
+      status,
     ],
+  );
+  const salesQuery = useQuery({
+    enabled: !isLoading && accessibleLocationScopes.length > 0,
+    placeholderData: (previousData) => previousData,
+    queryFn: () => fetchAdminInvoices(query),
+    queryKey: [...adminInvoicesQueryKey(query), "ledger"],
     staleTime: 30_000,
   });
+  const profileLocationId =
+    selectedLocationScope?.locationId ??
+    accessibleLocationScopes[0]?.locationId;
   const profileQuery = useQuery({
-    enabled: selectedScopes.length > 0,
-    queryFn: () => fetchOfficialDocumentProfile(selectedScopes[0]?.locationId),
-    queryKey: officialDocumentProfileQueryKey(selectedScopes[0]?.locationId),
+    enabled: !!profileLocationId,
+    queryFn: () => fetchOfficialDocumentProfile(profileLocationId),
+    queryKey: officialDocumentProfileQueryKey(profileLocationId),
     staleTime: 5 * 60_000,
   });
+  const records = useMemo(
+    () => salesQuery.data?.items ?? [],
+    [salesQuery.data],
+  );
+  const totalPages = getPageCount(salesQuery.data?.total ?? 0, pageSize);
+  const safePage = Math.min(page, totalPages);
+  useEffect(() => {
+    if (!salesQuery.data || safePage === page) return;
+
+    replaceSalesQuery(router, pathname, searchParams, {
+      page: safePage === 1 ? null : safePage,
+    });
+  }, [page, pathname, router, safePage, salesQuery.data, searchParams]);
 
   return (
     <PageShell>
       <PageHeader
-        description="Daily sales ledger across the visible network, with store-filtered revenue movement over time."
+        description="Cross-location invoice ledger with backend-calculated reporting totals and export-ready document semantics."
         title="Sales ledger"
       />
 
-      <LocationScopePanel
-        allOptionLabel="All visible shops"
-        description="Stay at all shops to review network productivity, or isolate one location when a stakeholder wants shop-level detail."
-        emptyDescription="No sales locations are available for your current access."
+      <AdminSalesScopePanel
         isLoading={isLoading}
         locationScopes={accessibleLocationScopes}
         onLocationChange={setSelectedLocationSlug}
         selectedLocationSlug={selectedLocationSlug}
-        title="Ledger scope"
       />
 
-      {salesQuery.isPending && selectedScopes.length > 0 ? (
-        <div className="flex flex-col gap-4">
-          <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
-            {[1, 2, 3, 4].map((key) => (
-              <Skeleton key={key} className="h-40 rounded-xl" />
-            ))}
-          </div>
-          <Skeleton className="h-80 rounded-xl" />
-          <Skeleton className="h-96 rounded-xl" />
-        </div>
+      {salesQuery.isPending && accessibleLocationScopes.length > 0 ? (
+        <AdminSalesLoadingState />
       ) : salesQuery.isError ? (
         <AppErrorBanner
-          detail="Could not load the admin sales ledger."
+          detail="Could not load the admin invoice ledger."
           error={salesQuery.error}
           onRetry={() => void salesQuery.refetch()}
-          title="Unable to load sales ledger"
+          title="Unable to load invoices"
         />
       ) : salesQuery.data ? (
         <SalesLedgerWorkspace
+          channel={channel}
           classification={classification}
+          currentPayableOnly={currentPayableOnly}
           dateFrom={dateFrom}
           dateTo={dateTo}
           documentType={documentType}
           moneyProfile={profileQuery.data ?? DEFAULT_OFFICIAL_DOCUMENT_PROFILE}
-          page={1}
-          pageSize={Math.max(salesQuery.data.length, 1)}
-          records={salesQuery.data}
-          search=""
-          totalCount={salesQuery.data.length}
-          onClassificationChange={setClassification}
-          onDateFromChange={setDateFrom}
-          onDateToChange={setDateTo}
-          onDocumentTypeChange={setDocumentType}
-          onPageChange={() => {}}
-          onPageSizeChange={() => {}}
-          onSearchChange={() => {}}
+          page={safePage}
+          pageSize={pageSize}
+          records={records}
+          reportingTotals={salesQuery.data.totals}
+          search={draftSearch}
+          status={status}
+          toolbarAction={
+            <AdminInvoiceExportButton
+              disabled={salesQuery.isFetching || salesQuery.data.total === 0}
+              query={query}
+            />
+          }
+          totalCount={salesQuery.data.total}
+          onChannelChange={(value) =>
+            replaceSalesQuery(router, pathname, searchParams, {
+              channel: value === "all" ? null : value,
+              page: null,
+            })
+          }
+          onDateFromChange={(value) =>
+            replaceSalesQuery(router, pathname, searchParams, {
+              dateFrom:
+                value === ADMIN_SALES_DEFAULT_DATE_RANGE.dateFrom
+                  ? null
+                  : value || null,
+              page: null,
+            })
+          }
+          onDateToChange={(value) =>
+            replaceSalesQuery(router, pathname, searchParams, {
+              dateTo:
+                value === ADMIN_SALES_DEFAULT_DATE_RANGE.dateTo
+                  ? null
+                  : value || null,
+              page: null,
+            })
+          }
+          onClassificationChange={(value) =>
+            replaceSalesQuery(router, pathname, searchParams, {
+              classification: value === "all" ? null : value,
+              page: null,
+            })
+          }
+          onCurrentPayableOnlyChange={(value) =>
+            replaceSalesQuery(router, pathname, searchParams, {
+              currentPayableOnly: value ? "true" : null,
+              page: null,
+            })
+          }
+          onDocumentTypeChange={(value) =>
+            replaceSalesQuery(router, pathname, searchParams, {
+              documentType: value === "all" ? null : value,
+              page: null,
+            })
+          }
+          onPageChange={(value) =>
+            replaceSalesQuery(router, pathname, searchParams, {
+              page: value === 1 ? null : value,
+            })
+          }
+          onPageSizeChange={(value) =>
+            replaceSalesQuery(router, pathname, searchParams, {
+              page: null,
+              pageSize: value === 25 ? null : value,
+            })
+          }
+          onSearchChange={setDraftSearch}
+          onStatusChange={(value) =>
+            replaceSalesQuery(router, pathname, searchParams, {
+              page: null,
+              status: value === "all" ? null : value,
+            })
+          }
         />
       ) : null}
     </PageShell>

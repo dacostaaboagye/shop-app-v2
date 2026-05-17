@@ -139,6 +139,11 @@ const server = createServer({
   adminLocationWrite: adminDirectoryRuntime.adminDirectory,
   adminSuppliers: adminDirectoryRuntime.adminDirectory,
   adminUserAccess: adminDirectoryRuntime.adminDirectory,
+  adminInvoices: {
+    adminInvoiceRepository: salesRuntime.sales.adminInvoiceQueryRepository,
+    invoiceRepository: salesRuntime.sales.invoiceQueryRepository,
+    permissionService: authRuntime.accessControl.permissionService,
+  },
   auth: authRuntime.auth,
   authProfileMedia: {
     accountProfileMediaService,

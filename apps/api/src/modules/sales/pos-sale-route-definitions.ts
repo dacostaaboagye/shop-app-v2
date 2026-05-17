@@ -24,6 +24,21 @@ function authenticatedPosSaleRoute(
 }
 
 export const posSaleRoutes = {
+  adminExportInvoices: posSaleRoute(
+    "GET",
+    "/api/admin/invoices/export.csv",
+    "admin.dashboard.view",
+  ),
+  adminGetInvoice: posSaleRoute(
+    "GET",
+    "/api/admin/invoices/:reference",
+    "admin.dashboard.view",
+  ),
+  adminListInvoices: posSaleRoute(
+    "GET",
+    "/api/admin/invoices",
+    "admin.dashboard.view",
+  ),
   managerGetSale: posSaleRoute(
     "GET",
     "/api/manager/sales/:reference",
