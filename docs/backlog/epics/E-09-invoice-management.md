@@ -158,7 +158,7 @@ Core decisions:
 
 ## Proposed Slices
 
-### E-09-01 Invoice Lifecycle Hardening
+### E-09-01 Invoice Lifecycle Hardening - shipped
 
 Goal: make the current POS invoice and return lifecycle production-grade before additional channels depend on it.
 
@@ -170,6 +170,16 @@ Scope:
 - Add an explicit backend helper for "latest payable invoice" so reports, details, and future channels do not duplicate chain traversal.
 - Add sequence-gap logging or an operator-visible sequence reservation event when an invoice number is reserved but the transaction does not issue a document.
 - Document the DTO decision from ADR 0020: existing workforce invoice UUID fields remain accepted for workforce APIs; future customer invoice DTOs must be reference/slug based and must not reuse the workforce DTO as-is.
+
+Shipped in [PR #194](https://github.com/dacostaaboagye/shop-app-v2/pull/194).
+
+Evidence:
+
+- Accepted ADR 0020 and documented the workforce/customer invoice DTO boundary.
+- Extracted shared invoice lifecycle helpers for current payable invoice/reference resolution.
+- Added regression tests for latest payable resolution, credit-note chain resolution, cycle protection, full return without adjusted invoice, repeated partial returns, immutable issued snapshots, and reference reservation metadata.
+- Added non-blocking sales invoice reference reservation logging for sequence-gap reconciliation.
+- Verified with focused E-09 API tests, full API test suite, `pnpm verify`, and GitHub CI `validate`.
 
 ### E-09-02 Admin Invoice API And Export
 
@@ -313,7 +323,7 @@ E-09-01 accepts ADR 0020 and adds the public DTO decision that separates existin
 
 - E-00D public identifiers and route authorization are shipped.
 - ADR 0014 official documents and money configuration are partially implemented.
-- ADR 0020 sales revision lifecycle exists and must be accepted or revised.
+- ADR 0020 sales revision lifecycle is accepted.
 - E-07, E-12, E-14, and E-16 should consume the E-09 issuance and document-chain model rather than inventing channel-specific invoice behavior.
 
 ## Related Files
