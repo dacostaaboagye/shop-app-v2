@@ -205,7 +205,7 @@ Evidence:
 - Replaced `/admin/sales` frontend aggregation over manager endpoints with the admin invoice API, URL-backed filters, pagination, backend totals, and CSV export.
 - Verified with focused admin invoice route tests, full API test suite, `pnpm guard`, API/web lint and typecheck, and GitHub CI `validate`.
 
-### E-09-03 Channel Invoice Issuance Port
+### E-09-03 Channel Invoice Issuance Port - shipped
 
 Goal: make POS, customer portal, ecommerce, and manual invoices use one issuance service.
 
@@ -216,6 +216,21 @@ Scope:
 - Generate the correct reference sequence by channel.
 - Preserve stock/payment side effects in caller-owned transactions where needed.
 - Add contracts for portal/ecommerce/manual invoice creation outputs without exposing internal ids.
+
+Shipped in [PR #198](https://github.com/dacostaaboagye/shop-app-v2/pull/198).
+
+Evidence:
+
+- Added a channel-neutral `InvoiceIssuanceService` that prepares invoice references, currency snapshots, customer snapshots, immutable SKU line snapshots, payment context, and totals for `pos`, `portal`, `ecommerce`, and `manual` invoices.
+- Added channel-to-reference-sequence mapping for `INV-POS`, `INV-CPO`, `INV-WEB`, and `INV-MAN`.
+- Refactored `PosSaleService` to use the shared issuance preparation path while preserving POS-owned attribution, stock decrement, stock movement creation, and transaction semantics.
+- Added a shared issued-invoice insert command plus `createIssuedInvoiceTransaction` for non-POS callers that do not own stock movement side effects.
+- Added customer-safe invoice creation response contracts for portal/ecommerce/manual outputs without workforce IDs, location IDs, SKU UUIDs, or stock movement IDs.
+- Verified with focused issuance service tests, updated POS sale service tests, contract tests, `pnpm verify`, pre-push `pnpm verify`, and GitHub CI `validate`.
+
+Deferred from this slice:
+
+- Persistence-level source reference/idempotency dedupe is represented in the service input contract, but the storage/index shape should land with the first real portal, ecommerce, or manual caller.
 
 ### E-09-04 Customer Invoice Access
 
