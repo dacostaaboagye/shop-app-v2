@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { PlatformEventRecord } from "../src/modules/events/platform-event.types.js";
+import { InvoiceIssuanceService } from "../src/modules/sales/invoice-issuance.service.js";
 import { PosSaleService } from "../src/modules/sales/pos-sale.service.js";
 import type {
   CreateReturnTransactionInput,
@@ -13,31 +14,44 @@ const NOW = new Date("2026-04-26T14:00:00.000Z");
 describe("PosSaleService currency snapshots", () => {
   it("resolves and persists the current location currency on sale", async () => {
     let createdSaleInput: CreateSaleTransactionInput | null = null;
+    const catalogVariantRepository = {
+      async getVariantsForSale() {
+        return new Map([
+          [
+            "sku-1",
+            {
+              isTaxable: false,
+              name: "Large",
+              productName: "Bottled Water",
+              productSlug: "bottled-water",
+              sellingPrice: "12.50",
+              sku: "BW-L",
+              slug: "large",
+              taxCategory: null,
+            },
+          ],
+        ]);
+      },
+    };
+    const currencyResolver = {
+      async resolveCurrencySnapshot() {
+        return { currencyCode: "GHS", currencyScale: 2 };
+      },
+    };
+    const referenceNumberService = {
+      generateCreditNoteReference() {
+        return "CN/2026/000001";
+      },
+      async generateReference() {
+        return "INV/2026/000001";
+      },
+    };
     const service = new PosSaleService({
-      catalogVariantRepository: {
-        async getVariantsForSale() {
-          return new Map([
-            [
-              "sku-1",
-              {
-                isTaxable: false,
-                name: "Large",
-                productName: "Bottled Water",
-                productSlug: "bottled-water",
-                sellingPrice: "12.50",
-                sku: "BW-L",
-                slug: "large",
-                taxCategory: null,
-              },
-            ],
-          ]);
-        },
-      },
-      currencyResolver: {
-        async resolveCurrencySnapshot() {
-          return { currencyCode: "GHS", currencyScale: 2 };
-        },
-      },
+      invoiceIssuanceService: new InvoiceIssuanceService({
+        catalogVariantRepository,
+        currencyResolver,
+        referenceNumberService,
+      }),
       invoiceRepository: {
         async createReturnTransaction() {
           throw new Error("Not expected in this test.");
@@ -55,14 +69,7 @@ describe("PosSaleService currency snapshots", () => {
           return null;
         },
       },
-      referenceNumberService: {
-        generateCreditNoteReference() {
-          return "CN/2026/000001";
-        },
-        async generateReference() {
-          return "INV/2026/000001";
-        },
-      },
+      referenceNumberService,
       salesAttributionService: {
         async attributeSale() {
           return { workerId: "worker-1" };
@@ -88,17 +95,30 @@ describe("PosSaleService currency snapshots", () => {
 
   it("reuses the parent invoice currency snapshot on return", async () => {
     let createdReturnInput: CreateReturnTransactionInput | null = null;
+    const catalogVariantRepository = {
+      async getVariantsForSale() {
+        return new Map();
+      },
+    };
+    const currencyResolver = {
+      async resolveCurrencySnapshot() {
+        return { currencyCode: "USD", currencyScale: 2 };
+      },
+    };
+    const referenceNumberService = {
+      generateCreditNoteReference() {
+        return "CN/2026/000001";
+      },
+      async generateReference() {
+        return "INV/2026/000001";
+      },
+    };
     const service = new PosSaleService({
-      catalogVariantRepository: {
-        async getVariantsForSale() {
-          return new Map();
-        },
-      },
-      currencyResolver: {
-        async resolveCurrencySnapshot() {
-          return { currencyCode: "USD", currencyScale: 2 };
-        },
-      },
+      invoiceIssuanceService: new InvoiceIssuanceService({
+        catalogVariantRepository,
+        currencyResolver,
+        referenceNumberService,
+      }),
       invoiceRepository: {
         async createReturnTransaction(input) {
           createdReturnInput = input;
@@ -146,14 +166,7 @@ describe("PosSaleService currency snapshots", () => {
           });
         },
       },
-      referenceNumberService: {
-        generateCreditNoteReference() {
-          return "CN/2026/000001";
-        },
-        async generateReference() {
-          return "INV/2026/000001";
-        },
-      },
+      referenceNumberService,
       salesAttributionService: {
         async attributeSale() {
           return { workerId: "worker-1" };
@@ -743,31 +756,48 @@ function createService(
     };
   }> = {},
 ) {
+  const catalogVariantRepository = {
+    async getVariantsForSale() {
+      return new Map([
+        [
+          "sku-1",
+          {
+            isTaxable: false,
+            name: "Large",
+            productName: "Bottled Water",
+            productSlug: "bottled-water",
+            sellingPrice: "12.50",
+            sku: "BW-L",
+            slug: "large",
+            taxCategory: null,
+          },
+        ],
+      ]);
+    },
+  };
+  const currencyResolver = {
+    async resolveCurrencySnapshot() {
+      return { currencyCode: "GHS", currencyScale: 2 };
+    },
+  };
+  const referenceNumberService = {
+    generateCreditNoteReference() {
+      return "CN/2026/000001";
+    },
+    async generateReference() {
+      if (overrides.generateReference) {
+        return overrides.generateReference();
+      }
+      return "INV/2026/000001";
+    },
+  };
+
   return new PosSaleService({
-    catalogVariantRepository: {
-      async getVariantsForSale() {
-        return new Map([
-          [
-            "sku-1",
-            {
-              isTaxable: false,
-              name: "Large",
-              productName: "Bottled Water",
-              productSlug: "bottled-water",
-              sellingPrice: "12.50",
-              sku: "BW-L",
-              slug: "large",
-              taxCategory: null,
-            },
-          ],
-        ]);
-      },
-    },
-    currencyResolver: {
-      async resolveCurrencySnapshot() {
-        return { currencyCode: "GHS", currencyScale: 2 };
-      },
-    },
+    invoiceIssuanceService: new InvoiceIssuanceService({
+      catalogVariantRepository,
+      currencyResolver,
+      referenceNumberService,
+    }),
     invoiceRepository: {
       async createReturnTransaction(input) {
         if (overrides.createReturnTransaction) {
@@ -840,17 +870,7 @@ function createService(
     ...(overrides.platformEventPublisher
       ? { platformEventPublisher: overrides.platformEventPublisher }
       : {}),
-    referenceNumberService: {
-      generateCreditNoteReference() {
-        return "CN/2026/000001";
-      },
-      async generateReference() {
-        if (overrides.generateReference) {
-          return overrides.generateReference();
-        }
-        return "INV/2026/000001";
-      },
-    },
+    referenceNumberService,
     salesEventContextRepository: {
       async getLocationName(locationId) {
         if (overrides.getLocationName) {

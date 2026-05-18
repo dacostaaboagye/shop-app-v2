@@ -1,18 +1,13 @@
-import {
-  invoiceLineItems,
-  invoices,
-  stockBalances,
-  stockMovements,
-} from "@shop/database";
+import { stockBalances, stockMovements } from "@shop/database";
 import { and, eq, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
-import { mapInvoice, mapLineItem } from "./postgres-invoice.mappers.js";
+import type { CreateIssuedInvoiceTransactionInput } from "./invoice-issuance.contracts.js";
 import { createReturnTransaction } from "./postgres-invoice-return.commands.js";
+import { insertIssuedInvoice } from "./postgres-issued-invoice.commands.js";
 import {
   type CreateReturnTransactionInput,
   type CreateSaleTransactionInput,
   InsufficientStockForSaleError,
-  type InvoiceLineItemRecord,
   type InvoiceWithLines,
 } from "./sales.contracts.js";
 
@@ -66,38 +61,8 @@ export class PostgresInvoiceRepository {
           );
       }
 
-      const invoiceRows = await tx
-        .insert(invoices)
-        .values({
-          attributedWorkerId: input.attributedWorkerId,
-          classification: input.classification,
-          confirmedAt: input.confirmedAt,
-          createdBy: input.createdBy,
-          customerBillingAddressLines:
-            input.customerBillingAddressLines ?? null,
-          currencyCode: input.currencyCode,
-          currencyScale: input.currencyScale,
-          customerEmail: input.customerEmail ?? null,
-          customerName: input.customerName ?? null,
-          customerPhone: input.customerPhone ?? null,
-          customerTaxNumber: input.customerTaxNumber ?? null,
-          locationId: input.locationId,
-          notes: input.notes,
-          paymentMethod: input.paymentMethod,
-          reference: input.reference,
-          status: "confirmed",
-          subtotalAmount: input.subtotalAmount,
-          taxAmount: input.taxAmount,
-          totalAmount: input.totalAmount,
-          type: "pos",
-        })
-        .returning();
-
-      const invoice = invoiceRows[0];
-      if (!invoice) throw new Error("Failed to insert invoice.");
-
       const movementSourceType = "pos_sale";
-      const lineRecords: InvoiceLineItemRecord[] = [];
+      const stockMovementIds: string[] = [];
 
       for (const line of input.lineItems) {
         const sourceKey = `${input.reference}:${line.skuId}`;
@@ -119,30 +84,25 @@ export class PostgresInvoiceRepository {
         const movement = movementRows[0];
         if (!movement) throw new Error("Failed to insert stock movement.");
 
-        const lineItemRows = await tx
-          .insert(invoiceLineItems)
-          .values({
-            invoiceId: invoice.id,
-            lineTotal: line.lineTotal,
-            quantity: line.quantity,
-            skuId: line.skuId,
-            skuSnapshot: line.skuSnapshot,
-            stockMovementId: movement.id,
-            taxAmount: line.taxAmount,
-            taxCategory: line.taxCategory,
-            taxRate: line.taxRate,
-            unitPrice: line.unitPrice,
-          })
-          .returning();
-
-        const lineItem = lineItemRows[0];
-        if (!lineItem) throw new Error("Failed to insert invoice line item.");
-
-        lineRecords.push(mapLineItem(lineItem));
+        stockMovementIds.push(movement.id);
       }
 
-      return { ...mapInvoice(invoice), lines: lineRecords };
+      return insertIssuedInvoice(
+        tx,
+        {
+          ...input,
+          channel: "pos",
+          paymentMethod: input.paymentMethod,
+        },
+        { stockMovementIds },
+      );
     });
+  }
+
+  async createIssuedInvoiceTransaction(
+    input: CreateIssuedInvoiceTransactionInput,
+  ): Promise<InvoiceWithLines> {
+    return this.db.transaction((tx) => insertIssuedInvoice(tx, input));
   }
 
   async createReturnTransaction(

@@ -1,11 +1,11 @@
 import type { PlatformEventPublisher } from "../events/platform-event.types.js";
 import type { SalesAttributionService } from "../inventory-ownership/sales-attribution.service.js";
 import type { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
+import type { InvoiceIssuanceService } from "./invoice-issuance.service.js";
 import {
   aggregateReturnQuantities,
   buildAdjustedInvoiceLines,
   buildReturnInvoiceLines,
-  buildSaleLineItems,
   resolveAttributedWorkerId,
   resolveCurrentPayableInvoice,
   roundCurrency,
@@ -17,19 +17,12 @@ import {
   InvalidReturnError,
   InvoiceNotFoundError,
   type InvoiceWithLines,
-  type PosCatalogVariantRepository,
-  type SalesCurrencySnapshot,
 } from "./sales.contracts.js";
 import type { SalesEventContextRepository } from "./sales-event-context.repository.js";
 import { createSalesReturnProcessedEvent } from "./sales-return-events.js";
 
 type PosSaleServiceDeps = {
-  catalogVariantRepository: PosCatalogVariantRepository;
-  currencyResolver: {
-    resolveCurrencySnapshot: (input: {
-      locationId: string;
-    }) => Promise<SalesCurrencySnapshot>;
-  };
+  invoiceIssuanceService: Pick<InvoiceIssuanceService, "prepareInvoice">;
   invoiceRepository: {
     createReturnTransaction: (
       input: CreateReturnTransactionInput,
@@ -80,15 +73,6 @@ export class PosSaleService {
 
   async processSale(input: ProcessSaleInput): Promise<InvoiceWithLines> {
     const now = input.now ?? new Date();
-    const currency = await this.deps.currencyResolver.resolveCurrencySnapshot({
-      locationId: input.locationId,
-    });
-
-    const variantDetails =
-      await this.deps.catalogVariantRepository.getVariantsForSale(
-        input.lines.map((l) => l.skuId),
-      );
-
     const attributions = await Promise.all(
       input.lines.map((line) =>
         this.deps.salesAttributionService.attributeSale({
@@ -100,48 +84,31 @@ export class PosSaleService {
     );
     const attributedWorkerId = resolveAttributedWorkerId(attributions);
 
-    const reference = await this.deps.referenceNumberService.generateReference({
-      now,
-      sequenceKey: "invoice-pos",
-    });
+    const transactionInput =
+      await this.deps.invoiceIssuanceService.prepareInvoice({
+        attributedWorkerId,
+        channel: "pos",
+        classification: "outgoing",
+        createdBy: input.createdBy,
+        customer: {
+          billingAddressLines: input.customerBillingAddressLines ?? null,
+          email: input.customerEmail ?? null,
+          name: input.customerName ?? null,
+          phone: input.customerPhone ?? null,
+          taxNumber: input.customerTaxNumber ?? null,
+        },
+        lines: input.lines,
+        locationId: input.locationId,
+        notes: input.notes ?? null,
+        now,
+        settlement: { paymentMethod: input.paymentMethod },
+      });
 
-    const lineItems = buildSaleLineItems({
-      lines: input.lines,
-      locationId: input.locationId,
-      variantDetails,
-    });
-
-    const subtotalAmount = lineItems.reduce(
-      (sum, l) => sum + parseFloat(l.lineTotal),
-      0,
-    );
-    const totalTaxAmount = 0;
-    const totalAmount = subtotalAmount + totalTaxAmount;
-
-    const transactionInput: CreateSaleTransactionInput = {
+    return this.deps.invoiceRepository.createSaleTransaction({
+      ...transactionInput,
       attributedWorkerId,
-      classification: "outgoing",
-      confirmedAt: now,
-      createdBy: input.createdBy,
-      customerBillingAddressLines: input.customerBillingAddressLines ?? null,
-      currencyCode: currency.currencyCode,
-      currencyScale: currency.currencyScale,
-      customerEmail: input.customerEmail ?? null,
-      customerName: input.customerName ?? null,
-      customerPhone: input.customerPhone ?? null,
-      customerTaxNumber: input.customerTaxNumber ?? null,
-      lineItems,
-      locationId: input.locationId,
-      notes: input.notes ?? null,
-      now,
       paymentMethod: input.paymentMethod,
-      reference,
-      subtotalAmount: subtotalAmount.toFixed(2),
-      taxAmount: totalTaxAmount.toFixed(2),
-      totalAmount: totalAmount.toFixed(2),
-    };
-
-    return this.deps.invoiceRepository.createSaleTransaction(transactionInput);
+    });
   }
 
   async processReturn(input: ProcessReturnInput): Promise<InvoiceWithLines> {

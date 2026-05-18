@@ -22,6 +22,13 @@ export const invoiceChannelFilterSchema = z.enum([
   "manual",
 ]);
 
+export const invoiceIssuanceChannelSchema = z.enum([
+  "pos",
+  "portal",
+  "ecommerce",
+  "manual",
+]);
+
 export const invoiceClassificationSchema = z.enum(["outgoing", "internal"]);
 
 export const invoiceClassificationFilterSchema = z.enum([
@@ -193,11 +200,50 @@ export const adminInvoiceListResponseSchema = invoiceListResponseSchema.extend({
   totals: adminInvoiceReportingTotalsSchema,
 });
 
+export const customerSafeInvoiceLineItemResponseSchema =
+  invoiceLineItemResponseSchema.omit({
+    skuId: true,
+    stockMovementId: true,
+  });
+
+export const invoiceCreationResponseSchema = invoiceResponseSchema
+  .pick({
+    classification: true,
+    confirmedAt: true,
+    createdAt: true,
+    currencyCode: true,
+    currencyScale: true,
+    customerBillingAddressLines: true,
+    customerEmail: true,
+    customerName: true,
+    customerPhone: true,
+    customerTaxNumber: true,
+    notes: true,
+    parentInvoiceReference: true,
+    paymentMethod: true,
+    reference: true,
+    replacementInvoiceReference: true,
+    revisionChain: true,
+    role: true,
+    status: true,
+    subtotalAmount: true,
+    taxAmount: true,
+    totalAmount: true,
+    type: true,
+  })
+  .extend({
+    lines: z.array(customerSafeInvoiceLineItemResponseSchema),
+    type: invoiceIssuanceChannelSchema,
+  });
+
 export type PosPaymentMethod = z.infer<typeof posPaymentMethodSchema>;
 export type InvoiceDocumentTypeFilter = z.infer<
   typeof invoiceDocumentTypeFilterSchema
 >;
 export type InvoiceChannelFilter = z.infer<typeof invoiceChannelFilterSchema>;
+export type InvoiceIssuanceChannel = z.infer<
+  typeof invoiceIssuanceChannelSchema
+>;
 export type InvoiceClassification = z.infer<typeof invoiceClassificationSchema>;
 export type InvoiceClassificationFilter = z.infer<
   typeof invoiceClassificationFilterSchema
@@ -226,4 +272,10 @@ export type AdminInvoiceListItemResponse = z.infer<
 >;
 export type AdminInvoiceListResponse = z.infer<
   typeof adminInvoiceListResponseSchema
+>;
+export type CustomerSafeInvoiceLineItemResponse = z.infer<
+  typeof customerSafeInvoiceLineItemResponseSchema
+>;
+export type InvoiceCreationResponse = z.infer<
+  typeof invoiceCreationResponseSchema
 >;
