@@ -57,18 +57,18 @@ Implemented foundations:
 - POS returns create `CRN-` credit notes.
 - Partial returns create adjusted replacement invoices and mark the prior payable invoice as `superseded`.
 - `PostgresInvoiceQueryRepository` resolves the current payable document in a chain.
+- `PostgresAdminInvoiceQueryRepository` lists admin-visible invoices across permitted locations with backend reporting totals.
 - `SalesIssuedDocumentSnapshotService` issues immutable official document snapshots for sales receipts, invoices, and credit notes.
 - Server-generated PDFs, download, share, print, and email flows exist for sales documents.
-- Admin, manager, and worker sales ledger/detail surfaces exist in the web app.
+- Admin, manager, and worker sales ledger/detail surfaces exist in the web app; admin sales now uses dedicated admin invoice endpoints.
 - ADR 0020 documents the sales document revision lifecycle.
 - ADR 0014 documents official document snapshots, PDFs, branding, and money configuration.
 
 Important gaps:
 
-- Admin sales currently aggregates manager/location-scoped calls in the frontend instead of using a dedicated admin invoice API.
 - Portal, ecommerce, and manual invoice issuance are not implemented.
 - Customer invoice access is not implemented.
-- Export is not implemented.
+- Admin CSV export is implemented; PDF/report-pack exports can follow if needed.
 - Manual exceptional invoices and approval workflow are not implemented.
 - Handover context is not surfaced on invoice documents yet.
 - Numbering gaps are technically possible and acceptable. E-09-01 adds operator-visible logging whenever sales invoice references are reserved so gaps can be reconciled without renumbering.
@@ -181,7 +181,7 @@ Evidence:
 - Added non-blocking sales invoice reference reservation logging for sequence-gap reconciliation.
 - Verified with focused E-09 API tests, full API test suite, `pnpm verify`, and GitHub CI `validate`.
 
-### E-09-02 Admin Invoice API And Export
+### E-09-02 Admin Invoice API And Export - shipped
 
 Goal: give finance/admin users a real cross-location invoice management surface instead of frontend aggregation over manager endpoints.
 
@@ -193,6 +193,17 @@ Scope:
 - Filters: channel/type, status, classification, location, customer, worker, date range, document reference, current-payable only.
 - Response includes reporting totals calculated by backend rules.
 - Admin UI uses the admin endpoints and supports loading, empty, error, pagination, and export states.
+
+Shipped in [PR #196](https://github.com/dacostaaboagye/shop-app-v2/pull/196).
+
+Evidence:
+
+- Added `GET /api/admin/invoices`, `GET /api/admin/invoices/:reference`, and `GET /api/admin/invoices/export.csv`.
+- Added admin-scoped invoice contracts for channel, status, current-payable filtering, backend reporting totals, and location-enriched list rows.
+- Added backend reporting totals for gross original sales, credited value, current payable value, superseded value, and voided value.
+- Added CSV export with explicit reporting measure columns and a first-slice 5,000-row export cap.
+- Replaced `/admin/sales` frontend aggregation over manager endpoints with the admin invoice API, URL-backed filters, pagination, backend totals, and CSV export.
+- Verified with focused admin invoice route tests, full API test suite, `pnpm guard`, API/web lint and typecheck, and GitHub CI `validate`.
 
 ### E-09-03 Channel Invoice Issuance Port
 
