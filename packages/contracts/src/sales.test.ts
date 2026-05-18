@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  invoiceCreationResponseSchema,
   invoiceListQuerySchema,
   invoiceResponseSchema,
   processPosPaymentRequestSchema,
@@ -132,5 +133,61 @@ describe("sales contracts", () => {
       "12 Market Street",
       "Accra",
     ]);
+  });
+
+  it("keeps creation responses free of workforce and stock internals", () => {
+    const parsed = invoiceCreationResponseSchema.parse({
+      classification: "outgoing",
+      confirmedAt: "2026-05-18T10:00:00.000Z",
+      createdAt: "2026-05-18T10:00:00.000Z",
+      currencyCode: "GHS",
+      currencyScale: 2,
+      customerBillingAddressLines: null,
+      customerEmail: "buyer@example.com",
+      customerName: "Adwoa Mensah",
+      customerPhone: null,
+      customerTaxNumber: null,
+      lines: [
+        {
+          lineTotal: "12.50",
+          quantity: 1,
+          skuSnapshot: {
+            productName: "Bottled Water",
+            sku: "BW-L",
+            variantName: "Large",
+          },
+          taxAmount: "0.00",
+          taxCategory: null,
+          taxRate: null,
+          unitPrice: "12.50",
+        },
+      ],
+      notes: null,
+      parentInvoiceReference: null,
+      paymentMethod: null,
+      reference: "INV-CPO-00001",
+      replacementInvoiceReference: null,
+      revisionChain: {
+        currentPayableReference: "INV-CPO-00001",
+        isLatestPayable: true,
+        replacementInvoiceReference: null,
+        revisionCreditNoteReference: null,
+        revisionRootReference: null,
+        sourceInvoiceReference: null,
+      },
+      role: "standard",
+      status: "confirmed",
+      subtotalAmount: "12.50",
+      taxAmount: "0.00",
+      totalAmount: "12.50",
+      type: "portal",
+    });
+
+    assert.equal("attributedWorkerId" in parsed, false);
+    assert.equal("locationId" in parsed, false);
+    const firstLine = parsed.lines[0];
+    assert.ok(firstLine);
+    assert.equal("skuId" in firstLine, false);
+    assert.equal("stockMovementId" in firstLine, false);
   });
 });

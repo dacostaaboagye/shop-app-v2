@@ -7,6 +7,7 @@ import { SalesAttributionService } from "../inventory-ownership/sales-attributio
 import type { OfficialDocumentSettingsService } from "../official-documents/official-document-settings.service.js";
 import { PostgresReferenceNumberRepository } from "../public-identifiers/postgres-reference-number.repository.js";
 import { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
+import { InvoiceIssuanceService } from "./invoice-issuance.service.js";
 import { PosSaleService } from "./pos-sale.service.js";
 import { PosSaleDeliverySourceAdapter } from "./pos-sale-delivery-source.adapter.js";
 import { PostgresAdminInvoiceQueryRepository } from "./postgres-admin-invoice-query.repository.js";
@@ -74,6 +75,8 @@ export function createSalesRuntime(
   );
 
   const combinedInvoiceRepository = {
+    createIssuedInvoiceTransaction:
+      invoiceRepository.createIssuedInvoiceTransaction.bind(invoiceRepository),
     createSaleTransaction:
       invoiceRepository.createSaleTransaction.bind(invoiceRepository),
     createReturnTransaction:
@@ -97,9 +100,15 @@ export function createSalesRuntime(
     },
   };
 
-  const posSaleService = new PosSaleService({
+  const invoiceIssuanceService = new InvoiceIssuanceService({
     catalogVariantRepository,
     currencyResolver,
+    invoiceRepository: combinedInvoiceRepository,
+    referenceNumberService,
+  });
+
+  const posSaleService = new PosSaleService({
+    invoiceIssuanceService,
     invoiceRepository: combinedInvoiceRepository,
     platformEventPublisher: options.platformEventPublisher ?? null,
     referenceNumberService,
