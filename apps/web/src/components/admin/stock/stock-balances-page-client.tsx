@@ -13,14 +13,11 @@ import {
   AdminStockFilterPanel,
   formatAdminStockResultLabel,
 } from "@/components/admin/stock/admin-stock-filter-panel";
-import { OpeningStockSetupWorkspace } from "@/components/admin/stock/opening-stock-setup-workspace";
 import { buildStockBalanceColumns } from "@/components/admin/stock/stock-balance-columns";
 import { StockBalanceTableSection } from "@/components/admin/stock/stock-balance-table-section";
 import { StockCountDialog } from "@/components/admin/stock/stock-count-dialog";
-import { StockCountWorkspace } from "@/components/admin/stock/stock-count-workspace";
 import { useAuthorization } from "@/components/providers/authorization-provider";
 import { useStockWriteOffDialog } from "@/components/stock/use-stock-write-off-dialog";
-import { AppBanner } from "@/components/system/app-banner";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
 import {
   adminBrandsQueryKey,
@@ -34,7 +31,6 @@ import {
 } from "@/lib/react-query/admin-directory";
 import {
   fetchStockBalances,
-  postOpeningStock,
   postStockCount,
   stockBalancesQueryKey,
 } from "@/lib/react-query/stock-admin";
@@ -55,7 +51,6 @@ export function StockBalancesPageClient() {
   const [countTarget, setCountTarget] =
     useState<AdminStockBalanceSummary | null>(null);
   const [countOpen, setCountOpen] = useState(false);
-  const [openingResetKey, setOpeningResetKey] = useState(0);
 
   const canCount = can("inventory.write");
   const locationsQuery = useQuery({
@@ -85,13 +80,6 @@ export function StockBalancesPageClient() {
       setCountTarget(null);
     },
   });
-  const openingStockMutation = useMutation({
-    mutationFn: postOpeningStock,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["stock", "balances"] });
-      setOpeningResetKey((key) => key + 1);
-    },
-  });
   const { openWriteOffDialog, writeOffDialog } = useStockWriteOffDialog({
     invalidateQueryKeys: [
       ["stock", "balances"],
@@ -106,7 +94,7 @@ export function StockBalancesPageClient() {
     canCount && filter.locationSlug ? openWriteOffDialog : null,
   );
 
-  function openCountDialog(row: AdminStockBalanceSummary | null) {
+  function openCountDialog(row: AdminStockBalanceSummary) {
     setCountTarget(row);
     countMutation.reset();
     setCountOpen(true);
@@ -128,14 +116,8 @@ export function StockBalancesPageClient() {
         hasFilters={hasFilters}
         locations={locationsQuery.data?.items ?? []}
         locationsLoading={locationsQuery.isPending}
-        onClear={() => {
-          openingStockMutation.reset();
-          handleClear();
-        }}
-        onSubmit={(event) => {
-          openingStockMutation.reset();
-          handleSubmit(event);
-        }}
+        onClear={handleClear}
+        onSubmit={handleSubmit}
         resultLabel={
           stockQuery.data
             ? formatAdminStockResultLabel({
@@ -150,53 +132,6 @@ export function StockBalancesPageClient() {
         }
         updateDraft={updateDraft}
       />
-
-      {canCount && filter.locationSlug ? (
-        <>
-          <OpeningStockSetupWorkspace
-            error={openingStockMutation.error}
-            isPending={openingStockMutation.isPending}
-            key={`${filter.locationSlug}:${openingResetKey}`}
-            lookup={{ locationSlug: filter.locationSlug, type: "admin" }}
-            locationName={getStockBalanceLocationName(
-              filter.locationSlug,
-              stockQuery.data?.locationName,
-              locationsQuery.data?.items,
-            )}
-            locationSlug={filter.locationSlug}
-            onSubmit={(req) => {
-              openingStockMutation.reset();
-              openingStockMutation.mutate(req);
-            }}
-            successMessage={
-              openingStockMutation.data
-                ? `${openingStockMutation.data.initializedCount} SKU baseline(s) were initialized for ${openingStockMutation.data.locationName}.`
-                : null
-            }
-          />
-          <StockCountWorkspace
-            error={countMutation.error}
-            isPending={countMutation.isPending}
-            locationName={getStockBalanceLocationName(
-              filter.locationSlug,
-              stockQuery.data?.locationName,
-              locationsQuery.data?.items,
-            )}
-            locationSlug={filter.locationSlug}
-            onSubmit={(req) => {
-              countMutation.reset();
-              countMutation.mutate(req);
-            }}
-          />
-        </>
-      ) : null}
-      {canCount && !filter.locationSlug ? (
-        <AppBanner
-          description="Opening stock and stock counts are location-specific. Choose a location above to prepare or correct quantities."
-          title="Select a location to manage stock"
-          tone="info"
-        />
-      ) : null}
 
       <StockBalanceTableSection
         columns={columns}
