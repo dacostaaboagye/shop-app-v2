@@ -121,21 +121,21 @@ export class PostgresManagerHandoverQueryRepository {
         product_variants.slug AS "variantSlug",
         catalog_products.name AS "productName",
         catalog_products.slug AS "productSlug",
-        trim(concat(from_user.first_name, ' ', from_user.last_name)) AS "fromWorkerName",
-        from_user.slug AS "fromWorkerSlug",
-        trim(concat(to_user.first_name, ' ', to_user.last_name)) AS "toWorkerName",
-        to_user.slug AS "toWorkerSlug",
-        trim(concat(current_user.first_name, ' ', current_user.last_name)) AS "currentWorkerName",
-        current_user.slug AS "currentWorkerSlug"
+        trim(concat(from_worker.first_name, ' ', from_worker.last_name)) AS "fromWorkerName",
+        from_worker.slug AS "fromWorkerSlug",
+        trim(concat(to_worker.first_name, ' ', to_worker.last_name)) AS "toWorkerName",
+        to_worker.slug AS "toWorkerSlug",
+        trim(concat(active_worker.first_name, ' ', active_worker.last_name)) AS "currentWorkerName",
+        active_worker.slug AS "currentWorkerSlug"
       FROM latest
       JOIN first_out ON first_out.handover_chain_id = latest.handover_chain_id
       JOIN first_in ON first_in.handover_chain_id = latest.handover_chain_id
       JOIN locations ON locations.id = latest.location_id
       JOIN product_variants ON product_variants.id = latest.sku_id
       JOIN catalog_products ON catalog_products.id = product_variants.product_id
-      JOIN users from_user ON from_user.id = first_out.worker_id
-      JOIN users to_user ON to_user.id = first_in.worker_id
-      JOIN users current_user ON current_user.id = latest.worker_id
+      JOIN users from_worker ON from_worker.id = first_out.worker_id
+      JOIN users to_worker ON to_worker.id = first_in.worker_id
+      JOIN users active_worker ON active_worker.id = latest.worker_id
       ORDER BY latest.effective_from DESC
     `);
 

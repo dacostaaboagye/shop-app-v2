@@ -2,12 +2,10 @@
 
 import type { AdminStockBalanceSummary } from "@shop/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ClipboardList } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { buildStockBalanceColumns } from "@/components/admin/stock/stock-balance-columns";
 import {
   ManagerBulkSupplyDialogSection,
-  ManagerOpeningStockSetup,
   ManagerStockCountDialogSection,
   ManagerStockMetrics,
   ManagerStockTableSection,
@@ -16,13 +14,11 @@ import { StockSearchToolbar } from "@/components/stock/stock-workspace-panels";
 import { useStockWriteOffDialog } from "@/components/stock/use-stock-write-off-dialog";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
-import { Button } from "@/components/ui/button";
 import type { SupplyRequestTarget } from "@/components/worker/stock/supply-request-dialog.types";
 import { usePermissionLocationScope } from "@/lib/authorization/use-permission-location-scope";
 import {
   fetchManagerStockBalances,
   managerStockBalancesQueryKey,
-  postManagerOpeningStock,
   postManagerStockCount,
 } from "@/lib/react-query/stock-admin";
 import { postManagerStockWriteOff } from "@/lib/react-query/stock-write-offs";
@@ -46,7 +42,6 @@ export function ManagerStockPageClient() {
   const [requestTargets, setRequestTargets] = useState<SupplyRequestTarget[]>(
     [],
   );
-  const [openingResetKey, setOpeningResetKey] = useState(0);
 
   const query = useMemo(
     () => ({
@@ -74,15 +69,6 @@ export function ManagerStockPageClient() {
       setCountTarget(null);
     },
   });
-  const openingStockMutation = useMutation({
-    mutationFn: postManagerOpeningStock,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: ["stock", "balances", "manager"],
-      });
-      setOpeningResetKey((key) => key + 1);
-    },
-  });
   const { openWriteOffDialog, writeOffDialog } = useStockWriteOffDialog({
     invalidateQueryKeys: [
       ["stock", "balances", "manager"],
@@ -93,7 +79,7 @@ export function ManagerStockPageClient() {
   });
 
   const openCountDialog = useCallback(
-    (row: AdminStockBalanceSummary | null) => {
+    (row: AdminStockBalanceSummary) => {
       setCountTarget(row);
       countMutation.reset();
       setCountOpen(true);
@@ -126,19 +112,6 @@ export function ManagerStockPageClient() {
   return (
     <PageShell>
       <PageHeader
-        actions={
-          canCount ? (
-            <Button
-              onClick={() => openCountDialog(null)}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <ClipboardList data-icon="inline-start" />
-              Enter count
-            </Button>
-          ) : null
-        }
         description="On-hand, reserved, available, and in-transit quantities at your managed location."
         title="Stock levels"
       />
@@ -149,7 +122,6 @@ export function ManagerStockPageClient() {
         isLoading={isLoading}
         locationScopes={accessibleLocationScopes}
         onLocationChange={(slug) => {
-          openingStockMutation.reset();
           setSelectedLocationSlug(slug);
           setSearch("");
           setActiveSearch("");
@@ -172,19 +144,6 @@ export function ManagerStockPageClient() {
         />
       ) : null}
 
-      <ManagerOpeningStockSetup
-        canCount={canCount}
-        error={openingStockMutation.error}
-        isPending={openingStockMutation.isPending}
-        location={selectedLocationScope}
-        onSubmit={(req) => {
-          openingStockMutation.reset();
-          openingStockMutation.mutate(req);
-        }}
-        resetKey={openingResetKey}
-        success={openingStockMutation.data}
-      />
-
       {stockQuery.data ? (
         <ManagerStockMetrics
           items={stockItems}
@@ -206,7 +165,6 @@ export function ManagerStockPageClient() {
         }}
         onRetry={() => void stockQuery.refetch()}
       />
-
       <ManagerStockCountDialogSection
         error={countMutation.error}
         isPending={countMutation.isPending}
@@ -216,7 +174,10 @@ export function ManagerStockPageClient() {
           setCountOpen(open);
           if (!open) countMutation.reset();
         }}
-        onSubmit={(req) => countMutation.mutate(req)}
+        onSubmit={(req) => {
+          countMutation.reset();
+          countMutation.mutate(req);
+        }}
         open={countOpen}
         row={countTarget}
       />
