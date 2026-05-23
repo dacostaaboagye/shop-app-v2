@@ -18,6 +18,7 @@ export * from "./catalog-variants.js";
 export * from "./deliveries.js";
 export * from "./errors.js";
 export * from "./manager-dashboard.js";
+export * from "./manual-invoices.js";
 export * from "./messaging.js";
 export * from "./notifications.js";
 export * from "./official-document-email-templates.js";

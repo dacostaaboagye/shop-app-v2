@@ -229,6 +229,18 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
     description: "View all POS sales and invoices for a managed location.",
   },
   {
+    key: "invoices.manual.request",
+    description: "Submit manual invoice requests for a managed location.",
+  },
+  {
+    key: "invoices.manual.view",
+    description: "View manual invoice requests for assigned locations.",
+  },
+  {
+    key: "invoices.manual.approve",
+    description: "Approve or reject manual invoice requests.",
+  },
+  {
     key: "stock.assignments.manage",
     description: "Assign and reassign product variants to workers.",
   },
@@ -317,6 +329,9 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
       "pos.sales.process",
       "pos.sales.view",
       "pos.sales.manage",
+      "invoices.manual.request",
+      "invoices.manual.view",
+      "invoices.manual.approve",
       "stock.assignments.manage",
       "stock.assignments.view",
       "stock.assignments.own.view",
@@ -348,6 +363,8 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
       "pos.sales.process",
       "pos.sales.view",
       "pos.sales.manage",
+      "invoices.manual.request",
+      "invoices.manual.view",
       "stock.assignments.manage",
       "stock.assignments.view",
       "stock.assignments.own.view",

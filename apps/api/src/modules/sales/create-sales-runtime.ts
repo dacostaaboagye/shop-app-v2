@@ -8,17 +8,21 @@ import type { OfficialDocumentSettingsService } from "../official-documents/offi
 import { PostgresReferenceNumberRepository } from "../public-identifiers/postgres-reference-number.repository.js";
 import { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
 import { InvoiceIssuanceService } from "./invoice-issuance.service.js";
+import { ManualInvoiceRequestService } from "./manual-invoice-request.service.js";
 import { PosSaleService } from "./pos-sale.service.js";
 import { PosSaleDeliverySourceAdapter } from "./pos-sale-delivery-source.adapter.js";
 import { PostgresAdminInvoiceQueryRepository } from "./postgres-admin-invoice-query.repository.js";
 import { PostgresInvoiceRepository } from "./postgres-invoice.repository.js";
 import { PostgresInvoiceQueryRepository } from "./postgres-invoice-query.repository.js";
+import { PostgresManualInvoiceRequestRepository } from "./postgres-manual-invoice-request.repository.js";
 import { PostgresPosCatalogVariantRepository } from "./postgres-pos-catalog.repository.js";
 import { PostgresSalesEventContextRepository } from "./sales-event-context.repository.js";
 
 type SalesRuntime = {
   sales: {
     invoiceQueryRepository: PostgresInvoiceQueryRepository;
+    manualInvoiceRequestRepository: PostgresManualInvoiceRequestRepository;
+    manualInvoiceRequestService: ManualInvoiceRequestService;
     adminInvoiceQueryRepository: PostgresAdminInvoiceQueryRepository;
     invoiceRepository: PostgresInvoiceRepository;
     posSaleDeliverySourcePort: PosSaleDeliverySourcePort;
@@ -73,6 +77,8 @@ export function createSalesRuntime(
   const adminInvoiceQueryRepository = new PostgresAdminInvoiceQueryRepository(
     databaseRuntime.db,
   );
+  const manualInvoiceRequestRepository =
+    new PostgresManualInvoiceRequestRepository(databaseRuntime.db);
 
   const combinedInvoiceRepository = {
     createIssuedInvoiceTransaction:
@@ -117,12 +123,20 @@ export function createSalesRuntime(
     ),
     salesAttributionService,
   });
+  const manualInvoiceRequestService = new ManualInvoiceRequestService({
+    catalogVariantRepository,
+    currencyResolver,
+    referenceNumberService,
+    repository: manualInvoiceRequestRepository,
+  });
 
   return {
     sales: {
       adminInvoiceQueryRepository,
       invoiceQueryRepository,
       invoiceRepository,
+      manualInvoiceRequestRepository,
+      manualInvoiceRequestService,
       posSaleDeliverySourcePort: new PosSaleDeliverySourceAdapter(
         invoiceQueryRepository,
       ),
