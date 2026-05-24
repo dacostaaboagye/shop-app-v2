@@ -56,6 +56,67 @@ describe("ManualInvoiceRequestService", () => {
     assert.equal(createdInput.value.totalAmount, "20.00");
   });
 
+  it("uses selected CRM customer details when creating a request", async () => {
+    const createdInput: {
+      value:
+        | Parameters<
+            ManualInvoiceRequestRepository["createRequestTransaction"]
+          >[0]
+        | null;
+    } = { value: null };
+    const service = createService({
+      customerLinkResolver: {
+        async resolveCustomerLink() {
+          return {
+            customerContactId: "contact-1",
+            customerContactReference: "CON-00001",
+            customerId: "customer-1",
+            customerReference: "CUS-00001",
+            customerSlug: "adwoa-mensah",
+            snapshot: {
+              billingAddressLines: ["12 Market Street", "Accra"],
+              email: "billing@example.com",
+              name: "Adwoa Mensah",
+              phone: "+233200000000",
+              taxNumber: "TIN-123",
+            },
+          };
+        },
+      },
+      repository: {
+        async createRequestTransaction(input) {
+          createdInput.value = input;
+          return request({
+            customerBillingAddressLines: input.customerBillingAddressLines,
+            customerContactId: input.customerContactId,
+            customerContactReference: "CON-00001",
+            customerEmail: input.customerEmail,
+            customerId: input.customerId,
+            customerName: input.customerName,
+            customerPhone: input.customerPhone,
+            customerReference: "CUS-00001",
+            customerSlug: "adwoa-mensah",
+            customerTaxNumber: input.customerTaxNumber,
+          });
+        },
+      },
+    });
+
+    const result = await service.createRequest({
+      createdBy: REQUESTER_ID,
+      customerSlug: "adwoa-mensah",
+      lines: [{ quantity: 1, skuId: "sku-1", unitPrice: "10" }],
+      locationId: LOCATION_ID,
+      reason: "Customer needs replacement receipt",
+    });
+
+    assert.ok(createdInput.value);
+    assert.equal(createdInput.value.customerId, "customer-1");
+    assert.equal(createdInput.value.customerContactId, "contact-1");
+    assert.equal(createdInput.value.customerName, "Adwoa Mensah");
+    assert.equal(result.customerReference, "CUS-00001");
+  });
+
   it("approves a pending request by issuing an official manual invoice", async () => {
     const approvedInput: {
       value:
@@ -134,6 +195,9 @@ function createService(
       now?: Date;
       sequenceKey: ReferenceSequenceKey;
     }) => Promise<string>;
+    customerLinkResolver?: ConstructorParameters<
+      typeof ManualInvoiceRequestService
+    >[0]["customerLinkResolver"];
     repository?: Partial<ManualInvoiceRequestRepository>;
   } = {},
 ) {
@@ -181,6 +245,9 @@ function createService(
         return { currencyCode: "GHS", currencyScale: 2 };
       },
     },
+    ...(input.customerLinkResolver
+      ? { customerLinkResolver: input.customerLinkResolver }
+      : {}),
     referenceNumberService: {
       async generateReference(args) {
         return input.generateReference

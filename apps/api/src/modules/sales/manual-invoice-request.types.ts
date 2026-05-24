@@ -27,9 +27,14 @@ export type ManualInvoiceRequestRecord = {
   currencyCode: string;
   currencyScale: number;
   customerBillingAddressLines: string[] | null;
+  customerContactId?: string | null;
+  customerContactReference?: string | null;
   customerEmail: string | null;
+  customerId?: string | null;
   customerName: string;
   customerPhone: string | null;
+  customerReference?: string | null;
+  customerSlug?: string | null;
   customerTaxNumber: string | null;
   id: string;
   lines: ManualInvoiceRequestLineRecord[];
@@ -55,9 +60,11 @@ export type ManualInvoiceRequestRecord = {
 export type CreateManualInvoiceRequestInput = {
   createdBy: string;
   customerBillingAddressLines?: string[] | null;
+  customerContactReference?: string | null;
   customerEmail?: string | null;
-  customerName: string;
+  customerName?: string | null;
   customerPhone?: string | null;
+  customerSlug?: string | null;
   customerTaxNumber?: string | null;
   lines: InvoiceIssuanceLineRequest[];
   locationId: string;
@@ -69,7 +76,9 @@ export type CreateManualInvoiceRequestInput = {
 export type CreateManualInvoiceRequestTransactionInput = {
   createdBy: string;
   customerBillingAddressLines: string[] | null;
+  customerContactId: string | null;
   customerEmail: string | null;
+  customerId: string | null;
   customerName: string;
   customerPhone: string | null;
   customerTaxNumber: string | null;

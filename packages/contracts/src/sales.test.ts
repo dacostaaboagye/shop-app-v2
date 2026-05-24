@@ -39,11 +39,14 @@ describe("sales contracts", () => {
       confirmedAt: "2026-04-21T10:00:00.000Z",
       createdAt: "2026-04-21T09:55:00.000Z",
       customerBillingAddressLines: ["12 Market Street", "Accra"],
+      customerContactReference: "CON-00001",
       currencyCode: "GHS",
       currencyScale: 2,
       customerEmail: "buyer@example.com",
       customerName: "Adwoa Mensah",
       customerPhone: "+233 20 000 0000",
+      customerReference: "CUS-00001",
+      customerSlug: "adwoa-mensah",
       customerTaxNumber: "TIN-123",
       lines: [],
       locationId: "4181707d-c61e-4c22-995d-335295748060",
@@ -69,6 +72,8 @@ describe("sales contracts", () => {
     });
 
     assert.equal(parsed.customerName, "Adwoa Mensah");
+    assert.equal(parsed.customerReference, "CUS-00001");
+    assert.equal(parsed.customerContactReference, "CON-00001");
     assert.equal(parsed.classification, "outgoing");
     assert.equal(parsed.currencyCode, "GHS");
     assert.deepEqual(parsed.customerBillingAddressLines, [
@@ -102,6 +107,9 @@ describe("sales contracts", () => {
     assert.equal(parsed.customerName, null);
     assert.equal(parsed.customerEmail, null);
     assert.equal(parsed.customerBillingAddressLines, null);
+    assert.equal(parsed.customerReference, null);
+    assert.equal(parsed.customerSlug, null);
+    assert.equal(parsed.customerContactReference, null);
     assert.equal(parsed.classification, "outgoing");
     assert.equal(parsed.currencyScale, 2);
     assert.equal(parsed.parentInvoiceReference, null);
@@ -114,9 +122,11 @@ describe("sales contracts", () => {
   it("accepts optional buyer details on POS payment requests", () => {
     const parsed = processPosPaymentRequestSchema.parse({
       customerBillingAddressLines: ["12 Market Street", "Accra"],
+      customerContactReference: "CON-00001",
       customerEmail: "buyer@example.com",
       customerName: "Adwoa Mensah",
       customerPhone: "+233200000000",
+      customerSlug: "adwoa-mensah",
       customerTaxNumber: "TIN-123",
       lines: [
         {
@@ -129,10 +139,30 @@ describe("sales contracts", () => {
     });
 
     assert.equal(parsed.customerName, "Adwoa Mensah");
+    assert.equal(parsed.customerSlug, "adwoa-mensah");
+    assert.equal(parsed.customerContactReference, "CON-00001");
     assert.deepEqual(parsed.customerBillingAddressLines, [
       "12 Market Street",
       "Accra",
     ]);
+  });
+
+  it("requires a CRM customer when POS selects a customer contact", () => {
+    assert.throws(
+      () =>
+        processPosPaymentRequestSchema.parse({
+          customerContactReference: "CON-00001",
+          lines: [
+            {
+              quantity: 2,
+              skuId: "4181707d-c61e-4c22-995d-335295748060",
+            },
+          ],
+          locationId: "5181707d-c61e-4c22-995d-335295748060",
+          paymentMethod: "cash",
+        }),
+      /Customer contact requires/,
+    );
   });
 
   it("keeps creation responses free of workforce and stock internals", () => {
@@ -143,9 +173,12 @@ describe("sales contracts", () => {
       currencyCode: "GHS",
       currencyScale: 2,
       customerBillingAddressLines: null,
+      customerContactReference: null,
       customerEmail: "buyer@example.com",
       customerName: "Adwoa Mensah",
       customerPhone: null,
+      customerReference: null,
+      customerSlug: null,
       customerTaxNumber: null,
       lines: [
         {

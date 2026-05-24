@@ -8,12 +8,15 @@ export function toInvoiceResponse(invoice: {
   confirmedAt: Date | null;
   createdAt: Date;
   customerBillingAddressLines?: string[] | null;
+  customerContactReference?: string | null;
   currentPayableReference?: string | null;
   currencyCode: string;
   currencyScale: number;
   customerEmail?: string | null;
   customerName?: string | null;
   customerPhone?: string | null;
+  customerReference?: string | null;
+  customerSlug?: string | null;
   customerTaxNumber?: string | null;
   lines: {
     lineTotal: string;
@@ -69,11 +72,14 @@ export function toInvoiceResponse(invoice: {
     confirmedAt: invoice.confirmedAt?.toISOString() ?? null,
     createdAt: invoice.createdAt.toISOString(),
     customerBillingAddressLines: invoice.customerBillingAddressLines ?? null,
+    customerContactReference: invoice.customerContactReference ?? null,
     currencyCode: invoice.currencyCode,
     currencyScale: invoice.currencyScale,
     customerEmail: invoice.customerEmail ?? null,
     customerName: invoice.customerName ?? null,
     customerPhone: invoice.customerPhone ?? null,
+    customerReference: invoice.customerReference ?? null,
+    customerSlug: invoice.customerSlug ?? null,
     customerTaxNumber: invoice.customerTaxNumber ?? null,
     lines: invoice.lines.map((line) => ({
       lineTotal: line.lineTotal,

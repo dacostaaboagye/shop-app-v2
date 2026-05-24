@@ -64,12 +64,20 @@ export function registerManualInvoiceRequestRoutes(
           ...(body.customerBillingAddressLines !== undefined
             ? { customerBillingAddressLines: body.customerBillingAddressLines }
             : {}),
+          ...(body.customerContactReference !== undefined
+            ? { customerContactReference: body.customerContactReference }
+            : {}),
           ...(body.customerEmail !== undefined
             ? { customerEmail: body.customerEmail }
             : {}),
-          customerName: body.customerName,
+          ...(body.customerName !== undefined
+            ? { customerName: body.customerName }
+            : {}),
           ...(body.customerPhone !== undefined
             ? { customerPhone: body.customerPhone }
+            : {}),
+          ...(body.customerSlug !== undefined
+            ? { customerSlug: body.customerSlug }
             : {}),
           ...(body.customerTaxNumber !== undefined
             ? { customerTaxNumber: body.customerTaxNumber }

@@ -56,17 +56,28 @@ export const posLineItemRequestSchema = z.object({
   unitPrice: z.string().optional(),
 });
 
-export const processPosPaymentRequestSchema = z.object({
-  customerBillingAddressLines: z.array(z.string().trim().min(1)).optional(),
-  customerEmail: z.string().trim().email().optional(),
-  customerName: z.string().trim().min(1).max(160).optional(),
-  customerPhone: z.string().trim().min(1).max(40).optional(),
-  customerTaxNumber: z.string().trim().min(1).max(80).optional(),
-  lines: z.array(posLineItemRequestSchema).min(1),
-  locationId: z.string().uuid(),
-  notes: z.string().trim().max(500).optional(),
-  paymentMethod: posPaymentMethodSchema,
-});
+export const processPosPaymentRequestSchema = z
+  .object({
+    customerBillingAddressLines: z.array(z.string().trim().min(1)).optional(),
+    customerContactReference: z.string().trim().min(1).max(25).optional(),
+    customerEmail: z.string().trim().email().optional(),
+    customerName: z.string().trim().min(1).max(160).optional(),
+    customerPhone: z.string().trim().min(1).max(40).optional(),
+    customerSlug: z.string().trim().min(1).max(120).optional(),
+    customerTaxNumber: z.string().trim().min(1).max(80).optional(),
+    lines: z.array(posLineItemRequestSchema).min(1),
+    locationId: z.string().uuid(),
+    notes: z.string().trim().max(500).optional(),
+    paymentMethod: posPaymentMethodSchema,
+  })
+  .superRefine((value, ctx) => {
+    if (!value.customerContactReference || value.customerSlug) return;
+    ctx.addIssue({
+      code: "custom",
+      message: "Customer contact requires a selected CRM customer.",
+      path: ["customerContactReference"],
+    });
+  });
 
 export const invoiceLineItemResponseSchema = z.object({
   lineTotal: z.string(),
@@ -92,9 +103,12 @@ export const invoiceResponseSchema = z.object({
   confirmedAt: z.iso.datetime().nullable(),
   createdAt: z.iso.datetime(),
   customerBillingAddressLines: z.array(z.string()).nullable().default(null),
+  customerContactReference: z.string().nullable().default(null),
   customerEmail: z.string().email().nullable().default(null),
   customerName: z.string().nullable().default(null),
   customerPhone: z.string().nullable().default(null),
+  customerReference: z.string().nullable().default(null),
+  customerSlug: z.string().nullable().default(null),
   customerTaxNumber: z.string().nullable().default(null),
   currencyCode: z.string().length(3),
   currencyScale: z.number().int().min(0).max(4),
@@ -214,9 +228,12 @@ export const invoiceCreationResponseSchema = invoiceResponseSchema
     currencyCode: true,
     currencyScale: true,
     customerBillingAddressLines: true,
+    customerContactReference: true,
     customerEmail: true,
     customerName: true,
     customerPhone: true,
+    customerReference: true,
+    customerSlug: true,
     customerTaxNumber: true,
     notes: true,
     parentInvoiceReference: true,

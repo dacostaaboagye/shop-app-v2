@@ -20,9 +20,11 @@ export async function insertIssuedInvoice(
       confirmedAt: input.confirmedAt,
       createdBy: input.createdBy,
       customerBillingAddressLines: input.customerBillingAddressLines ?? null,
+      customerContactId: input.customerContactId ?? null,
       currencyCode: input.currencyCode,
       currencyScale: input.currencyScale,
       customerEmail: input.customerEmail ?? null,
+      customerId: input.customerId ?? null,
       customerName: input.customerName ?? null,
       customerPhone: input.customerPhone ?? null,
       customerTaxNumber: input.customerTaxNumber ?? null,
@@ -66,5 +68,11 @@ export async function insertIssuedInvoice(
     lineRecords.push(mapLineItem(lineItem));
   }
 
-  return { ...mapInvoice(invoice), lines: lineRecords };
+  return {
+    ...mapInvoice(invoice),
+    customerContactReference: input.customerContactReference ?? null,
+    customerReference: input.customerReference ?? null,
+    customerSlug: input.customerSlug ?? null,
+    lines: lineRecords,
+  };
 }

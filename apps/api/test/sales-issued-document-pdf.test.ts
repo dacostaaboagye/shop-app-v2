@@ -14,11 +14,14 @@ const invoiceSnapshot: InvoiceResponse = {
   confirmedAt: "2026-04-20T10:00:00.000Z",
   createdAt: "2026-04-20T09:59:00.000Z",
   customerBillingAddressLines: null,
+  customerContactReference: null,
   currencyCode: "GHS",
   currencyScale: 2,
   customerEmail: null,
   customerName: null,
   customerPhone: null,
+  customerReference: null,
+  customerSlug: null,
   customerTaxNumber: null,
   lines: [
     {

@@ -62,6 +62,12 @@ export class PostgresAdminInvoiceQueryRepository {
           attributedWorker: {
             columns: { email: true, firstName: true, lastName: true },
           },
+          customer: {
+            columns: { reference: true, slug: true },
+          },
+          customerContact: {
+            columns: { reference: true },
+          },
           location: {
             columns: { name: true, slug: true },
           },

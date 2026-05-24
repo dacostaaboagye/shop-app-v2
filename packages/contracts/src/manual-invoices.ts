@@ -25,18 +25,36 @@ export const manualInvoiceRequestLineInputSchema = z.object({
   unitPrice: moneyStringSchema,
 });
 
-export const createManualInvoiceRequestSchema = z.object({
-  customerBillingAddressLines: z.array(z.string().trim().min(1)).optional(),
-  customerEmail: z.string().trim().email().optional(),
-  customerName: z.string().trim().min(1).max(160),
-  customerPhone: z.string().trim().min(1).max(40).optional(),
-  customerTaxNumber: z.string().trim().min(1).max(80).optional(),
-  lines: z.array(manualInvoiceRequestLineInputSchema).min(1),
-  locationId: z.string().uuid(),
-  paymentMethod: posPaymentMethodSchema.optional(),
-  reason: z.string().trim().min(1).max(500),
-  supportingNote: z.string().trim().max(1000).optional(),
-});
+export const createManualInvoiceRequestSchema = z
+  .object({
+    customerBillingAddressLines: z.array(z.string().trim().min(1)).optional(),
+    customerContactReference: z.string().trim().min(1).max(25).optional(),
+    customerEmail: z.string().trim().email().optional(),
+    customerName: z.string().trim().min(1).max(160).optional(),
+    customerPhone: z.string().trim().min(1).max(40).optional(),
+    customerSlug: z.string().trim().min(1).max(120).optional(),
+    customerTaxNumber: z.string().trim().min(1).max(80).optional(),
+    lines: z.array(manualInvoiceRequestLineInputSchema).min(1),
+    locationId: z.string().uuid(),
+    paymentMethod: posPaymentMethodSchema.optional(),
+    reason: z.string().trim().min(1).max(500),
+    supportingNote: z.string().trim().max(1000).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.customerContactReference && !value.customerSlug) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Customer contact requires a selected CRM customer.",
+        path: ["customerContactReference"],
+      });
+    }
+    if (value.customerName || value.customerSlug) return;
+    ctx.addIssue({
+      code: "custom",
+      message: "Customer name is required when no CRM customer is selected.",
+      path: ["customerName"],
+    });
+  });
 
 export const manualInvoiceRequestListQuerySchema = z.object({
   locationId: z.string().uuid().optional(),
@@ -77,9 +95,12 @@ export const manualInvoiceRequestResponseSchema = z.object({
   currencyCode: z.string().length(3),
   currencyScale: z.number().int().min(0).max(4),
   customerBillingAddressLines: z.array(z.string()).nullable(),
+  customerContactReference: z.string().nullable(),
   customerEmail: z.string().email().nullable(),
   customerName: z.string(),
   customerPhone: z.string().nullable(),
+  customerReference: z.string().nullable(),
+  customerSlug: z.string().nullable(),
   customerTaxNumber: z.string().nullable(),
   lines: z.array(manualInvoiceRequestLineResponseSchema),
   locationId: z.string().uuid(),
