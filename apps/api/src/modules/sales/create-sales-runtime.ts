@@ -16,6 +16,7 @@ import { PostgresInvoiceRepository } from "./postgres-invoice.repository.js";
 import { PostgresInvoiceQueryRepository } from "./postgres-invoice-query.repository.js";
 import { PostgresManualInvoiceRequestRepository } from "./postgres-manual-invoice-request.repository.js";
 import { PostgresPosCatalogVariantRepository } from "./postgres-pos-catalog.repository.js";
+import { PostgresSalesCustomerLinkRepository } from "./postgres-sales-customer-link.repository.js";
 import { PostgresSalesEventContextRepository } from "./sales-event-context.repository.js";
 
 type SalesRuntime = {
@@ -79,6 +80,9 @@ export function createSalesRuntime(
   );
   const manualInvoiceRequestRepository =
     new PostgresManualInvoiceRequestRepository(databaseRuntime.db);
+  const customerLinkResolver = new PostgresSalesCustomerLinkRepository(
+    databaseRuntime.db,
+  );
 
   const combinedInvoiceRepository = {
     createIssuedInvoiceTransaction:
@@ -114,6 +118,7 @@ export function createSalesRuntime(
   });
 
   const posSaleService = new PosSaleService({
+    customerLinkResolver,
     invoiceIssuanceService,
     invoiceRepository: combinedInvoiceRepository,
     platformEventPublisher: options.platformEventPublisher ?? null,
@@ -126,6 +131,7 @@ export function createSalesRuntime(
   const manualInvoiceRequestService = new ManualInvoiceRequestService({
     catalogVariantRepository,
     currencyResolver,
+    customerLinkResolver,
     referenceNumberService,
     repository: manualInvoiceRequestRepository,
   });

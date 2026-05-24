@@ -15,6 +15,7 @@ import type {
   PosCatalogVariantRepository,
   SalesCurrencySnapshot,
 } from "./sales.contracts.js";
+import type { SalesCustomerLinkResolver } from "./sales-customer-link.types.js";
 
 type ManualInvoiceRequestServiceDeps = {
   catalogVariantRepository: PosCatalogVariantRepository;
@@ -23,6 +24,7 @@ type ManualInvoiceRequestServiceDeps = {
       locationId: string;
     }) => Promise<SalesCurrencySnapshot>;
   };
+  customerLinkResolver?: SalesCustomerLinkResolver;
   referenceNumberService: Pick<ReferenceNumberService, "generateReference">;
   repository: ManualInvoiceRequestRepository;
 };
@@ -46,14 +48,28 @@ export class ManualInvoiceRequestService {
       input.locationId,
     );
     const totals = calculateTotals(lineItems);
+    const customerLink =
+      await this.deps.customerLinkResolver?.resolveCustomerLink({
+        customerContactReference: input.customerContactReference ?? null,
+        customerSlug: input.customerSlug ?? null,
+      });
+    const customerSnapshot = customerLink?.snapshot ?? null;
+    const customerName = input.customerName ?? customerSnapshot?.name ?? null;
+    if (!customerName) throw missingCustomerNameError();
 
     return this.deps.repository.createRequestTransaction({
       createdBy: input.createdBy,
-      customerBillingAddressLines: input.customerBillingAddressLines ?? null,
-      customerEmail: input.customerEmail ?? null,
-      customerName: input.customerName,
-      customerPhone: input.customerPhone ?? null,
-      customerTaxNumber: input.customerTaxNumber ?? null,
+      customerBillingAddressLines:
+        input.customerBillingAddressLines ??
+        customerSnapshot?.billingAddressLines ??
+        null,
+      customerContactId: customerLink?.customerContactId ?? null,
+      customerEmail: input.customerEmail ?? customerSnapshot?.email ?? null,
+      customerId: customerLink?.customerId ?? null,
+      customerName,
+      customerPhone: input.customerPhone ?? customerSnapshot?.phone ?? null,
+      customerTaxNumber:
+        input.customerTaxNumber ?? customerSnapshot?.taxNumber ?? null,
       currencyCode: currency.currencyCode,
       currencyScale: currency.currencyScale,
       lineItems,
@@ -97,9 +113,14 @@ export class ManualInvoiceRequestService {
         confirmedAt: now,
         createdBy: input.actorUserId,
         customerBillingAddressLines: request.customerBillingAddressLines,
+        customerContactId: request.customerContactId ?? null,
+        customerContactReference: request.customerContactReference ?? null,
         currencyCode: request.currencyCode,
         currencyScale: request.currencyScale,
         customerEmail: request.customerEmail,
+        customerId: request.customerId ?? null,
+        customerReference: request.customerReference ?? null,
+        customerSlug: request.customerSlug ?? null,
         customerName: request.customerName,
         customerPhone: request.customerPhone,
         customerTaxNumber: request.customerTaxNumber,
@@ -202,5 +223,14 @@ function selfApprovalError(): AppError {
     detail: "Manual invoice requests must be approved by another user.",
     statusCode: 403,
     title: "Self approval is not allowed",
+  });
+}
+
+function missingCustomerNameError(): AppError {
+  return new AppError({
+    code: "validation_error",
+    detail: "Customer name is required when no CRM customer is selected.",
+    statusCode: 400,
+    title: "Customer name is required",
   });
 }

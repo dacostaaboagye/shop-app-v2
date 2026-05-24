@@ -15,6 +15,12 @@ export class PostgresInvoiceQueryRepository {
         attributedWorker: {
           columns: { firstName: true, lastName: true, email: true },
         },
+        customer: {
+          columns: { reference: true, slug: true },
+        },
+        customerContact: {
+          columns: { reference: true },
+        },
         lines: true,
         parentInvoice: {
           columns: { reference: true },
@@ -94,6 +100,12 @@ export class PostgresInvoiceQueryRepository {
       orderBy: (t, { desc }) => [desc(t.createdAt)],
       where: and(...conditions),
       with: {
+        customer: {
+          columns: { reference: true, slug: true },
+        },
+        customerContact: {
+          columns: { reference: true },
+        },
         parentInvoice: {
           columns: { reference: true },
         },
@@ -169,6 +181,12 @@ export class PostgresInvoiceQueryRepository {
       orderBy: (t, { desc }) => [desc(t.createdAt)],
       where: and(...conditions),
       with: {
+        customer: {
+          columns: { reference: true, slug: true },
+        },
+        customerContact: {
+          columns: { reference: true },
+        },
         parentInvoice: {
           columns: { reference: true },
         },
@@ -252,6 +270,8 @@ export class PostgresInvoiceQueryRepository {
 
 export function mapInvoiceWithRelations(
   row: Parameters<typeof mapInvoice>[0] & {
+    customer?: { reference: string; slug: string } | null;
+    customerContact?: { reference: string } | null;
     parentInvoice?: { reference: string } | null;
     replacementInvoice?: { reference: string } | null;
     revisionCreditNote?: { reference: string } | null;
@@ -260,6 +280,9 @@ export function mapInvoiceWithRelations(
 ): InvoiceRecord {
   return {
     ...mapInvoice(row),
+    customerContactReference: row.customerContact?.reference ?? null,
+    customerReference: row.customer?.reference ?? null,
+    customerSlug: row.customer?.slug ?? null,
     parentInvoiceReference: row.parentInvoice?.reference ?? null,
     replacementInvoiceReference: row.replacementInvoice?.reference ?? null,
     revisionCreditNoteReference: row.revisionCreditNote?.reference ?? null,

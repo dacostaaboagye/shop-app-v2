@@ -29,6 +29,11 @@ export type InvoiceIssuanceLineRequest = {
 
 export type InvoiceCustomerSnapshotInput = {
   billingAddressLines?: string[] | null;
+  customerContactId?: string | null;
+  customerContactReference?: string | null;
+  customerId?: string | null;
+  customerReference?: string | null;
+  customerSlug?: string | null;
   email?: string | null;
   name?: string | null;
   phone?: string | null;
@@ -61,9 +66,14 @@ export type CreateIssuedInvoiceTransactionInput = {
   confirmedAt: Date;
   createdBy: string;
   customerBillingAddressLines?: string[] | null;
+  customerContactId?: string | null;
+  customerContactReference?: string | null;
   currencyCode: SalesCurrencySnapshot["currencyCode"];
   currencyScale: SalesCurrencySnapshot["currencyScale"];
   customerEmail?: string | null;
+  customerId?: string | null;
+  customerReference?: string | null;
+  customerSlug?: string | null;
   customerName?: string | null;
   customerPhone?: string | null;
   customerTaxNumber?: string | null;

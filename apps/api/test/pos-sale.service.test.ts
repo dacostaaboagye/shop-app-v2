@@ -300,6 +300,65 @@ describe("PosSaleService currency snapshots", () => {
     assert.equal(result.customerName, "Adwoa Mensah");
   });
 
+  it("resolves CRM customer links for POS sale snapshots", async () => {
+    let createdSaleInput: CreateSaleTransactionInput | null = null;
+    const service = createService({
+      customerLinkResolver: {
+        async resolveCustomerLink() {
+          return {
+            customerContactId: "contact-1",
+            customerContactReference: "CON-00001",
+            customerId: "customer-1",
+            customerReference: "CUS-00001",
+            customerSlug: "adwoa-mensah",
+            snapshot: {
+              billingAddressLines: ["12 Market Street", "Accra"],
+              email: "billing@example.com",
+              name: "Adwoa Mensah",
+              phone: "+233200000000",
+              taxNumber: "TIN-123",
+            },
+          };
+        },
+      },
+      async createSaleTransaction(input) {
+        createdSaleInput = input;
+        return invoice({
+          customerBillingAddressLines:
+            input.customerBillingAddressLines ?? null,
+          customerContactId: input.customerContactId ?? null,
+          customerContactReference: input.customerContactReference ?? null,
+          customerEmail: input.customerEmail ?? null,
+          customerId: input.customerId ?? null,
+          customerName: input.customerName ?? null,
+          customerPhone: input.customerPhone ?? null,
+          customerReference: input.customerReference ?? null,
+          customerSlug: input.customerSlug ?? null,
+          customerTaxNumber: input.customerTaxNumber ?? null,
+          lines: [],
+        });
+      },
+    });
+
+    const result = await service.processSale({
+      createdBy: "user-1",
+      customerContactReference: "CON-00001",
+      customerSlug: "adwoa-mensah",
+      lines: [{ quantity: 1, skuId: "sku-1" }],
+      locationId: "location-1",
+      now: NOW,
+      paymentMethod: "cash",
+    });
+
+    assert.ok(createdSaleInput);
+    const persistedSale = createdSaleInput as CreateSaleTransactionInput;
+    assert.equal(persistedSale.customerId, "customer-1");
+    assert.equal(persistedSale.customerContactId, "contact-1");
+    assert.equal(persistedSale.customerName, "Adwoa Mensah");
+    assert.equal(result.customerReference, "CUS-00001");
+    assert.equal(result.customerContactReference, "CON-00001");
+  });
+
   it("calculates return totals from the original invoice unit price", async () => {
     let createdReturnInput: CreateReturnTransactionInput | null = null;
     const service = createService({
@@ -751,6 +810,9 @@ function createService(
     findByReference: (reference: string) => Promise<InvoiceWithLines | null>;
     generateReference: () => Promise<string>;
     getLocationName: (locationId: string) => Promise<string>;
+    customerLinkResolver: ConstructorParameters<
+      typeof PosSaleService
+    >[0]["customerLinkResolver"];
     platformEventPublisher: {
       publish: (event: PlatformEventRecord) => Promise<void>;
     };
@@ -793,6 +855,9 @@ function createService(
   };
 
   return new PosSaleService({
+    ...(overrides.customerLinkResolver
+      ? { customerLinkResolver: overrides.customerLinkResolver }
+      : {}),
     invoiceIssuanceService: new InvoiceIssuanceService({
       catalogVariantRepository,
       currencyResolver,

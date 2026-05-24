@@ -15,6 +15,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { productVariants } from "./catalog.js";
 import { auditColumns, publicUuidColumn } from "./common.js";
+import { customerContacts, customers } from "./customers.js";
 import { users } from "./identity.js";
 import { locations } from "./locations.js";
 
@@ -57,6 +58,10 @@ export const invoices = pgTable(
     customerBillingAddressLines: jsonb("customer_billing_address_lines").$type<
       string[]
     >(),
+    customerId: uuid("customer_id").references(() => customers.id),
+    customerContactId: uuid("customer_contact_id").references(
+      () => customerContacts.id,
+    ),
     currencyCode: varchar("currency_code", { length: 3 }).notNull(),
     currencyScale: integer("currency_scale").notNull(),
     classification: invoiceClassificationEnum("classification")
@@ -84,6 +89,8 @@ export const invoices = pgTable(
     index("invoices_location_status_idx").on(table.locationId, table.status),
     index("invoices_worker_idx").on(table.attributedWorkerId),
     index("invoices_type_location_idx").on(table.type, table.locationId),
+    index("invoices_customer_idx").on(table.customerId),
+    index("invoices_customer_contact_idx").on(table.customerContactId),
     index("invoices_created_at_idx").on(table.createdAt),
     check("invoices_subtotal_nonnegative", sql`${table.subtotalAmount} >= 0`),
     check("invoices_tax_nonnegative", sql`${table.taxAmount} >= 0`),
@@ -107,6 +114,14 @@ export const invoicesRelations = relations(invoices, ({ one, many }) => ({
   createdByUser: one(users, {
     fields: [invoices.createdBy],
     references: [users.id],
+  }),
+  customer: one(customers, {
+    fields: [invoices.customerId],
+    references: [customers.id],
+  }),
+  customerContact: one(customerContacts, {
+    fields: [invoices.customerContactId],
+    references: [customerContacts.id],
   }),
   lines: many(invoiceLineItems),
   parentInvoice: one(invoices, {

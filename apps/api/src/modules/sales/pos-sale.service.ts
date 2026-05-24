@@ -18,11 +18,13 @@ import {
   InvoiceNotFoundError,
   type InvoiceWithLines,
 } from "./sales.contracts.js";
+import type { SalesCustomerLinkResolver } from "./sales-customer-link.types.js";
 import type { SalesEventContextRepository } from "./sales-event-context.repository.js";
 import { createSalesReturnProcessedEvent } from "./sales-return-events.js";
 
 type PosSaleServiceDeps = {
   invoiceIssuanceService: Pick<InvoiceIssuanceService, "prepareInvoice">;
+  customerLinkResolver?: SalesCustomerLinkResolver;
   invoiceRepository: {
     createReturnTransaction: (
       input: CreateReturnTransactionInput,
@@ -48,9 +50,11 @@ type PosSaleServiceDeps = {
 type ProcessSaleInput = {
   createdBy: string;
   customerBillingAddressLines?: string[] | null;
+  customerContactReference?: string | null;
   customerEmail?: string | null;
   customerName?: string | null;
   customerPhone?: string | null;
+  customerSlug?: string | null;
   customerTaxNumber?: string | null;
   lines: { quantity: number; skuId: string; unitPrice?: string }[];
   locationId: string;
@@ -83,6 +87,12 @@ export class PosSaleService {
       ),
     );
     const attributedWorkerId = resolveAttributedWorkerId(attributions);
+    const customerLink =
+      await this.deps.customerLinkResolver?.resolveCustomerLink({
+        customerContactReference: input.customerContactReference ?? null,
+        customerSlug: input.customerSlug ?? null,
+      });
+    const customerSnapshot = customerLink?.snapshot ?? null;
 
     const transactionInput =
       await this.deps.invoiceIssuanceService.prepareInvoice({
@@ -91,11 +101,21 @@ export class PosSaleService {
         classification: "outgoing",
         createdBy: input.createdBy,
         customer: {
-          billingAddressLines: input.customerBillingAddressLines ?? null,
-          email: input.customerEmail ?? null,
-          name: input.customerName ?? null,
-          phone: input.customerPhone ?? null,
-          taxNumber: input.customerTaxNumber ?? null,
+          billingAddressLines:
+            input.customerBillingAddressLines ??
+            customerSnapshot?.billingAddressLines ??
+            null,
+          customerContactId: customerLink?.customerContactId ?? null,
+          customerContactReference:
+            customerLink?.customerContactReference ?? null,
+          customerId: customerLink?.customerId ?? null,
+          customerReference: customerLink?.customerReference ?? null,
+          customerSlug: customerLink?.customerSlug ?? null,
+          email: input.customerEmail ?? customerSnapshot?.email ?? null,
+          name: input.customerName ?? customerSnapshot?.name ?? null,
+          phone: input.customerPhone ?? customerSnapshot?.phone ?? null,
+          taxNumber:
+            input.customerTaxNumber ?? customerSnapshot?.taxNumber ?? null,
         },
         lines: input.lines,
         locationId: input.locationId,
@@ -206,6 +226,8 @@ export class PosSaleService {
         createdBy: input.createdBy,
         currencyCode: originalInvoice.currencyCode,
         currencyScale: originalInvoice.currencyScale,
+        customerContactId: originalInvoice.customerContactId ?? null,
+        customerId: originalInvoice.customerId ?? null,
         lines,
         locationId: originalInvoice.locationId,
         now,

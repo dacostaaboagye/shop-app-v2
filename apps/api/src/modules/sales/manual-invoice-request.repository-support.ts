@@ -12,7 +12,11 @@ type ManualInvoiceRequestRow = {
   currencyCode: string;
   currencyScale: number;
   customerBillingAddressLines: string[] | null;
+  customer?: { reference: string; slug: string } | null;
+  customerContact?: { reference: string } | null;
+  customerContactId: string | null;
   customerEmail: string | null;
+  customerId: string | null;
   customerName: string;
   customerPhone: string | null;
   customerTaxNumber: string | null;
@@ -40,6 +44,8 @@ type ManualInvoiceRequestRow = {
 export const manualInvoiceRequestRelations = {
   approvedByUser: { columns: { firstName: true, lastName: true } },
   approvedInvoice: { columns: { reference: true } },
+  customer: { columns: { reference: true, slug: true } },
+  customerContact: { columns: { reference: true } },
   lines: true,
   location: { columns: { name: true } },
   rejectedByUser: { columns: { firstName: true, lastName: true } },
@@ -59,9 +65,14 @@ export function mapManualInvoiceRequestRecord(
     currencyCode: row.currencyCode,
     currencyScale: row.currencyScale,
     customerBillingAddressLines: row.customerBillingAddressLines ?? null,
+    customerContactId: row.customerContactId,
+    customerContactReference: row.customerContact?.reference ?? null,
     customerEmail: row.customerEmail,
+    customerId: row.customerId,
     customerName: row.customerName,
     customerPhone: row.customerPhone,
+    customerReference: row.customer?.reference ?? null,
+    customerSlug: row.customer?.slug ?? null,
     customerTaxNumber: row.customerTaxNumber,
     id: row.id,
     lines: (row.lines ?? []).map((line) => ({

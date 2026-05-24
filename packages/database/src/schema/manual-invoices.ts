@@ -15,6 +15,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { productVariants } from "./catalog.js";
 import { auditColumns, publicUuidColumn } from "./common.js";
+import { customerContacts, customers } from "./customers.js";
 import { users } from "./identity.js";
 import { locations } from "./locations.js";
 import { invoices, type SkuSnapshot } from "./sales.js";
@@ -50,6 +51,10 @@ export const manualInvoiceRequests = pgTable(
     customerBillingAddressLines: jsonb("customer_billing_address_lines").$type<
       string[]
     >(),
+    customerId: uuid("customer_id").references(() => customers.id),
+    customerContactId: uuid("customer_contact_id").references(
+      () => customerContacts.id,
+    ),
     currencyCode: varchar("currency_code", { length: 3 }).notNull(),
     currencyScale: integer("currency_scale").notNull(),
     paymentMethod: varchar("payment_method", { length: 50 }),
@@ -79,6 +84,10 @@ export const manualInvoiceRequests = pgTable(
     index("manual_invoice_requests_location_status_idx").on(
       table.locationId,
       table.status,
+    ),
+    index("manual_invoice_requests_customer_idx").on(table.customerId),
+    index("manual_invoice_requests_customer_contact_idx").on(
+      table.customerContactId,
     ),
     index("manual_invoice_requests_requested_by_idx").on(table.requestedBy),
     index("manual_invoice_requests_created_at_idx").on(table.createdAt),
@@ -175,6 +184,14 @@ export const manualInvoiceRequestsRelations = relations(
     approvedInvoice: one(invoices, {
       fields: [manualInvoiceRequests.approvedInvoiceId],
       references: [invoices.id],
+    }),
+    customer: one(customers, {
+      fields: [manualInvoiceRequests.customerId],
+      references: [customers.id],
+    }),
+    customerContact: one(customerContacts, {
+      fields: [manualInvoiceRequests.customerContactId],
+      references: [customerContacts.id],
     }),
     events: many(manualInvoiceRequestEvents),
     lines: many(manualInvoiceRequestLines),
