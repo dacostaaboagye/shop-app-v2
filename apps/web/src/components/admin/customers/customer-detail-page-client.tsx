@@ -14,7 +14,9 @@ import { PermissionGate } from "@/components/system/permission-gate";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   adminCustomerQueryKey,
+  adminUsersQueryKey,
   fetchAdminCustomer,
+  fetchAdminUsers,
 } from "@/lib/react-query/admin-directory";
 import { toRoute } from "@/lib/routes";
 import {
@@ -35,6 +37,29 @@ export function CustomerDetailPageClient({ slug }: { slug: string }) {
   const customerQuery = useQuery({
     queryFn: () => fetchAdminCustomer(slug),
     queryKey: adminCustomerQueryKey(slug),
+  });
+  const usersQuery = useQuery({
+    queryFn: () =>
+      fetchAdminUsers({
+        dir: "asc",
+        locationSlug: "",
+        page: 1,
+        pageSize: 100,
+        q: "",
+        role: "",
+        sort: "name",
+        status: "active",
+      }),
+    queryKey: adminUsersQueryKey({
+      dir: "asc",
+      locationSlug: "",
+      page: 1,
+      pageSize: 100,
+      q: "",
+      role: "",
+      sort: "name",
+      status: "active",
+    }),
   });
   const actions = useCustomerDetailActions({
     refetchCustomer: () => void customerQuery.refetch(),
@@ -135,6 +160,17 @@ export function CustomerDetailPageClient({ slug }: { slug: string }) {
             error={actions.contactMutation.error}
             isPending={actions.contactMutation.isPending}
             onAddContact={(values) => actions.contactMutation.mutate(values)}
+            onLinkPortalUser={(contactReference, userSlug) =>
+              actions.linkPortalMutation.mutate({ contactReference, userSlug })
+            }
+            onUnlinkPortalUser={(contactReference) =>
+              actions.unlinkPortalMutation.mutate(contactReference)
+            }
+            portalAccessPending={
+              actions.linkPortalMutation.isPending ||
+              actions.unlinkPortalMutation.isPending
+            }
+            userOptions={usersQuery.data?.items ?? []}
           />
         </TabsContent>
         <TabsContent className="pt-3" value="addresses">

@@ -5,6 +5,8 @@ import {
   addAdminCustomerAddress,
   addAdminCustomerContact,
   adminCustomerQueryKey,
+  linkAdminCustomerContactPortal,
+  unlinkAdminCustomerContactPortal,
   updateAdminCustomer,
 } from "@/lib/react-query/admin-directory";
 import { toast } from "@/lib/toast";
@@ -88,5 +90,31 @@ export function useCustomerDetailActions({
     },
   });
 
-  return { addressMutation, contactMutation, updateMutation };
+  const linkPortalMutation = useMutation({
+    mutationFn: (input: { contactReference: string; userSlug: string }) =>
+      linkAdminCustomerContactPortal(slug, input.contactReference, {
+        userSlug: input.userSlug,
+      }),
+    onSuccess: () => {
+      toast.success("Customer portal access linked");
+      invalidate();
+    },
+  });
+
+  const unlinkPortalMutation = useMutation({
+    mutationFn: (contactReference: string) =>
+      unlinkAdminCustomerContactPortal(slug, contactReference),
+    onSuccess: () => {
+      toast.success("Customer portal access revoked");
+      invalidate();
+    },
+  });
+
+  return {
+    addressMutation,
+    contactMutation,
+    linkPortalMutation,
+    unlinkPortalMutation,
+    updateMutation,
+  };
 }

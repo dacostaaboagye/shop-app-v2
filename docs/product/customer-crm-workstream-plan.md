@@ -199,13 +199,23 @@ Out of scope:
 
 Goal: link customer contacts to customer portal accounts safely.
 
-Scope:
+Shipped foundation:
 
 - customer portal role/key distinct from operations roles
+- existing user account link/unlink on customer contacts
+- contact-level portal access status
+- customer portal shell with account, preferences, and notifications routes
+- customer event audit records for link/revoke actions
+
+Scope:
+
 - invite/link/unlink customer contact to portal user
 - customer auth namespace following ADR 0021
-- portal access status on customer contacts
 - audit events for invite/link/unlink/revoke
+
+Deferred:
+
+- customer portal email invite flow and customer-specific invite template
 
 ### CRM-04 Customer Relationship On Sales Documents
 

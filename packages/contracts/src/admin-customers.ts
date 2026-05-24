@@ -7,6 +7,11 @@ export const adminCustomerStatusSchema = z.enum([
   "blocked",
 ]);
 export const adminCustomerContactStatusSchema = z.enum(["active", "inactive"]);
+export const adminCustomerPortalStatusSchema = z.enum([
+  "none",
+  "linked",
+  "inactive",
+]);
 export const adminCustomerAddressTypeSchema = z.enum([
   "billing",
   "shipping",
@@ -34,6 +39,7 @@ export const adminCustomerContactSchema = z.object({
   isPrimary: z.boolean(),
   name: z.string().min(1).max(180),
   phone: z.string().max(80).nullable(),
+  portalStatus: adminCustomerPortalStatusSchema,
   receivesDeliveryUpdates: z.boolean(),
   receivesInvoices: z.boolean(),
   roleTitle: z.string().max(160).nullable(),
@@ -63,6 +69,8 @@ export const adminCustomerEventSchema = z.object({
     "contact_added",
     "address_added",
     "note_added",
+    "portal_linked",
+    "portal_unlinked",
   ]),
   occurredAt: z.iso.datetime(),
   summary: z.string().min(1),
@@ -149,6 +157,10 @@ export const adminCreateCustomerAddressRequestSchema = z.object({
   type: adminCustomerAddressTypeSchema,
 });
 
+export const adminLinkCustomerContactPortalRequestSchema = z.object({
+  userSlug: z.string().trim().min(1).max(120),
+});
+
 export type AdminCustomerListQuery = z.infer<
   typeof adminCustomerListQuerySchema
 >;
@@ -168,4 +180,7 @@ export type AdminCreateCustomerContactRequest = z.infer<
 >;
 export type AdminCreateCustomerAddressRequest = z.infer<
   typeof adminCreateCustomerAddressRequestSchema
+>;
+export type AdminLinkCustomerContactPortalRequest = z.infer<
+  typeof adminLinkCustomerContactPortalRequestSchema
 >;

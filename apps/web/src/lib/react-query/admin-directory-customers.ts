@@ -5,6 +5,7 @@ import type {
   AdminCustomerDetail,
   AdminCustomerListQuery,
   AdminCustomerListResponse,
+  AdminLinkCustomerContactPortalRequest,
   AdminUpdateCustomerRequest,
 } from "@shop/contracts";
 import { fetchJson } from "@/lib/react-query/fetch-json";
@@ -69,6 +70,29 @@ export async function addAdminCustomerAddress(
   return fetchJson<AdminCustomerDetail>(
     `/api/admin/customers/${encodeURIComponent(slug)}/addresses`,
     { body: JSON.stringify(input), headers: jsonHeaders(), method: "POST" },
+    { auth: "required" },
+  );
+}
+
+export async function linkAdminCustomerContactPortal(
+  slug: string,
+  contactReference: string,
+  input: AdminLinkCustomerContactPortalRequest,
+): Promise<AdminCustomerDetail> {
+  return fetchJson<AdminCustomerDetail>(
+    `/api/admin/customers/${encodeURIComponent(slug)}/contacts/${encodeURIComponent(contactReference)}/portal-link`,
+    { body: JSON.stringify(input), headers: jsonHeaders(), method: "POST" },
+    { auth: "required" },
+  );
+}
+
+export async function unlinkAdminCustomerContactPortal(
+  slug: string,
+  contactReference: string,
+): Promise<AdminCustomerDetail> {
+  return fetchJson<AdminCustomerDetail>(
+    `/api/admin/customers/${encodeURIComponent(slug)}/contacts/${encodeURIComponent(contactReference)}/portal-link`,
+    { method: "DELETE" },
     { auth: "required" },
   );
 }

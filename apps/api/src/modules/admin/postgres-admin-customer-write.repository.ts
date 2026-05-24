@@ -2,19 +2,24 @@ import type {
   AdminCreateCustomerAddressRequest,
   AdminCreateCustomerContactRequest,
   AdminCreateCustomerRequest,
+  AdminLinkCustomerContactPortalRequest,
   AdminUpdateCustomerRequest,
 } from "@shop/contracts";
-import {
-  customerAddresses,
-  customerContacts,
-  customerEvents,
-  customers,
-} from "@shop/database";
+import { customerAddresses, customerContacts, customers } from "@shop/database";
 import { eq } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
 import type { SlugAllocator } from "../public-identifiers/slug.service.js";
 import type { AdminCustomerWriteRepository } from "./admin-customer-write.service.js";
+import {
+  linkCustomerContactPortal,
+  unlinkCustomerContactPortal,
+} from "./postgres-admin-customer-portal-write.js";
 import { PostgresAdminCustomerQueryRepository } from "./postgres-admin-customer-query.repository.js";
+import {
+  findCustomer,
+  insertCustomerEvent,
+  normalizeCurrency,
+} from "./postgres-admin-customer-write.support.js";
 
 export class PostgresAdminCustomerWriteRepository
   implements AdminCustomerWriteRepository
@@ -35,7 +40,7 @@ export class PostgresAdminCustomerWriteRepository
     reference: string;
     customerSlug: string;
   }) {
-    const customer = await this.findCustomer(input.customerSlug);
+    const customer = await findCustomer(this.db, input.customerSlug);
     if (!customer) return null;
 
     await this.db.transaction(async (tx) => {
@@ -86,7 +91,7 @@ export class PostgresAdminCustomerWriteRepository
     reference: string;
     customerSlug: string;
   }) {
-    const customer = await this.findCustomer(input.customerSlug);
+    const customer = await findCustomer(this.db, input.customerSlug);
     if (!customer) return null;
 
     await this.db.transaction(async (tx) => {
@@ -177,7 +182,7 @@ export class PostgresAdminCustomerWriteRepository
     payload: AdminUpdateCustomerRequest;
     customerSlug: string;
   }) {
-    const customer = await this.findCustomer(input.customerSlug);
+    const customer = await findCustomer(this.db, input.customerSlug);
     if (!customer) return null;
 
     await this.db.transaction(async (tx) => {
@@ -210,39 +215,30 @@ export class PostgresAdminCustomerWriteRepository
     return this.reader.getCustomer(input.customerSlug);
   }
 
-  private async findCustomer(slug: string) {
-    const [customer] = await this.db
-      .select({ displayName: customers.displayName, id: customers.id })
-      .from(customers)
-      .where(eq(customers.slug, slug))
-      .limit(1);
-    return customer ?? null;
-  }
-}
-
-function normalizeCurrency(value: string | null | undefined) {
-  return value ? value.trim().toUpperCase() : null;
-}
-
-async function insertCustomerEvent(
-  tx: Parameters<Parameters<ApiDatabase["transaction"]>[0]>[0],
-  input: {
+  linkContactPortal(input: {
     actorId: string;
-    customerId: string;
-    eventType:
-      | "address_added"
-      | "contact_added"
-      | "customer_created"
-      | "customer_updated";
+    contactReference: string;
+    customerSlug: string;
     now: Date;
-    summary: string;
-  },
-) {
-  await tx.insert(customerEvents).values({
-    actorId: input.actorId,
-    customerId: input.customerId,
-    eventType: input.eventType,
-    occurredAt: input.now,
-    summary: input.summary,
-  });
+    payload: AdminLinkCustomerContactPortalRequest;
+  }) {
+    return linkCustomerContactPortal({
+      ...input,
+      db: this.db,
+      reader: this.reader,
+    });
+  }
+
+  unlinkContactPortal(input: {
+    actorId: string;
+    contactReference: string;
+    customerSlug: string;
+    now: Date;
+  }) {
+    return unlinkCustomerContactPortal({
+      ...input,
+      db: this.db,
+      reader: this.reader,
+    });
+  }
 }

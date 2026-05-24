@@ -34,6 +34,14 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
     description: "View the agent portal landing page.",
   },
   {
+    key: "customer.dashboard.view",
+    description: "View the customer portal landing page.",
+  },
+  {
+    key: "customer.invoices.view",
+    description: "View customer-safe invoices for linked CRM accounts.",
+  },
+  {
     key: "users.view",
     description: "View the admin user management surface.",
   },
@@ -421,6 +429,12 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
       "agent.routes.view",
       "deliveries.view",
     ],
+  },
+  {
+    slug: "customer",
+    name: "Customer",
+    description: "Customer contact with customer portal access.",
+    permissions: ["customer.dashboard.view", "customer.invoices.view"],
   },
   {
     slug: "developer",

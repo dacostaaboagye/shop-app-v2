@@ -386,6 +386,13 @@
       "when": 1779614200151,
       "tag": "0054_next_giant_man",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1779627334160,
+      "tag": "0055_salty_colossus",
+      "breakpoints": true
     }
   ]
 }

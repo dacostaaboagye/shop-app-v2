@@ -44,6 +44,8 @@ export const customerEventTypeEnum = pgEnum("customer_event_type", [
   "contact_added",
   "address_added",
   "note_added",
+  "portal_linked",
+  "portal_unlinked",
 ]);
 
 export const customers = pgTable(

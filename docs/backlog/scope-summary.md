@@ -68,8 +68,8 @@ These live as `EPICn` sheets in the xlsx. They have a title, story bullets, edge
 
 - **E-00C deliveries module is now complete in the Markdown working surface.** E-12, E-14, E-15, E-16 all list E-00C as a dependency, so the downstream online-sales + delivery-agent portal stack is no longer blocked by the delivery foundation.
 - **E-04 is shipped in the Markdown working surface.** Ten downstream epics name it as a dependency. The delivered E-04 scope covers opening stock, reason-coded counts, stock takes, CSV/XLSX/PDF artifacts, dry-run validation, reviewed apply, in-app count entry, and missing-catalog intake review. E-05 can now start from stock receipts and movement hardening.
-- **E-09 (invoice management) gates E-07 + E-12 + E-14 + E-16.** E-09-01, E-09-02, E-09-03, and E-09-05 are shipped. E-09-04 customer invoice access remains the next invoice-layer gap before customer-facing channels can safely expose invoices.
-- **E-13 -> E-14 -> E-15 -> E-16** is the e-commerce ladder. Storefront -> fulfilment -> delivery -> payments. E-00C is no longer the blocker; E-04 is shipped, while E-09-04 customer-safe invoice access still needs implementation before the full sales-channel ladder can complete.
+- **E-09 (invoice management) gates E-07 + E-12 + E-14 + E-16.** E-09-01, E-09-02, E-09-03, E-09-04, and E-09-05 are shipped in the Markdown working surface. Customer-facing channels now have customer-safe invoice list/detail/download APIs authorized through CRM customer contact relationships.
+- **E-13 -> E-14 -> E-15 -> E-16** is the e-commerce ladder. Storefront -> fulfilment -> delivery -> payments. E-00C, E-04, and the E-09 customer-safe invoice layer are no longer the blockers; the next customer-facing value path is customer portal access and ordering on the CRM foundation.
 
 ## Authoring issues to flag to the PO
 
@@ -85,6 +85,6 @@ These are oddities in the xlsx itself, not the work — worth noting so they get
 
 Based on the Markdown working surface and recent shipped PRs, the remaining near-term runway is:
 
-1. **E-09-04** - defined in `docs/backlog/epics/E-09-invoice-management.md`. Add customer-scoped invoice list/detail/download access with customer-safe DTOs and authorization by account/order relationship.
+1. **E-12-03 / CRM-03** - defined in `docs/product/customer-crm-workstream-plan.md`. Add customer contact portal linking/revocation so customer invoice access and upcoming customer portal ordering can be used without manual database links.
 
-The PO still needs to mirror the shipped E-04/E-05/E-06 and E-09-01/E-09-02/E-09-03/E-09-05 state into `Backlog Audit` / `Next Up` in the workbook so the rest of phase-2 (E-09-04, E-07, E-12, E-14+) can be tracked by the authoritative queue.
+The PO still needs to mirror the shipped E-04/E-05/E-06, E-09-01..E-09-05, and E-12 CRM foundation state into `Backlog Audit` / `Next Up` in the workbook so the rest of phase-2 (E-07, E-12, E-14+) can be tracked by the authoritative queue.

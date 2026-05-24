@@ -12,6 +12,7 @@ export const portalKeySchema = z.enum([
   "worker",
   "supplier",
   "agent",
+  "customer",
 ]);
 
 export const authNotificationPreferencesSchema = z.object({
