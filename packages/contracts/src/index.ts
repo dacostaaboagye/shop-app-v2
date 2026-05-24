@@ -16,6 +16,7 @@ export * from "./catalog-product-options.js";
 export * from "./catalog-products.js";
 export * from "./catalog-reference-import.js";
 export * from "./catalog-variants.js";
+export * from "./customer-invoices.js";
 export * from "./deliveries.js";
 export * from "./errors.js";
 export * from "./manager-dashboard.js";
