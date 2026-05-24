@@ -46,4 +46,3 @@ If unsure, register it. The cost of an extra row is zero; the cost of a missed c
 
 | Branch | Epic | Stage | Orchestrator | Updated |
 |---|---|---|---|---|
-| feature/e-12-01-customer-master-data | E-12-01 | tested | codex | 2026-05-24 |
