@@ -18,6 +18,14 @@ describe("access control seeded roles", () => {
     assert.ok(adminRole.permissions.includes("catalog.history.view"));
   });
 
+  it("grants the admin role customer CRM permissions", () => {
+    const adminRole = SYSTEM_ROLES.find((role) => role.slug === "admin");
+
+    assert.ok(adminRole);
+    assert.ok(adminRole.permissions.includes("customers.view"));
+    assert.ok(adminRole.permissions.includes("customers.manage"));
+  });
+
   it("grants the admin role delivery lifecycle permissions", () => {
     const adminRole = SYSTEM_ROLES.find((role) => role.slug === "admin");
 

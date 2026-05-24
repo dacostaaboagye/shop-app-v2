@@ -2,6 +2,7 @@ import {
   catalogBrands,
   catalogCategories,
   catalogProducts,
+  customers,
   locations,
   locationZones,
   productVariants,
@@ -23,6 +24,7 @@ type SlugTable =
   | typeof catalogBrands
   | typeof catalogCategories
   | typeof catalogProducts
+  | typeof customers
   | typeof locations
   | typeof locationZones
   | typeof productVariants
@@ -91,6 +93,8 @@ export class PostgresSlugRepository implements SlugRepository {
         return this.findActiveEntityInTable(catalogCategories, input.slug);
       case "catalog_product":
         return this.findActiveEntityInTable(catalogProducts, input.slug);
+      case "customer":
+        return this.findActiveEntityInTable(customers, input.slug);
       case "location":
         return this.findActiveEntityInTable(locations, input.slug);
       case "location_zone":

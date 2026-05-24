@@ -9,6 +9,7 @@ export const slugEntityTypes = [
   "catalog_brand",
   "catalog_category",
   "catalog_product",
+  "customer",
   "location",
   "location_zone",
   "product_variant",

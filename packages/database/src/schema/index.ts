@@ -3,6 +3,7 @@ export * from "./catalog.js";
 export * from "./catalog.relations.js";
 export * from "./catalog-change-log.js";
 export * from "./catalog-import.js";
+export * from "./customers.js";
 export * from "./deliveries.js";
 export * from "./email-delivery.js";
 export * from "./goods-transfer.js";

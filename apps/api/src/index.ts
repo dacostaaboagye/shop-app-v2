@@ -134,6 +134,7 @@ const gtnDocumentSnapshotService = new GtnIssuedDocumentSnapshotService({
 const server = createServer({
   accessControl: authRuntime.accessControl,
   adminAccess: adminDirectoryRuntime.adminDirectory,
+  adminCustomers: adminDirectoryRuntime.adminDirectory,
   adminDirectory: adminDirectoryRuntime.adminDirectory,
   adminLocationQuery: adminDirectoryRuntime.adminDirectory,
   adminLocationWrite: adminDirectoryRuntime.adminDirectory,
