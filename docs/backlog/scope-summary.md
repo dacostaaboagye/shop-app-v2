@@ -68,8 +68,8 @@ These live as `EPICn` sheets in the xlsx. They have a title, story bullets, edge
 
 - **E-00C deliveries module is now complete in the Markdown working surface.** E-12, E-14, E-15, E-16 all list E-00C as a dependency, so the downstream online-sales + delivery-agent portal stack is no longer blocked by the delivery foundation.
 - **E-04 is shipped in the Markdown working surface.** Ten downstream epics name it as a dependency. The delivered E-04 scope covers opening stock, reason-coded counts, stock takes, CSV/XLSX/PDF artifacts, dry-run validation, reviewed apply, in-app count entry, and missing-catalog intake review. E-05 can now start from stock receipts and movement hardening.
-- **E-09 (invoice management) gates E-07 + E-12 + E-14 + E-16.** Still unticketed. Will need to land before any sales channel is finished.
-- **E-13 -> E-14 -> E-15 -> E-16** is the e-commerce ladder. Storefront -> fulfilment -> delivery -> payments. E-00C is no longer the blocker; E-04 is shipped, while E-09 still needs ticketing/implementation before the full sales-channel ladder can complete.
+- **E-09 (invoice management) gates E-07 + E-12 + E-14 + E-16.** E-09-01, E-09-02, E-09-03, and E-09-05 are shipped. E-09-04 customer invoice access remains the next invoice-layer gap before customer-facing channels can safely expose invoices.
+- **E-13 -> E-14 -> E-15 -> E-16** is the e-commerce ladder. Storefront -> fulfilment -> delivery -> payments. E-00C is no longer the blocker; E-04 is shipped, while E-09-04 customer-safe invoice access still needs implementation before the full sales-channel ladder can complete.
 
 ## Authoring issues to flag to the PO
 
@@ -83,8 +83,8 @@ These are oddities in the xlsx itself, not the work — worth noting so they get
 
 ## Recommended runway
 
-Based on what's in the xlsx today, the remaining near-term runway is clear:
+Based on the Markdown working surface and recent shipped PRs, the remaining near-term runway is:
 
-1. **E-05-02** - refined in `docs/backlog/epics/E-05-02-stock-movement-history.md`. Expose the append-only stock movement ledger as admin and manager movement history so receipt, count, transfer, sale, and return changes can be traced without database access.
+1. **E-09-04** - defined in `docs/backlog/epics/E-09-invoice-management.md`. Add customer-scoped invoice list/detail/download access with customer-safe DTOs and authorization by account/order relationship.
 
-The PO still needs to mirror the shipped E-04/E-05-01 state and new E-05-02 slice into `Backlog Audit` / `Next Up` in the workbook so the rest of phase-2 (E-05..E-15) can be tracked by the authoritative queue.
+The PO still needs to mirror the shipped E-04/E-05/E-06 and E-09-01/E-09-02/E-09-03/E-09-05 state into `Backlog Audit` / `Next Up` in the workbook so the rest of phase-2 (E-09-04, E-07, E-12, E-14+) can be tracked by the authoritative queue.
