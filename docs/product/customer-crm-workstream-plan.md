@@ -36,6 +36,26 @@ CRM should not be a generic contact list. It must support operational jobs:
 
 If a CRM field does not support identification, authorization, fulfilment, billing, communication, reporting, or auditability, do not add it in the first slice.
 
+## CRM Scope Filter
+
+Common CRM systems support a wide set of objects: accounts, contacts, leads, deals, activities, tickets, quotes, orders, invoices, payments, and conversations. Shop App should not copy that whole list up front.
+
+For this platform, the most important CRM capabilities are:
+
+- **Customer identity:** one trusted customer record with contacts, addresses, status, and duplicate controls.
+- **Relationship proof:** a clear link between customer organization, customer contact, portal account, orders, invoices, credit notes, and deliveries.
+- **Operational history:** a customer timeline for sales documents, orders, deliveries, notes, calls, emails, and account events.
+- **Billing and fulfilment context:** payment terms, invoice recipients, default billing/shipping addresses, and customer document history.
+- **Access control and audit:** immediate portal access revocation, append-only relationship history, merge evidence, and non-enumerable customer-facing access.
+
+Defer these unless a stakeholder workflow proves they are needed:
+
+- generic lead capture
+- opportunity/deal forecasting
+- marketing lists or campaigns
+- full support ticketing/helpdesk
+- advanced account scoring
+
 ## Core Model
 
 ### Customer Organization
@@ -107,6 +127,19 @@ Invoices, credit notes, orders, and delivery documents must keep immutable custo
 
 CRM edits update the current customer record; they do not rewrite issued documents.
 
+### Customer Activity Timeline
+
+Represents customer-facing and internal relationship events in one place.
+
+First-slice timeline entries should include:
+
+- issued invoices, credit notes, orders, deliveries, and manual invoice requests
+- admin/manager notes
+- customer contact invite/link/unlink/revoke events
+- important email/share/download events where already captured by the document workflow
+
+Calls, meetings, support cases, and rich conversations can be added later. The first value is to stop support, finance, and managers from reconstructing customer history across unrelated pages.
+
 ## Authorization Rules
 
 Customer-facing access must be relationship-based:
@@ -143,7 +176,26 @@ Out of scope:
 - invoice download
 - marketing automation
 
-### CRM-02 Customer Portal Access
+### CRM-02 Customer Activity Timeline
+
+Goal: give operators one customer history before adding more customer-facing surfaces.
+
+Scope:
+
+- customer detail timeline
+- system events for customer create/update/contact/address changes
+- linked invoice, credit note, order, delivery, and manual invoice request events
+- internal notes with actor and timestamp
+- safe filters for document, access, and note activity
+
+Out of scope:
+
+- full helpdesk tickets
+- sales pipeline forecasting
+- marketing campaign history
+- two-way inbox sync
+
+### CRM-03 Customer Portal Access
 
 Goal: link customer contacts to customer portal accounts safely.
 
@@ -155,7 +207,7 @@ Scope:
 - portal access status on customer contacts
 - audit events for invite/link/unlink/revoke
 
-### CRM-03 Customer Relationship On Sales Documents
+### CRM-04 Customer Relationship On Sales Documents
 
 Goal: connect invoices and manual invoice requests to customer records without losing snapshots.
 
@@ -167,7 +219,7 @@ Scope:
 - POS sale can optionally attach a customer
 - invoice query/reporting can filter by customer
 
-### CRM-04 Customer Invoice Access
+### CRM-05 Customer Invoice Access
 
 Goal: implement E-09-04 safely after CRM links exist.
 
@@ -179,7 +231,7 @@ Scope:
 - no workforce IDs, stock movement IDs, internal location IDs, or raw snapshot payload leakage
 - credit note and adjusted invoice chain access
 
-### CRM-05 Customer Portal Orders
+### CRM-06 Customer Portal Orders
 
 Goal: enable E-12 customer portal ordering on top of CRM.
 
@@ -195,7 +247,7 @@ Scope:
 Admin:
 
 - primary CRM workspace: `/admin/customers`
-- customer detail: overview, contacts, addresses, invoices, orders, communications, audit
+- customer detail: overview, contacts, addresses, timeline, invoices, orders, deliveries, audit
 - actions: create customer, add contact, invite portal contact, deactivate, merge candidate review
 
 Manager:
@@ -222,11 +274,12 @@ Customer:
 ## UAT Scenarios
 
 1. Admin creates a business customer, adds two contacts, marks one as invoice recipient, and adds billing/shipping addresses.
-2. Manager starts a manual invoice request, selects an existing customer, and the invoice snapshot preserves the customer details at approval time.
-3. Admin updates a customer's billing address and confirms an older invoice still shows the original issued snapshot.
-4. Admin links a customer contact to portal access, then revokes it and confirms customer invoice access is blocked.
-5. Customer contact signs in and sees only invoices for the linked customer organization.
-6. Customer guesses another invoice reference and receives a non-disclosing not-found or forbidden response.
+2. Admin opens the customer timeline and sees customer creation, contact changes, invoice events, and an internal note in date order.
+3. Manager starts a manual invoice request, selects an existing customer, and the invoice snapshot preserves the customer details at approval time.
+4. Admin updates a customer's billing address and confirms an older invoice still shows the original issued snapshot.
+5. Admin links a customer contact to portal access, then revokes it and confirms customer invoice access is blocked.
+6. Customer contact signs in and sees only invoices for the linked customer organization.
+7. Customer guesses another invoice reference and receives a non-disclosing not-found or forbidden response.
 
 ## Open Product Questions
 
@@ -235,3 +288,5 @@ Customer:
 - Do customers need credit limits and payment terms in the first slice, or should those be read-only placeholders?
 - Should duplicate resolution be merge-only by admin, or should managers be able to flag duplicates?
 - Should customer portal users be separate from operations users in the same `users` table, or should we add a dedicated customer account table?
+- Which communication events matter first: notes only, sent emails, calls, or customer replies?
+- Do leads, opportunities, or support tickets have a real first-phase stakeholder journey, or should they stay deferred?
