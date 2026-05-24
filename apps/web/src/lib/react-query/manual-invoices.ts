@@ -1,6 +1,8 @@
 import type {
   CreateManualInvoiceRequest,
   DecideManualInvoiceRequest,
+  ManagerCustomerLookupQuery,
+  ManagerCustomerLookupResponse,
   ManualInvoiceRequestListQuery,
   ManualInvoiceRequestListResponse,
   ManualInvoiceRequestResponse,
@@ -19,6 +21,10 @@ export const manualInvoiceRequestQueryKey = (
   scope: ManualInvoiceScope,
   reference: string,
 ) => ["manual-invoice-request", scope, reference] as const;
+
+export const managerCustomerLookupQueryKey = (
+  query: ManagerCustomerLookupQuery,
+) => ["manager", "customers", query] as const;
 
 function buildManualInvoiceRequestParams(query: ManualInvoiceRequestListQuery) {
   const params = new URLSearchParams({
@@ -54,6 +60,20 @@ export async function fetchManualInvoiceRequest(
 ): Promise<ManualInvoiceRequestResponse> {
   return fetchJson<ManualInvoiceRequestResponse>(
     `${basePath(scope)}/${encodeURIComponent(reference)}`,
+    undefined,
+    { auth: "required" },
+  );
+}
+
+export async function fetchManagerCustomerLookup(
+  query: ManagerCustomerLookupQuery,
+): Promise<ManagerCustomerLookupResponse> {
+  const params = new URLSearchParams({
+    limit: String(query.limit),
+    q: query.q,
+  });
+  return fetchJson<ManagerCustomerLookupResponse>(
+    `/api/manager/customers?${params.toString()}`,
     undefined,
     { auth: "required" },
   );

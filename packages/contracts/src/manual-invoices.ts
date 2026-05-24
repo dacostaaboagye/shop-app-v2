@@ -64,6 +64,32 @@ export const manualInvoiceRequestListQuerySchema = z.object({
   status: manualInvoiceRequestStatusFilterSchema.default("all"),
 });
 
+export const managerCustomerLookupQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(25).default(10),
+  q: z.string().trim().max(120).default(""),
+});
+
+export const managerCustomerLookupContactSchema = z.object({
+  contactReference: z.string().min(1).max(25),
+  email: z.email().nullable(),
+  name: z.string().min(1).max(180),
+  phone: z.string().max(80).nullable(),
+  receivesInvoices: z.boolean(),
+});
+
+export const managerCustomerLookupItemSchema = z.object({
+  billingAddressLines: z.array(z.string()).nullable(),
+  contacts: z.array(managerCustomerLookupContactSchema),
+  displayName: z.string().min(1).max(180),
+  reference: z.string().min(1).max(25),
+  slug: z.string().min(1).max(120),
+  taxNumber: z.string().max(120).nullable(),
+});
+
+export const managerCustomerLookupResponseSchema = z.object({
+  items: z.array(managerCustomerLookupItemSchema),
+});
+
 export const decideManualInvoiceRequestSchema = z.object({
   note: z.string().trim().max(1000).optional(),
 });
@@ -138,6 +164,18 @@ export type ManualInvoiceRequestListQuery = z.infer<
 >;
 export type ManualInvoiceRequestListResponse = z.infer<
   typeof manualInvoiceRequestListResponseSchema
+>;
+export type ManagerCustomerLookupQuery = z.infer<
+  typeof managerCustomerLookupQuerySchema
+>;
+export type ManagerCustomerLookupContact = z.infer<
+  typeof managerCustomerLookupContactSchema
+>;
+export type ManagerCustomerLookupItem = z.infer<
+  typeof managerCustomerLookupItemSchema
+>;
+export type ManagerCustomerLookupResponse = z.infer<
+  typeof managerCustomerLookupResponseSchema
 >;
 export type ManualInvoiceRequestResponse = z.infer<
   typeof manualInvoiceRequestResponseSchema

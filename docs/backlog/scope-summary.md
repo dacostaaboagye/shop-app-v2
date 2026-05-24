@@ -3,7 +3,7 @@
 A snapshot of the master xlsx so we don't have to parse it every session.
 
 > **Source**: `Building and Refining Product Backlog(2).xlsx` at the repo root.
-> **Last derived**: 2026-05-03. Markdown closure updates were appended after PR #79, PR #107, PR #108, PR #110, PR #111, PR #141, PR #154, PR #155, PR #159, and PR #161 merged; re-run the xlsx refresh flow to make the workbook-backed snapshot authoritative again.
+> **Last derived**: 2026-05-03. Markdown closure updates were appended after PR #79, PR #107, PR #108, PR #110, PR #111, PR #141, PR #154, PR #155, PR #159, PR #161, and PR #209 merged; re-run the xlsx refresh flow to make the workbook-backed snapshot authoritative again.
 > **Authority**: the xlsx is the source of truth. This doc reflects state at the time it was written. **Re-derive from the xlsx whenever priority or status decisions are at stake** — do not trust this doc for current status if any time has passed since the date above.
 >
 > **To refresh**: ask Claude to "refresh the scope summary" (or invoke `/refresh-backlog-summary`). The skill at `.claude/skills/refresh-backlog-summary/SKILL.md` re-reads the xlsx, updates this file, and opens a PR.
@@ -85,6 +85,6 @@ These are oddities in the xlsx itself, not the work — worth noting so they get
 
 Based on the Markdown working surface and recent shipped PRs, the remaining near-term runway is:
 
-1. **E-12-03 / CRM-03** - defined in `docs/product/customer-crm-workstream-plan.md`. Add customer contact portal linking/revocation so customer invoice access and upcoming customer portal ordering can be used without manual database links.
+1. **CRM-04 Customer Relationship On Sales Documents** - defined in `docs/product/customer-crm-workstream-plan.md`. Make sales document creation select existing CRM customers at the point of work so issued invoices/manual invoice requests carry a relationship link and immutable customer snapshot.
 
 The PO still needs to mirror the shipped E-04/E-05/E-06, E-09-01..E-09-05, and E-12 CRM foundation state into `Backlog Audit` / `Next Up` in the workbook so the rest of phase-2 (E-07, E-12, E-14+) can be tracked by the authoritative queue.

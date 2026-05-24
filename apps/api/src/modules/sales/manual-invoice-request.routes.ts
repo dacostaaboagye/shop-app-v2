@@ -1,6 +1,7 @@
 import {
   createManualInvoiceRequestSchema,
   decideManualInvoiceRequestSchema,
+  managerCustomerLookupResponseSchema,
   manualInvoiceRequestResponseSchema,
   rejectManualInvoiceRequestSchema,
 } from "@shop/contracts";
@@ -11,6 +12,7 @@ import {
   getAuthenticatedUserId,
 } from "../auth/auth-route-support.js";
 import type { SalesIssuedDocumentSnapshotService } from "../official-documents/sales-issued-document-snapshot.service.js";
+import type { ManagerCustomerLookupRepository } from "./manager-customer-lookup.repository.js";
 import { toManualInvoiceRequestResponse } from "./manual-invoice-request.mapper.js";
 import type { ManualInvoiceRequestService } from "./manual-invoice-request.service.js";
 import type { ManualInvoiceRequestRepository } from "./manual-invoice-request.types.js";
@@ -19,6 +21,7 @@ import {
   assertHasLocationPermission,
   createUnavailableDependencies,
   getManualInvoiceRequest,
+  listManagerCustomerLookup,
   listManualInvoiceRequests,
 } from "./manual-invoice-request-route-support.js";
 
@@ -31,6 +34,7 @@ export type ManualInvoiceRequestRouteDependencies = {
     ManualInvoiceRequestService,
     "approveRequest" | "createRequest" | "getRequestOrThrow" | "rejectRequest"
   >;
+  customerLookupRepository?: ManagerCustomerLookupRepository;
   permissionService: Pick<
     PermissionResolutionService,
     "assertHasPermission" | "resolveAllPermissions"
@@ -45,6 +49,20 @@ export function registerManualInvoiceRequestRoutes(
   server: FastifyInstance,
   dependencies: ManualInvoiceRequestRouteDependencies = createUnavailableDependencies(),
 ) {
+  server.route({
+    config: { access: manualInvoiceRequestRoutes.managerCustomerLookup.access },
+    method: manualInvoiceRequestRoutes.managerCustomerLookup.method,
+    url: manualInvoiceRequestRoutes.managerCustomerLookup.url,
+    async handler(request) {
+      const query = await listManagerCustomerLookup({
+        dependencies,
+        query: request.query,
+        userId: getAuthenticatedUserId(request),
+      });
+      return managerCustomerLookupResponseSchema.parse(query);
+    },
+  });
+
   server.route({
     config: { access: manualInvoiceRequestRoutes.managerCreate.access },
     method: manualInvoiceRequestRoutes.managerCreate.method,

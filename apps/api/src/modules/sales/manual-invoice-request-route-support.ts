@@ -1,4 +1,6 @@
 import {
+  managerCustomerLookupQuerySchema,
+  managerCustomerLookupResponseSchema,
   manualInvoiceRequestListQuerySchema,
   manualInvoiceRequestListResponseSchema,
   manualInvoiceRequestResponseSchema,
@@ -32,6 +34,11 @@ export function createUnavailableDependencies(): ManualInvoiceRequestRouteDepend
         throw unavailableSalesError();
       },
     },
+    customerLookupRepository: {
+      async searchCustomers() {
+        throw unavailableSalesError();
+      },
+    },
     permissionService: {
       async assertHasPermission() {
         throw unavailableSalesError();
@@ -41,6 +48,27 @@ export function createUnavailableDependencies(): ManualInvoiceRequestRouteDepend
       },
     },
   };
+}
+
+export async function listManagerCustomerLookup(input: {
+  dependencies: ManualInvoiceRequestRouteDependencies;
+  query: unknown;
+  userId: string;
+}) {
+  const query = managerCustomerLookupQuerySchema.parse(input.query);
+  await resolvePermittedLocationIds({
+    dependencies: input.dependencies,
+    permission: "invoices.manual.request",
+    userId: input.userId,
+  });
+
+  const items =
+    await input.dependencies.customerLookupRepository?.searchCustomers({
+      limit: query.limit,
+      q: query.q,
+    });
+
+  return managerCustomerLookupResponseSchema.parse({ items: items ?? [] });
 }
 
 export async function listManualInvoiceRequests(input: {

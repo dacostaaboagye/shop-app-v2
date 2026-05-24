@@ -53,6 +53,59 @@ describe("manual invoice request routes", () => {
     assert.equal(response.json().reference, "MIR-00001");
   });
 
+  it("lets managers search CRM customers before requesting a manual invoice", async () => {
+    const permissionCalls: Array<{ locationId?: string; permission: string }> =
+      [];
+    let searchQuery: string | null = null;
+    const server = createManualInvoiceServer({
+      permissionCalls,
+      dependencies: {
+        customerLookupRepository: {
+          async searchCustomers(input) {
+            searchQuery = input.q;
+            return [
+              {
+                billingAddressLines: ["12 Market Street"],
+                contacts: [
+                  {
+                    contactReference: "CON-00001",
+                    email: "billing@example.com",
+                    name: "Adwoa Mensah",
+                    phone: "+233200000000",
+                    receivesInvoices: true,
+                  },
+                ],
+                displayName: "Adwoa Trading",
+                reference: "CUS-00001",
+                slug: "adwoa-trading",
+                taxNumber: "TIN-123",
+              },
+            ];
+          },
+        },
+      },
+    });
+
+    const response = await server.inject({
+      headers: { authorization: bearerToken(USER_ID) },
+      method: "GET",
+      url: "/api/manager/customers?q=adwoa&limit=5",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(searchQuery, "adwoa");
+    assert.ok(
+      permissionCalls.some(
+        (call) => call.permission === "invoices.manual.request",
+      ),
+    );
+    assert.equal(response.json().items[0].slug, "adwoa-trading");
+    assert.equal(
+      response.json().items[0].contacts[0].contactReference,
+      "CON-00001",
+    );
+  });
+
   it("approves a request and issues the sales document snapshot", async () => {
     let snapshotReference: string | null = null;
     const server = createManualInvoiceServer({
@@ -98,6 +151,7 @@ function createManualInvoiceServer(
   input: {
     authenticatedUserId?: string;
     dependencies?: {
+      customerLookupRepository?: ManualInvoiceRequestRouteDependencies["customerLookupRepository"];
       manualInvoiceRequestRepository?: Partial<
         ManualInvoiceRequestRouteDependencies["manualInvoiceRequestRepository"]
       >;
@@ -168,6 +222,12 @@ function createManualInvoiceServer(
       permissionService,
     },
     manualInvoiceRequests: {
+      ...(input.dependencies?.customerLookupRepository
+        ? {
+            customerLookupRepository:
+              input.dependencies.customerLookupRepository,
+          }
+        : {}),
       manualInvoiceRequestRepository: {
         async findByReference() {
           return request();

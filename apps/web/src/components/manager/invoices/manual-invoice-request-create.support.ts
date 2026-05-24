@@ -1,4 +1,9 @@
 import type { VariantSearchResult } from "@shop/contracts";
+import type {
+  FormAsyncValidateOrFn,
+  FormValidateOrFn,
+  ReactFormExtendedApi,
+} from "@tanstack/react-form";
 
 export type ManualInvoiceDraftLine = {
   quantity: string;
@@ -10,26 +15,61 @@ export type ManualInvoiceDraftLine = {
 
 export type ManualInvoiceRequestFormValues = {
   address: string;
+  customerContactReference: string;
   customerEmail: string;
   customerName: string;
   customerPhone: string;
+  customerSlug: string;
   customerTaxNumber: string;
   paymentMethod: string;
   reason: string;
   supportingNote: string;
 };
 
+type ManualInvoiceFormValidate =
+  | FormValidateOrFn<ManualInvoiceRequestFormValues>
+  | undefined;
+type ManualInvoiceFormAsyncValidate =
+  | FormAsyncValidateOrFn<ManualInvoiceRequestFormValues>
+  | undefined;
+
+export type ManualInvoiceForm = ReactFormExtendedApi<
+  ManualInvoiceRequestFormValues,
+  ManualInvoiceFormValidate,
+  ManualInvoiceFormValidate,
+  ManualInvoiceFormAsyncValidate,
+  ManualInvoiceFormValidate,
+  ManualInvoiceFormAsyncValidate,
+  ManualInvoiceFormValidate,
+  ManualInvoiceFormAsyncValidate,
+  ManualInvoiceFormValidate,
+  ManualInvoiceFormAsyncValidate,
+  ManualInvoiceFormAsyncValidate,
+  unknown
+>;
+
 export const MANUAL_INVOICE_REQUEST_DEFAULT_VALUES: ManualInvoiceRequestFormValues =
   {
     address: "",
+    customerContactReference: "",
     customerEmail: "",
     customerName: "",
     customerPhone: "",
+    customerSlug: "",
     customerTaxNumber: "",
     paymentMethod: "none",
     reason: "",
     supportingNote: "",
   };
+
+export function getCustomerSelectionError(
+  value: ManualInvoiceRequestFormValues,
+  wasSubmitted: boolean,
+): string {
+  if (!wasSubmitted) return "";
+  if (value.customerSlug || value.customerName.trim()) return "";
+  return "Select a CRM customer or enter a customer name.";
+}
 
 export function createDraftLine(
   variant: VariantSearchResult,

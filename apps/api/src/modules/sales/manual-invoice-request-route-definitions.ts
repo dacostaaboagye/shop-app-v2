@@ -38,6 +38,11 @@ export const manualInvoiceRequestRoutes = {
     "/api/manager/invoices/manual-requests",
     "invoices.manual.request",
   ),
+  managerCustomerLookup: manualInvoiceRoute(
+    "GET",
+    "/api/manager/customers",
+    "invoices.manual.request",
+  ),
   managerGet: manualInvoiceRoute(
     "GET",
     "/api/manager/invoices/manual-requests/:reference",

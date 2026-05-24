@@ -2,7 +2,7 @@
 
 ## Status
 
-Refined direction. This must land before customer-facing invoice access, customer portal ordering, ecommerce buyer accounts, or customer reporting.
+CRM foundation in progress. CRM-01 through CRM-03 are shipped; CRM-04 is the active slice before customer portal ordering, ecommerce buyer accounts, or customer reporting expand on the customer relationship.
 
 ## Why This Exists
 
@@ -199,6 +199,8 @@ Out of scope:
 
 Goal: link customer contacts to customer portal accounts safely.
 
+Shipped in [PR #209](https://github.com/dacostaaboagye/shop-app-v2/pull/209).
+
 Shipped foundation:
 
 - customer portal role/key distinct from operations roles
@@ -220,6 +222,12 @@ Deferred:
 ### CRM-04 Customer Relationship On Sales Documents
 
 Goal: connect invoices and manual invoice requests to customer records without losing snapshots.
+
+Active slice:
+
+- manager manual invoice creation can search existing active CRM customers
+- selecting a CRM customer/contact populates billing snapshot fields at the point of request
+- submitted request carries public customer/contact selectors while backend persists internal relationship links server-side
 
 Scope:
 
