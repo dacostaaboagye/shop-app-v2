@@ -12,6 +12,7 @@ import { ManualInvoiceRequestService } from "./manual-invoice-request.service.js
 import { PosSaleService } from "./pos-sale.service.js";
 import { PosSaleDeliverySourceAdapter } from "./pos-sale-delivery-source.adapter.js";
 import { PostgresAdminInvoiceQueryRepository } from "./postgres-admin-invoice-query.repository.js";
+import { PostgresCustomerInvoiceQueryRepository } from "./postgres-customer-invoice-query.repository.js";
 import { PostgresInvoiceRepository } from "./postgres-invoice.repository.js";
 import { PostgresInvoiceQueryRepository } from "./postgres-invoice-query.repository.js";
 import { PostgresManualInvoiceRequestRepository } from "./postgres-manual-invoice-request.repository.js";
@@ -25,6 +26,7 @@ type SalesRuntime = {
     manualInvoiceRequestRepository: PostgresManualInvoiceRequestRepository;
     manualInvoiceRequestService: ManualInvoiceRequestService;
     adminInvoiceQueryRepository: PostgresAdminInvoiceQueryRepository;
+    customerInvoiceQueryRepository: PostgresCustomerInvoiceQueryRepository;
     invoiceRepository: PostgresInvoiceRepository;
     posSaleDeliverySourcePort: PosSaleDeliverySourcePort;
     posSaleService: PosSaleService;
@@ -78,6 +80,8 @@ export function createSalesRuntime(
   const adminInvoiceQueryRepository = new PostgresAdminInvoiceQueryRepository(
     databaseRuntime.db,
   );
+  const customerInvoiceQueryRepository =
+    new PostgresCustomerInvoiceQueryRepository(databaseRuntime.db);
   const manualInvoiceRequestRepository =
     new PostgresManualInvoiceRequestRepository(databaseRuntime.db);
   const customerLinkResolver = new PostgresSalesCustomerLinkRepository(
@@ -139,6 +143,7 @@ export function createSalesRuntime(
   return {
     sales: {
       adminInvoiceQueryRepository,
+      customerInvoiceQueryRepository,
       invoiceQueryRepository,
       invoiceRepository,
       manualInvoiceRequestRepository,

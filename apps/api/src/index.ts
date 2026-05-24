@@ -145,6 +145,11 @@ const server = createServer({
     invoiceRepository: salesRuntime.sales.invoiceQueryRepository,
     permissionService: authRuntime.accessControl.permissionService,
   },
+  customerInvoices: {
+    customerInvoiceRepository:
+      salesRuntime.sales.customerInvoiceQueryRepository,
+    salesDocumentSnapshotService,
+  },
   manualInvoiceRequests: {
     manualInvoiceRequestRepository:
       salesRuntime.sales.manualInvoiceRequestRepository,

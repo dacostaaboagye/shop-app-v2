@@ -1,12 +1,7 @@
-import {
-  type IssuedDocumentSnapshotResponse,
-  invoiceResponseSchema,
-  type OfficialDocumentType,
-} from "@shop/contracts";
+import type { IssuedDocumentSnapshotResponse } from "@shop/contracts";
 import { AppError } from "../_core/errors/app-error.js";
 import type { PermissionResolutionService } from "../access-control/permission-resolution.service.js";
 import type { EmailService } from "../messaging/email.service.js";
-import { toInvoiceResponse } from "../sales/invoice-response.mapper.js";
 import {
   InvoiceNotFoundError,
   type InvoiceWithLines,
@@ -17,6 +12,7 @@ import {
   type IssuedSalesDocumentFile,
   toSalesIssuedDocumentPdfFile,
 } from "./sales-issued-document-pdf.js";
+import { issueSalesDocumentSnapshotForInvoice } from "./sales-issued-document-snapshot-issue.js";
 
 type InvoiceRepository = {
   findByReference(reference: string): Promise<InvoiceWithLines | null>;
@@ -56,37 +52,7 @@ export class SalesIssuedDocumentSnapshotService {
       invoice,
     });
 
-    const documentType = getDocumentType(invoice.type);
-    const existing =
-      await this.dependencies.snapshotService.findSnapshotByResource({
-        documentType,
-        resourceKind: "invoice",
-        resourceReference: invoice.reference,
-      });
-    if (existing) return existing;
-
-    const profile =
-      await this.dependencies.settingsService.resolveDocumentProfile({
-        locationId: invoice.locationId,
-      });
-    const profileSnapshot = {
-      ...profile,
-      currencyCode: invoice.currencyCode,
-      currencyScale: invoice.currencyScale,
-    };
-
-    return this.dependencies.snapshotService.issueSnapshot({
-      ...(input.actorUserSlug ? { actorUserSlug: input.actorUserSlug } : {}),
-      documentReference: invoice.reference,
-      documentType,
-      issuedAt: invoice.confirmedAt ?? invoice.createdAt,
-      issuedBy: input.actorUserId,
-      locationId: invoice.locationId,
-      payloadSnapshot: toPayloadSnapshot(invoice),
-      profileSnapshot,
-      resourceKind: "invoice",
-      resourceReference: invoice.reference,
-    });
+    return this.getOrIssueSnapshotForInvoice({ ...input, invoice });
   }
 
   async getPdfDownload(input: {
@@ -95,6 +61,15 @@ export class SalesIssuedDocumentSnapshotService {
     reference: string;
   }): Promise<IssuedSalesDocumentFile> {
     const snapshot = await this.getOrIssueSnapshot(input);
+    return toSalesIssuedDocumentPdfFile(snapshot);
+  }
+
+  async getPdfDownloadForAuthorizedInvoice(input: {
+    actorUserSlug?: string;
+    actorUserId: string;
+    invoice: InvoiceWithLines;
+  }): Promise<IssuedSalesDocumentFile> {
+    const snapshot = await this.getOrIssueSnapshotForInvoice(input);
     return toSalesIssuedDocumentPdfFile(snapshot);
   }
 
@@ -184,6 +159,18 @@ export class SalesIssuedDocumentSnapshotService {
     throw forbiddenOfficialDocumentError();
   }
 
+  private async getOrIssueSnapshotForInvoice(input: {
+    actorUserSlug?: string;
+    actorUserId: string;
+    invoice: InvoiceWithLines;
+  }): Promise<IssuedDocumentSnapshotResponse> {
+    return issueSalesDocumentSnapshotForInvoice({
+      ...input,
+      settingsService: this.dependencies.settingsService,
+      snapshotService: this.dependencies.snapshotService,
+    });
+  }
+
   private async hasPermission(input: {
     locationId: string;
     permission: string;
@@ -201,18 +188,6 @@ export class SalesIssuedDocumentSnapshotService {
       throw error;
     }
   }
-}
-
-function toPayloadSnapshot(invoice: InvoiceWithLines): Record<string, unknown> {
-  return invoiceResponseSchema.parse(toInvoiceResponse(invoice));
-}
-
-function getDocumentType(
-  invoiceType: InvoiceWithLines["type"],
-): OfficialDocumentType {
-  if (invoiceType === "credit_note") return "credit_note";
-  if (invoiceType === "pos") return "sales_receipt";
-  return "sales_invoice";
 }
 
 function getDocumentEmailLabel(invoiceType: InvoiceWithLines["type"]): string {
