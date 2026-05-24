@@ -5,6 +5,7 @@ import Fastify from "fastify";
 import { getApiEnv } from "../env.js";
 import { registerRouteAuthorization } from "../modules/access-control/route-authorization.js";
 import { registerAdminAccessRoutes } from "../modules/admin/admin-access.routes.js";
+import { registerAdminCustomerRoutes } from "../modules/admin/admin-customer.routes.js";
 import { registerAdminDirectoryRoutes } from "../modules/admin/admin-directory.routes.js";
 import { registerAdminLocationQueryRoutes } from "../modules/admin/admin-location-query.routes.js";
 import { registerAdminLocationWriteRoutes } from "../modules/admin/admin-location-write.routes.js";
@@ -65,6 +66,7 @@ type StockAssignmentRouteOptions = Parameters<
 type CreateServerOptions = {
   accessControl?: Parameters<typeof registerRouteAuthorization>[1];
   adminAccess?: Parameters<typeof registerAdminAccessRoutes>[1];
+  adminCustomers?: Parameters<typeof registerAdminCustomerRoutes>[1];
   adminDirectory?: Parameters<typeof registerAdminDirectoryRoutes>[1];
   adminLocationQuery?: Parameters<typeof registerAdminLocationQueryRoutes>[1];
   adminLocationWrite?: Parameters<typeof registerAdminLocationWriteRoutes>[1];
@@ -185,6 +187,7 @@ export function createServer(options: CreateServerOptions = {}) {
   registerRouteAuthorization(server, options.accessControl);
   registerAuthRoutes(server, options.auth);
   registerAccountProfileMediaRoutes(server, options.authProfileMedia);
+  registerAdminCustomerRoutes(server, options.adminCustomers);
   registerAdminDirectoryRoutes(server, options.adminDirectory);
   registerAdminAccessRoutes(server, options.adminAccess);
   registerAdminLocationQueryRoutes(server, options.adminLocationQuery);

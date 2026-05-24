@@ -17,6 +17,9 @@ export const referenceSequenceKeys = [
   "stock-take",
   "stock-transfer",
   "gtn",
+  "customer",
+  "customer-contact",
+  "customer-address",
 ] as const;
 
 export type ReferenceSequenceKey = (typeof referenceSequenceKeys)[number];
@@ -49,6 +52,9 @@ export const referenceSequenceProfiles: Record<
     "manual-invoice-request",
     "MIR",
   ),
+  customer: createInvoiceProfile("customer", "CUS"),
+  "customer-contact": createInvoiceProfile("customer-contact", "CTC"),
+  "customer-address": createInvoiceProfile("customer-address", "CAD"),
   "portal-order": createDateProfile("portal-order", "CPO"),
   "purchase-order": createDateProfile("purchase-order", "PO"),
   "supplier-inquiry": createDateProfile("supplier-inquiry", "SINQ"),

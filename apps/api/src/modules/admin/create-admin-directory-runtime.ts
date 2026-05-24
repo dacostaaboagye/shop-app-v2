@@ -9,6 +9,8 @@ import { ReferenceNumberService } from "../public-identifiers/reference-number.s
 import { SlugService } from "../public-identifiers/slug.service.js";
 import { AdminAccessQueryService } from "./admin-access-query.service.js";
 import { AdminAccessWriteService } from "./admin-access-write.service.js";
+import { AdminCustomerQueryService } from "./admin-customer-query.service.js";
+import { AdminCustomerWriteService } from "./admin-customer-write.service.js";
 import { AdminLocationQueryService } from "./admin-location-query.service.js";
 import { AdminLocationWriteService } from "./admin-location-write.service.js";
 import { AdminStaffProvisioningService } from "./admin-staff-provisioning.service.js";
@@ -19,6 +21,8 @@ import { AdminUserAccessWriteService } from "./admin-user-access-write.service.j
 import { AdminUserQueryService } from "./admin-user-query.service.js";
 import { PostgresAdminAccessQueryRepository } from "./postgres-admin-access-query.repository.js";
 import { PostgresAdminAccessWriteRepository } from "./postgres-admin-access-write.repository.js";
+import { PostgresAdminCustomerQueryRepository } from "./postgres-admin-customer-query.repository.js";
+import { PostgresAdminCustomerWriteRepository } from "./postgres-admin-customer-write.repository.js";
 import { PostgresAdminLocationQueryRepository } from "./postgres-admin-location-query.repository.js";
 import { PostgresAdminLocationWriteRepository } from "./postgres-admin-location-write.repository.js";
 import { PostgresAdminStaffProvisioningRepository } from "./postgres-admin-staff-provisioning.repository.js";
@@ -32,6 +36,8 @@ type AdminDirectoryRuntime = {
   adminDirectory: {
     adminAccessQueryService: AdminAccessQueryService;
     adminAccessWriteService: AdminAccessWriteService;
+    adminCustomerQueryService: AdminCustomerQueryService;
+    adminCustomerWriteService: AdminCustomerWriteService;
     adminStaffProvisioningService: AdminStaffProvisioningService;
     adminLocationQueryService: AdminLocationQueryService;
     adminLocationWriteService: AdminLocationWriteService;
@@ -82,6 +88,16 @@ export function createAdminDirectoryRuntime(
           accessQueryRepository,
         ),
         options.platformEventPublisher ?? null,
+      ),
+      adminCustomerQueryService: new AdminCustomerQueryService(
+        new PostgresAdminCustomerQueryRepository(databaseRuntime.db),
+      ),
+      adminCustomerWriteService: new AdminCustomerWriteService(
+        new PostgresAdminCustomerWriteRepository(
+          databaseRuntime.db,
+          slugService,
+        ),
+        referenceNumberService,
       ),
       adminStaffProvisioningService: new AdminStaffProvisioningService(
         new PostgresAdminStaffProvisioningRepository(databaseRuntime.db),

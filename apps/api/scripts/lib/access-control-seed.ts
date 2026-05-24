@@ -160,6 +160,14 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
     description: "Create and update supplier organizations and relationships.",
   },
   {
+    key: "customers.view",
+    description: "View the admin customer CRM workspace.",
+  },
+  {
+    key: "customers.manage",
+    description: "Create and update customer records, contacts, and addresses.",
+  },
+  {
     key: "settings.documents.view",
     description: "View official document, brand, and money settings.",
   },
@@ -262,7 +270,8 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
   },
   {
     key: "stock.supply.manage",
-    description: "View, approve, and reject stock supply requests for a location.",
+    description:
+      "View, approve, and reject stock supply requests for a location.",
   },
   {
     key: "stock.supply.requests.force_override",
@@ -315,6 +324,8 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
       "deliveries.cancel",
       "suppliers.view",
       "suppliers.manage",
+      "customers.view",
+      "customers.manage",
       "settings.documents.view",
       "settings.documents.manage",
       "settings.location_documents.manage",
