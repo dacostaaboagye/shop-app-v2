@@ -236,6 +236,8 @@ Deferred from this slice:
 
 Goal: allow customer-facing portals to expose invoices safely.
 
+Dependency note: do not implement this with email matching or reference possession. Customer invoice access depends on the Customer CRM foundation described in `docs/product/customer-crm-workstream-plan.md`, so access can be proven through customer organization/contact relationships.
+
 Scope:
 
 - Add customer-scoped invoice list/detail/download endpoints.
