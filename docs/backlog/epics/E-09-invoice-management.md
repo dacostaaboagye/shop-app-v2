@@ -61,15 +61,15 @@ Implemented foundations:
 - `SalesIssuedDocumentSnapshotService` issues immutable official document snapshots for sales receipts, invoices, and credit notes.
 - Server-generated PDFs, download, share, print, and email flows exist for sales documents.
 - Admin, manager, and worker sales ledger/detail surfaces exist in the web app; admin sales now uses dedicated admin invoice endpoints.
+- Manual exceptional invoice requests use `MIR-` references, manager request UI, admin approval/rejection UI, audited transitions, and issue official `INV-MAN` invoices only after approval.
 - ADR 0020 documents the sales document revision lifecycle.
 - ADR 0014 documents official document snapshots, PDFs, branding, and money configuration.
 
 Important gaps:
 
-- Portal, ecommerce, and manual invoice issuance are not implemented.
+- Portal and ecommerce invoice issuance are not implemented.
 - Customer invoice access is not implemented.
 - Admin CSV export is implemented; PDF/report-pack exports can follow if needed.
-- Manual exceptional invoices and approval workflow are not implemented.
 - Handover context is not surfaced on invoice documents yet.
 - Numbering gaps are technically possible and acceptable. E-09-01 adds operator-visible logging whenever sales invoice references are reserved so gaps can be reconciled without renumbering.
 
@@ -244,7 +244,7 @@ Scope:
 - Show original, credit note, adjusted invoice, and current payable state.
 - Add customer portal invoice list/detail UI when the customer portal shell exists.
 
-### E-09-05 Manual Exceptional Invoice With Approval
+### E-09-05 Manual Exceptional Invoice With Approval - shipped
 
 Goal: support controlled manager-raised invoices without weakening financial governance.
 
@@ -256,6 +256,21 @@ Scope:
 - Approved request issues `INV-MAN` and immutable snapshot.
 - Rejected request remains visible with reason.
 - Every state transition is append-only/audited.
+
+Shipped across:
+
+- Backend/API workflow: [PR #200](https://github.com/dacostaaboagye/shop-app-v2/pull/200)
+- Manager/admin UI workflow: [PR #201](https://github.com/dacostaaboagye/shop-app-v2/pull/201)
+
+Evidence:
+
+- Added manual invoice request contracts, `MIR-` request references, persistence, and audited request lifecycle state.
+- Added manager-scoped request creation/list/detail APIs and admin-scoped approval/rejection APIs with `invoices.manual.*` permissions.
+- Approval issues an official `INV-MAN` invoice and immutable sales document snapshot; rejection remains visible with reason.
+- Added manager manual invoice request list, detail, and creation UI.
+- Added admin manual invoice approval queue, detail review, approve/reject dialogs, and issued-invoice link-through.
+- Added manual invoice React Query wrappers, navigation entries, and focused route/query tests.
+- Verified with focused API, contract, database, web query, portal-shell tests, lint/typecheck/build, `pnpm guard`, `pnpm verify`, and GitHub CI `validate`.
 
 ## Permissions
 
