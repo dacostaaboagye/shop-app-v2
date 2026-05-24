@@ -5,6 +5,7 @@ export const referenceSequenceKeys = [
   "invoice-portal",
   "invoice-web",
   "invoice-manual",
+  "manual-invoice-request",
   "portal-order",
   "web-order",
   "delivery",
@@ -44,6 +45,10 @@ export const referenceSequenceProfiles: Record<
   "invoice-portal": createInvoiceProfile("invoice-portal", "INV-CPO"),
   "invoice-pos": createInvoiceProfile("invoice-pos", "INV-POS"),
   "invoice-web": createInvoiceProfile("invoice-web", "INV-WEB"),
+  "manual-invoice-request": createInvoiceProfile(
+    "manual-invoice-request",
+    "MIR",
+  ),
   "portal-order": createDateProfile("portal-order", "CPO"),
   "purchase-order": createDateProfile("purchase-order", "PO"),
   "supplier-inquiry": createDateProfile("supplier-inquiry", "SINQ"),

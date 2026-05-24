@@ -36,6 +36,7 @@ import { registerNotificationRoutes } from "../modules/notifications/notificatio
 import { registerIssuedDocumentRoutes } from "../modules/official-documents/issued-document.routes.js";
 import { registerOfficialDocumentSettingsRoutes } from "../modules/official-documents/official-document-settings.routes.js";
 import { registerAdminInvoiceRoutes } from "../modules/sales/admin-invoice.routes.js";
+import { registerManualInvoiceRequestRoutes } from "../modules/sales/manual-invoice-request.routes.js";
 import { registerPosSaleRoutes } from "../modules/sales/pos-sale.routes.js";
 import { registerStockRoutes } from "../modules/stock/active-reservation-admin.routes.js";
 import { registerStockBalanceRoutes } from "../modules/stock/stock-balance-admin.routes.js";
@@ -71,6 +72,9 @@ type CreateServerOptions = {
   supplierPortal?: Parameters<typeof registerSupplierPortalRoutes>[1];
   adminUserAccess?: Parameters<typeof registerAdminUserAccessRoutes>[1];
   adminInvoices?: Parameters<typeof registerAdminInvoiceRoutes>[1];
+  manualInvoiceRequests?: Parameters<
+    typeof registerManualInvoiceRequestRoutes
+  >[1];
   auth?: Parameters<typeof registerAuthRoutes>[1];
   authProfileMedia?: Parameters<typeof registerAccountProfileMediaRoutes>[1];
   catalogManagerQuery?: Parameters<typeof registerCatalogManagerQueryRoutes>[1];
@@ -209,6 +213,7 @@ export function createServer(options: CreateServerOptions = {}) {
   registerIssuedDocumentRoutes(server, options.issuedDocuments);
   registerOfficialDocumentSettingsRoutes(server, options.officialDocuments);
   registerAdminInvoiceRoutes(server, options.adminInvoices);
+  registerManualInvoiceRequestRoutes(server, options.manualInvoiceRequests);
   registerStockRoutes(server, options.stock);
   registerStockBalanceRoutes(server, options.stockBalance);
   registerStockBalanceLocationRoutes(server, options.stockBalanceLocation);

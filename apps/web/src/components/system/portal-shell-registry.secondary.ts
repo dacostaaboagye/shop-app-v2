@@ -1,6 +1,5 @@
 import {
   ArrowLeftRight,
-  BarChart3,
   Bell,
   Boxes,
   ClipboardList,
@@ -15,7 +14,8 @@ import {
   Users,
 } from "lucide-react";
 import { toRoute } from "@/lib/routes";
-import type { NavRegistryEntry, ShellMeta } from "./portal-shell-config.types";
+import type { NavRegistryEntry } from "./portal-shell-config.types";
+import { SECONDARY_MANAGER_SALES_NAV_REGISTRY } from "./portal-shell-registry.secondary.manager-sales";
 
 export const SECONDARY_NAV_REGISTRY: readonly NavRegistryEntry[] = [
   {
@@ -221,26 +221,7 @@ export const SECONDARY_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     requiredPermission: "stock.assignments.manage",
     section: "Operations",
   },
-  {
-    activeMatchers: [{ mode: "descendants", path: "/manager/sales" }],
-    description: "All POS sales and invoices for this location.",
-    href: toRoute("/manager/sales"),
-    icon: BarChart3,
-    label: "Sales",
-    requiredPermission: "pos.sales.manage",
-    section: "Operations",
-  },
-  {
-    activeMatchers: [
-      { mode: "descendants", path: "/manager/stock/supply-requests" },
-    ],
-    description: "Review and respond to worker stock restocking requests.",
-    href: toRoute("/manager/stock/supply-requests"),
-    icon: ClipboardList,
-    label: "Supply requests",
-    requiredPermission: "stock.supply.manage",
-    section: "Operations",
-  },
+  ...SECONDARY_MANAGER_SALES_NAV_REGISTRY,
   {
     activeMatchers: [
       { mode: "descendants", path: "/worker/stock/supply-requests" },
@@ -262,9 +243,3 @@ export const SECONDARY_NAV_REGISTRY: readonly NavRegistryEntry[] = [
     section: "Delivery",
   },
 ];
-
-export const SHELL_META: ShellMeta = {
-  emptyNotificationCopy:
-    "Events, alerts, and updates relevant to your role will appear here.",
-  heading: "Shop operations",
-};

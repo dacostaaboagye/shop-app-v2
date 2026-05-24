@@ -30,6 +30,7 @@ Runtime notes:
 - portal invoice: `INV-CPO-{5digit}`
 - e-commerce invoice: `INV-WEB-{5digit}`
 - manual invoice: `INV-MAN-{5digit}`
+- manual invoice request: `MIR-{5digit}`
 - credit note: `CRN-{parent invoice ref}`
 - portal order: `CPO-{YYYYMMDD}-{4char}`
 - e-commerce order: `WEB-{YYYYMMDD}-{4char}`

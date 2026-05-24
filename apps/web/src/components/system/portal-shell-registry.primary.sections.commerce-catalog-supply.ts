@@ -2,6 +2,7 @@ import {
   BarChart3,
   Boxes,
   ClipboardList,
+  FileText,
   History,
   MessageSquareText,
   PackageSearch,
@@ -22,6 +23,17 @@ export const COMMERCE_CATALOG_SUPPLY_NAV_REGISTRY: readonly NavRegistryEntry[] =
       icon: BarChart3,
       label: "Sales ledger",
       requiredPermission: "pos.sales.manage",
+      section: "Commerce",
+    },
+    {
+      activeMatchers: [
+        { mode: "descendants", path: "/admin/invoices/manual-requests" },
+      ],
+      description: "Approve or reject exceptional manual invoice requests.",
+      href: toRoute("/admin/invoices/manual-requests"),
+      icon: FileText,
+      label: "Manual approvals",
+      requiredPermission: "invoices.manual.view",
       section: "Commerce",
     },
     {

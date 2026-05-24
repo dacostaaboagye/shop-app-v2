@@ -153,6 +153,22 @@ export class SalesIssuedDocumentSnapshotService {
       return;
     }
 
+    if (
+      input.invoice.type === "manual" &&
+      ((await this.hasPermission({
+        locationId: input.invoice.locationId,
+        permission: "invoices.manual.view",
+        userId: input.actorUserId,
+      })) ||
+        (await this.hasPermission({
+          locationId: input.invoice.locationId,
+          permission: "invoices.manual.approve",
+          userId: input.actorUserId,
+        })))
+    ) {
+      return;
+    }
+
     if (!isActorSalesOwner(input)) throw forbiddenOfficialDocumentError();
 
     if (

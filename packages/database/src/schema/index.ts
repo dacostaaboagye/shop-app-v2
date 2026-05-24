@@ -10,6 +10,7 @@ export * from "./identity.js";
 export * from "./infrastructure.js";
 export * from "./inventory-ownership.js";
 export * from "./locations.js";
+export * from "./manual-invoices.js";
 export * from "./media.js";
 export * from "./notifications.js";
 export * from "./oauth.js";
