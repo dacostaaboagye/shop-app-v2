@@ -184,6 +184,16 @@ describe("portal-shell-config", () => {
     assert.equal(item?.requiredPermission, "catalog.categories.manage");
   });
 
+  it("resolves manual invoice approval routes", () => {
+    const adminItem = getRouteItem("/admin/invoices/manual-requests");
+    const managerItem = getRouteItem("/manager/invoices/manual-requests/new");
+
+    assert.equal(adminItem?.label, "Manual approvals");
+    assert.equal(adminItem?.requiredPermission, "invoices.manual.view");
+    assert.equal(managerItem?.label, "New manual invoice request");
+    assert.equal(managerItem?.requiredPermission, "invoices.manual.request");
+  });
+
   it("resolves getRouteItem for /worker/assignments to the Assignments entry", () => {
     const item = getRouteItem("/worker/assignments");
 

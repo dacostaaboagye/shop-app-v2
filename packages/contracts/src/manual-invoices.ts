@@ -115,6 +115,9 @@ export type DecideManualInvoiceRequest = z.infer<
 export type ManualInvoiceRequestListQuery = z.infer<
   typeof manualInvoiceRequestListQuerySchema
 >;
+export type ManualInvoiceRequestListResponse = z.infer<
+  typeof manualInvoiceRequestListResponseSchema
+>;
 export type ManualInvoiceRequestResponse = z.infer<
   typeof manualInvoiceRequestResponseSchema
 >;
