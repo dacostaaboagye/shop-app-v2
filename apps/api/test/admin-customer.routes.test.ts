@@ -146,6 +146,50 @@ describe("admin customer routes", () => {
     ]);
   });
 
+  it("links and revokes customer contact portal access behind manage permission", async () => {
+    const calls: string[] = [];
+    const server = createAuthorizedServer(
+      {
+        adminCustomers: {
+          adminCustomerQueryService: unavailableCustomerQueryService(),
+          adminCustomerWriteService: {
+            ...unavailableCustomerWriteService(),
+            async linkContactPortal(slug, contactReference, actorId, payload) {
+              calls.push(
+                `link:${slug}:${contactReference}:${actorId}:${payload.userSlug}`,
+              );
+              return customerDetail();
+            },
+            async unlinkContactPortal(slug, contactReference, actorId) {
+              calls.push(`unlink:${slug}:${contactReference}:${actorId}`);
+              return customerDetail();
+            },
+          },
+        },
+      },
+      "customers.manage",
+    );
+
+    const linkResponse = await server.inject({
+      headers: { authorization: `Bearer ${issueTestToken()}` },
+      method: "POST",
+      payload: { userSlug: "customer-user" },
+      url: "/api/admin/customers/acme-retail/contacts/CTC-00001/portal-link",
+    });
+    const unlinkResponse = await server.inject({
+      headers: { authorization: `Bearer ${issueTestToken()}` },
+      method: "DELETE",
+      url: "/api/admin/customers/acme-retail/contacts/CTC-00001/portal-link",
+    });
+
+    assert.equal(linkResponse.statusCode, 200);
+    assert.equal(unlinkResponse.statusCode, 200);
+    assert.deepEqual(calls, [
+      "link:acme-retail:CTC-00001:usr_123:customer-user",
+      "unlink:acme-retail:CTC-00001:usr_123",
+    ]);
+  });
+
   it("returns 503 when customer services are unavailable", async () => {
     const server = createAuthorizedServer();
 
@@ -216,6 +260,12 @@ function unavailableCustomerWriteService() {
       throw new Error("not used");
     },
     async createCustomer() {
+      throw new Error("not used");
+    },
+    async linkContactPortal() {
+      throw new Error("not used");
+    },
+    async unlinkContactPortal() {
       throw new Error("not used");
     },
     async updateCustomer() {

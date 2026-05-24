@@ -24,6 +24,8 @@ export {
   createAdminCustomer,
   fetchAdminCustomer,
   fetchAdminCustomers,
+  linkAdminCustomerContactPortal,
+  unlinkAdminCustomerContactPortal,
   updateAdminCustomer,
 } from "./admin-directory-customers";
 export {

@@ -7,6 +7,7 @@ const PORTAL_ROUTE_PREFIXES = [
   "worker",
   "supplier",
   "agent",
+  "customer",
 ] as const;
 
 export function getPortalKeyFromPathname(pathname: string): PortalKey | null {

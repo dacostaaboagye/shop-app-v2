@@ -30,7 +30,14 @@ export async function findAuthUser(
     .filter(
       (slug): slug is string =>
         !!slug &&
-        ["admin", "manager", "worker", "supplier", "agent"].includes(slug),
+        [
+          "admin",
+          "manager",
+          "worker",
+          "supplier",
+          "agent",
+          "customer",
+        ].includes(slug),
     );
 
   return {

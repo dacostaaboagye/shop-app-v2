@@ -9,7 +9,12 @@ export type AdminCustomerRouteDependencies = {
   >;
   adminCustomerWriteService: Pick<
     AdminCustomerWriteService,
-    "addAddress" | "addContact" | "createCustomer" | "updateCustomer"
+    | "addAddress"
+    | "addContact"
+    | "createCustomer"
+    | "linkContactPortal"
+    | "unlinkContactPortal"
+    | "updateCustomer"
   >;
 };
 
@@ -31,6 +36,12 @@ export function createUnavailableCustomerDependencies(): AdminCustomerRouteDepen
         throw unavailableCustomerError();
       },
       async createCustomer() {
+        throw unavailableCustomerError();
+      },
+      async linkContactPortal() {
+        throw unavailableCustomerError();
+      },
+      async unlinkContactPortal() {
         throw unavailableCustomerError();
       },
       async updateCustomer() {

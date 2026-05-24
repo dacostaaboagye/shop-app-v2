@@ -87,6 +87,7 @@ describe("admin customer contracts", () => {
           isPrimary: true,
           name: "Ama Mensah",
           phone: null,
+          portalStatus: "none",
           receivesDeliveryUpdates: false,
           receivesInvoices: true,
           roleTitle: null,

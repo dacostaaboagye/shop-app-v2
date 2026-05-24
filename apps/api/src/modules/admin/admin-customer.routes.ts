@@ -5,11 +5,15 @@ import {
   adminCustomerDetailSchema,
   adminCustomerListQuerySchema,
   adminCustomerListResponseSchema,
+  adminLinkCustomerContactPortalRequestSchema,
   adminUpdateCustomerRequestSchema,
 } from "@shop/contracts";
 import type { FastifyInstance } from "fastify";
 import type { RouteDefinition } from "../_core/route-contract.js";
-import { getAuthenticatedUserId } from "../auth/auth-route-support.js";
+import {
+  getAuthenticatedActor,
+  getAuthenticatedUserId,
+} from "../auth/auth-route-support.js";
 import {
   type AdminCustomerRouteDependencies,
   createUnavailableCustomerDependencies,
@@ -107,6 +111,52 @@ export function registerAdminCustomerRoutes(
         payload,
         new Date(),
       );
+      if (!customer) throw customerNotFound(slug);
+      return adminCustomerDetailSchema.parse(customer);
+    },
+  );
+
+  server.post(
+    "/api/admin/customers/:slug/contacts/:contactReference/portal-link",
+    { config: { access: adminCustomerManageAccess } },
+    async (request) => {
+      const { contactReference, slug } = request.params as {
+        contactReference: string;
+        slug: string;
+      };
+      const payload = adminLinkCustomerContactPortalRequestSchema.parse(
+        request.body,
+      );
+      const actor = getAuthenticatedActor(request);
+      const customer =
+        await dependencies.adminCustomerWriteService.linkContactPortal(
+          slug,
+          contactReference,
+          actor.userId,
+          payload,
+          new Date(),
+        );
+      if (!customer) throw customerNotFound(slug);
+      return adminCustomerDetailSchema.parse(customer);
+    },
+  );
+
+  server.delete(
+    "/api/admin/customers/:slug/contacts/:contactReference/portal-link",
+    { config: { access: adminCustomerManageAccess } },
+    async (request) => {
+      const { contactReference, slug } = request.params as {
+        contactReference: string;
+        slug: string;
+      };
+      const actor = getAuthenticatedActor(request);
+      const customer =
+        await dependencies.adminCustomerWriteService.unlinkContactPortal(
+          slug,
+          contactReference,
+          actor.userId,
+          new Date(),
+        );
       if (!customer) throw customerNotFound(slug);
       return adminCustomerDetailSchema.parse(customer);
     },

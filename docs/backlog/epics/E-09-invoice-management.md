@@ -62,13 +62,13 @@ Implemented foundations:
 - Server-generated PDFs, download, share, print, and email flows exist for sales documents.
 - Admin, manager, and worker sales ledger/detail surfaces exist in the web app; admin sales now uses dedicated admin invoice endpoints.
 - Manual exceptional invoice requests use `MIR-` references, manager request UI, admin approval/rejection UI, audited transitions, and issue official `INV-MAN` invoices only after approval.
+- Customer invoice list, detail, and PDF download APIs expose customer-safe DTOs through active CRM customer contact relationships.
 - ADR 0020 documents the sales document revision lifecycle.
 - ADR 0014 documents official document snapshots, PDFs, branding, and money configuration.
 
 Important gaps:
 
 - Portal and ecommerce invoice issuance are not implemented.
-- Customer invoice access is not implemented.
 - Admin CSV export is implemented; PDF/report-pack exports can follow if needed.
 - Handover context is not surfaced on invoice documents yet.
 - Numbering gaps are technically possible and acceptable. E-09-01 adds operator-visible logging whenever sales invoice references are reserved so gaps can be reconciled without renumbering.
@@ -232,7 +232,7 @@ Deferred from this slice:
 
 - Persistence-level source reference/idempotency dedupe is represented in the service input contract, but the storage/index shape should land with the first real portal, ecommerce, or manual caller.
 
-### E-09-04 Customer Invoice Access
+### E-09-04 Customer Invoice Access - shipped
 
 Goal: allow customer-facing portals to expose invoices safely.
 
@@ -245,6 +245,19 @@ Scope:
 - Strip workforce-only fields.
 - Show original, credit note, adjusted invoice, and current payable state.
 - Add customer portal invoice list/detail UI when the customer portal shell exists.
+
+Shipped in [PR #208](https://github.com/dacostaaboagye/shop-app-v2/pull/208).
+
+Evidence:
+
+- Added customer-safe invoice contracts for list/detail responses and filters.
+- Added `GET /api/customer/invoices`, `GET /api/customer/invoices/:reference`, and `GET /api/customer/invoices/:reference/download`.
+- Authorized access through active CRM customer contact links instead of email matching or reference possession.
+- Scoped lifecycle/current-payable lookups to the same authorized customer relationship.
+- Excluded workforce, location, SKU, and stock movement internals from customer-facing DTOs.
+- Reused immutable official issued-document snapshots for authorized customer PDF downloads.
+- Added non-disclosing not-found behavior for guessed references and rate limiting for repeated downloads.
+- Verified with focused contract/API tests, full API test suite, `pnpm guard`, `pnpm verify`, and GitHub CI.
 
 ### E-09-05 Manual Exceptional Invoice With Approval - shipped
 
@@ -360,7 +373,6 @@ E-09-01 accepts ADR 0020 and adds the public DTO decision that separates existin
 - Which existing permission should own admin invoice export, or should E-09 introduce `invoices.export`?
 - Are existing UUID fields in sales contracts approved public UUIDs, or should E-09 add slug/reference alternatives before customer portal work?
 - Should credit-note references remain `CRN-{parentReference}` for every revision, or should high-volume repeated returns use an additional sequence suffix?
-- Should customer invoice access be keyed by customer account only, verified email only, or both?
 
 ## Dependencies
 

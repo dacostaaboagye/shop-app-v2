@@ -9,6 +9,7 @@ describe("portal account routes", () => {
   it("resolves the current portal key from the pathname", () => {
     assert.equal(getPortalKeyFromPathname("/worker/sales"), "worker");
     assert.equal(getPortalKeyFromPathname("/admin/account"), "admin");
+    assert.equal(getPortalKeyFromPathname("/customer/account"), "customer");
     assert.equal(getPortalKeyFromPathname("/login"), null);
   });
 

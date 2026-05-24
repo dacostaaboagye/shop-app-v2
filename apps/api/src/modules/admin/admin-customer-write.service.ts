@@ -3,6 +3,7 @@ import type {
   AdminCreateCustomerContactRequest,
   AdminCreateCustomerRequest,
   AdminCustomerDetail,
+  AdminLinkCustomerContactPortalRequest,
   AdminUpdateCustomerRequest,
 } from "@shop/contracts";
 import type { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
@@ -28,6 +29,19 @@ export type AdminCustomerWriteRepository = {
     payload: AdminCreateCustomerRequest;
     reference: string;
   }): Promise<AdminCustomerDetail>;
+  linkContactPortal(input: {
+    actorId: string;
+    contactReference: string;
+    customerSlug: string;
+    now: Date;
+    payload: AdminLinkCustomerContactPortalRequest;
+  }): Promise<AdminCustomerDetail | null>;
+  unlinkContactPortal(input: {
+    actorId: string;
+    contactReference: string;
+    customerSlug: string;
+    now: Date;
+  }): Promise<AdminCustomerDetail | null>;
   updateCustomer(input: {
     actorId: string;
     now: Date;
@@ -106,6 +120,36 @@ export class AdminCustomerWriteService {
       customerSlug,
       now,
       payload,
+    });
+  }
+
+  linkContactPortal(
+    customerSlug: string,
+    contactReference: string,
+    actorId: string,
+    payload: AdminLinkCustomerContactPortalRequest,
+    now: Date,
+  ) {
+    return this.repository.linkContactPortal({
+      actorId,
+      contactReference,
+      customerSlug,
+      now,
+      payload,
+    });
+  }
+
+  unlinkContactPortal(
+    customerSlug: string,
+    contactReference: string,
+    actorId: string,
+    now: Date,
+  ) {
+    return this.repository.unlinkContactPortal({
+      actorId,
+      contactReference,
+      customerSlug,
+      now,
     });
   }
 }

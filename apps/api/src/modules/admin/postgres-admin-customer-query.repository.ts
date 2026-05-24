@@ -85,6 +85,12 @@ export class PostgresAdminCustomerQueryRepository
         isPrimary: contact.isPrimary,
         name: contact.name,
         phone: contact.phone,
+        portalStatus:
+          contact.status === "inactive"
+            ? "inactive"
+            : contact.userSlug
+              ? "linked"
+              : "none",
         receivesDeliveryUpdates: contact.receivesDeliveryUpdates,
         receivesInvoices: contact.receivesInvoices,
         roleTitle: contact.roleTitle,

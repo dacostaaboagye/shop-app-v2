@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdminCustomerDetail } from "@shop/contracts";
+import type { AdminCustomerDetail, AdminUserSummary } from "@shop/contracts";
 import { type Building2, History, Mail, MapPin } from "lucide-react";
 import { CatalogFormCard } from "@/components/admin/catalog/catalog-form-surfaces";
 import { AppEmptyState } from "@/components/system/app-empty-state";
@@ -12,35 +12,52 @@ import type { CustomerAddressFormValues } from "./customer-address-form";
 import { CustomerAddressForm } from "./customer-address-form";
 import type { CustomerContactFormValues } from "./customer-contact-form";
 import { CustomerContactForm } from "./customer-contact-form";
+import { CustomerContactRow } from "./customer-contact-row";
 
 export function ContactsPanel({
   contacts,
   error,
   isPending,
   onAddContact,
+  onLinkPortalUser,
+  onUnlinkPortalUser,
+  portalAccessPending,
+  userOptions,
 }: {
   contacts: AdminCustomerDetail["contacts"];
   error?: Error | null | undefined;
   isPending: boolean;
   onAddContact: (values: CustomerContactFormValues) => void;
+  onLinkPortalUser: (contactReference: string, userSlug: string) => void;
+  onUnlinkPortalUser: (contactReference: string) => void;
+  portalAccessPending: boolean;
+  userOptions: AdminUserSummary[];
 }) {
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_24rem]">
-      <RecordList
-        emptyDescription="Add invoice or delivery contacts so customer-facing documents have the right recipients."
-        emptyIcon={Mail}
-        emptyTitle="No contacts"
-        items={contacts.map((contact) => ({
-          badges: [
-            contact.isPrimary ? "Primary" : null,
-            contact.receivesInvoices ? "Invoices" : null,
-            contact.receivesDeliveryUpdates ? "Delivery updates" : null,
-          ].filter(isString),
-          description: contact.email ?? contact.phone ?? "No contact detail",
-          meta: contact.roleTitle ?? contact.status,
-          title: contact.name,
-        }))}
-      />
+      {contacts.length === 0 ? (
+        <AppEmptyState
+          description="Add invoice or delivery contacts so customer-facing documents have the right recipients."
+          icon={Mail}
+          kind="no-data"
+          title="No contacts"
+        />
+      ) : (
+        <div className="rounded-xl border border-border/70 bg-card shadow-none">
+          {contacts.map((contact, index) => (
+            <CustomerContactRow
+              contact={contact}
+              index={index}
+              isPending={portalAccessPending}
+              itemCount={contacts.length}
+              key={contact.contactReference}
+              onLinkPortalUser={onLinkPortalUser}
+              onUnlinkPortalUser={onUnlinkPortalUser}
+              userOptions={userOptions}
+            />
+          ))}
+        </div>
+      )}
       <PermissionGate permission="customers.manage">
         <CatalogFormCard
           description="Add one person who represents this customer for billing, delivery, or support."

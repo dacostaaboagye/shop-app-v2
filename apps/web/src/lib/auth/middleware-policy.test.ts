@@ -10,6 +10,7 @@ describe("isProtectedPath", () => {
     assert.equal(isProtectedPath("/admin"), true);
     assert.equal(isProtectedPath("/admin/dashboard"), true);
     assert.equal(isProtectedPath("/agent/incoming"), true);
+    assert.equal(isProtectedPath("/customer/invoices"), true);
     assert.equal(isProtectedPath("/manager/staff"), true);
     assert.equal(isProtectedPath("/supplier/orders"), true);
     assert.equal(isProtectedPath("/worker/today"), true);

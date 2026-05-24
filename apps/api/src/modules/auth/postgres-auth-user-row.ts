@@ -35,7 +35,7 @@ export const userSelectSql = `
         INNER JOIN roles ON roles.id = user_roles.role_id
         WHERE user_roles.user_id = users.id
           AND user_roles.revoked_at IS NULL
-          AND roles.slug IN ('admin', 'manager', 'worker', 'supplier', 'agent')
+          AND roles.slug IN ('admin', 'manager', 'worker', 'supplier', 'agent', 'customer')
       ),
       ARRAY[]::text[]
     ) AS "availablePortals",

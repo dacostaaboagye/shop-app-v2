@@ -12,7 +12,14 @@ export type UserDetailRow = {
   id: string;
   lastLoginAt: Date | null;
   lastName: string;
-  preferredPortal: "admin" | "agent" | "manager" | "supplier" | "worker" | null;
+  preferredPortal:
+    | "admin"
+    | "agent"
+    | "customer"
+    | "manager"
+    | "supplier"
+    | "worker"
+    | null;
   primaryImageUrl: string | null;
   requiresPasswordChange: boolean;
   slug: string;
@@ -46,6 +53,7 @@ type EffectiveScope = AdminUserAccessLocation & { locationId: string | null };
 const PORTAL_ROLE_MAP = {
   admin: "admin",
   agent: "agent",
+  customer: "customer",
   manager: "manager",
   supplier: "supplier",
   worker: "worker",
@@ -55,7 +63,7 @@ export function deriveAvailablePortals(
   roleAssignments: readonly Pick<AdminUserRoleAssignment, "roleSlug">[],
 ) {
   const portals = new Set<
-    "admin" | "agent" | "manager" | "supplier" | "worker"
+    "admin" | "agent" | "customer" | "manager" | "supplier" | "worker"
   >();
 
   for (const assignment of roleAssignments) {
