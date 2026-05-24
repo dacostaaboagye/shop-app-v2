@@ -44,4 +44,6 @@ If unsure, register it. The cost of an extra row is zero; the cost of a missed c
 
 ## Active branches
 
-(none currently in flight)
+| Branch | Epic | Stage | Orchestrator | Updated |
+|---|---|---|---|---|
+| docs/e-12-00-crm-foundation-plan | E-12-00 | refined | codex | 2026-05-24 |
