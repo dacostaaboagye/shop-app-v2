@@ -197,6 +197,7 @@ Stop and ask the user before:
 - No raw Tailwind palette utilities, `space-x-*`, `space-y-*`, or hex colors in `.tsx`.
 - Every async screen accounts for loading, empty, error, and pending/disabled states.
 - Worker portal remains mobile-first.
+- PRs that include a UI upgrade must include at least one current screenshot of the changed surface. Include desktop and mobile screenshots when the change affects responsive behavior, mobile-first workflows, or layout.
 
 ## Workflow Details
 
@@ -265,9 +266,10 @@ Do not invent xlsx status. The workbook remains authoritative.
 2. Confirm acceptance evidence.
 3. Confirm required checks and manual verification.
 4. Confirm mandatory role gates have passed or are explicitly documented as unavailable.
-5. Confirm no protected-branch push or hook bypass.
-6. Prepare PR/release notes with risks and test plan.
-7. After DoD is met, update backlog state and pick the next highest-value unblocked item without waiting for a separate prompt.
+5. Confirm UI screenshots are attached or linked for PRs with UI upgrades.
+6. Confirm no protected-branch push or hook bypass.
+7. Prepare PR/release notes with risks and test plan.
+8. After DoD is met, update backlog state and pick the next highest-value unblocked item without waiting for a separate prompt.
 
 ## Active Risk Register
 
