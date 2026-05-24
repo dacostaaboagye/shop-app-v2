@@ -23,6 +23,7 @@ A single Markdown table. One row per active branch. Empty when nothing is in fli
 ```
 | Branch | Epic | Stage | Orchestrator | Updated |
 |---|---|---|---|---|
+| feature/e-12-02-admin-customer-workspace | E-12-02 | built | codex | 2026-05-24 |
 | feature/e-05-01-... | E-05-01 | built | claude (window-A) | 2026-05-09 |
 | chore/ops-rebase-... | ops-rebase | review | claude (window-B) | 2026-05-09 |
 ```

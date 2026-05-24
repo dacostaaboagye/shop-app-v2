@@ -170,6 +170,19 @@ describe("portal-shell-config", () => {
     assert.equal(item?.requiredPermission, "catalog.products.manage");
   });
 
+  it("resolves admin customer routes", () => {
+    const customers = getRouteItem("/admin/customers");
+    const newCustomer = getRouteItem("/admin/customers/new");
+    const detail = getRouteItem("/admin/customers/acme-limited");
+
+    assert.equal(customers?.label, "Customers");
+    assert.equal(customers?.requiredPermission, "customers.view");
+    assert.equal(newCustomer?.label, "New customer");
+    assert.equal(newCustomer?.requiredPermission, "customers.manage");
+    assert.equal(detail?.label, "Customers");
+    assert.equal(detail?.requiredPermission, "customers.view");
+  });
+
   it("resolves getRouteItem for /admin/products/brands/new to the hidden New brand entry", () => {
     const item = getRouteItem("/admin/products/brands/new");
 

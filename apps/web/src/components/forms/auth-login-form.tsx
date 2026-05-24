@@ -52,6 +52,7 @@ export function AuthLoginForm() {
     <div className="flex flex-col gap-4">
       <form
         className="flex flex-col gap-4"
+        method="post"
         noValidate
         onSubmit={(event) => {
           event.preventDefault();

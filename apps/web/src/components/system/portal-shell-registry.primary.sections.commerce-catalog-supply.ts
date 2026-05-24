@@ -9,6 +9,7 @@ import {
   ShoppingCart,
   Store,
   Truck,
+  UsersRound,
 } from "lucide-react";
 import { toRoute } from "@/lib/routes";
 import type { NavRegistryEntry } from "./portal-shell-config.types";
@@ -35,6 +36,25 @@ export const COMMERCE_CATALOG_SUPPLY_NAV_REGISTRY: readonly NavRegistryEntry[] =
       label: "Manual approvals",
       requiredPermission: "invoices.manual.view",
       section: "Commerce",
+    },
+    {
+      activeMatchers: [{ mode: "descendants", path: "/admin/customers" }],
+      description: "Manage customer records, contacts, and billing context.",
+      href: toRoute("/admin/customers"),
+      icon: UsersRound,
+      label: "Customers",
+      requiredPermission: "customers.view",
+      section: "Commerce",
+    },
+    {
+      activeMatchers: [{ mode: "exact", path: "/admin/customers/new" }],
+      description: "Create a new customer.",
+      href: toRoute("/admin/customers/new"),
+      icon: UsersRound,
+      label: "New customer",
+      requiredPermission: "customers.manage",
+      section: "Commerce",
+      sidebar: false,
     },
     {
       activeMatchers: [{ mode: "descendants", path: "/admin/orders" }],
