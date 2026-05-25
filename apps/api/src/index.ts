@@ -151,6 +151,8 @@ const server = createServer({
     salesDocumentSnapshotService,
   },
   manualInvoiceRequests: {
+    customerLookupRepository:
+      salesRuntime.sales.managerCustomerLookupRepository,
     manualInvoiceRequestRepository:
       salesRuntime.sales.manualInvoiceRequestRepository,
     manualInvoiceRequestService: salesRuntime.sales.manualInvoiceRequestService,

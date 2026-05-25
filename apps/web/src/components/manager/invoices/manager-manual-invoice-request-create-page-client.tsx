@@ -22,6 +22,7 @@ import { toast } from "@/lib/toast";
 import { ManagerManualInvoiceCustomerFields } from "./manager-manual-invoice-customer-fields";
 import { ManagerManualInvoiceRequestLinePicker } from "./manager-manual-invoice-request-line-picker";
 import {
+  getCustomerSelectionError,
   getDraftLinesError,
   isValidDraftLine,
   MANUAL_INVOICE_REQUEST_DEFAULT_VALUES,
@@ -67,6 +68,7 @@ export function ManagerManualInvoiceRequestCreatePageClient() {
       setWasSubmitted(true);
       if (!selectedLocationScope || lines.length === 0) return;
       if (lines.some((line) => !isValidDraftLine(line))) return;
+      if (getCustomerSelectionError(value, true)) return;
       await createMutation.mutateAsync({
         ...(normalizeAddressLines(value.address)
           ? {
@@ -76,10 +78,16 @@ export function ManagerManualInvoiceRequestCreatePageClient() {
         ...(value.customerEmail.trim()
           ? { customerEmail: value.customerEmail.trim() }
           : {}),
-        customerName: value.customerName.trim(),
+        ...(value.customerContactReference
+          ? { customerContactReference: value.customerContactReference }
+          : {}),
+        ...(value.customerName.trim()
+          ? { customerName: value.customerName.trim() }
+          : {}),
         ...(value.customerPhone.trim()
           ? { customerPhone: value.customerPhone.trim() }
           : {}),
+        ...(value.customerSlug ? { customerSlug: value.customerSlug } : {}),
         ...(value.customerTaxNumber.trim()
           ? { customerTaxNumber: value.customerTaxNumber.trim() }
           : {}),
@@ -106,6 +114,10 @@ export function ManagerManualInvoiceRequestCreatePageClient() {
     },
   });
   const lineError = getDraftLinesError(lines, wasSubmitted);
+  const customerError = getCustomerSelectionError(
+    form.state.values,
+    wasSubmitted,
+  );
 
   return (
     <PageShell>
@@ -145,13 +157,7 @@ export function ManagerManualInvoiceRequestCreatePageClient() {
         ) : null}
 
         <FieldGroup className="rounded-lg border bg-card p-4">
-          <form.Field
-            name="customerName"
-            validators={{
-              onSubmit: ({ value }) =>
-                value.trim() ? undefined : "Enter the customer name.",
-            }}
-          >
+          <form.Field name="customerName">
             {(field) => (
               <AppFormField
                 errors={field.state.meta.errors}
@@ -172,6 +178,9 @@ export function ManagerManualInvoiceRequestCreatePageClient() {
             form={form}
             wasSubmitted={wasSubmitted}
           />
+          {customerError ? (
+            <p className="text-sm text-destructive">{customerError}</p>
+          ) : null}
         </FieldGroup>
 
         {selectedLocationScope ? (

@@ -8,6 +8,7 @@ import type { OfficialDocumentSettingsService } from "../official-documents/offi
 import { PostgresReferenceNumberRepository } from "../public-identifiers/postgres-reference-number.repository.js";
 import { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
 import { InvoiceIssuanceService } from "./invoice-issuance.service.js";
+import { PostgresManagerCustomerLookupRepository } from "./manager-customer-lookup.repository.js";
 import { ManualInvoiceRequestService } from "./manual-invoice-request.service.js";
 import { PosSaleService } from "./pos-sale.service.js";
 import { PosSaleDeliverySourceAdapter } from "./pos-sale-delivery-source.adapter.js";
@@ -28,6 +29,7 @@ type SalesRuntime = {
     adminInvoiceQueryRepository: PostgresAdminInvoiceQueryRepository;
     customerInvoiceQueryRepository: PostgresCustomerInvoiceQueryRepository;
     invoiceRepository: PostgresInvoiceRepository;
+    managerCustomerLookupRepository: PostgresManagerCustomerLookupRepository;
     posSaleDeliverySourcePort: PosSaleDeliverySourcePort;
     posSaleService: PosSaleService;
   };
@@ -84,6 +86,8 @@ export function createSalesRuntime(
     new PostgresCustomerInvoiceQueryRepository(databaseRuntime.db);
   const manualInvoiceRequestRepository =
     new PostgresManualInvoiceRequestRepository(databaseRuntime.db);
+  const managerCustomerLookupRepository =
+    new PostgresManagerCustomerLookupRepository(databaseRuntime.db);
   const customerLinkResolver = new PostgresSalesCustomerLinkRepository(
     databaseRuntime.db,
   );
@@ -146,6 +150,7 @@ export function createSalesRuntime(
       customerInvoiceQueryRepository,
       invoiceQueryRepository,
       invoiceRepository,
+      managerCustomerLookupRepository,
       manualInvoiceRequestRepository,
       manualInvoiceRequestService,
       posSaleDeliverySourcePort: new PosSaleDeliverySourceAdapter(

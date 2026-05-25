@@ -4,6 +4,7 @@ import { useAuthSessionStore } from "@/store/use-auth-session-store";
 import {
   approveManualInvoiceRequest,
   createManagerManualInvoiceRequest,
+  fetchManagerCustomerLookup,
   fetchManualInvoiceRequests,
   rejectManualInvoiceRequest,
 } from "./manual-invoices";
@@ -40,6 +41,26 @@ describe("manual invoice react-query wrappers", () => {
     });
 
     assert.equal(result.page, 2);
+  });
+
+  it("fetches manager customer lookup options", async () => {
+    setSession();
+    process.env.NEXT_PUBLIC_API_BASE_URL = "http://localhost:4000";
+    globalThis.fetch = async (input, init) => {
+      assert.equal(
+        String(input),
+        "http://localhost:4000/api/manager/customers?limit=5&q=adwoa",
+      );
+      assert.equal(
+        new Headers(init?.headers).get("Authorization"),
+        `Bearer ${"a".repeat(64)}`,
+      );
+      return jsonResponse({ items: [{ slug: "adwoa-trading" }] });
+    };
+
+    const result = await fetchManagerCustomerLookup({ limit: 5, q: "adwoa" });
+
+    assert.equal(result.items[0]?.slug, "adwoa-trading");
   });
 
   it("posts manager create and admin decisions to manual request endpoints", async () => {

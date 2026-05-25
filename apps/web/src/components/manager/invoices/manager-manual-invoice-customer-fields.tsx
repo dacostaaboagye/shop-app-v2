@@ -1,10 +1,5 @@
 "use client";
 
-import type {
-  FormAsyncValidateOrFn,
-  FormValidateOrFn,
-  ReactFormExtendedApi,
-} from "@tanstack/react-form";
 import { AppFormField } from "@/components/forms/app-form-field";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,29 +10,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { ManualInvoiceRequestFormValues } from "./manual-invoice-request-create.support";
-
-type ManualInvoiceFormValidate =
-  | FormValidateOrFn<ManualInvoiceRequestFormValues>
-  | undefined;
-type ManualInvoiceFormAsyncValidate =
-  | FormAsyncValidateOrFn<ManualInvoiceRequestFormValues>
-  | undefined;
-
-type ManualInvoiceForm = ReactFormExtendedApi<
-  ManualInvoiceRequestFormValues,
-  ManualInvoiceFormValidate,
-  ManualInvoiceFormValidate,
-  ManualInvoiceFormAsyncValidate,
-  ManualInvoiceFormValidate,
-  ManualInvoiceFormAsyncValidate,
-  ManualInvoiceFormValidate,
-  ManualInvoiceFormAsyncValidate,
-  ManualInvoiceFormValidate,
-  ManualInvoiceFormAsyncValidate,
-  ManualInvoiceFormAsyncValidate,
-  unknown
->;
+import { ManagerManualInvoiceCustomerLookup } from "./manager-manual-invoice-customer-lookup";
+import type { ManualInvoiceForm } from "./manual-invoice-request-create.support";
 
 export function ManagerManualInvoiceCustomerFields({
   form,
@@ -48,6 +22,7 @@ export function ManagerManualInvoiceCustomerFields({
 }) {
   return (
     <>
+      <ManagerManualInvoiceCustomerLookup form={form} />
       <form.Field name="customerEmail">
         {(field) => (
           <AppFormField
