@@ -32,7 +32,11 @@ The `commit-msg` hook enforces this format locally.
 Before code leaves your machine:
 
 1. `pre-commit` runs `pnpm enforce:branch-name`, `pnpm guard`, and `pnpm lint`.
-2. `pre-push` runs `pnpm verify`.
+2. `pre-push` runs `pnpm validate:affected` — guards + lint + typecheck + tests
+   for packages changed relative to `origin/dev` (`TURBO_SCM_BASE`). Full
+   `pnpm verify` (all tests + build) stays in CI; it made local pushes take
+   10+ minutes and GitHub closed the idle SSH connection before the ref
+   transfer began, since git connects before the hook runs.
 3. Shared root config changes invalidate Turbo caches through `globalDependencies` in `turbo.json`.
 
 If you change shared files such as `tsconfig.base.json`, `biome.json`, `pnpm-lock.yaml`, or root `package.json`, Turbo will now rerun affected tasks instead of replaying stale local results.
