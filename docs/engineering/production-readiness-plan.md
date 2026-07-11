@@ -14,9 +14,9 @@ stock, deliveries, invoicing, and CRM. POS (E-07) and the e-commerce ladder
   OAuth client secret, Resend API key. `.env.local` itself is already deleted
   from disk; rotation is the outstanding half. **Requires operator action in
   each provider dashboard — cannot be done from this repo.**
-- [ ] **C2 — purge local log files.** `dev-*.log`, `tmp-api-*.log`,
-  `.codex-verify.log` in the repo root are gitignored but still on disk and may
-  contain request payloads from before log redaction shipped. Audit, then delete.
+- [x] **C2 — purge local log files.** Audited 2026-07-11: only false-positive
+  pattern hits (test names containing "password"/"bearer"); no credentials
+  found. All repo-root `*.log` files deleted.
 - [x] Verify audit findings against current code (done 2026-07-11 — see
   `security-and-auth-audit.md` status lines; C3, H1, H2, H4–H7, M1, M2, M5,
   M7–M9, M11 confirmed closed).
@@ -43,9 +43,16 @@ not build.
 - [ ] Create Vercel production project pointed at `apps/web`.
 - [ ] Production R2 bucket; CORS pinned to the production `WEB_BASE_URL`
   (PUT/GET/HEAD, `content-type`, expose `ETag`).
-- [ ] GitHub `production` environment + secret set (mirror the testing list in
-  `testing-environment-deployment.md`), or Infisical machine identity per
-  `secrets-management.md`.
+- [ ] Populate the GitHub `production` environment secrets. The environment
+  exists but holds **zero secrets** (checked 2026-07-11). `deploy-production.yml`
+  requires: `PROD_DATABASE_URL`, `PROD_FLY_API_TOKEN`, `PROD_FLY_APP_NAME`,
+  `PROD_AUTH_ACCESS_TOKEN_SECRET`, `PROD_WEB_BASE_URL`, `PROD_AUTH_COOKIE_SECURE`,
+  `PROD_GOOGLE_CLIENT_ID`, `PROD_GOOGLE_CLIENT_SECRET`, `PROD_GOOGLE_CALLBACK_URL`,
+  `PROD_RESEND_API_KEY`, `PROD_EMAIL_FROM_ADDRESS`, `PROD_RESEND_WEBHOOK_SECRET`,
+  `PROD_R2_ACCOUNT_ID`, `PROD_R2_ACCESS_KEY_ID`, `PROD_R2_SECRET_ACCESS_KEY`,
+  `PROD_R2_BUCKET`, `PROD_R2_PUBLIC_URL`, `PROD_VERCEL_TOKEN`,
+  `PROD_VERCEL_ORG_ID`, `PROD_VERCEL_PROJECT_ID`, `PROD_API_BASE_URL`.
+  Use **freshly rotated** credentials — never the compromised `.env.local` set.
 - [ ] Domain + DNS + TLS. Set `WEB_BASE_URL`, `AUTH_COOKIE_SECURE=true`,
   production Google OAuth callback URL.
 - [ ] Dry-run the full pipeline through **staging** first: migrate, seed,
@@ -61,8 +68,8 @@ not build.
 - [ ] Backup verification: confirm Neon PITR window, then perform one actual
   restore-to-branch drill. An untested backup does not count.
 - [ ] Decide log shipping/retention beyond Fly's default buffer.
-- [ ] Rollback runbook (one page, `docs/engineering/`): `fly releases revert`,
-  Vercel instant rollback, migration-rollback stance, escalation contact.
+- [x] Rollback runbook: `docs/engineering/production-rollback-runbook.md`
+  (written 2026-07-11).
 - [ ] Load sanity pass on the heaviest list/report endpoints at expected pilot
   volume. Rate limits exist (600/min global + per-route); latency is unverified.
 
