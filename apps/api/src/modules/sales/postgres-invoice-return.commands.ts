@@ -22,7 +22,9 @@ export async function createReturnTransaction(
       .select({
         classification: invoices.classification,
         customerBillingAddressLines: invoices.customerBillingAddressLines,
+        customerContactId: invoices.customerContactId,
         customerEmail: invoices.customerEmail,
+        customerId: invoices.customerId,
         customerName: invoices.customerName,
         customerPhone: invoices.customerPhone,
         customerTaxNumber: invoices.customerTaxNumber,
@@ -69,9 +71,12 @@ export async function createReturnTransaction(
         createdBy: input.createdBy,
         customerBillingAddressLines:
           parentInvoice?.customerBillingAddressLines ?? null,
+        customerContactId:
+          parentInvoice?.customerContactId ?? input.customerContactId ?? null,
         currencyCode: parentInvoice?.currencyCode ?? input.currencyCode,
         currencyScale: parentInvoice?.currencyScale ?? input.currencyScale,
         customerEmail: parentInvoice?.customerEmail ?? null,
+        customerId: parentInvoice?.customerId ?? input.customerId ?? null,
         customerName: parentInvoice?.customerName ?? null,
         customerPhone: parentInvoice?.customerPhone ?? null,
         customerTaxNumber: parentInvoice?.customerTaxNumber ?? null,
@@ -146,9 +151,12 @@ export async function createReturnTransaction(
           createdBy: input.createdBy,
           customerBillingAddressLines:
             parentInvoice?.customerBillingAddressLines ?? null,
+          customerContactId:
+            parentInvoice?.customerContactId ?? input.customerContactId ?? null,
           currencyCode: parentInvoice?.currencyCode ?? input.currencyCode,
           currencyScale: parentInvoice?.currencyScale ?? input.currencyScale,
           customerEmail: parentInvoice?.customerEmail ?? null,
+          customerId: parentInvoice?.customerId ?? input.customerId ?? null,
           customerName: parentInvoice?.customerName ?? null,
           customerPhone: parentInvoice?.customerPhone ?? null,
           customerTaxNumber: parentInvoice?.customerTaxNumber ?? null,

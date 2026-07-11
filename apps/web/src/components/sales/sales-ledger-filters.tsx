@@ -13,12 +13,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  SalesLedgerAdminFilters,
+  type SalesLedgerChannelFilter,
+  type SalesLedgerStatusFilter,
+} from "./sales-ledger-admin-filters";
+import {
   fromSalesDateRange,
   toSalesDateRange,
 } from "./sales-list-filters.support";
 
 type Props = {
   classification: "all" | "internal" | "outgoing";
+  channel?: ("all" | "ecommerce" | "manual" | "portal" | "pos") | undefined;
+  currentPayableOnly?: boolean | undefined;
   dateFrom: string;
   dateTo: string;
   documentType: "adjusted" | "all" | "credit_note" | "invoice";
@@ -26,8 +33,11 @@ type Props = {
   paymentMethod: "all" | "card" | "cash" | "mobile_money" | "transfer";
   paymentOptions: readonly ("card" | "cash" | "mobile_money" | "transfer")[];
   search: string;
+  status?: ("all" | "confirmed" | "superseded" | "voided") | undefined;
+  onChannelChange?: ((value: SalesLedgerChannelFilter) => void) | undefined;
   onClassificationChange: (value: "all" | "internal" | "outgoing") => void;
   onClear: () => void;
+  onCurrentPayableOnlyChange?: ((value: boolean) => void) | undefined;
   onDateFromChange: (value: string) => void;
   onDateToChange: (value: string) => void;
   onDocumentTypeChange: (
@@ -37,6 +47,7 @@ type Props = {
     value: "all" | "card" | "cash" | "mobile_money" | "transfer",
   ) => void;
   onSearchChange: (value: string) => void;
+  onStatusChange?: ((value: SalesLedgerStatusFilter) => void) | undefined;
 };
 
 const PAYMENT_LABELS = {
@@ -48,6 +59,8 @@ const PAYMENT_LABELS = {
 
 export function SalesLedgerFilters({
   classification,
+  channel,
+  currentPayableOnly,
   dateFrom,
   dateTo,
   documentType,
@@ -55,13 +68,17 @@ export function SalesLedgerFilters({
   paymentMethod,
   paymentOptions,
   search,
+  status,
+  onChannelChange,
   onClassificationChange,
   onClear,
+  onCurrentPayableOnlyChange,
   onDateFromChange,
   onDateToChange,
   onDocumentTypeChange,
   onPaymentMethodChange,
   onSearchChange,
+  onStatusChange,
 }: Props) {
   const dateRange = toSalesDateRange({ dateFrom, dateTo });
 
@@ -96,7 +113,7 @@ export function SalesLedgerFilters({
           </AppFormField>
         </div>
 
-        <div className="grid min-w-0 gap-6 2xl:grid-cols-[minmax(12rem,1fr)_minmax(12rem,1fr)_minmax(12rem,1fr)_auto] 2xl:items-end">
+        <div className="grid min-w-0 gap-6 2xl:grid-cols-[repeat(3,minmax(12rem,1fr))_auto] 2xl:items-end">
           <AppFormField
             inputId="sales-ledger-classification"
             label="Classification"
@@ -182,6 +199,15 @@ export function SalesLedgerFilters({
             Clear
           </Button>
         </div>
+
+        <SalesLedgerAdminFilters
+          channel={channel}
+          currentPayableOnly={currentPayableOnly}
+          status={status}
+          onChannelChange={onChannelChange}
+          onCurrentPayableOnlyChange={onCurrentPayableOnlyChange}
+          onStatusChange={onStatusChange}
+        />
       </div>
     </div>
   );

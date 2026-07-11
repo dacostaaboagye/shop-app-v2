@@ -170,6 +170,19 @@ describe("portal-shell-config", () => {
     assert.equal(item?.requiredPermission, "catalog.products.manage");
   });
 
+  it("resolves admin customer routes", () => {
+    const customers = getRouteItem("/admin/customers");
+    const newCustomer = getRouteItem("/admin/customers/new");
+    const detail = getRouteItem("/admin/customers/acme-limited");
+
+    assert.equal(customers?.label, "Customers");
+    assert.equal(customers?.requiredPermission, "customers.view");
+    assert.equal(newCustomer?.label, "New customer");
+    assert.equal(newCustomer?.requiredPermission, "customers.manage");
+    assert.equal(detail?.label, "Customers");
+    assert.equal(detail?.requiredPermission, "customers.view");
+  });
+
   it("resolves getRouteItem for /admin/products/brands/new to the hidden New brand entry", () => {
     const item = getRouteItem("/admin/products/brands/new");
 
@@ -182,6 +195,16 @@ describe("portal-shell-config", () => {
 
     assert.equal(item?.label, "New category");
     assert.equal(item?.requiredPermission, "catalog.categories.manage");
+  });
+
+  it("resolves manual invoice approval routes", () => {
+    const adminItem = getRouteItem("/admin/invoices/manual-requests");
+    const managerItem = getRouteItem("/manager/invoices/manual-requests/new");
+
+    assert.equal(adminItem?.label, "Manual approvals");
+    assert.equal(adminItem?.requiredPermission, "invoices.manual.view");
+    assert.equal(managerItem?.label, "New manual invoice request");
+    assert.equal(managerItem?.requiredPermission, "invoices.manual.request");
   });
 
   it("resolves getRouteItem for /worker/assignments to the Assignments entry", () => {

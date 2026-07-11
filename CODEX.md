@@ -32,6 +32,18 @@ Optimize for:
 
 Do not reduce features to CRUD. Most work exists to protect accountability, traceability, financial correctness, operational reliability, or stakeholder trust.
 
+## Stakeholder Value Gate
+
+Before adding or keeping any feature, ask: what stakeholder value does this create?
+
+- If the feature does not create clear stakeholder value, do not build it.
+- If the value is unclear, refine the requirement before implementing.
+- Map the stakeholder journey before designing the UI or workflow: who uses it, what job they are trying to complete, what they need to know, and what successful completion looks like.
+- Avoid workflows that make stakeholders hold too much context in memory, jump across unrelated pages, or perform unnecessary setup before taking the real action.
+- When a small tool is valuable, give it enough design and engineering attention to feel reliable, obvious, and low-friction.
+- Prefer removing or relocating low-value controls over making important pages crowded.
+- For any meaningful UI, workflow, navigation, form, table, or action-placement change, run a Product Designer gate before implementation.
+
 ## Required Reading
 
 For non-trivial work, read only what is relevant but start here:
@@ -72,7 +84,7 @@ Default topology:
 
 - Main Codex session: intake, plan, branch hygiene, critical-path decisions, integration, verification, PR/ship.
 - Worker subagents: implement bounded slices with disjoint file ownership when parallel coding is useful.
-- Explorer subagents: inspect architecture, security, QA, product acceptance, frontend UX, database integrity, DevOps/release risk, or code-review concerns.
+- Explorer subagents: inspect architecture, security, QA, product acceptance, product design, frontend UX, database integrity, DevOps/release risk, or code-review concerns.
 - Final gate subagents: perform independent ship/no-ship review for the affected mandatory lenses before PR creation or handoff.
 
 Use workers when:
@@ -125,9 +137,10 @@ Apply these role lenses when the trigger is present. Loading a matching skill is
 | Trigger | Mandatory lenses |
 | --- | --- |
 | backlog/product scope, acceptance criteria, UAT, value trade-off | Product Owner |
+| stakeholder journey, feature value gate, information architecture, workflow placement, screen flow, action placement, UX friction, memory load | Product Designer |
 | cross-module design, new abstraction, ADR-impacting decision | Technical Lead |
 | API route, service workflow, Node runtime, eventing | Backend |
-| React route/component/form/table/query/UI state | Frontend and UX |
+| React route/component/form/table/query/UI state | Frontend, Product Designer, and UX |
 | schema, migration, transaction, index, report correctness | Database |
 | auth, permissions, secrets, uploads, email, webhooks, logs, public exposure | Security |
 | behavior change, release readiness, bug fix | QA |
@@ -184,6 +197,7 @@ Stop and ask the user before:
 - No raw Tailwind palette utilities, `space-x-*`, `space-y-*`, or hex colors in `.tsx`.
 - Every async screen accounts for loading, empty, error, and pending/disabled states.
 - Worker portal remains mobile-first.
+- PRs that include a UI upgrade must include at least one current screenshot of the changed surface. Include desktop and mobile screenshots when the change affects responsive behavior, mobile-first workflows, or layout.
 
 ## Workflow Details
 
@@ -252,9 +266,10 @@ Do not invent xlsx status. The workbook remains authoritative.
 2. Confirm acceptance evidence.
 3. Confirm required checks and manual verification.
 4. Confirm mandatory role gates have passed or are explicitly documented as unavailable.
-5. Confirm no protected-branch push or hook bypass.
-6. Prepare PR/release notes with risks and test plan.
-7. After DoD is met, update backlog state and pick the next highest-value unblocked item without waiting for a separate prompt.
+5. Confirm UI screenshots are attached or linked for PRs with UI upgrades.
+6. Confirm no protected-branch push or hook bypass.
+7. Prepare PR/release notes with risks and test plan.
+8. After DoD is met, update backlog state and pick the next highest-value unblocked item without waiting for a separate prompt.
 
 ## Active Risk Register
 

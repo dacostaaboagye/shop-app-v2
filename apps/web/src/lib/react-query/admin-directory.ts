@@ -10,12 +10,24 @@ import { fetchJson } from "@/lib/react-query/fetch-json";
 import { buildSearchParams } from "./admin-directory.common";
 
 export {
+  adminCustomerQueryKey,
+  adminCustomersQueryKey,
   adminLocationsQueryKey,
   adminStaffQueryKey,
   adminSupplierQueryKey,
   adminSuppliersQueryKey,
   adminUsersQueryKey,
 } from "./admin-directory.common";
+export {
+  addAdminCustomerAddress,
+  addAdminCustomerContact,
+  createAdminCustomer,
+  fetchAdminCustomer,
+  fetchAdminCustomers,
+  linkAdminCustomerContactPortal,
+  unlinkAdminCustomerContactPortal,
+  updateAdminCustomer,
+} from "./admin-directory-customers";
 export {
   addAdminSupplierContact,
   createAdminSupplier,

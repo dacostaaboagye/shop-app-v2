@@ -1,6 +1,7 @@
 import { invoices } from "@shop/database";
 import { and, eq, gte, lte, or, sql } from "drizzle-orm";
 import type { ApiDatabase } from "../../infrastructure/database.js";
+import { resolveCurrentPayableReference } from "./invoice-lifecycle.js";
 import { mapInvoice, mapLineItem } from "./postgres-invoice.mappers.js";
 import type { InvoiceRecord, InvoiceWithLines } from "./sales.contracts.js";
 
@@ -13,6 +14,12 @@ export class PostgresInvoiceQueryRepository {
       with: {
         attributedWorker: {
           columns: { firstName: true, lastName: true, email: true },
+        },
+        customer: {
+          columns: { reference: true, slug: true },
+        },
+        customerContact: {
+          columns: { reference: true },
         },
         lines: true,
         parentInvoice: {
@@ -93,6 +100,12 @@ export class PostgresInvoiceQueryRepository {
       orderBy: (t, { desc }) => [desc(t.createdAt)],
       where: and(...conditions),
       with: {
+        customer: {
+          columns: { reference: true, slug: true },
+        },
+        customerContact: {
+          columns: { reference: true },
+        },
         parentInvoice: {
           columns: { reference: true },
         },
@@ -168,6 +181,12 @@ export class PostgresInvoiceQueryRepository {
       orderBy: (t, { desc }) => [desc(t.createdAt)],
       where: and(...conditions),
       with: {
+        customer: {
+          columns: { reference: true, slug: true },
+        },
+        customerContact: {
+          columns: { reference: true },
+        },
         parentInvoice: {
           columns: { reference: true },
         },
@@ -208,75 +227,51 @@ export class PostgresInvoiceQueryRepository {
       | "portal"
       | "pos";
   }) {
-    if (row.type === "credit_note") {
-      const startReference =
-        row.replacementInvoice?.reference ??
-        row.revisionRootInvoice?.reference ??
-        row.parentInvoice?.reference ??
-        null;
-
-      if (!startReference) {
-        return null;
-      }
-
-      return this.resolveLatestPayableReference(startReference);
-    }
-
-    return this.resolveLatestPayableReference(row.reference);
+    return resolveCurrentPayableReference({
+      findByReference: (reference) =>
+        this.findLifecycleReferenceByReference(reference),
+      invoice: {
+        parentInvoiceReference: row.parentInvoice?.reference ?? null,
+        reference: row.reference,
+        replacementInvoiceReference: row.replacementInvoice?.reference ?? null,
+        revisionRootReference: row.revisionRootInvoice?.reference ?? null,
+        status: row.status,
+        type: row.type,
+      },
+    });
   }
 
-  private async resolveLatestPayableReference(reference: string) {
-    let currentReference: string | null = reference;
-    const seenReferences = new Set<string>();
-
-    while (currentReference) {
-      if (seenReferences.has(currentReference)) {
-        return null;
-      }
-
-      const activeReference: string = currentReference;
-      seenReferences.add(activeReference);
-      const invoice:
-        | {
-            reference: string;
-            replacementInvoice: { reference: string } | null;
-            status: string;
-            type: string;
-          }
-        | null
-        | undefined = await this.db.query.invoices.findFirst({
-        columns: {
-          reference: true,
-          status: true,
-          type: true,
+  private async findLifecycleReferenceByReference(reference: string) {
+    const invoice = await this.db.query.invoices.findFirst({
+      columns: {
+        reference: true,
+        status: true,
+        type: true,
+      },
+      where: (t, { eq }) => eq(t.reference, reference),
+      with: {
+        replacementInvoice: {
+          columns: { reference: true },
         },
-        where: (t, { eq }) => eq(t.reference, activeReference),
-        with: {
-          replacementInvoice: {
-            columns: { reference: true },
-          },
-        },
-      });
+      },
+    });
 
-      if (!invoice) {
-        return null;
-      }
+    if (!invoice) return null;
 
-      if (!invoice.replacementInvoice?.reference) {
-        return invoice.type !== "credit_note" && invoice.status === "confirmed"
-          ? invoice.reference
-          : null;
-      }
-
-      currentReference = invoice.replacementInvoice.reference;
-    }
-
-    return null;
+    return {
+      reference: invoice.reference,
+      replacementInvoiceReference:
+        invoice.replacementInvoice?.reference ?? null,
+      status: invoice.status,
+      type: invoice.type,
+    };
   }
 }
 
-function mapInvoiceWithRelations(
+export function mapInvoiceWithRelations(
   row: Parameters<typeof mapInvoice>[0] & {
+    customer?: { reference: string; slug: string } | null;
+    customerContact?: { reference: string } | null;
     parentInvoice?: { reference: string } | null;
     replacementInvoice?: { reference: string } | null;
     revisionCreditNote?: { reference: string } | null;
@@ -285,6 +280,9 @@ function mapInvoiceWithRelations(
 ): InvoiceRecord {
   return {
     ...mapInvoice(row),
+    customerContactReference: row.customerContact?.reference ?? null,
+    customerReference: row.customer?.reference ?? null,
+    customerSlug: row.customer?.slug ?? null,
     parentInvoiceReference: row.parentInvoice?.reference ?? null,
     replacementInvoiceReference: row.replacementInvoice?.reference ?? null,
     revisionCreditNoteReference: row.revisionCreditNote?.reference ?? null,

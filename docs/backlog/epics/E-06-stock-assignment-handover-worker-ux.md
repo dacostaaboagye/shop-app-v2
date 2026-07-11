@@ -1,7 +1,7 @@
 ---
 id: E-06
 title: Stock assignment and handover worker UX layer
-status: in_progress
+status: shipped
 priority: P1
 domain: full-stack
 owner: codex
@@ -28,6 +28,8 @@ The current repo already has partial surfaces:
 - Manager stock assignment list and new-assignment flow exist under `/manager/assignments`.
 - Worker assignment list exists under `/worker/assignments`.
 - Worker handovers route now has the E-06-01 operational workspace shipped in PR #181.
+- Manager handover oversight is shipped in PR #183 and is visible from `/manager/assignments`.
+- Assignment history drill-in is shipped in PR #190 for manager and worker assignment views.
 - Backend assignment and handover command endpoints exist for manager and worker portals.
 
 The gap is not the ledger. The gap is the day-to-day custody workflow and the query surfaces that make handovers visible.
@@ -50,14 +52,18 @@ The gap is not the ledger. The gap is the day-to-day custody workflow and the qu
 - `apps/api/src/modules/inventory-ownership/ownership-handover.service.ts` owns handover initiation, chaining, ending, and auto-revert.
 - `apps/api/src/modules/assignments/stock-assignment-manager.routes.ts` exposes manager assignment, reassignment, handover, revert, and location assignment list routes.
 - `apps/api/src/modules/assignments/stock-assignment-worker.routes.ts` exposes worker assignment list, handover initiation, and handover revert routes.
+- `apps/api/src/modules/assignments/stock-assignment-history.routes.ts` exposes manager and worker assignment history drill-ins over the append-only ownership ledger.
 - `apps/api/src/modules/assignments/assignment-command.service.ts` publishes `assignment.*` platform events after created assignment and handover writes.
 
 ### Frontend
 
 - `/manager/assignments` shows current location assignments.
+- `/manager/assignments` includes active handover oversight for managed locations.
+- `/manager/assignments` includes per-assignment history drill-in and links matching stock movement history by SKU.
 - `/manager/assignments/new` supports assigning multiple variants to one worker.
 - `/worker/assignments` shows current worker assignments and supports supply-request actions.
-- `/worker/handovers` is a placeholder and has no operational workflow yet.
+- `/worker/assignments` includes per-assignment history drill-in for the worker's current accountable stock.
+- `/worker/handovers` shows active received, active given, reverted, and historical handover chains.
 
 ## User Journeys
 
@@ -106,6 +112,8 @@ The gap is not the ledger. The gap is the day-to-day custody workflow and the qu
 
 ## Proposed Slices
 
+E-06 is shipped. The implementation landed across the three slices below:
+
 ### E-06-01 Worker Handover Workspace - shipped
 
 First implementation slice. Shipped in [PR #181](https://github.com/dacostaaboagye/shop-app-v2/pull/181).
@@ -117,18 +125,26 @@ First implementation slice. Shipped in [PR #181](https://github.com/dacostaaboag
 - Added handover initiation action from `/worker/assignments`.
 - Added focused route, service/query, contract, and UI helper tests.
 
-### E-06-02 Manager Handover Oversight
+### E-06-02 Manager Handover Oversight - shipped
 
-- Add manager handover list query for managed locations.
-- Surface active handovers from `/manager/assignments` or a dedicated manager handover tab.
-- Add manager revert/intervention action with reason capture if the current backend contract needs audit reason support.
-- Add tests for manager location scoping and stuck-handover intervention.
+Second implementation slice. Shipped in [PR #183](https://github.com/dacostaaboagye/shop-app-v2/pull/183).
 
-### E-06-03 Assignment History Polish
+- Added manager handover list query support for managed locations.
+- Added manager handover oversight API routing under the assignments module.
+- Surfaced active handovers from `/manager/assignments`.
+- Reused the existing append-only handover revert path for manager intervention.
+- Added focused manager route, location-scope, contract, query, and UI helper tests.
 
-- Add assignment detail/history drill-in for manager and worker views.
-- Show chronological assignment, reassignment, handover, revert, and sale attribution evidence.
-- Cross-link to stock movement history where movement records exist.
+### E-06-03 Assignment History Polish - shipped
+
+Third implementation slice. Shipped in [PR #190](https://github.com/dacostaaboagye/shop-app-v2/pull/190).
+
+- Added manager and worker assignment history endpoints backed by `stock_ownership_events`.
+- Added scoped worker history access so workers can only inspect current accountable assignments.
+- Added a shared assignment history dialog with chronological assignment, reassignment, handover, revert, and cancellation evidence.
+- Added History actions to manager and worker assignment lists.
+- Added manager cross-linking from assignment history to stock movement history filtered by location and SKU.
+- Added focused contract, route, React Query, UI helper, lint/typecheck/build, and Playwright evidence.
 
 ## Edge Cases
 
@@ -151,6 +167,8 @@ First implementation slice. Shipped in [PR #181](https://github.com/dacostaaboag
 - Revert appends a `reverted` event and does not update prior ownership rows.
 - UI helper tests classify active received, active given, reverted, and history lanes correctly.
 - Playwright checks `/worker/handovers` at mobile and desktop widths after the first UI slice lands.
+- Assignment history route tests cover manager scope, worker current-accountability scope, and missing-history responses.
+- Assignment history UI helper tests cover event labels and manager stock movement deep links.
 
 ## UAT Scenarios
 
@@ -170,3 +188,5 @@ First implementation slice. Shipped in [PR #181](https://github.com/dacostaaboag
 ## Related PRs
 
 - [PR #181](https://github.com/dacostaaboagye/shop-app-v2/pull/181) - `feat(e-06-01): implement worker handover workspace`
+- [PR #183](https://github.com/dacostaaboagye/shop-app-v2/pull/183) - `feat(e-06-02): add manager handover oversight`
+- [PR #190](https://github.com/dacostaaboagye/shop-app-v2/pull/190) - `feat(e-06-03): add assignment history drill-in`

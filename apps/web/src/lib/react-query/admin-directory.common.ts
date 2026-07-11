@@ -1,4 +1,5 @@
 import type {
+  AdminCustomerListQuery,
   AdminLocationListQuery,
   AdminStaffListQuery,
   AdminSupplierListQuery,
@@ -11,6 +12,12 @@ export const adminUsersQueryKey = (query: AdminUserListQuery) =>
 export const adminStaffQueryKey = (query: AdminStaffListQuery) =>
   ["admin", "staff", query] as const;
 
+export const adminCustomersQueryKey = (query: AdminCustomerListQuery) =>
+  ["admin", "customers", query] as const;
+
+export const adminCustomerQueryKey = (slug: string) =>
+  ["admin", "customers", slug] as const;
+
 export const adminSuppliersQueryKey = (query: AdminSupplierListQuery) =>
   ["admin", "suppliers", query] as const;
 
@@ -22,6 +29,7 @@ export const adminLocationsQueryKey = (query: AdminLocationListQuery) =>
 
 export function buildSearchParams(
   query:
+    | AdminCustomerListQuery
     | AdminLocationListQuery
     | AdminStaffListQuery
     | AdminSupplierListQuery

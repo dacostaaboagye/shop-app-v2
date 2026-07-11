@@ -9,6 +9,7 @@ import { PersonAvatar } from "./person-avatar";
 export const portalLabels: Record<PortalKey, string> = {
   admin: "Admin",
   agent: "Agent",
+  customer: "Customer",
   manager: "Manager",
   supplier: "Supplier",
   worker: "Worker",

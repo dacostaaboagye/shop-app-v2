@@ -3,7 +3,7 @@
 A snapshot of the master xlsx so we don't have to parse it every session.
 
 > **Source**: `Building and Refining Product Backlog(2).xlsx` at the repo root.
-> **Last derived**: 2026-05-03. Markdown closure updates were appended after PR #79, PR #107, PR #108, PR #110, PR #111, PR #141, PR #154, PR #155, PR #159, and PR #161 merged; re-run the xlsx refresh flow to make the workbook-backed snapshot authoritative again.
+> **Last derived**: 2026-05-03. Markdown closure updates were appended after PR #79, PR #107, PR #108, PR #110, PR #111, PR #141, PR #154, PR #155, PR #159, PR #161, and PR #209 merged; re-run the xlsx refresh flow to make the workbook-backed snapshot authoritative again.
 > **Authority**: the xlsx is the source of truth. This doc reflects state at the time it was written. **Re-derive from the xlsx whenever priority or status decisions are at stake** — do not trust this doc for current status if any time has passed since the date above.
 >
 > **To refresh**: ask Claude to "refresh the scope summary" (or invoke `/refresh-backlog-summary`). The skill at `.claude/skills/refresh-backlog-summary/SKILL.md` re-reads the xlsx, updates this file, and opens a PR.
@@ -68,8 +68,8 @@ These live as `EPICn` sheets in the xlsx. They have a title, story bullets, edge
 
 - **E-00C deliveries module is now complete in the Markdown working surface.** E-12, E-14, E-15, E-16 all list E-00C as a dependency, so the downstream online-sales + delivery-agent portal stack is no longer blocked by the delivery foundation.
 - **E-04 is shipped in the Markdown working surface.** Ten downstream epics name it as a dependency. The delivered E-04 scope covers opening stock, reason-coded counts, stock takes, CSV/XLSX/PDF artifacts, dry-run validation, reviewed apply, in-app count entry, and missing-catalog intake review. E-05 can now start from stock receipts and movement hardening.
-- **E-09 (invoice management) gates E-07 + E-12 + E-14 + E-16.** Still unticketed. Will need to land before any sales channel is finished.
-- **E-13 -> E-14 -> E-15 -> E-16** is the e-commerce ladder. Storefront -> fulfilment -> delivery -> payments. E-00C is no longer the blocker; E-04 is shipped, while E-09 still needs ticketing/implementation before the full sales-channel ladder can complete.
+- **E-09 (invoice management) gates E-07 + E-12 + E-14 + E-16.** E-09-01, E-09-02, E-09-03, E-09-04, and E-09-05 are shipped in the Markdown working surface. Customer-facing channels now have customer-safe invoice list/detail/download APIs authorized through CRM customer contact relationships.
+- **E-13 -> E-14 -> E-15 -> E-16** is the e-commerce ladder. Storefront -> fulfilment -> delivery -> payments. E-00C, E-04, and the E-09 customer-safe invoice layer are no longer the blockers; the next customer-facing value path is customer portal access and ordering on the CRM foundation.
 
 ## Authoring issues to flag to the PO
 
@@ -83,8 +83,8 @@ These are oddities in the xlsx itself, not the work — worth noting so they get
 
 ## Recommended runway
 
-Based on what's in the xlsx today, the remaining near-term runway is clear:
+Based on the Markdown working surface and recent shipped PRs, the remaining near-term runway is:
 
-1. **E-05-02** - refined in `docs/backlog/epics/E-05-02-stock-movement-history.md`. Expose the append-only stock movement ledger as admin and manager movement history so receipt, count, transfer, sale, and return changes can be traced without database access.
+1. **CRM-04 Customer Relationship On Sales Documents** - defined in `docs/product/customer-crm-workstream-plan.md`. Make sales document creation select existing CRM customers at the point of work so issued invoices/manual invoice requests carry a relationship link and immutable customer snapshot.
 
-The PO still needs to mirror the shipped E-04/E-05-01 state and new E-05-02 slice into `Backlog Audit` / `Next Up` in the workbook so the rest of phase-2 (E-05..E-15) can be tracked by the authoritative queue.
+The PO still needs to mirror the shipped E-04/E-05/E-06, E-09-01..E-09-05, and E-12 CRM foundation state into `Backlog Audit` / `Next Up` in the workbook so the rest of phase-2 (E-07, E-12, E-14+) can be tracked by the authoritative queue.

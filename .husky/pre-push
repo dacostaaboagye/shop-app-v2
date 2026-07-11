@@ -1,1 +1,6 @@
-pnpm verify
+# Full `pnpm verify` here made pushes take 10+ minutes and GitHub closed the
+# idle SSH connection before the transfer started (git connects to the remote
+# before running this hook). CI still runs full verify on every PR and on
+# pushes to dev/main; this hook covers guards + lint + typecheck + tests for
+# packages changed relative to dev.
+TURBO_SCM_BASE=origin/dev pnpm validate:affected

@@ -1,7 +1,11 @@
 "use client";
 
-import type { InvoiceDocumentTypeFilter } from "@shop/contracts";
+import type {
+  AdminInvoiceReportingTotals,
+  InvoiceDocumentTypeFilter,
+} from "@shop/contracts";
 import { ArrowDownRight, Receipt, TrendingUp, Wallet } from "lucide-react";
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { AppPagination } from "@/components/data-table/app-pagination";
 import { StatCard } from "@/components/system/page-shell";
@@ -22,6 +26,8 @@ import { SalesLedgerTimeline } from "./sales-ledger-timeline";
 
 type Props = {
   classification: "all" | "internal" | "outgoing";
+  channel?: ("all" | "ecommerce" | "manual" | "portal" | "pos") | undefined;
+  currentPayableOnly?: boolean | undefined;
   dateFrom: string;
   dateTo: string;
   documentType: InvoiceDocumentTypeFilter;
@@ -29,21 +35,33 @@ type Props = {
   page: number;
   pageSize: number;
   records: SalesLedgerRecord[];
+  reportingTotals?: AdminInvoiceReportingTotals | undefined;
   search: string;
+  toolbarAction?: ReactNode | undefined;
   totalCount: number;
+  status?: ("all" | "confirmed" | "superseded" | "voided") | undefined;
+  onChannelChange?:
+    | ((value: "all" | "ecommerce" | "manual" | "portal" | "pos") => void)
+    | undefined;
   onDateFromChange: (value: string) => void;
   onDateToChange: (value: string) => void;
   onClassificationChange: (value: "all" | "internal" | "outgoing") => void;
+  onCurrentPayableOnlyChange?: ((value: boolean) => void) | undefined;
   onDocumentTypeChange: (value: InvoiceDocumentTypeFilter) => void;
   onPageChange: (value: number) => void;
   onPageSizeChange: (value: number) => void;
   onSearchChange: (value: string) => void;
+  onStatusChange?:
+    | ((value: "all" | "confirmed" | "superseded" | "voided") => void)
+    | undefined;
 };
 
 const DEFAULT_DATE_RANGE = createDefaultSalesLedgerDateRange();
 
 export function SalesLedgerWorkspace({
   classification,
+  channel,
+  currentPayableOnly,
   dateFrom,
   dateTo,
   documentType,
@@ -51,15 +69,21 @@ export function SalesLedgerWorkspace({
   page,
   pageSize,
   records,
+  reportingTotals,
   search,
+  toolbarAction,
   totalCount,
+  status,
+  onChannelChange,
   onDateFromChange,
   onDateToChange,
   onClassificationChange,
+  onCurrentPayableOnlyChange,
   onDocumentTypeChange,
   onPageChange,
   onPageSizeChange,
   onSearchChange,
+  onStatusChange,
 }: Props) {
   const [paymentMethod, setPaymentMethod] = useState<
     "all" | "card" | "cash" | "mobile_money" | "transfer"
@@ -85,6 +109,10 @@ export function SalesLedgerWorkspace({
 
   return (
     <div className="flex flex-col gap-6">
+      {toolbarAction ? (
+        <div className="flex flex-wrap justify-end gap-3">{toolbarAction}</div>
+      ) : null}
+
       <SalesLedgerFilters
         dateFrom={dateFrom}
         dateTo={dateTo}
@@ -92,49 +120,75 @@ export function SalesLedgerWorkspace({
         hasFilters={
           paymentMethod !== "all" ||
           search.trim().length > 0 ||
+          (channel !== undefined && channel !== "all") ||
           classification !== "all" ||
+          currentPayableOnly === true ||
           documentType !== "all" ||
+          (status !== undefined && status !== "all") ||
           dateFrom !== DEFAULT_DATE_RANGE.dateFrom ||
           dateTo !== DEFAULT_DATE_RANGE.dateTo
         }
+        channel={channel}
         classification={classification}
+        currentPayableOnly={currentPayableOnly}
         paymentMethod={paymentMethod}
         paymentOptions={paymentOptions}
         search={search}
+        status={status}
+        onChannelChange={onChannelChange}
         onClear={() => {
           onDateFromChange(DEFAULT_DATE_RANGE.dateFrom);
           onDateToChange(DEFAULT_DATE_RANGE.dateTo);
+          onChannelChange?.("all");
           onClassificationChange("all");
           onDocumentTypeChange("all");
+          onCurrentPayableOnlyChange?.(false);
           setPaymentMethod("all");
           onSearchChange("");
+          onStatusChange?.("all");
         }}
         onClassificationChange={onClassificationChange}
+        onCurrentPayableOnlyChange={onCurrentPayableOnlyChange}
         onDateFromChange={onDateFromChange}
         onDateToChange={onDateToChange}
         onDocumentTypeChange={onDocumentTypeChange}
         onPaymentMethodChange={setPaymentMethod}
         onSearchChange={onSearchChange}
+        onStatusChange={onStatusChange}
       />
 
       <div className="grid gap-4 md:grid-cols-2">
         <StatCard
-          description="Sales less issued credit notes."
+          description={
+            reportingTotals
+              ? "Latest confirmed payable invoice value."
+              : "Sales less issued credit notes."
+          }
           icon={TrendingUp}
-          label="Net revenue"
-          value={formatMoney(summary.netRevenueAmount, moneyProfile)}
+          label={reportingTotals ? "Current payable" : "Net revenue"}
+          value={formatMoney(
+            reportingTotals?.currentPayableAmount ?? summary.netRevenueAmount,
+            moneyProfile,
+          )}
         />
         <StatCard
-          description="Confirmed sales captured in the ledger."
+          description="Original confirmed sales before credits."
           icon={Wallet}
-          label="Gross sales"
-          value={formatMoney(summary.grossSalesAmount, moneyProfile)}
+          label="Gross originals"
+          value={formatMoney(
+            reportingTotals?.grossOriginalSalesAmount ??
+              summary.grossSalesAmount,
+            moneyProfile,
+          )}
         />
         <StatCard
           description="Value returned through credit notes."
           icon={ArrowDownRight}
           label="Credit notes"
-          value={formatMoney(summary.creditNoteAmount, moneyProfile)}
+          value={formatMoney(
+            reportingTotals?.creditedAmount ?? summary.creditNoteAmount,
+            moneyProfile,
+          )}
         />
         <StatCard
           description="Current valid revenue on adjusted invoices."

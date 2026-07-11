@@ -28,6 +28,7 @@ type AssignmentListProps = {
   onSearchChange: (value: string) => void;
   onSelectSupply: (target: SupplyTarget) => void;
   onStartHandover: (item: CurrentAssignment) => void;
+  onViewHistory: (item: CurrentAssignment) => void;
   onStockFilterChange: (value: StockFilter) => void;
   onViewModeChange: (value: ViewMode) => void;
   onClearSelectedSupply: () => void;
@@ -49,6 +50,7 @@ export function AssignmentList({
   onSearchChange,
   onSelectSupply,
   onStartHandover,
+  onViewHistory,
   onStockFilterChange,
   onViewModeChange,
   onClearSelectedSupply,
@@ -122,6 +124,7 @@ export function AssignmentList({
         onSearchChange={onSearchChange}
         onSelectSupply={onSelectSupply}
         onStartHandover={onStartHandover}
+        onViewHistory={onViewHistory}
         onStockFilterChange={onStockFilterChange}
         viewMode={viewMode}
         selectedSupplySkuIds={selectedSupplySkuIds}
@@ -140,6 +143,7 @@ function AssignmentResults({
   onSearchChange,
   onSelectSupply,
   onStartHandover,
+  onViewHistory,
   onStockFilterChange,
   viewMode,
   selectedSupplySkuIds,
@@ -153,6 +157,7 @@ function AssignmentResults({
   onSearchChange: (value: string) => void;
   onSelectSupply: (target: SupplyTarget) => void;
   onStartHandover: (item: CurrentAssignment) => void;
+  onViewHistory: (item: CurrentAssignment) => void;
   onStockFilterChange: (value: StockFilter) => void;
   viewMode: ViewMode;
   selectedSupplySkuIds: string[];
@@ -191,6 +196,7 @@ function AssignmentResults({
         onSelectSupply={onSelectSupply}
         onRequestSupply={onRequestSupply}
         onStartHandover={onStartHandover}
+        onViewHistory={onViewHistory}
         selectedSupplySkuIds={selectedSupplySkuIds}
       />
     );
@@ -224,6 +230,7 @@ function AssignmentResults({
             })
           }
           onStartHandover={() => onStartHandover(item)}
+          onViewHistory={() => onViewHistory(item)}
           selectedForSupply={selectedSupplySkuIds.includes(item.skuId)}
         />
       ))}

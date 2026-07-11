@@ -5,6 +5,7 @@ import Fastify from "fastify";
 import { getApiEnv } from "../env.js";
 import { registerRouteAuthorization } from "../modules/access-control/route-authorization.js";
 import { registerAdminAccessRoutes } from "../modules/admin/admin-access.routes.js";
+import { registerAdminCustomerRoutes } from "../modules/admin/admin-customer.routes.js";
 import { registerAdminDirectoryRoutes } from "../modules/admin/admin-directory.routes.js";
 import { registerAdminLocationQueryRoutes } from "../modules/admin/admin-location-query.routes.js";
 import { registerAdminLocationWriteRoutes } from "../modules/admin/admin-location-write.routes.js";
@@ -35,6 +36,9 @@ import { registerEmailWebhookRoutes } from "../modules/messaging/email-webhook.r
 import { registerNotificationRoutes } from "../modules/notifications/notification.routes.js";
 import { registerIssuedDocumentRoutes } from "../modules/official-documents/issued-document.routes.js";
 import { registerOfficialDocumentSettingsRoutes } from "../modules/official-documents/official-document-settings.routes.js";
+import { registerAdminInvoiceRoutes } from "../modules/sales/admin-invoice.routes.js";
+import { registerCustomerInvoiceRoutes } from "../modules/sales/customer-invoice.routes.js";
+import { registerManualInvoiceRequestRoutes } from "../modules/sales/manual-invoice-request.routes.js";
 import { registerPosSaleRoutes } from "../modules/sales/pos-sale.routes.js";
 import { registerStockRoutes } from "../modules/stock/active-reservation-admin.routes.js";
 import { registerStockBalanceRoutes } from "../modules/stock/stock-balance-admin.routes.js";
@@ -54,6 +58,9 @@ import { registerErrorHandling } from "./register-error-handling.js";
 
 const GLOBAL_RATE_LIMIT_MAX = 600;
 const GLOBAL_RATE_LIMIT_WINDOW_MS = 60_000;
+// Matches Fastify's default, pinned explicitly per audit M6. Routes that
+// accept larger payloads (e.g. stock-take imports) override per-route.
+const GLOBAL_BODY_LIMIT_BYTES = 1_048_576;
 
 type StockAssignmentRouteOptions = Parameters<
   typeof registerStockAssignmentRoutes
@@ -63,12 +70,18 @@ type StockAssignmentRouteOptions = Parameters<
 type CreateServerOptions = {
   accessControl?: Parameters<typeof registerRouteAuthorization>[1];
   adminAccess?: Parameters<typeof registerAdminAccessRoutes>[1];
+  adminCustomers?: Parameters<typeof registerAdminCustomerRoutes>[1];
   adminDirectory?: Parameters<typeof registerAdminDirectoryRoutes>[1];
   adminLocationQuery?: Parameters<typeof registerAdminLocationQueryRoutes>[1];
   adminLocationWrite?: Parameters<typeof registerAdminLocationWriteRoutes>[1];
   adminSuppliers?: Parameters<typeof registerAdminSupplierRoutes>[1];
   supplierPortal?: Parameters<typeof registerSupplierPortalRoutes>[1];
   adminUserAccess?: Parameters<typeof registerAdminUserAccessRoutes>[1];
+  adminInvoices?: Parameters<typeof registerAdminInvoiceRoutes>[1];
+  customerInvoices?: Parameters<typeof registerCustomerInvoiceRoutes>[1];
+  manualInvoiceRequests?: Parameters<
+    typeof registerManualInvoiceRequestRoutes
+  >[1];
   auth?: Parameters<typeof registerAuthRoutes>[1];
   authProfileMedia?: Parameters<typeof registerAccountProfileMediaRoutes>[1];
   catalogManagerQuery?: Parameters<typeof registerCatalogManagerQueryRoutes>[1];
@@ -114,6 +127,7 @@ type CreateServerOptions = {
 export function createServer(options: CreateServerOptions = {}) {
   const env = getApiEnv();
   const server = Fastify({
+    bodyLimit: GLOBAL_BODY_LIMIT_BYTES,
     logger: {
       level: env.nodeEnv === "development" ? "info" : "warn",
       // Strip auth-bearing values from auto-logged request/response headers.
@@ -179,6 +193,7 @@ export function createServer(options: CreateServerOptions = {}) {
   registerRouteAuthorization(server, options.accessControl);
   registerAuthRoutes(server, options.auth);
   registerAccountProfileMediaRoutes(server, options.authProfileMedia);
+  registerAdminCustomerRoutes(server, options.adminCustomers);
   registerAdminDirectoryRoutes(server, options.adminDirectory);
   registerAdminAccessRoutes(server, options.adminAccess);
   registerAdminLocationQueryRoutes(server, options.adminLocationQuery);
@@ -206,6 +221,9 @@ export function createServer(options: CreateServerOptions = {}) {
   registerNotificationRoutes(server, options.notifications);
   registerIssuedDocumentRoutes(server, options.issuedDocuments);
   registerOfficialDocumentSettingsRoutes(server, options.officialDocuments);
+  registerAdminInvoiceRoutes(server, options.adminInvoices);
+  registerCustomerInvoiceRoutes(server, options.customerInvoices);
+  registerManualInvoiceRequestRoutes(server, options.manualInvoiceRequests);
   registerStockRoutes(server, options.stock);
   registerStockBalanceRoutes(server, options.stockBalance);
   registerStockBalanceLocationRoutes(server, options.stockBalanceLocation);

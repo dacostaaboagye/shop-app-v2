@@ -1,7 +1,7 @@
 "use client";
 
 import type { CurrentAssignment } from "@shop/contracts";
-import { Check, HandCoins, ShoppingCart } from "lucide-react";
+import { Check, HandCoins, History, ShoppingCart } from "lucide-react";
 import { ProductThumbnail } from "@/components/system/product-thumbnail";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ export function AssignmentCard({
   onSelectSupply,
   onRequestSupply,
   onStartHandover,
+  onViewHistory,
   selectedForSupply = false,
 }: {
   item: CurrentAssignment;
@@ -23,6 +24,7 @@ export function AssignmentCard({
   onSelectSupply?: () => void;
   onRequestSupply: () => void;
   onStartHandover: () => void;
+  onViewHistory: () => void;
   selectedForSupply?: boolean;
 }) {
   const status = getStockStatus(item.availableQuantity);
@@ -84,7 +86,7 @@ export function AssignmentCard({
           />
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-4">
           <Button
             aria-label={`Request supply for ${item.productName} - ${item.variantName}`}
             className="h-11 w-full rounded-xl gap-2 font-bold transition-all active:scale-[0.98]"
@@ -114,6 +116,15 @@ export function AssignmentCard({
           >
             <HandCoins className="size-4" />
             Handover
+          </Button>
+          <Button
+            className="h-11 w-full rounded-xl gap-2 font-bold"
+            onClick={onViewHistory}
+            type="button"
+            variant="outline"
+          >
+            <History className="size-4" />
+            History
           </Button>
         </div>
       </div>

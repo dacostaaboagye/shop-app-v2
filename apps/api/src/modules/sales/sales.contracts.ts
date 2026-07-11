@@ -10,11 +10,16 @@ export type InvoiceRecord = {
   createdBy: string | null;
   currentPayableReference: string | null;
   customerBillingAddressLines: string[] | null;
+  customerContactId?: string | null;
+  customerContactReference?: string | null;
   currencyCode: string;
   currencyScale: number;
   customerEmail: string | null;
+  customerId?: string | null;
   customerName: string | null;
   customerPhone: string | null;
+  customerReference?: string | null;
+  customerSlug?: string | null;
   customerTaxNumber: string | null;
   id: string;
   locationId: string;
@@ -60,6 +65,29 @@ export type InvoiceWithLines = InvoiceRecord & {
   lines: InvoiceLineItemRecord[];
 };
 
+export type AdminInvoiceReportingTotals = {
+  adjustedInvoiceCount: number;
+  creditedAmount: string;
+  creditNoteCount: number;
+  currentPayableAmount: string;
+  grossOriginalSalesAmount: string;
+  supersededAmount: string;
+  voidedAmount: string;
+};
+
+export type AdminInvoiceRecord = InvoiceRecord & {
+  locationName: string;
+  locationSlug: string;
+};
+
+export type AdminInvoiceListResult = {
+  items: AdminInvoiceRecord[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totals: AdminInvoiceReportingTotals;
+};
+
 export type SaleLineInput = {
   invoiceId?: string;
   locationId: string;
@@ -79,9 +107,14 @@ export type CreateSaleTransactionInput = {
   confirmedAt: Date;
   createdBy: string;
   customerBillingAddressLines?: string[] | null;
+  customerContactId?: string | null;
+  customerContactReference?: string | null;
   currencyCode: string;
   currencyScale: number;
   customerEmail?: string | null;
+  customerId?: string | null;
+  customerReference?: string | null;
+  customerSlug?: string | null;
   customerName?: string | null;
   customerPhone?: string | null;
   customerTaxNumber?: string | null;
@@ -119,6 +152,8 @@ export type CreateReturnTransactionInput = {
   createdBy: string;
   currencyCode: string;
   currencyScale: number;
+  customerContactId?: string | null;
+  customerId?: string | null;
   lines: {
     lineTotal: string;
     quantity: number;

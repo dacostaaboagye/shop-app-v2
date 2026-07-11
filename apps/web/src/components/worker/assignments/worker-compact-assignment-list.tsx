@@ -1,7 +1,7 @@
 "use client";
 
 import type { CurrentAssignment } from "@shop/contracts";
-import { Check, HandCoins, ShoppingCart } from "lucide-react";
+import { Check, HandCoins, History, ShoppingCart } from "lucide-react";
 import { ProductThumbnail } from "@/components/system/product-thumbnail";
 import { Button } from "@/components/ui/button";
 import { formatCount } from "@/lib/display/format";
@@ -20,6 +20,7 @@ export function CompactAssignmentList({
   onSelectSupply,
   onRequestSupply,
   onStartHandover,
+  onViewHistory,
   selectedSupplySkuIds = [],
 }: {
   items: CurrentAssignment[];
@@ -29,11 +30,12 @@ export function CompactAssignmentList({
   onSelectSupply: ((target: SupplyTarget) => void) | undefined;
   onRequestSupply: (target: SupplyTarget) => void;
   onStartHandover: (item: CurrentAssignment) => void;
+  onViewHistory: (item: CurrentAssignment) => void;
   selectedSupplySkuIds?: string[];
 }) {
   return (
     <div className="overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm">
-      <div className="hidden border-b border-border/50 bg-muted px-4 py-3 sm:grid sm:grid-cols-[1fr_120px_100px_100px_120px] sm:gap-4">
+      <div className="hidden border-b border-border/50 bg-muted px-4 py-3 sm:grid sm:grid-cols-[1fr_120px_100px_100px_160px] sm:gap-4">
         <span className="type-data-label">Product</span>
         <span className="type-data-label text-right">Price</span>
         <span className="type-data-label text-right">On Hand</span>
@@ -51,6 +53,7 @@ export function CompactAssignmentList({
             onSelectSupply={onSelectSupply}
             onRequestSupply={onRequestSupply}
             onStartHandover={onStartHandover}
+            onViewHistory={onViewHistory}
             selectedForSupply={selectedSupplySkuIds.includes(item.skuId)}
           />
         ))}
@@ -67,6 +70,7 @@ function CompactAssignmentRow({
   onSelectSupply,
   onRequestSupply,
   onStartHandover,
+  onViewHistory,
   selectedForSupply,
 }: {
   item: CurrentAssignment;
@@ -76,6 +80,7 @@ function CompactAssignmentRow({
   onSelectSupply: ((target: SupplyTarget) => void) | undefined;
   onRequestSupply: (target: SupplyTarget) => void;
   onStartHandover: (item: CurrentAssignment) => void;
+  onViewHistory: (item: CurrentAssignment) => void;
   selectedForSupply: boolean;
 }) {
   const status = getStockStatus(item.availableQuantity);
@@ -85,7 +90,7 @@ function CompactAssignmentRow({
   return (
     <div
       className={cn(
-        "group relative flex flex-col gap-4 p-4 transition-colors hover:bg-muted sm:grid sm:grid-cols-[1fr_120px_100px_100px_120px] sm:items-center sm:gap-4 sm:py-3",
+        "group relative flex flex-col gap-4 p-4 transition-colors hover:bg-muted sm:grid sm:grid-cols-[1fr_120px_100px_100px_160px] sm:items-center sm:gap-4 sm:py-3",
         selectedForSupply && "bg-primary/5",
       )}
     >
@@ -183,6 +188,15 @@ function CompactAssignmentRow({
           >
             <HandCoins className="size-3" />
             <span className="sm:hidden lg:inline">Handover</span>
+          </Button>
+          <Button
+            className="h-8 w-full rounded-lg gap-2 px-3 text-xs font-bold sm:w-auto"
+            onClick={() => onViewHistory(item)}
+            type="button"
+            variant="outline"
+          >
+            <History className="size-3" />
+            <span className="sm:hidden lg:inline">History</span>
           </Button>
         </div>
       </div>

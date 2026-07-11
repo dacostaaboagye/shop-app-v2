@@ -1,10 +1,11 @@
 "use client";
 
 import type { LocationAssignmentSummary } from "@shop/contracts";
-import { UserCheck } from "lucide-react";
+import { History, UserCheck } from "lucide-react";
 import { AppEmptyState } from "@/components/system/app-empty-state";
 import { AppTableWrapper } from "@/components/system/app-table-wrapper";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatCount, formatSupportText } from "@/lib/display/format";
 import { cn } from "@/lib/utils";
 import { formatAssignmentEventLabel } from "./manager-assignments-support";
@@ -12,9 +13,11 @@ import { formatAssignmentEventLabel } from "./manager-assignments-support";
 export function ManagerAssignmentCurrentList({
   items,
   locationName,
+  onViewHistory,
 }: {
   items: readonly LocationAssignmentSummary[];
   locationName: string | undefined;
+  onViewHistory: (item: LocationAssignmentSummary) => void;
 }) {
   if (items.length === 0) {
     return (
@@ -76,6 +79,15 @@ export function ManagerAssignmentCurrentList({
                 >
                   {formatAssignmentEventLabel(item.eventType)}
                 </Badge>
+                <Button
+                  className="h-8 rounded-lg px-3 text-xs"
+                  onClick={() => onViewHistory(item)}
+                  type="button"
+                  variant="outline"
+                >
+                  <History className="size-3" />
+                  History
+                </Button>
               </div>
             </div>
           </div>

@@ -4,6 +4,10 @@ import type { CurrentAssignment } from "@shop/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import {
+  AssignmentHistoryDialog,
+  type AssignmentHistoryTarget,
+} from "@/components/stock/assignment-history-dialog";
 import { AppErrorBanner } from "@/components/system/app-error";
 import { LocationScopePanel } from "@/components/system/location-scope-panel";
 import { PageHeader, PageShell } from "@/components/system/page-shell";
@@ -39,6 +43,8 @@ export function WorkerAssignmentsPageClient() {
   const [bulkRequestOpen, setBulkRequestOpen] = useState(false);
   const [handoverTarget, setHandoverTarget] =
     useState<CurrentAssignment | null>(null);
+  const [historyTarget, setHistoryTarget] =
+    useState<AssignmentHistoryTarget | null>(null);
   const [selectedSupplySkuIds, setSelectedSupplySkuIds] = useState<string[]>(
     [],
   );
@@ -163,6 +169,16 @@ export function WorkerAssignmentsPageClient() {
             )
           }
           onStartHandover={setHandoverTarget}
+          onViewHistory={(item) =>
+            setHistoryTarget({
+              locationId: item.locationId,
+              locationSlug: selectedLocationSlug,
+              productName: item.productName,
+              sku: item.sku,
+              skuId: item.skuId,
+              variantName: item.variantName,
+            })
+          }
           onStockFilterChange={setStockFilter}
           onViewModeChange={setViewMode}
           search={search}
@@ -208,6 +224,16 @@ export function WorkerAssignmentsPageClient() {
         }}
         open={!!handoverTarget}
         target={handoverTarget}
+      />
+      <AssignmentHistoryDialog
+        onOpenChange={(open) => {
+          if (!open) {
+            setHistoryTarget(null);
+          }
+        }}
+        open={!!historyTarget}
+        scope="worker"
+        target={historyTarget}
       />
     </PageShell>
   );

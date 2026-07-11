@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { registerAssignmentHistoryRoutes } from "./stock-assignment-history.routes.js";
 import { registerManagerStockAssignmentRoutes } from "./stock-assignment-manager.routes.js";
 import {
   createUnavailableDependencies,
@@ -14,4 +15,5 @@ export function registerStockAssignmentRoutes(
 ) {
   registerManagerStockAssignmentRoutes(server, dependencies);
   registerWorkerStockAssignmentRoutes(server, dependencies);
+  registerAssignmentHistoryRoutes(server, dependencies);
 }

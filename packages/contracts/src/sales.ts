@@ -14,12 +14,34 @@ export const invoiceDocumentTypeFilterSchema = z.enum([
   "adjusted",
 ]);
 
+export const invoiceChannelFilterSchema = z.enum([
+  "all",
+  "pos",
+  "portal",
+  "ecommerce",
+  "manual",
+]);
+
+export const invoiceIssuanceChannelSchema = z.enum([
+  "pos",
+  "portal",
+  "ecommerce",
+  "manual",
+]);
+
 export const invoiceClassificationSchema = z.enum(["outgoing", "internal"]);
 
 export const invoiceClassificationFilterSchema = z.enum([
   "all",
   "outgoing",
   "internal",
+]);
+
+export const invoiceStatusFilterSchema = z.enum([
+  "all",
+  "confirmed",
+  "superseded",
+  "voided",
 ]);
 
 export const invoiceDocumentRoleSchema = z.enum([
@@ -34,17 +56,28 @@ export const posLineItemRequestSchema = z.object({
   unitPrice: z.string().optional(),
 });
 
-export const processPosPaymentRequestSchema = z.object({
-  customerBillingAddressLines: z.array(z.string().trim().min(1)).optional(),
-  customerEmail: z.string().trim().email().optional(),
-  customerName: z.string().trim().min(1).max(160).optional(),
-  customerPhone: z.string().trim().min(1).max(40).optional(),
-  customerTaxNumber: z.string().trim().min(1).max(80).optional(),
-  lines: z.array(posLineItemRequestSchema).min(1),
-  locationId: z.string().uuid(),
-  notes: z.string().trim().max(500).optional(),
-  paymentMethod: posPaymentMethodSchema,
-});
+export const processPosPaymentRequestSchema = z
+  .object({
+    customerBillingAddressLines: z.array(z.string().trim().min(1)).optional(),
+    customerContactReference: z.string().trim().min(1).max(25).optional(),
+    customerEmail: z.string().trim().email().optional(),
+    customerName: z.string().trim().min(1).max(160).optional(),
+    customerPhone: z.string().trim().min(1).max(40).optional(),
+    customerSlug: z.string().trim().min(1).max(120).optional(),
+    customerTaxNumber: z.string().trim().min(1).max(80).optional(),
+    lines: z.array(posLineItemRequestSchema).min(1),
+    locationId: z.string().uuid(),
+    notes: z.string().trim().max(500).optional(),
+    paymentMethod: posPaymentMethodSchema,
+  })
+  .superRefine((value, ctx) => {
+    if (!value.customerContactReference || value.customerSlug) return;
+    ctx.addIssue({
+      code: "custom",
+      message: "Customer contact requires a selected CRM customer.",
+      path: ["customerContactReference"],
+    });
+  });
 
 export const invoiceLineItemResponseSchema = z.object({
   lineTotal: z.string(),
@@ -70,9 +103,12 @@ export const invoiceResponseSchema = z.object({
   confirmedAt: z.iso.datetime().nullable(),
   createdAt: z.iso.datetime(),
   customerBillingAddressLines: z.array(z.string()).nullable().default(null),
+  customerContactReference: z.string().nullable().default(null),
   customerEmail: z.string().email().nullable().default(null),
   customerName: z.string().nullable().default(null),
   customerPhone: z.string().nullable().default(null),
+  customerReference: z.string().nullable().default(null),
+  customerSlug: z.string().nullable().default(null),
   customerTaxNumber: z.string().nullable().default(null),
   currencyCode: z.string().length(3),
   currencyScale: z.number().int().min(0).max(4),
@@ -144,14 +180,92 @@ export const invoiceListResponseSchema = z.object({
   total: z.number().int(),
 });
 
+const queryBooleanSchema = z.preprocess((value) => {
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return value;
+}, z.boolean());
+
+export const adminInvoiceListQuerySchema = invoiceListQuerySchema.extend({
+  channel: invoiceChannelFilterSchema.default("all"),
+  currentPayableOnly: queryBooleanSchema.default(false),
+  status: invoiceStatusFilterSchema.default("all"),
+});
+
+export const adminInvoiceReportingTotalsSchema = z.object({
+  adjustedInvoiceCount: z.number().int(),
+  creditedAmount: z.string(),
+  creditNoteCount: z.number().int(),
+  currentPayableAmount: z.string(),
+  grossOriginalSalesAmount: z.string(),
+  supersededAmount: z.string(),
+  voidedAmount: z.string(),
+});
+
+export const adminInvoiceListItemResponseSchema = invoiceResponseSchema
+  .omit({ lines: true })
+  .extend({
+    locationName: z.string(),
+    locationSlug: z.string(),
+  });
+
+export const adminInvoiceListResponseSchema = invoiceListResponseSchema.extend({
+  items: z.array(adminInvoiceListItemResponseSchema),
+  totals: adminInvoiceReportingTotalsSchema,
+});
+
+export const customerSafeInvoiceLineItemResponseSchema =
+  invoiceLineItemResponseSchema.omit({
+    skuId: true,
+    stockMovementId: true,
+  });
+
+export const invoiceCreationResponseSchema = invoiceResponseSchema
+  .pick({
+    classification: true,
+    confirmedAt: true,
+    createdAt: true,
+    currencyCode: true,
+    currencyScale: true,
+    customerBillingAddressLines: true,
+    customerContactReference: true,
+    customerEmail: true,
+    customerName: true,
+    customerPhone: true,
+    customerReference: true,
+    customerSlug: true,
+    customerTaxNumber: true,
+    notes: true,
+    parentInvoiceReference: true,
+    paymentMethod: true,
+    reference: true,
+    replacementInvoiceReference: true,
+    revisionChain: true,
+    role: true,
+    status: true,
+    subtotalAmount: true,
+    taxAmount: true,
+    totalAmount: true,
+    type: true,
+  })
+  .extend({
+    lines: z.array(customerSafeInvoiceLineItemResponseSchema),
+    type: invoiceIssuanceChannelSchema,
+  });
+
 export type PosPaymentMethod = z.infer<typeof posPaymentMethodSchema>;
 export type InvoiceDocumentTypeFilter = z.infer<
   typeof invoiceDocumentTypeFilterSchema
+>;
+export type InvoiceChannelFilter = z.infer<typeof invoiceChannelFilterSchema>;
+export type InvoiceIssuanceChannel = z.infer<
+  typeof invoiceIssuanceChannelSchema
 >;
 export type InvoiceClassification = z.infer<typeof invoiceClassificationSchema>;
 export type InvoiceClassificationFilter = z.infer<
   typeof invoiceClassificationFilterSchema
 >;
+export type InvoiceStatusFilter = z.infer<typeof invoiceStatusFilterSchema>;
 export type InvoiceDocumentRole = z.infer<typeof invoiceDocumentRoleSchema>;
 export type PosLineItemRequest = z.infer<typeof posLineItemRequestSchema>;
 export type ProcessPosPaymentRequest = z.infer<
@@ -166,3 +280,19 @@ export type InvoiceLineItemResponse = z.infer<
 export type InvoiceResponse = z.infer<typeof invoiceResponseSchema>;
 export type InvoiceListQuery = z.infer<typeof invoiceListQuerySchema>;
 export type InvoiceListResponse = z.infer<typeof invoiceListResponseSchema>;
+export type AdminInvoiceListQuery = z.infer<typeof adminInvoiceListQuerySchema>;
+export type AdminInvoiceReportingTotals = z.infer<
+  typeof adminInvoiceReportingTotalsSchema
+>;
+export type AdminInvoiceListItemResponse = z.infer<
+  typeof adminInvoiceListItemResponseSchema
+>;
+export type AdminInvoiceListResponse = z.infer<
+  typeof adminInvoiceListResponseSchema
+>;
+export type CustomerSafeInvoiceLineItemResponse = z.infer<
+  typeof customerSafeInvoiceLineItemResponseSchema
+>;
+export type InvoiceCreationResponse = z.infer<
+  typeof invoiceCreationResponseSchema
+>;

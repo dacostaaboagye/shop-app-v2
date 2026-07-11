@@ -7,17 +7,29 @@ import { SalesAttributionService } from "../inventory-ownership/sales-attributio
 import type { OfficialDocumentSettingsService } from "../official-documents/official-document-settings.service.js";
 import { PostgresReferenceNumberRepository } from "../public-identifiers/postgres-reference-number.repository.js";
 import { ReferenceNumberService } from "../public-identifiers/reference-number.service.js";
+import { InvoiceIssuanceService } from "./invoice-issuance.service.js";
+import { PostgresManagerCustomerLookupRepository } from "./manager-customer-lookup.repository.js";
+import { ManualInvoiceRequestService } from "./manual-invoice-request.service.js";
 import { PosSaleService } from "./pos-sale.service.js";
 import { PosSaleDeliverySourceAdapter } from "./pos-sale-delivery-source.adapter.js";
+import { PostgresAdminInvoiceQueryRepository } from "./postgres-admin-invoice-query.repository.js";
+import { PostgresCustomerInvoiceQueryRepository } from "./postgres-customer-invoice-query.repository.js";
 import { PostgresInvoiceRepository } from "./postgres-invoice.repository.js";
 import { PostgresInvoiceQueryRepository } from "./postgres-invoice-query.repository.js";
+import { PostgresManualInvoiceRequestRepository } from "./postgres-manual-invoice-request.repository.js";
 import { PostgresPosCatalogVariantRepository } from "./postgres-pos-catalog.repository.js";
+import { PostgresSalesCustomerLinkRepository } from "./postgres-sales-customer-link.repository.js";
 import { PostgresSalesEventContextRepository } from "./sales-event-context.repository.js";
 
 type SalesRuntime = {
   sales: {
     invoiceQueryRepository: PostgresInvoiceQueryRepository;
+    manualInvoiceRequestRepository: PostgresManualInvoiceRequestRepository;
+    manualInvoiceRequestService: ManualInvoiceRequestService;
+    adminInvoiceQueryRepository: PostgresAdminInvoiceQueryRepository;
+    customerInvoiceQueryRepository: PostgresCustomerInvoiceQueryRepository;
     invoiceRepository: PostgresInvoiceRepository;
+    managerCustomerLookupRepository: PostgresManagerCustomerLookupRepository;
     posSaleDeliverySourcePort: PosSaleDeliverySourcePort;
     posSaleService: PosSaleService;
   };
@@ -30,6 +42,9 @@ export function createSalesRuntime(
       OfficialDocumentSettingsService,
       "resolveDocumentProfile"
     >;
+    logger?: {
+      info?: (fields: Record<string, unknown>, message: string) => void;
+    };
     platformEventPublisher?: PlatformEventPublisher;
   },
 ): SalesRuntime {
@@ -41,6 +56,21 @@ export function createSalesRuntime(
   );
   const referenceNumberService = new ReferenceNumberService(
     new PostgresReferenceNumberRepository(databaseRuntime.db),
+    {
+      onReferenceReserved(event) {
+        if (!event.sequenceKey.startsWith("invoice-")) return;
+
+        options.logger?.info?.(
+          {
+            reference: event.reference,
+            sequenceKey: event.sequenceKey,
+            sequenceStorageKey: event.sequenceStorageKey,
+            sequenceValue: event.sequenceValue,
+          },
+          "Sales invoice reference reserved.",
+        );
+      },
+    },
   );
   const catalogVariantRepository = new PostgresPosCatalogVariantRepository(
     databaseRuntime.db,
@@ -49,8 +79,22 @@ export function createSalesRuntime(
   const invoiceQueryRepository = new PostgresInvoiceQueryRepository(
     databaseRuntime.db,
   );
+  const adminInvoiceQueryRepository = new PostgresAdminInvoiceQueryRepository(
+    databaseRuntime.db,
+  );
+  const customerInvoiceQueryRepository =
+    new PostgresCustomerInvoiceQueryRepository(databaseRuntime.db);
+  const manualInvoiceRequestRepository =
+    new PostgresManualInvoiceRequestRepository(databaseRuntime.db);
+  const managerCustomerLookupRepository =
+    new PostgresManagerCustomerLookupRepository(databaseRuntime.db);
+  const customerLinkResolver = new PostgresSalesCustomerLinkRepository(
+    databaseRuntime.db,
+  );
 
   const combinedInvoiceRepository = {
+    createIssuedInvoiceTransaction:
+      invoiceRepository.createIssuedInvoiceTransaction.bind(invoiceRepository),
     createSaleTransaction:
       invoiceRepository.createSaleTransaction.bind(invoiceRepository),
     createReturnTransaction:
@@ -74,9 +118,16 @@ export function createSalesRuntime(
     },
   };
 
-  const posSaleService = new PosSaleService({
+  const invoiceIssuanceService = new InvoiceIssuanceService({
     catalogVariantRepository,
     currencyResolver,
+    invoiceRepository: combinedInvoiceRepository,
+    referenceNumberService,
+  });
+
+  const posSaleService = new PosSaleService({
+    customerLinkResolver,
+    invoiceIssuanceService,
     invoiceRepository: combinedInvoiceRepository,
     platformEventPublisher: options.platformEventPublisher ?? null,
     referenceNumberService,
@@ -85,11 +136,23 @@ export function createSalesRuntime(
     ),
     salesAttributionService,
   });
+  const manualInvoiceRequestService = new ManualInvoiceRequestService({
+    catalogVariantRepository,
+    currencyResolver,
+    customerLinkResolver,
+    referenceNumberService,
+    repository: manualInvoiceRequestRepository,
+  });
 
   return {
     sales: {
+      adminInvoiceQueryRepository,
+      customerInvoiceQueryRepository,
       invoiceQueryRepository,
       invoiceRepository,
+      managerCustomerLookupRepository,
+      manualInvoiceRequestRepository,
+      manualInvoiceRequestService,
       posSaleDeliverySourcePort: new PosSaleDeliverySourceAdapter(
         invoiceQueryRepository,
       ),

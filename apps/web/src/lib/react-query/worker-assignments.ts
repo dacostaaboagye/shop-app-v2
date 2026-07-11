@@ -1,4 +1,5 @@
 import type {
+  AssignmentHistoryResponse,
   AssignVariantRequest,
   BatchAssignVariantRequest,
   BatchAssignVariantResponse,
@@ -26,6 +27,12 @@ export const workerHandoversQueryKey = (locationId: string) =>
 export const managerHandoversQueryKey = (locationId: string) =>
   ["handovers", "manager", locationId] as const;
 
+export const assignmentHistoryQueryKey = (
+  scope: "manager" | "worker",
+  locationId: string,
+  skuId: string,
+) => ["assignments", "history", scope, locationId, skuId] as const;
+
 export const workerHandoverRecipientsQueryKey = (locationId: string) =>
   ["handovers", "worker", "recipients", locationId] as const;
 
@@ -46,6 +53,22 @@ export async function fetchLocationAssignments(
   const params = new URLSearchParams({ locationId });
   return fetchJson<LocationAssignmentListResponse>(
     `/api/manager/assignments?${params.toString()}`,
+    undefined,
+    { auth: "required" },
+  );
+}
+
+export async function fetchAssignmentHistory(input: {
+  locationId: string;
+  scope: "manager" | "worker";
+  skuId: string;
+}): Promise<AssignmentHistoryResponse> {
+  const params = new URLSearchParams({
+    locationId: input.locationId,
+    skuId: input.skuId,
+  });
+  return fetchJson<AssignmentHistoryResponse>(
+    `/api/${input.scope}/assignments/history?${params.toString()}`,
     undefined,
     { auth: "required" },
   );

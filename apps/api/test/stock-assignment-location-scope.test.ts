@@ -70,6 +70,14 @@ describe("stock-assignment any_active routes pin to the supplied locationId", ()
             return [];
           },
         },
+        assignmentHistoryQueryRepository: {
+          async getAssignmentHistory() {
+            return null;
+          },
+          async getWorkerAssignmentHistory() {
+            return null;
+          },
+        },
         handoverRepository: {
           async getOriginalWorkerForChain() {
             return null;

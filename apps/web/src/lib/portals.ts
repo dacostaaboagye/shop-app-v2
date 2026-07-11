@@ -1,5 +1,12 @@
 import type { AuthPermissionSet, AuthUser, PortalKey } from "@shop/contracts";
-import { Building2, Package, ShieldCheck, Truck, Users } from "lucide-react";
+import {
+  Building2,
+  Package,
+  ReceiptText,
+  ShieldCheck,
+  Truck,
+  Users,
+} from "lucide-react";
 import type { Route } from "next";
 import type { ComponentType } from "react";
 import { toRoute } from "@/lib/routes";
@@ -50,6 +57,13 @@ export const PORTALS: Record<PortalKey, PortalMeta> = {
     href: "/agent" as Route,
     description: "View and complete your delivery assignments for today.",
     Icon: Truck,
+  },
+  customer: {
+    key: "customer",
+    label: "Customer",
+    href: "/customer" as Route,
+    description: "View invoices, order history, and account updates.",
+    Icon: ReceiptText,
   },
 };
 

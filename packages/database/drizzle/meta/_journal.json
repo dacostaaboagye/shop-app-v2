@@ -365,6 +365,34 @@
       "when": 1778710635821,
       "tag": "0051_short_shadowcat",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1779571946327,
+      "tag": "0052_burly_skreet",
+      "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1779604511509,
+      "tag": "0053_green_rumiko_fujikawa",
+      "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1779614200151,
+      "tag": "0054_next_giant_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1779627334160,
+      "tag": "0055_salty_colossus",
+      "breakpoints": true
     }
   ]
 }

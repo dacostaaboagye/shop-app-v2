@@ -1,10 +1,13 @@
 import type {
+  AdminInvoiceListResponse,
   InvoiceListResponse,
   InvoiceResponse,
   ProcessPosPaymentRequest,
   ProcessPosReturnRequest,
 } from "@shop/contracts";
+import { fetchFile } from "@/lib/react-query/fetch-file";
 import { fetchJson } from "@/lib/react-query/fetch-json";
+import { buildAdminInvoiceSearchParams } from "./pos-sales-admin.support";
 
 export type InvoiceListQuery = {
   classification?: "all" | "internal" | "outgoing";
@@ -18,11 +21,21 @@ export type InvoiceListQuery = {
   workerId?: string;
 };
 
+export type AdminInvoiceListQuery = Omit<InvoiceListQuery, "locationId"> & {
+  channel?: "all" | "ecommerce" | "manual" | "portal" | "pos";
+  currentPayableOnly?: boolean;
+  locationId?: string;
+  status?: "all" | "confirmed" | "superseded" | "voided";
+};
+
 export const workerSalesQueryKey = (query: Partial<InvoiceListQuery>) =>
   ["sales", "worker", query] as const;
 
 export const managerSalesQueryKey = (query: Partial<InvoiceListQuery>) =>
   ["sales", "manager", query] as const;
+
+export const adminInvoicesQueryKey = (query: Partial<AdminInvoiceListQuery>) =>
+  ["sales", "admin-invoices", query] as const;
 
 export const invoiceQueryKey = (reference: string) =>
   ["sales", "invoice", reference] as const;
@@ -75,6 +88,31 @@ export async function fetchManagerSales(
     `/api/manager/sales?${params.toString()}`,
     undefined,
     { auth: "required" },
+  );
+}
+
+export async function fetchAdminInvoices(
+  query: AdminInvoiceListQuery,
+): Promise<AdminInvoiceListResponse> {
+  return fetchJson<AdminInvoiceListResponse>(
+    `/api/admin/invoices?${buildAdminInvoiceSearchParams(query).toString()}`,
+    undefined,
+    { auth: "required" },
+  );
+}
+
+export async function downloadAdminInvoicesCsv(
+  query: AdminInvoiceListQuery,
+): Promise<File> {
+  return fetchFile(
+    `/api/admin/invoices/export.csv?${buildAdminInvoiceSearchParams(
+      query,
+    ).toString()}`,
+    undefined,
+    {
+      auth: "required",
+      fallbackFilename: "admin-invoices.csv",
+    },
   );
 }
 
@@ -161,6 +199,16 @@ export async function fetchManagerInvoice(
 ): Promise<InvoiceResponse> {
   return fetchJson<InvoiceResponse>(
     `/api/manager/sales/${encodeURIComponent(reference)}`,
+    undefined,
+    { auth: "required" },
+  );
+}
+
+export async function fetchAdminInvoice(
+  reference: string,
+): Promise<InvoiceResponse> {
+  return fetchJson<InvoiceResponse>(
+    `/api/admin/invoices/${encodeURIComponent(reference)}`,
     undefined,
     { auth: "required" },
   );

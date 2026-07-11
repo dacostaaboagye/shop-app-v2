@@ -1,11 +1,8 @@
 import type {
-  AdminOpeningStockRequest,
-  AdminOpeningStockResponse,
   AdminStockBalanceSummary,
   AdminStockCountRequest,
 } from "@shop/contracts";
 import type { ColumnDef } from "@tanstack/react-table";
-import { OpeningStockSetupWorkspace } from "@/components/admin/stock/opening-stock-setup-workspace";
 import { StockCountDialog } from "@/components/admin/stock/stock-count-dialog";
 import { AppDataTable } from "@/components/data-table/app-data-table";
 import { ManagerBulkSupplyRequestDialog } from "@/components/manager/stock/manager-bulk-supply-request-dialog";
@@ -22,43 +19,6 @@ type LocationScope = {
   locationName: string;
   locationSlug: string;
 };
-
-export function ManagerOpeningStockSetup({
-  canCount,
-  error,
-  isPending,
-  location,
-  onSubmit,
-  resetKey,
-  success,
-}: {
-  canCount: boolean;
-  error: unknown;
-  isPending: boolean;
-  location: LocationScope | null | undefined;
-  onSubmit: (request: AdminOpeningStockRequest) => void;
-  resetKey: number;
-  success: AdminOpeningStockResponse | undefined;
-}) {
-  if (!canCount || !location) return null;
-
-  return (
-    <OpeningStockSetupWorkspace
-      error={error}
-      isPending={isPending}
-      key={`${location.locationSlug}:${resetKey}`}
-      lookup={{ locationId: location.locationId, type: "manager" }}
-      locationName={location.locationName}
-      locationSlug={location.locationSlug}
-      onSubmit={onSubmit}
-      successMessage={
-        success
-          ? `${success.initializedCount} SKU baseline(s) were initialized for ${success.locationName}.`
-          : null
-      }
-    />
-  );
-}
 
 export function ManagerStockMetrics({
   items,

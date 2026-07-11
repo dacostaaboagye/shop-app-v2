@@ -90,6 +90,7 @@ const officialDocumentRuntime = createOfficialDocumentSettingsRuntime(
 const salesRuntime = createSalesRuntime(databaseRuntime, {
   documentProfileResolver:
     officialDocumentRuntime.officialDocuments.settingsService,
+  logger: console,
   platformEventPublisher: platformEventRuntime.platformEventPublisher,
 });
 const assignmentsRuntime = createAssignmentsRuntime(databaseRuntime, {
@@ -133,11 +134,31 @@ const gtnDocumentSnapshotService = new GtnIssuedDocumentSnapshotService({
 const server = createServer({
   accessControl: authRuntime.accessControl,
   adminAccess: adminDirectoryRuntime.adminDirectory,
+  adminCustomers: adminDirectoryRuntime.adminDirectory,
   adminDirectory: adminDirectoryRuntime.adminDirectory,
   adminLocationQuery: adminDirectoryRuntime.adminDirectory,
   adminLocationWrite: adminDirectoryRuntime.adminDirectory,
   adminSuppliers: adminDirectoryRuntime.adminDirectory,
   adminUserAccess: adminDirectoryRuntime.adminDirectory,
+  adminInvoices: {
+    adminInvoiceRepository: salesRuntime.sales.adminInvoiceQueryRepository,
+    invoiceRepository: salesRuntime.sales.invoiceQueryRepository,
+    permissionService: authRuntime.accessControl.permissionService,
+  },
+  customerInvoices: {
+    customerInvoiceRepository:
+      salesRuntime.sales.customerInvoiceQueryRepository,
+    salesDocumentSnapshotService,
+  },
+  manualInvoiceRequests: {
+    customerLookupRepository:
+      salesRuntime.sales.managerCustomerLookupRepository,
+    manualInvoiceRequestRepository:
+      salesRuntime.sales.manualInvoiceRequestRepository,
+    manualInvoiceRequestService: salesRuntime.sales.manualInvoiceRequestService,
+    permissionService: authRuntime.accessControl.permissionService,
+    salesDocumentSnapshotService,
+  },
   auth: authRuntime.auth,
   authProfileMedia: {
     accountProfileMediaService,

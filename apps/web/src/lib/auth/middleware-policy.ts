@@ -3,6 +3,7 @@ export const SESSION_FLAG_COOKIE = "shop_session_active";
 const PROTECTED_PREFIXES = [
   "/admin",
   "/agent",
+  "/customer",
   "/manager",
   "/supplier",
   "/worker",

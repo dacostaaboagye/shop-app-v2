@@ -6,6 +6,7 @@ export const STAFF_ROLE_KEYS = [
   "worker",
   "supplier",
   "agent",
+  "customer",
 ] as const;
 
 export const ALL_ROLE_KEYS = ["basic_user", ...STAFF_ROLE_KEYS] as const;
@@ -56,6 +57,7 @@ export const ROLE_LABELS: Record<RoleKey, string> = {
   agent: "Agent",
   admin: "Admin",
   basic_user: "Basic user",
+  customer: "Customer",
   manager: "Manager",
   supplier: "Supplier",
   worker: "Worker",
@@ -71,6 +73,7 @@ export const ROLE_PERMISSION_GRANTS: Record<RoleKey, readonly string[]> = {
     "inventory.read",
   ],
   basic_user: [],
+  customer: ["customer.dashboard.view"],
   manager: ["manager.dashboard.view", "inventory.read"],
   supplier: ["supplier.dashboard.view"],
   worker: ["worker.dashboard.view"],
@@ -80,6 +83,7 @@ export const ROLE_BADGE_CLASSES: Record<RoleKey, string> = {
   admin: BADGE_CLASS_NAMES.emphasis,
   agent: BADGE_CLASS_NAMES.secondary,
   basic_user: BADGE_CLASS_NAMES.muted,
+  customer: BADGE_CLASS_NAMES.secondary,
   manager: BADGE_CLASS_NAMES.emphasis,
   supplier: BADGE_CLASS_NAMES.secondary,
   worker: BADGE_CLASS_NAMES.muted,

@@ -34,6 +34,14 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
     description: "View the agent portal landing page.",
   },
   {
+    key: "customer.dashboard.view",
+    description: "View the customer portal landing page.",
+  },
+  {
+    key: "customer.invoices.view",
+    description: "View customer-safe invoices for linked CRM accounts.",
+  },
+  {
     key: "users.view",
     description: "View the admin user management surface.",
   },
@@ -160,6 +168,14 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
     description: "Create and update supplier organizations and relationships.",
   },
   {
+    key: "customers.view",
+    description: "View the admin customer CRM workspace.",
+  },
+  {
+    key: "customers.manage",
+    description: "Create and update customer records, contacts, and addresses.",
+  },
+  {
     key: "settings.documents.view",
     description: "View official document, brand, and money settings.",
   },
@@ -229,6 +245,18 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
     description: "View all POS sales and invoices for a managed location.",
   },
   {
+    key: "invoices.manual.request",
+    description: "Submit manual invoice requests for a managed location.",
+  },
+  {
+    key: "invoices.manual.view",
+    description: "View manual invoice requests for assigned locations.",
+  },
+  {
+    key: "invoices.manual.approve",
+    description: "Approve or reject manual invoice requests.",
+  },
+  {
     key: "stock.assignments.manage",
     description: "Assign and reassign product variants to workers.",
   },
@@ -250,7 +278,8 @@ const SYSTEM_PERMISSIONS: readonly SystemPermission[] = [
   },
   {
     key: "stock.supply.manage",
-    description: "View, approve, and reject stock supply requests for a location.",
+    description:
+      "View, approve, and reject stock supply requests for a location.",
   },
   {
     key: "stock.supply.requests.force_override",
@@ -303,6 +332,8 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
       "deliveries.cancel",
       "suppliers.view",
       "suppliers.manage",
+      "customers.view",
+      "customers.manage",
       "settings.documents.view",
       "settings.documents.manage",
       "settings.location_documents.manage",
@@ -317,6 +348,9 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
       "pos.sales.process",
       "pos.sales.view",
       "pos.sales.manage",
+      "invoices.manual.request",
+      "invoices.manual.view",
+      "invoices.manual.approve",
       "stock.assignments.manage",
       "stock.assignments.view",
       "stock.assignments.own.view",
@@ -348,6 +382,8 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
       "pos.sales.process",
       "pos.sales.view",
       "pos.sales.manage",
+      "invoices.manual.request",
+      "invoices.manual.view",
       "stock.assignments.manage",
       "stock.assignments.view",
       "stock.assignments.own.view",
@@ -393,6 +429,12 @@ export const SYSTEM_ROLES: readonly SystemRole[] = [
       "agent.routes.view",
       "deliveries.view",
     ],
+  },
+  {
+    slug: "customer",
+    name: "Customer",
+    description: "Customer contact with customer portal access.",
+    permissions: ["customer.dashboard.view", "customer.invoices.view"],
   },
   {
     slug: "developer",

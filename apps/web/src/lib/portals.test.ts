@@ -12,9 +12,14 @@ describe("portals", () => {
   it("returns only valid available portals", () => {
     assert.deepEqual(
       getAvailablePortals({
-        availablePortals: ["admin", "worker", "basic_user"] as never,
+        availablePortals: [
+          "admin",
+          "customer",
+          "worker",
+          "basic_user",
+        ] as never,
       }),
-      ["admin", "worker"],
+      ["admin", "customer", "worker"],
     );
   });
 

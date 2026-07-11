@@ -69,6 +69,40 @@ describe("SalesIssuedDocumentSnapshotService", () => {
     assert.equal(snapshot.payloadSnapshot.currencyScale, 2);
   });
 
+  it("returns the existing immutable payload after the live invoice changes", async () => {
+    const snapshots = new IssuedDocumentSnapshotService(
+      new InMemoryIssuedDocumentRepository(),
+    );
+    let totalAmount = "24.00";
+    const service = createService({
+      invoiceRepository: {
+        async findByReference(reference) {
+          return reference === "INV/2026/000001"
+            ? invoice({
+                subtotalAmount: totalAmount,
+                totalAmount,
+              })
+            : null;
+        },
+      },
+      snapshotService: snapshots,
+    });
+
+    const first = await service.getOrIssueSnapshot({
+      actorUserId: USER_ID,
+      reference: "INV/2026/000001",
+    });
+    totalAmount = "12.00";
+    const second = await service.getOrIssueSnapshot({
+      actorUserId: USER_ID,
+      reference: "INV/2026/000001",
+    });
+
+    assert.equal(first.payloadSnapshot.totalAmount, "24.00");
+    assert.equal(second.payloadSnapshot.totalAmount, "24.00");
+    assert.equal(second.contentHash, first.contentHash);
+  });
+
   it("issues credit note documents with the persisted credit note currency snapshot", async () => {
     const service = createService({
       invoiceRepository: {
