@@ -4,7 +4,7 @@ Audited: 2026-05-01
 Branch at audit time: `fix/ops-testing-seed-admin`
 Status: Remediation largely shipped. Statuses verified against code + git
 history on 2026-07-11. Remaining open: C2 (credential rotation + local log
-purge), M3 residual (regression test), M6 (explicit bodyLimit), L-tier items.
+purge) and L-tier items.
 
 ## What Was Audited
 
@@ -177,12 +177,11 @@ Validates http(s) and content-length but does not block private/loopback IPs. An
 
 **Fix direction:** Resolve hostname pre-fetch and reject RFC 1918, link-local, loopback, metadata IPs. Or pin uploads through R2 only.
 
-### M3. CSRF defended only by `SameSite=Strict` + CORS — RESIDUAL OPEN
+### M3. CSRF defended only by `SameSite=Strict` + CORS — CLOSED (2026-07-11)
 
-**Status (2026-07-11):** C3 is fixed, so the posture is acceptable. Neither
-the documenting comment in the cookie module nor the smoke test that fails on
-a `SameSite` regression has been written. Tracked in
-`production-readiness-plan.md` Phase 0.
+**Status:** C3 is fixed, the CSRF chain is documented in
+`refresh-token-cookie.ts`, and `apps/api/test/auth.refresh-cookie.test.ts`
+fails if `SameSite=Strict`, `HttpOnly`, or the cookie paths regress.
 
 **Files:** `apps/api/src/modules/auth/refresh-token-cookie.ts:13-19`, `apps/web/src/lib/auth/auth-client.ts:140`
 
@@ -211,7 +210,10 @@ Auth routes have explicit limits (good). Everything else — including expensive
 
 **Fix direction:** Add a coarse global limit (e.g., 600/min/IP) as a backstop on top of per-route limits.
 
-### M6. Fastify `bodyLimit` not configured explicitly — STILL OPEN (2026-07-11)
+### M6. Fastify `bodyLimit` not configured explicitly — CLOSED (2026-07-11)
+
+**Status:** global 1 MiB `bodyLimit` pinned in `create-server.ts`; stock-take
+import routes keep their larger per-route override.
 
 **File:** `apps/api/src/server/create-server.ts:87-91`
 
@@ -308,9 +310,8 @@ remains a future UX/operations enhancement.
 ## Recommended Remediation Order
 
 > Superseded 2026-07-11: everything below shipped except the C2 residual
-> (credential rotation + local log purge), the M3 regression test, M6, and
-> L-tier items. Open work is tracked in
-> `docs/engineering/production-readiness-plan.md`.
+> (credential rotation + local log purge) and L-tier items. Open work is
+> tracked in `docs/engineering/production-readiness-plan.md`.
 
 1. **C1, C2, C3** — same day.
 2. **H1, H6, H7** — this sprint.
