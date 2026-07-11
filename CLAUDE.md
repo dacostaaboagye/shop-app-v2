@@ -69,7 +69,7 @@ These restate `AGENTS.md` and `README.md`. If you can't satisfy one, stop and as
 6. **Commit.** Conventional commits with the ticket as scope: `feat(e-00b-02): …` or `fix(ops): …`. The `commit-msg` hook enforces this.
 7. **PR into `dev`.** Squash-merge. `main` is release-only.
 
-Hooks live in `.husky/` and run `pnpm enforce:branch-name`, `pnpm guard`, `pnpm lint` on `pre-commit`, and `pnpm verify` on `pre-push`. Do not skip hooks.
+Hooks live in `.husky/` and run `pnpm enforce:branch-name`, `pnpm guard`, `pnpm lint` on `pre-commit`, and `pnpm validate:affected` (guards + lint + typecheck + affected-package tests vs `origin/dev`) on `pre-push`. CI runs full `pnpm verify` on every PR. Do not skip hooks.
 
 ## Useful commands
 

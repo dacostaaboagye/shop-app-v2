@@ -26,8 +26,10 @@
     "lint": "turbo lint",
     "prepare": "husky",
     "test": "node --test scripts/**/*.test.mjs && turbo test",
+    "test:affected": "node --test scripts/**/*.test.mjs && turbo test --affected",
     "typecheck": "turbo typecheck",
     "validate": "pnpm enforce:branch-name && pnpm guard && pnpm lint && pnpm typecheck && pnpm test",
+    "validate:affected": "pnpm enforce:branch-name && pnpm guard && pnpm lint && pnpm typecheck && pnpm test:affected",
     "verify": "pnpm validate && pnpm build"
   },
   "devDependencies": {
