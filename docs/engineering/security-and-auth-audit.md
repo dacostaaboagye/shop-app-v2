@@ -2,7 +2,9 @@
 
 Audited: 2026-05-01
 Branch at audit time: `fix/ops-testing-seed-admin`
-Status: Findings recorded; remediation pending
+Status: Remediation largely shipped. Statuses verified against code + git
+history on 2026-07-11. Remaining open: C2 (credential rotation + local log
+purge), M3 residual (regression test), M6 (explicit bodyLimit), L-tier items.
 
 ## What Was Audited
 
@@ -51,7 +53,18 @@ with Infisical as the initial vault. Application code remains bound to canonical
 environment names, not to an Infisical SDK. Credential rotation is still
 required before closing C2.
 
-### C3. CORS falls open when `WEB_BASE_URL` is unset
+**Status (2026-07-11): PARTIALLY CLOSED.** `.env.local` no longer exists on
+disk and Infisical is the secret source. Still outstanding: (1) confirm the
+four credential sets (Neon, R2, Google OAuth, Resend) were actually rotated;
+(2) `dev-*.log` / `tmp-api-*.log` files in the repo root predate log redaction
+and must be audited and deleted. Tracked in
+`docs/engineering/production-readiness-plan.md`.
+
+### C3. CORS falls open when `WEB_BASE_URL` is unset — CLOSED (PR #36)
+
+**Status (2026-07-11):** `create-server.ts` now rejects any browser origin that
+does not match `WEB_BASE_URL`; the allow-all branch is reachable only in
+development, and `WEB_BASE_URL` is required at boot outside development.
 
 **File:** `apps/api/src/server/create-server.ts:94-104`
 
@@ -73,7 +86,11 @@ Missing `WEB_BASE_URL` in any deployed environment turns CORS into "allow any or
 
 ## High
 
-### H1. CSP fully disabled; no security headers from the web app either
+### H1. CSP fully disabled; no security headers from the web app either — CLOSED (PR #39)
+
+**Status (2026-07-11):** API helmet ships `default-src 'none'` CSP; web
+`next.config.mjs` ships full CSP + Referrer-Policy + X-Content-Type-Options +
+X-Frame-Options + Permissions-Policy on every route.
 
 **Files:** `apps/api/src/server/create-server.ts:105-108`, `apps/web/next.config.mjs:1-24`
 
@@ -81,7 +98,7 @@ API helmet has `contentSecurityPolicy: false` (the embed reasoning is unnecessar
 
 **Fix direction:** Add a strict CSP to `next.config.mjs` for the web app (`default-src 'self'; frame-ancestors 'none'; …`). Re-enable a minimal CSP for the API (`default-src 'none'; frame-ancestors 'none'`).
 
-### H2. JWT timestamps stored as milliseconds, not seconds
+### H2. JWT timestamps stored as milliseconds, not seconds — CLOSED (PR #41)
 
 **File:** `apps/api/src/modules/auth/access-token.ts:41-48, 94-101`
 
@@ -97,7 +114,7 @@ The original audit flagged this as a missing per-location check. On closer readi
 
 No code change required for H3. **The H4 finding below remains valid** — `any_active` scope resolution does not pin to the supplied `locationId`, which is the real bug. PR #42 fixes the `any_active` family. A clarifying comment was added to the manager-staff handler so future readers don't reopen this finding.
 
-### H4. `any_active`-scoped routes accept arbitrary client `locationId`
+### H4. `any_active`-scoped routes accept arbitrary client `locationId` — CLOSED (PR #42)
 
 **Files:**
 - `apps/api/src/modules/stock/supply-request-route-support.ts:205`
@@ -106,7 +123,11 @@ No code change required for H3. **The H4 finding below remains valid** — `any_
 
 Same shape as H3 but spread across the `any_active` scope family. Either confirm the scope grants global location access (and rename it) or add a follow-up check that the supplied `locationId` is in the user's active set.
 
-### H5. Profile-media MIME validation is prefix-only
+### H5. Profile-media MIME validation is prefix-only — CLOSED (PRs #43, #48, #50, #61)
+
+**Status (2026-07-11):** exact-type allowlist (SVG rejected), AVIF added to
+match the web picker, MIME re-validated on confirm, magic-byte + size
+verification at upload confirm.
 
 **File:** `apps/api/src/modules/auth/account-profile-media.service.ts:66-72`
 
@@ -114,7 +135,10 @@ Accepts any `image/*`. Includes `image/svg+xml`, which executes JS when rendered
 
 **Fix direction:** Allowlist exact types (`image/jpeg`, `image/png`, `image/webp`, `image/gif`); reject SVG. Verify magic bytes server-side.
 
-### H6. Client-side-only auth gate in `AuthGuard`
+### H6. Client-side-only auth gate in `AuthGuard` — CLOSED (PRs #40, #58)
+
+**Status (2026-07-11):** edge redirect ships as `apps/web/src/proxy.ts`
+(Next.js 16 rename of middleware.ts); component guard remains belt-and-braces.
 
 **File:** `apps/web/src/components/system/portal-guard.tsx:26-99`
 
@@ -122,7 +146,7 @@ Auth check runs in `useEffect` after first render. Protected pages render briefl
 
 **Fix direction:** Add `apps/web/src/middleware.ts` to redirect at the edge before render. Component guard becomes belt-and-braces.
 
-### H7. Super-admin password printed to stdout
+### H7. Super-admin password printed to stdout — CLOSED (PR #37)
 
 **File:** `apps/api/scripts/seed-admin.ts:112-116`
 
@@ -134,7 +158,7 @@ Anyone with read access to CI logs can recover the bootstrap admin password. `re
 
 ## Medium
 
-### M1. Failed-login audit row leaks user-existence bit
+### M1. Failed-login audit row leaks user-existence bit — CLOSED (PR #59)
 
 **File:** `apps/api/src/modules/auth/authentication.service.ts:76-114`
 
@@ -142,7 +166,10 @@ Generic 401 to client (good), but the `auth_events` row records `userId` only on
 
 **Fix direction:** Pick one — always omit `userId` for failed attempts, or always best-effort include it. Be consistent.
 
-### M2. SSRF via PDF logo fetch
+### M2. SSRF via PDF logo fetch — CLOSED (verified 2026-07-11)
+
+**Status:** `official-document-logo-network-policy.ts` resolves the hostname
+and rejects private, loopback, link-local, and reserved IPv4/IPv6 ranges.
 
 **File:** `apps/api/src/modules/official-documents/official-document-pdf-layout.ts:118-162`
 
@@ -150,7 +177,12 @@ Validates http(s) and content-length but does not block private/loopback IPs. An
 
 **Fix direction:** Resolve hostname pre-fetch and reject RFC 1918, link-local, loopback, metadata IPs. Or pin uploads through R2 only.
 
-### M3. CSRF defended only by `SameSite=Strict` + CORS
+### M3. CSRF defended only by `SameSite=Strict` + CORS — RESIDUAL OPEN
+
+**Status (2026-07-11):** C3 is fixed, so the posture is acceptable. Neither
+the documenting comment in the cookie module nor the smoke test that fails on
+a `SameSite` regression has been written. Tracked in
+`production-readiness-plan.md` Phase 0.
 
 **Files:** `apps/api/src/modules/auth/refresh-token-cookie.ts:13-19`, `apps/web/src/lib/auth/auth-client.ts:140`
 
@@ -158,13 +190,20 @@ Refresh cookie is `SameSite=Strict, HttpOnly, Secure-in-prod`; access token sent
 
 **Fix direction:** Comment in cookie module documenting the chain. Add a smoke test that fails if `SameSite` regresses or a new state-changing endpoint reads auth from cookies.
 
-### M4. Swagger UI renders backend-supplied OpenAPI spec without CSP
+### M4. Swagger UI renders backend-supplied OpenAPI spec without CSP — DOWNGRADED TO LOW
+
+**Status (2026-07-11):** H1 shipped (PR #39), so this drops to LOW as the
+finding itself predicted.
 
 **File:** `apps/web/src/components/admin/access/internal-api-docs-page-client.tsx:64, 82, 158`
 
 Swagger UI sanitizes spec content, but with H1 unfixed there is no defense-in-depth. Drops to LOW once H1 is shipped.
 
-### M5. No global rate limit
+### M5. No global rate limit — CLOSED (PRs #126, #131)
+
+**Status (2026-07-11):** global backstop of 600 req/min registered in
+`create-server.ts` on top of per-route limits; expensive endpoints got explicit
+limits in PR #131.
 
 **File:** `apps/api/src/server/create-server.ts:110-112` (`global: false`)
 
@@ -172,19 +211,22 @@ Auth routes have explicit limits (good). Everything else — including expensive
 
 **Fix direction:** Add a coarse global limit (e.g., 600/min/IP) as a backstop on top of per-route limits.
 
-### M6. Fastify `bodyLimit` not configured explicitly
+### M6. Fastify `bodyLimit` not configured explicitly — STILL OPEN (2026-07-11)
 
 **File:** `apps/api/src/server/create-server.ts:87-91`
 
 Default ~1MB is fine for JSON, but make it explicit globally and per route where it differs.
 
-### M7. Console-logging full error objects in fire-and-forget paths
+### M7. Console-logging full error objects in fire-and-forget paths — CLOSED (verified 2026-07-11)
+
+**Status:** remaining `console.error` call sites log explicit fields and
+`error.message` only, never full Error objects.
 
 **Files:** `apps/api/src/modules/auth/registration.service.ts:78`, `apps/api/src/modules/auth/password-reset.service.ts:74`, `apps/api/src/modules/messaging/email-send-execution.ts:26-29`
 
 Full Error objects logged with `console.error`. SMTP/Resend errors include request IDs and sometimes the bearer token. Use the request logger with explicit fields.
 
-### M8. Pino logger has no `redact` paths
+### M8. Pino logger has no `redact` paths — CLOSED (PR #47)
 
 **File:** `apps/api/src/server/create-server.ts:87-91`
 
@@ -192,7 +234,11 @@ Auto-logged requests leak `Authorization`, `Cookie`, `Set-Cookie` headers in cle
 
 **Fix direction:** Configure `logger.redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]']`.
 
-### M9. `NEXT_PUBLIC_API_BASE_URL` fallback in `apps/web/src/env.ts`
+### M9. `NEXT_PUBLIC_API_BASE_URL` fallback in `apps/web/src/env.ts` — CLOSED (verified 2026-07-11)
+
+**Status:** `next.config.mjs` throws at build time on Vercel deploys when
+`API_BASE_URL` is missing, so a production deploy can no longer silently fall
+back to shipping the API URL in the browser bundle.
 
 **File:** `apps/web/src/env.ts:1-17`
 
@@ -213,7 +259,7 @@ access and refresh tokens issued at or before logout-all are rejected even if an
 in-flight refresh attempt races with the bulk revocation. Session inventory
 remains a future UX/operations enhancement.
 
-### M11. Ad-hoc admin check breaks the CASL pattern
+### M11. Ad-hoc admin check breaks the CASL pattern — CLOSED (PR #65)
 
 **File:** `apps/api/src/modules/stock/supply-request-access-policy.ts:214-223`
 
@@ -260,6 +306,11 @@ remains a future UX/operations enhancement.
 ---
 
 ## Recommended Remediation Order
+
+> Superseded 2026-07-11: everything below shipped except the C2 residual
+> (credential rotation + local log purge), the M3 regression test, M6, and
+> L-tier items. Open work is tracked in
+> `docs/engineering/production-readiness-plan.md`.
 
 1. **C1, C2, C3** — same day.
 2. **H1, H6, H7** — this sprint.
