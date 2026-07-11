@@ -58,6 +58,9 @@ import { registerErrorHandling } from "./register-error-handling.js";
 
 const GLOBAL_RATE_LIMIT_MAX = 600;
 const GLOBAL_RATE_LIMIT_WINDOW_MS = 60_000;
+// Matches Fastify's default, pinned explicitly per audit M6. Routes that
+// accept larger payloads (e.g. stock-take imports) override per-route.
+const GLOBAL_BODY_LIMIT_BYTES = 1_048_576;
 
 type StockAssignmentRouteOptions = Parameters<
   typeof registerStockAssignmentRoutes
@@ -124,6 +127,7 @@ type CreateServerOptions = {
 export function createServer(options: CreateServerOptions = {}) {
   const env = getApiEnv();
   const server = Fastify({
+    bodyLimit: GLOBAL_BODY_LIMIT_BYTES,
     logger: {
       level: env.nodeEnv === "development" ? "info" : "warn",
       // Strip auth-bearing values from auto-logged request/response headers.
