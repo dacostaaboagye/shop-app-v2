@@ -21,9 +21,11 @@ stock, deliveries, invoicing, and CRM. POS (E-07) and the e-commerce ladder
   `security-and-auth-audit.md` status lines; C3, H1, H2, H4–H7, M1, M2, M5,
   M7–M9, M11 confirmed closed).
 - [x] Refresh `security-and-auth-audit.md` so statuses match reality.
-- [ ] **M3 residual** — add smoke test asserting refresh cookie ships
-  `SameSite=Strict` + `HttpOnly`, so a regression fails CI.
-- [ ] **M6** — set explicit Fastify `bodyLimit` in `create-server.ts`.
+- [x] **M3 residual** — `apps/api/test/auth.refresh-cookie.test.ts` pins
+  `SameSite=Strict` + `HttpOnly` + cookie paths; CSRF chain documented in
+  `refresh-token-cookie.ts` (closed 2026-07-11).
+- [x] **M6** — explicit Fastify `bodyLimit` in `create-server.ts`
+  (closed 2026-07-11).
 - [ ] Fresh security review of the newest surfaces (invoices E-09, CRM E-12,
   customer portal access) — newest code, least audited.
 - [ ] Update `CLAUDE.md` security guardrails section — several entries reference
