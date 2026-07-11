@@ -105,13 +105,13 @@ If you hit an obstacle, fix the root cause. Don't bypass safety checks to make i
 
 ## Security guardrails (active)
 
-The audit at `docs/engineering/security-and-auth-audit.md` is open. Until those findings are remediated:
+The audit at `docs/engineering/security-and-auth-audit.md` is largely remediated (statuses verified 2026-07-11); the C2 residual (credential rotation) is tracked in `docs/engineering/production-readiness-plan.md`. Don't regress the shipped fixes:
 
-- Do not extend OAuth flows or change `findOrCreateUser` without addressing C1.
-- Do not loosen CORS (`apps/api/src/server/create-server.ts`) — C3 is open.
-- Do not add new cookie-authed state-changing endpoints without explicit CSRF design (M3).
-- Do not add `console.error(err)` with full Error objects; use the request logger with explicit fields (M7, M8).
-- Treat `.env.local` as compromised until C2 is closed; never commit it, never paste contents into chat / logs / PRs.
+- Do not reintroduce silent OAuth linking in the auth user resolver — C1 fix (PR #38) must hold.
+- Do not loosen CORS (`apps/api/src/server/create-server.ts`) — the C3 fix (PR #36) rejects unknown browser origins; keep default-deny.
+- Do not add new cookie-authed state-changing endpoints without explicit CSRF design (M3 — regression smoke test still pending).
+- Do not add `console.error(err)` with full Error objects; use explicit fields / `error.message` only (M7, M8 fixes must hold).
+- The credentials that sat in `.env.local` (Neon, R2, Google OAuth, Resend) are unrotated until C2 closes; never paste secrets into chat / logs / PRs.
 
 ## Reading order recap
 
