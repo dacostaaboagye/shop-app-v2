@@ -1,6 +1,14 @@
 import type { FastifyReply } from "fastify";
 import { getApiEnv } from "../../env.js";
 
+// CSRF posture (audit M3): the refresh cookie is the only cookie the API
+// trusts, and it is only read by /api/auth/* token-lifecycle endpoints. All
+// other state-changing endpoints authenticate via Authorization: Bearer,
+// which cross-site requests cannot attach. The chain that keeps this safe is
+// SameSite=Strict + default-deny CORS (C3 fix) + bearer-only mutations. Any
+// new state-changing endpoint that reads auth from a cookie needs its own
+// CSRF design first. auth.refresh-cookie.test.ts fails if these attributes
+// regress.
 export const refreshTokenCookieName = "shop_refresh_token";
 export const sessionFlagCookieName = "shop_session_active";
 
